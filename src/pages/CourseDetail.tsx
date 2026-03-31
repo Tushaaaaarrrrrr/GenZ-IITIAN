@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
+import { motion } from 'motion/react';
 import { ChevronDown, ChevronRight, Play, Star, CheckCircle2, Shield, Zap, CreditCard, Users, Clock, BookOpen, Globe, Award, Briefcase, Search, Target, GraduationCap, Brain, FileText, Video, BarChart3, TrendingUp, Rocket, Trophy, MessageCircle, HelpCircle, Building2, Flame } from 'lucide-react';
 
 const RazorpayButton = ({ buttonId }: { buttonId: string }) => {
@@ -382,12 +383,19 @@ export default function CourseDetail() {
                         <div className="text-[10px] sm:text-xs text-[#10b981] font-black uppercase tracking-wider">Get Secured Seat to BS</div>
                       </div>
                     ) : (
-                      <a href={course.paymentLink} target="_blank" rel="noopener noreferrer" className="w-full py-4 bg-[#0b1120] text-white rounded-xl font-bold text-lg border-2 border-[#0b1120] hover:bg-gray-800 transition-colors flex flex-col items-center justify-center gap-1 shadow-lg">
+                      <motion.a 
+                        href={course.paymentLink} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="w-full py-4 bg-[#0b1120] text-white rounded-xl font-bold text-lg border-2 border-[#0b1120] hover:bg-gray-800 transition-colors flex flex-col items-center justify-center gap-1 shadow-lg"
+                        animate={{ scale: [1, 1.03, 1] }}
+                        transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                      >
                         <div className="flex items-center gap-2">
                           {course.ctaLabel || 'Proceed to Payment'} <ChevronRight className="w-5 h-5" />
                         </div>
                         <div className="text-[10px] sm:text-xs text-[#10b981] font-black uppercase tracking-wider">Get Secured Seat to BS</div>
-                      </a>
+                      </motion.a>
                     )}
                   </div>
                 </div>
@@ -630,9 +638,16 @@ export default function CourseDetail() {
                         </li>
                       ))}
                     </ul>
-                    <a href={plan.link} target="_blank" rel="noopener noreferrer" className={`w-full py-3.5 ${plan.best ? 'bg-[#f59e0b] hover:bg-[#d97706]' : plan.popular ? 'bg-blue-500 hover:bg-blue-600' : 'bg-gray-100 hover:bg-gray-200'} ${plan.best || plan.popular ? 'text-white' : 'text-[#0b1120]'} rounded-xl font-bold text-lg transition-all text-center`}>
+                    <motion.a 
+                      href={plan.link} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className={`w-full py-3.5 ${plan.best ? 'bg-[#f59e0b] hover:bg-[#d97706]' : plan.popular ? 'bg-blue-500 hover:bg-blue-600' : 'bg-gray-100 hover:bg-gray-200'} ${plan.best || plan.popular ? 'text-white' : 'text-[#0b1120]'} rounded-xl font-bold text-lg transition-all text-center`}
+                      animate={{ scale: [1, 1.03, 1] }}
+                      transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                    >
                       {course.ctaLabel || 'Proceed to Payment'}
-                    </a>
+                    </motion.a>
                   </div>
                 ))}
               </div>
@@ -825,9 +840,14 @@ export default function CourseDetail() {
                       <RazorpayButton buttonId={course.razorpayButtonId} />
                     </div>
                   ) : (
-                    <button onClick={() => window.open(course.paymentLink, '_blank')} className="w-full py-4 bg-[#0b1120] text-white rounded-xl font-black text-lg border-2 border-[#0b1120] hover:bg-gray-800 transition-colors">
+                    <motion.button 
+                      onClick={() => window.open(course.paymentLink, '_blank')} 
+                      className="w-full py-4 bg-[#0b1120] text-white rounded-xl font-black text-lg border-2 border-[#0b1120] hover:bg-gray-800 transition-colors"
+                      animate={{ scale: [1, 1.03, 1] }}
+                      transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                    >
                       {course.ctaLabel || 'Proceed to Payment'}
-                    </button>
+                    </motion.button>
                   )}
                 </div>
               </div>
@@ -889,9 +909,16 @@ export default function CourseDetail() {
             <span className="text-sm font-bold text-gray-400 line-through mb-1">{course.mobileOriginal}</span>
           </div>
         </div>
-        <a href={course.paymentLink} target="_blank" rel="noopener noreferrer" className="px-4 py-3 bg-[#10b981] text-[#0b1120] rounded-xl font-black border-2 border-[#0b1120] flex items-center gap-2 hover:bg-[#059669] hover:text-white transition-colors text-sm sm:text-base">
+        <motion.a 
+          href={course.paymentLink} 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className="px-4 py-3 bg-[#10b981] text-[#0b1120] rounded-xl font-black border-2 border-[#0b1120] flex items-center gap-2 hover:bg-[#059669] hover:text-white transition-colors text-sm sm:text-base"
+          animate={{ scale: [1, 1.05, 1] }}
+          transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+        >
           <span className="hidden sm:inline"><Target className="w-4 h-4" /></span> {course.ctaLabel || 'Enroll Now'}
-        </a>
+        </motion.a>
       </div>
 
     </div>

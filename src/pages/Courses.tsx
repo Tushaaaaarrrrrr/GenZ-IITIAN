@@ -1,4 +1,5 @@
 import { ChevronRight, Search, Building2, Rocket, Target, RefreshCw, Star } from 'lucide-react';
+import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
 
 const quiz2Courses = [
@@ -146,9 +147,16 @@ export default function Courses() {
                     <Link to={`/courses/${course.id}`} className="w-full py-3 bg-white text-[#0b1120] rounded-xl font-bold border-2 border-[#0b1120] hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
                       View Details <ChevronRight className="w-4 h-4" />
                     </Link>
-                    <a href={course.paymentLink} target="_blank" rel="noopener noreferrer" className="w-full py-3 bg-[#0b1120] text-white rounded-xl font-bold border-2 border-[#0b1120] hover:bg-gray-800 transition-colors flex items-center justify-center gap-2">
+                    <motion.a 
+                      href={course.paymentLink} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="w-full py-3 bg-[#0b1120] text-white rounded-xl font-bold border-2 border-[#0b1120] hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+                      animate={{ scale: [1, 1.05, 1] }}
+                      transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                    >
                       {course.cta}
-                    </a>
+                    </motion.a>
                   </div>
                 </div>
               </div>
