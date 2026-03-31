@@ -571,68 +571,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Knowledge Hub Section */}
-      <section className="max-w-7xl mx-auto px-6 pb-32">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-          <div className="max-w-2xl">
-            <div className="inline-block px-4 py-1.5 bg-[#eef2ff] text-[#0b1120] font-bold text-sm rounded-full border-2 border-[#0b1120] w-fit mb-4">
-              Knowledge Hub
-            </div>
-            <h2 className="text-4xl lg:text-5xl font-black text-[#0b1120] mb-4 whitespace-nowrap">
-              Blog and Articles
-            </h2>
-            <p className="text-gray-600 text-lg font-medium">
-              Stay informed with expert-written articles, tips, and insights to support your learning journey.
-            </p>
-          </div>
-          <Link to="/blog" className="text-[#0b1120] font-bold flex items-center gap-2 hover:text-[#10b981] transition-colors whitespace-nowrap">
-            View All Articles <ChevronRight className="w-5 h-5" />
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {[
-            {
-              title: "How to Crack IIT Madras Qualifier Exam in First Attempt",
-              category: "Exam Prep",
-              date: "Oct 12, 2024",
-              image: "https://picsum.photos/seed/blog1/600/400",
-              slug: "how-to-crack-iit-madras-qualifier"
-            },
-            {
-              title: "Top 5 Programming Languages to Learn in 2025",
-              category: "Career",
-              date: "Oct 15, 2024",
-              image: "https://picsum.photos/seed/blog2/600/400",
-              slug: "top-5-programming-languages-2025"
-            },
-            {
-              title: "Balancing Online Degree with a Full-Time Job",
-              category: "Productivity",
-              date: "Oct 18, 2024",
-              image: "https://picsum.photos/seed/blog3/600/400",
-              slug: "balancing-online-degree-full-time-job"
-            }
-          ].map((post, i) => (
-            <Link key={i} to={`/blog/${post.slug}`} className="group cursor-pointer">
-              <div className="relative aspect-[3/2] rounded-3xl overflow-hidden border-[3px] border-[#0b1120] mb-6 shadow-[6px_6px_0px_#0b1120] group-hover:-translate-y-1 group-hover:-translate-x-1 group-hover:shadow-[10px_10px_0px_#0b1120] transition-all">
-                <img src={post.image} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                <div className="absolute top-4 left-4 px-4 py-1.5 bg-white text-[#0b1120] font-bold text-sm rounded-full border-2 border-[#0b1120]">
-                  {post.category}
-                </div>
-              </div>
-              <div className="flex items-center gap-4 text-sm font-bold text-gray-500 mb-3">
-                <span>{post.date}</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
-                <span>5 min read</span>
-              </div>
-              <h3 className="text-2xl font-black text-[#0b1120] leading-tight group-hover:text-[#10b981] transition-colors">
-                {post.title}
-              </h3>
-            </Link>
-          ))}
-        </div>
-      </section>
 
       {/* Newsletter Form Section */}
       <section className="bg-[#10b981] py-24 border-t-[3px] border-[#0b1120] relative overflow-hidden">
