@@ -1,13 +1,11 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
-import { ChevronRight, Mail, Award, CheckCircle2, X as XIcon, Star, PartyPopper } from 'lucide-react';
+import { ChevronRight, Award, CheckCircle2, X as XIcon, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import HeroAnimation from '../components/HeroAnimation';
 
 export default function Home() {
-  const [isNewsletterPopupOpen, setIsNewsletterPopupOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isNewsletterSubmitted, setIsNewsletterSubmitted] = useState(false);
+
 
   return (
     <div className="min-h-screen bg-white text-[#0b1120] font-sans selection:bg-blue-100 overflow-hidden">
@@ -594,143 +592,7 @@ export default function Home() {
       </section>
 
 
-      {/* Newsletter Form Section */}
-      <section className="bg-[#10b981] py-24 border-t-[3px] border-[#0b1120] relative overflow-hidden">
-        {/* Grid Background */}
-        <div
-          className="absolute inset-0 opacity-10"
-          style={{
-            backgroundImage: 'linear-gradient(#0b1120 2px, transparent 2px), linear-gradient(90deg, #0b1120 2px, transparent 2px)',
-            backgroundSize: '40px 40px'
-          }}
-        ></div>
 
-        <div className="max-w-4xl mx-auto px-6 relative z-10">
-          <div className="bg-white border-[3px] border-[#0b1120] rounded-[2.5rem] p-8 lg:p-16 shadow-[16px_16px_0px_#0b1120]">
-            <div className="text-center mb-10">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#eef2ff] border-[3px] border-[#0b1120] mb-6 shadow-[4px_4px_0px_#0b1120]">
-                <Mail className="w-8 h-8 text-[#0b1120]" />
-              </div>
-              <h2 className="text-3xl lg:text-5xl font-black text-[#0b1120] mb-6 leading-tight max-w-[15rem] md:max-w-none mx-auto">
-                Subscribe to <br className="md:hidden" /> Gen-Z IITian <br className="md:hidden" /> Weekly Newsletter
-              </h2>
-              <p className="text-gray-600 text-lg font-bold">
-                Want to receive PYQs, free lectures, graded assignments, subject-wise blueprints, and most important questions?
-              </p>
-            </div>
-
-            <form
-              className="flex flex-col gap-6"
-              onSubmit={async (e) => {
-                e.preventDefault();
-                setIsSubmitting(true);
-                const form = e.target as HTMLFormElement;
-                const formData = new FormData(form);
-                const params = new URLSearchParams(window.location.search);
-
-                const payload = new URLSearchParams();
-                payload.append('form_type', 'Newsletter');
-                payload.append('name', formData.get('entry.1234567890') as string);
-                payload.append('email', formData.get('entry.0987654321') as string);
-                payload.append('phone', formData.get('entry.1122334455') as string);
-                payload.append('utm_source', params.get('utm_source') || 'direct');
-                payload.append('utm_medium', params.get('utm_medium') || 'organic');
-                payload.append('utm_campaign', params.get('utm_campaign') || 'none');
-
-                try {
-                  // Replace YOUR_SCRIPT_URL with your Google Apps Script Web App URL
-                  await fetch('https://script.google.com/macros/s/AKfycbysGFbxo9r41D5kMnKmO90rr9u_mzn5aBuhZG6AFvRZOhDtFJ9dclTHgJJqdcBNS-Ny/exec', {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: payload
-                  });
-                } catch { /* no-cors ignores response */ }
-
-                setIsSubmitting(false);
-                setIsNewsletterSubmitted(true);
-                setIsNewsletterPopupOpen(true);
-                form.reset();
-              }}
-            >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="flex flex-col gap-2">
-                  <label className="font-bold text-[#0b1120]">Full Name</label>
-                  <input
-                    name="entry.1234567890"
-                    type="text"
-                    placeholder="John Doe"
-                    className="w-full px-6 py-4 rounded-xl bg-gray-50 border-[3px] border-[#0b1120] text-[#0b1120] placeholder-gray-400 focus:outline-none focus:bg-white transition-colors font-medium"
-                    required
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <label className="font-bold text-[#0b1120]">Email Address</label>
-                  <input
-                    name="entry.0987654321"
-                    type="email"
-                    placeholder="john@example.com"
-                    className="w-full px-6 py-4 rounded-xl bg-gray-50 border-[3px] border-[#0b1120] text-[#0b1120] placeholder-gray-400 focus:outline-none focus:bg-white transition-colors font-medium"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <label className="font-bold text-[#0b1120]">WhatsApp Number</label>
-                <div className="flex gap-4">
-                  <div className="w-24 px-4 py-4 rounded-xl bg-gray-100 border-[3px] border-[#0b1120] text-[#0b1120] font-bold flex items-center justify-center shrink-0">
-                    +91
-                  </div>
-                  <input
-                    name="entry.1122334455"
-                    type="tel"
-                    placeholder="98765 43210"
-                    className="w-full px-6 py-4 rounded-xl bg-gray-50 border-[3px] border-[#0b1120] text-[#0b1120] placeholder-gray-400 focus:outline-none focus:bg-white transition-colors font-medium"
-                    required
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isSubmitting || isNewsletterSubmitted}
-                className="w-full py-5 bg-[#0b1120] text-white rounded-xl font-black text-xl border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#10b981] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[10px_10px_0px_#10b981] transition-all mt-4 disabled:opacity-70 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? 'Sending...' : isNewsletterSubmitted ? 'Subscribed!' : 'Get Free Resources Now'}
-              </button>
-
-              <p className="text-center text-sm font-bold text-gray-500 mt-2">
-                By submitting you agree to Gen-Z IITian <a href="#" className="text-[#10b981] hover:underline">Terms of Condition</a>
-              </p>
-            </form>
-          </div>
-        </div>
-      </section>
-
-      {/* Newsletter Popup */}
-      {isNewsletterPopupOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white border-[3px] border-[#0b1120] rounded-3xl p-8 max-w-md w-full shadow-[12px_12px_0px_#0b1120] relative">
-            <button
-              onClick={() => setIsNewsletterPopupOpen(false)}
-              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 border-2 border-[#0b1120] transition-colors"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            </button>
-            <div className="flex justify-center mb-6"><PartyPopper className="w-12 h-12 text-[#10b981]" /></div>
-            <h3 className="text-2xl font-black text-[#0b1120] mb-4 text-center">Thanks for Subscribing!</h3>
-            <p className="text-gray-600 font-bold text-center mb-8">
-              We've received your enquiry. We'll keep you updated with the latest exam blueprints and resources.
-            </p>
-            <button
-              onClick={() => setIsNewsletterPopupOpen(false)}
-              className="w-full py-4 bg-[#10b981] text-white rounded-xl font-bold text-lg border-2 border-[#0b1120] hover:bg-[#059669] transition-colors"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
