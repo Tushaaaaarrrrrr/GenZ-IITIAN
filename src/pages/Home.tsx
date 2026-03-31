@@ -1,8 +1,31 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { ChevronRight, Award, CheckCircle2, X as XIcon, Star } from 'lucide-react';
+import { useInView, animate } from 'motion/react';
 import { Link } from 'react-router-dom';
 import HeroAnimation from '../components/HeroAnimation';
+
+
+function AnimatedNumber({ value, decimals = 0, suffix = "" }: { value: number, decimals?: number, suffix?: string }) {
+  const [displayValue, setDisplayValue] = useState("0");
+  const nodeRef = useRef(null);
+  const isInView = useInView(nodeRef, { once: true, margin: "-100px" });
+
+  useEffect(() => {
+    if (isInView) {
+      const controls = animate(0, value, {
+        duration: 2,
+        ease: "easeOut",
+        onUpdate(value) {
+          setDisplayValue(value.toFixed(decimals));
+        }
+      });
+      return () => controls.stop();
+    }
+  }, [value, decimals, isInView]);
+
+  return <span ref={nodeRef}>{displayValue}{suffix}</span>;
+}
 
 export default function Home() {
 
@@ -193,17 +216,23 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
           {/* Stat Card 1 */}
           <div className="bg-[#eef2ff] border-[3px] border-[#0b1120] rounded-3xl p-8 text-center shadow-[8px_8px_0px_#0b1120]">
-            <h3 className="text-5xl font-black text-[#0b1120] mb-2">13K+</h3>
+            <h3 className="text-5xl font-black text-[#0b1120] mb-2">
+              <AnimatedNumber value={13.8} decimals={1} suffix="K+" />
+            </h3>
             <p className="text-[#0b1120] font-bold">YouTube Subscribers</p>
           </div>
           {/* Stat Card 2 */}
           <div className="bg-[#10b981] border-[3px] border-[#0b1120] rounded-3xl p-8 text-center shadow-[8px_8px_0px_#0b1120]">
-            <h3 className="text-5xl font-black text-white mb-2">1000+</h3>
+            <h3 className="text-5xl font-black text-white mb-2">
+              <AnimatedNumber value={623} suffix="+" />
+            </h3>
             <p className="text-[#0b1120] font-bold">Students Learning</p>
           </div>
           {/* Stat Card 3 */}
           <div className="bg-white border-[3px] border-[#0b1120] rounded-3xl p-8 text-center shadow-[8px_8px_0px_#0b1120]">
-            <h3 className="text-5xl font-black text-[#0b1120] mb-2">50+</h3>
+            <h3 className="text-5xl font-black text-[#0b1120] mb-2">
+              <AnimatedNumber value={34} suffix="+" />
+            </h3>
             <p className="text-[#0b1120] font-bold">IIT-Level Courses</p>
           </div>
         </div>
