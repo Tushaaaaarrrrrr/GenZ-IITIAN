@@ -241,9 +241,26 @@ export default function Home() {
                   "Curated",
                   "Gen-Z IITian Strategy"
                 ].map((skill, i) => (
-                  <div key={i} className="bg-white border-[3px] border-[#0b1120] rounded-full px-5 py-2 font-bold text-[#059669] text-sm lg:text-base shadow-[4px_4px_0px_#0b1120]">
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                    whileHover={{ 
+                      scale: 1.05, 
+                      rotate: i % 2 === 0 ? 1 : -1,
+                      boxShadow: "8px 8px 0px #0b1120" 
+                    }}
+                    viewport={{ once: true }}
+                    transition={{ 
+                      delay: i * 0.05,
+                      type: "spring",
+                      stiffness: 260,
+                      damping: 20 
+                    }}
+                    className="bg-white border-[3px] border-[#0b1120] rounded-full px-5 py-2 font-bold text-[#059669] text-sm lg:text-base shadow-[4px_4px_0px_#0b1120] cursor-default"
+                  >
                     {skill}
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             </div>
