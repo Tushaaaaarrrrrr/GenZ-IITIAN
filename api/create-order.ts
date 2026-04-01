@@ -1,31 +1,21 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
-import Razorpay from 'razorpay';
 import { createClient } from '@supabase/supabase-js';
+import Razorpay from 'razorpay';
 
-const razorpay = new Razorpay({
-  key_id: process.env.VITE_RAZORPAY_KEY_ID || '',
-  key_secret: process.env.RAZORPAY_SECRET || '',
-});
-
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-);
-
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   // 1. Validate Environment Variables
   const key_id = process.env.VITE_RAZORPAY_KEY_ID;
   const key_secret = process.env.RAZORPAY_SECRET;
   const supabase_url = process.env.VITE_SUPABASE_URL;
-  const service_role = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const service_role = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+  const razorpay_secret = process.env.RAZORPAY_SECRET;
 
-  if (!key_id || !key_secret || !supabase_url || !service_role) {
+  if (!key_id || !razorpay_secret || !supabase_url || !service_role) {
     return res.status(500).json({ 
         error: 'Server configuration error (missing env vars)',
         details: {
-            razorpay: !!(key_id && key_secret),
+            razorpay: !!(key_id && razorpay_secret),
             supabase: !!(supabase_url && service_role)
         }
     });

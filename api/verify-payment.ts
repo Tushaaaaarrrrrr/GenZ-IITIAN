@@ -1,16 +1,21 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
-import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
+import crypto from 'node:crypto';
+import Razorpay from 'razorpay';
 
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-);
-
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { razorpay_order_id, razorpay_payment_id, razorpay_signature, email, courseIds } = req.body;
+
+  const supabase_url = process.env.VITE_SUPABASE_URL;
+  const service_role = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+  const razorpay_secret = process.env.RAZORPAY_SECRET;
+
+  if (!supabase_url || !service_role || !razorpay_secret) {
+    return res.status(500).json({ error: 'Server configuration missing' });
+  }
+
+  const supabase = createClient(supabase_url, service_role);
 
   const body = razorpay_order_id + "|" + razorpay_payment_id;
   const expectedSignature = crypto.createHmac('sha256', process.env.RAZORPAY_SECRET || '')
