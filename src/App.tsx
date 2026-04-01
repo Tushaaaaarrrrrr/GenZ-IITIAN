@@ -23,6 +23,9 @@ import Cart from './pages/Cart';
 import Profile from './pages/Profile';
 import CourseSelection from './pages/CourseSelection';
 import Manager from './pages/Manager';
+import TermsAndConditions from './pages/TermsAndConditions';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import RefundPolicy from './pages/RefundPolicy';
 import LoginModal from './components/LoginModal';
 
 export default function App() {
@@ -72,6 +75,9 @@ export default function App() {
                 <Route path="/checkout/:id" element={<CourseSelection />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/manager" element={<Manager />} />
+                <Route path="/terms" element={<TermsAndConditions />} />
+                <Route path="/privacy" element={<PrivacyPolicy />} />
+                <Route path="/refund" element={<RefundPolicy />} />
                 {/* pSEO catch-all — must be last */}
                 <Route path="/*" element={<SEOPage />} />
               </Routes>
