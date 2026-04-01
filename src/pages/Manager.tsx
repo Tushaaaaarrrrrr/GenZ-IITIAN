@@ -55,15 +55,20 @@ export default function Manager() {
     setLoading(true);
     let query;
     if (activeTab === 'orders') {
-      query = supabase.from('website_orders').select('*').order('createdAt', { ascending: false });
+      query = supabase.from('website_orders').select('*').order('created_at', { ascending: false });
     } else if (activeTab === 'logs') {
       query = supabase.from('activity_logs').select('*').order('timestamp', { ascending: false });
     } else {
-      query = supabase.from('courses').select('*').order('createdAt', { ascending: false });
+      query = supabase.from('courses').select('*').order('created_at', { ascending: false });
     }
 
-    const { data: res } = await query;
-    setData(res || []);
+    const { data: res, error } = await query;
+    if (error) {
+      console.error(`Manager Fetch Error [${activeTab}]:`, error.message);
+      setData([]);
+    } else {
+      setData(res || []);
+    }
     setLoading(false);
   };
 
@@ -156,6 +161,7 @@ export default function Manager() {
                       <tr>
                         <th className="px-8 py-6">User</th>
                         <th className="px-8 py-6">Courses</th>
+                        <th className="px-8 py-6">Date</th>
                         <th className="px-8 py-6 text-right">Amount</th>
                         <th className="px-8 py-6 text-center">Status</th>
                       </tr>
@@ -172,6 +178,14 @@ export default function Manager() {
                               {order.course_ids?.map((cid: string) => (
                                 <span key={cid} className="px-3 py-1 bg-white border-2 border-[#0b1120] rounded-lg text-[10px] font-black uppercase text-gray-500">{cid}</span>
                               ))}
+                            </div>
+                          </td>
+                          <td className="px-8 py-6">
+                            <div className="text-sm font-bold text-gray-500 whitespace-nowrap">
+                              {order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}
+                            </div>
+                            <div className="text-[10px] text-gray-400 font-mono">
+                              {order.created_at ? new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                             </div>
                           </td>
                           <td className="px-8 py-6 text-right font-black text-xl">₹{order.total_amount}</td>

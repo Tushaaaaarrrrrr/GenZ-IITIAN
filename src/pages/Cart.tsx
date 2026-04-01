@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { Trash2, ShoppingBag, ArrowRight, ShieldCheck, Loader2 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
 const RAZORPAY_SCRIPT_URL = "https://checkout.razorpay.com/v1/checkout.js";
@@ -12,6 +12,7 @@ export default function Cart() {
   const { cart, removeFromCart, total, clearCart } = useCart();
   const { user, profile, openLoginModal } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
+  const navigate = useNavigate();
 
   const loadScript = (src: string) => {
     return new Promise((resolve) => {
@@ -97,9 +98,14 @@ export default function Cart() {
 
           if (verifyRes.ok) {
             clearCart();
-            window.location.href = "/profile?status=success";
+            navigate("/payment-success");
           } else {
-            alert("Payment verification failed. Please contact support.");
+            navigate("/payment-failed");
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            navigate("/payment-failed");
           }
         },
         prefill: {
@@ -112,7 +118,8 @@ export default function Cart() {
       const rzp = new (window as any).Razorpay(options);
       rzp.open();
     } catch (err: any) {
-      alert(err.message || "An error occurred during checkout.");
+      console.error(err);
+      navigate("/payment-failed");
     } finally {
       setIsProcessing(false);
     }

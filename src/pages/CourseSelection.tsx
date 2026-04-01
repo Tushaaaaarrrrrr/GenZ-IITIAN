@@ -181,9 +181,14 @@ export default function CourseSelection() {
           });
 
           if (verifyRes.ok) {
-            window.location.href = "/profile?status=success";
+            navigate("/payment-success");
           } else {
-            alert("Payment verification failed. Please contact support.");
+            navigate("/payment-failed");
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            navigate("/payment-failed");
           }
         },
         prefill: {
@@ -196,7 +201,8 @@ export default function CourseSelection() {
       const rzp = new (window as any).Razorpay(options);
       rzp.open();
     } catch (err: any) {
-      alert(err.message || "An error occurred during checkout.");
+      console.error(err);
+      navigate("/payment-failed");
     } finally {
       setIsProcessing(false);
     }

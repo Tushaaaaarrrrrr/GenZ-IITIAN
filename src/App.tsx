@@ -26,6 +26,8 @@ import Manager from './pages/Manager';
 import TermsAndConditions from './pages/TermsAndConditions';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import RefundPolicy from './pages/RefundPolicy';
+import PaymentSuccess from './pages/PaymentSuccess';
+import PaymentFailed from './pages/PaymentFailed';
 import LoginModal from './components/LoginModal';
 
 export default function App() {
@@ -78,6 +80,8 @@ export default function App() {
                 <Route path="/terms" element={<TermsAndConditions />} />
                 <Route path="/privacy" element={<PrivacyPolicy />} />
                 <Route path="/refund" element={<RefundPolicy />} />
+                <Route path="/payment-success" element={<PaymentSuccess />} />
+                <Route path="/payment-failed" element={<PaymentFailed />} />
                 {/* pSEO catch-all — must be last */}
                 <Route path="/*" element={<SEOPage />} />
               </Routes>
