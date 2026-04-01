@@ -8,7 +8,7 @@ export default function PaymentSuccess() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [countdown, setCountdown] = useState(8);
-  const LMS_URL = "https://teaching-llm.onrender.com/login";
+  const LMS_URL = "https://class.genziitian.in";
 
   useEffect(() => {
     const timer = setInterval(() => {

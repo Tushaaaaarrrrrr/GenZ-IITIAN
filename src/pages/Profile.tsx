@@ -49,12 +49,20 @@ export default function Profile() {
               </div>
             </div>
           </div>
-          <button 
-            onClick={signOut}
-            className="px-8 py-4 bg-red-50 text-red-600 border-2 border-red-200 rounded-2xl font-black hover:bg-red-600 hover:text-white transition-all flex items-center gap-2"
-          >
-            <LogOut className="w-5 h-5" /> Logout
-          </button>
+          <div className="flex flex-col gap-3">
+            <button 
+              onClick={() => window.open('https://class.genziitian.in', '_blank', 'noopener,noreferrer')}
+              className="px-8 py-4 bg-blue-600 text-white border-2 border-[#0b1120] rounded-2xl font-black hover:-translate-y-1 transition-all flex items-center justify-center gap-2 shadow-[4px_4px_0px_#0b1120] hover:shadow-none whitespace-nowrap"
+            >
+              Go to Dashboard
+            </button>
+            <button 
+              onClick={signOut}
+              className="px-8 py-4 bg-red-50 text-red-600 border-2 border-red-200 rounded-2xl font-black hover:bg-red-600 hover:text-white transition-all flex items-center justify-center gap-2 w-full"
+            >
+              <LogOut className="w-5 h-5" /> Logout
+            </button>
+          </div>
         </section>
 
         {/* Order History */}
