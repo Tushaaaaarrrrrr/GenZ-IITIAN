@@ -42,17 +42,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const syncProfile = async (u: User) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .upsert({
-        id: u.id,
-        email: u.email,
-        name: u.user_metadata.full_name || u.email?.split('@')[0],
-      })
-      .select()
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: u.id,
+          email: u.email,
+          name: u.user_metadata.full_name || u.email?.split('@')[0],
+        })
+        .select()
+        .single();
 
-    if (!error) setProfile(data);
+      if (!error) setProfile(data);
+    } catch (err) {
+      console.warn('Silent Profile Sync Failed:', err);
+      // We don't throw here so the user can still browse the site
+    }
   };
 
   const openLoginModal = () => setIsLoginModalOpen(true);

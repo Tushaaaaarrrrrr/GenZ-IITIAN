@@ -4,11 +4,12 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { Trash2, ShoppingBag, ArrowRight, ShieldCheck, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 const RAZORPAY_SCRIPT_URL = "https://checkout.razorpay.com/v1/checkout.js";
 
 export default function Cart() {
-  const { cart, removeFromCart, totalPrice, clearCart } = useCart();
+  const { cart, removeFromCart, total, clearCart } = useCart();
   const { user, profile, openLoginModal } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -28,13 +29,32 @@ export default function Cart() {
       return;
     }
 
+    // Ask for name if missing at checkout
+    let finalName = profile?.name;
+    if (!finalName) {
+      const promptedName = window.prompt("Please enter your full name for the certificate:");
+      if (!promptedName) return;
+      finalName = promptedName;
+      
+      // Sync this name back to profile
+      try {
+        await supabase.from('profiles').upsert({
+          id: user.id,
+          email: user.email,
+          name: finalName
+        });
+      } catch (err) {
+        console.warn('Profile update failed:', err);
+      }
+    }
+
     setIsProcessing(true);
     try {
       const res = await fetch("/api/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          amount: totalPrice,
+          amount: total,
           email: user.email,
           courseIds: cart.map(item => item.id),
         }),
@@ -75,7 +95,7 @@ export default function Cart() {
           }
         },
         prefill: {
-          name: profile?.name || "",
+          name: finalName || "",
           email: user.email,
         },
         theme: { color: "#0b1120" },
@@ -147,7 +167,7 @@ export default function Cart() {
                 <div className="space-y-4 mb-10">
                   <div className="flex justify-between font-bold text-gray-500">
                     <span>Items ({cart.length})</span>
-                    <span>₹{totalPrice}</span>
+                    <span>₹{total}</span>
                   </div>
                   <div className="flex justify-between font-bold text-gray-500">
                     <span>Discount</span>
@@ -156,7 +176,7 @@ export default function Cart() {
                   <div className="h-0.5 bg-gray-100 my-4" />
                   <div className="flex justify-between items-end">
                     <span className="font-black text-[#0b1120]">Total</span>
-                    <span className="text-4xl font-black text-[#0b1120]">₹{totalPrice}</span>
+                    <span className="text-4xl font-black text-[#0b1120]">₹{total}</span>
                   </div>
                 </div>
 
