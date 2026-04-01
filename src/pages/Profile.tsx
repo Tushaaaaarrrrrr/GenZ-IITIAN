@@ -14,13 +14,17 @@ export default function Profile() {
   }, [user]);
 
   const fetchOrders = async () => {
-    const { data } = await supabase
-      .from('website_orders')
-      .select('*')
-      .eq('user_email', user?.email)
-      .order('created_at', { ascending: false });
-    setOrders(data || []);
-    setLoading(false);
+    try {
+      const res = await fetch(`/api/get-orders?email=${encodeURIComponent(user?.email || '')}`);
+      if (!res.ok) throw new Error('Failed to fetch orders');
+      const data = await res.json();
+      setOrders(data || []);
+    } catch (err) {
+      console.error('Order fetch error:', err);
+      setOrders([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (authLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-10 h-10 animate-spin" /></div>;
