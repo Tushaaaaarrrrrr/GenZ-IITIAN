@@ -53,23 +53,20 @@ export default function Manager() {
 
   const fetchData = async () => {
     setLoading(true);
-    let query;
-    if (activeTab === 'orders') {
-      query = supabase.from('website_orders').select('*').order('createdAt', { ascending: false });
-    } else if (activeTab === 'logs') {
-      query = supabase.from('activity_logs').select('*').order('timestamp', { ascending: false });
-    } else {
-      query = supabase.from('courses').select('*').order('createdAt', { ascending: false });
-    }
-
-    const { data: res, error } = await query;
-    if (error) {
-      console.error(`Manager Fetch Error [${activeTab}]:`, error.message);
+    try {
+      const res = await fetch(`/api/manager-fetch?tab=${activeTab}`);
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to fetch manager data');
+      }
+      const result = await res.json();
+      setData(result || []);
+    } catch (err: any) {
+      console.error(`Manager Fetch Error [${activeTab}]:`, err.message);
       setData([]);
-    } else {
-      setData(res || []);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleCourseAction = async (course: any, isDelete = false) => {
@@ -182,10 +179,10 @@ export default function Manager() {
                           </td>
                           <td className="px-8 py-6">
                             <div className="text-sm font-bold text-gray-500 whitespace-nowrap">
-                              {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}
+                              {order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}
                             </div>
                             <div className="text-[10px] text-gray-400 font-mono">
-                              {order.createdAt ? new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                              {order.created_at ? new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                             </div>
                           </td>
                           <td className="px-8 py-6 text-right font-black text-xl">₹{order.total_amount}</td>
@@ -215,7 +212,7 @@ export default function Manager() {
                         </div>
                         <div>
                           <div className="text-2xl font-black text-[#0b1120]">{log.action}</div>
-                          <div className="text-lg font-bold text-gray-500">{log.email} • {new Date(log.timestamp).toLocaleString()}</div>
+                          <div className="text-lg font-bold text-gray-500">{log.email} • {log.created_at ? new Date(log.created_at).toLocaleString() : 'N/A'}</div>
                         </div>
                       </div>
                       <div className="text-sm font-mono bg-gray-100 px-6 py-3 rounded-2xl border-2 border-[#0b1120]">
