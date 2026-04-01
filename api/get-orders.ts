@@ -20,7 +20,7 @@ export default async function handler(req: any, res: any) {
     .from('website_orders')
     .select('*')
     .eq('user_email', email)
-    .order('created_at', { ascending: false });
+    .order('createdAt', { ascending: false });
 
   if (error) {
     console.error('Get orders error:', error.message);

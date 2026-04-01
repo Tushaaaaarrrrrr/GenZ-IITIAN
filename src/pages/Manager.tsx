@@ -179,10 +179,10 @@ export default function Manager() {
                           </td>
                           <td className="px-8 py-6">
                             <div className="text-sm font-bold text-gray-500 whitespace-nowrap">
-                              {order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}
+                              {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}
                             </div>
                             <div className="text-[10px] text-gray-400 font-mono">
-                              {order.created_at ? new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                              {order.createdAt ? new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                             </div>
                           </td>
                           <td className="px-8 py-6 text-right font-black text-xl">₹{order.total_amount}</td>
@@ -212,7 +212,7 @@ export default function Manager() {
                         </div>
                         <div>
                           <div className="text-2xl font-black text-[#0b1120]">{log.action}</div>
-                          <div className="text-lg font-bold text-gray-500">{log.email} • {log.created_at ? new Date(log.created_at).toLocaleString() : 'N/A'}</div>
+                          <div className="text-lg font-bold text-gray-500">{log.email} • {log.createdAt ? new Date(log.createdAt).toLocaleString() : 'N/A'}</div>
                         </div>
                       </div>
                       <div className="text-sm font-mono bg-gray-100 px-6 py-3 rounded-2xl border-2 border-[#0b1120]">
