@@ -55,7 +55,7 @@ export default function Manager() {
     setLoading(true);
     let query;
     if (activeTab === 'orders') {
-      query = supabase.from('website_orders').select('*').order('created_at', { ascending: false });
+      query = supabase.from('website_orders').select('*').order('createdAt', { ascending: false });
     } else if (activeTab === 'logs') {
       query = supabase.from('activity_logs').select('*').order('timestamp', { ascending: false });
     } else {
@@ -182,10 +182,10 @@ export default function Manager() {
                           </td>
                           <td className="px-8 py-6">
                             <div className="text-sm font-bold text-gray-500 whitespace-nowrap">
-                              {order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}
+                              {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}
                             </div>
                             <div className="text-[10px] text-gray-400 font-mono">
-                              {order.created_at ? new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                              {order.createdAt ? new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                             </div>
                           </td>
                           <td className="px-8 py-6 text-right font-black text-xl">₹{order.total_amount}</td>

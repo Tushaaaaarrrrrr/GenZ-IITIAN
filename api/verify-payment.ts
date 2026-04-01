@@ -29,35 +29,48 @@ export default async function handler(req: any, res: any) {
       // 1. Update order status
       await supabase.from('website_orders').update({ status: 'PAID' }).eq('order_id', razorpay_order_id);
 
-      // 2. Fetch userId for activity log
-      const { data: profile } = await supabase.from('profiles').select('id').eq('email', email).single();
+      // 2. Fetch userId and name for enrollment
+      const { data: profile } = await supabase.from('profiles').select('id, name').eq('email', email).single();
 
-      // 3. Automated Enrollment & Activity Logging for each course
-      for (const cid of courseIds) {
-        // Log activity (Existing Schema: userId, email, action, courseId, timestamp)
-        await supabase.from('activity_logs').insert({
-          userId: profile?.id,
-          email,
-          action: 'ENROLLMENT_SUCCESS',
-          courseId: cid,
-          metadata: { order_id: razorpay_order_id, payment_id: razorpay_payment_id }
+      // 3. External LMS Enrollment API (Bulk)
+      try {
+        const payload = {
+          secret: process.env.EXTERNAL_ENROLL_SECRET,
+          email: email,
+          name: profile?.name || "Student",
+          courseIds: courseIds
+        };
+
+        console.log("LMS PAYLOAD:", payload);
+
+        const lmsRes = await fetch("https://teaching-llm.onrender.com/api/external-enroll", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
         });
 
-        // External LMS Enrollment API
-        try {
-          const lmsRes = await fetch(process.env.LMS_API_URL + "/api/purchase-success", {
-            method: "POST",
-            headers: { 
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${process.env.EXTERNAL_ENROLL_SECRET}` 
-            },
-            body: JSON.stringify({ email, courseId: cid })
+        const responseText = await lmsRes.text();
+        console.log("LMS STATUS:", lmsRes.status);
+        console.log("LMS RESPONSE:", responseText);
+
+        if (!lmsRes.ok) throw new Error(`LMS Enrollment Failed: ${responseText}`);
+
+        // 4. Log Success for each course
+        for (const cid of courseIds) {
+          await supabase.from('activity_logs').insert({
+            userId: profile?.id,
+            email,
+            action: 'ENROLLMENT_SUCCESS',
+            courseId: cid,
+            metadata: { order_id: razorpay_order_id, payment_id: razorpay_payment_id }
           });
-          
-          if (!lmsRes.ok) throw new Error("LMS Enrollment Failed");
-        } catch (lmsErr) {
-          console.error(`Failed to enroll ${email} in ${cid}:`, lmsErr);
-          // Log failure
+        }
+      } catch (lmsErr) {
+        console.error(`LMS Enrollment Error for ${email}:`, lmsErr);
+        // Log Failure for each course
+        for (const cid of courseIds) {
           await supabase.from('activity_logs').insert({
             userId: profile?.id,
             email,
