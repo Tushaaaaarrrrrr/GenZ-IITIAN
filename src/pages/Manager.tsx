@@ -206,7 +206,7 @@ export default function Manager() {
                     <div key={log.id} className="bg-white border-[3px] border-[#0b1120] rounded-[2rem] p-8 flex justify-between items-center hover:shadow-[8px_8px_0px_#3b82f6] transition-all">
                       <div className="flex gap-6 items-center">
                         <div className={`p-4 rounded-2xl border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] ${
-                          log.action.includes('SUCCESS') ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+                          log.action?.includes('SUCCESS') ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
                         }`}>
                           <ScrollText className="w-8 h-8" />
                         </div>

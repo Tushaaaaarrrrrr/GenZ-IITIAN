@@ -21,9 +21,9 @@ export default async function handler(req: any, res: any) {
     if (tab === 'orders') {
       query = supabase.from('website_orders').select('*').order('createdAt', { ascending: false });
     } else if (tab === 'logs') {
-      query = supabase.from('activity_logs').select('*').order('createdAt', { ascending: false });
+      query = supabase.from('activity_logs').select('*');
     } else if (tab === 'courses') {
-      query = supabase.from('courses').select('*').order('createdAt', { ascending: false });
+      query = supabase.from('courses').select('*');
     } else {
       return res.status(400).json({ error: 'Invalid tab' });
     }
