@@ -213,7 +213,7 @@ export default function Manager() {
                         <div>
                           <div className="text-2xl font-black text-[#0b1120]">{log.action}</div>
                           <div className="text-lg font-bold text-gray-500">
-                            {log.email} • {log.createdAt || log.created_at ? new Date(log.createdAt || log.created_at).toLocaleString() : 'N/A'}
+                            {log.email} • {log.createdAt || log.created_at || log.inserted_at ? new Date(log.createdAt || log.created_at || log.inserted_at).toLocaleString() : 'N/A'}
                           </div>
                           {log.metadata?.error && (
                             <div className="mt-3 p-3 bg-red-50 border-2 border-red-200 rounded-xl text-red-700 text-xs font-bold flex gap-2 items-start">

@@ -64,6 +64,7 @@ export default async function handler(req: any, res: any) {
           email,
           action: 'ENROLLMENT_SUCCESS',
           courseId: cid,
+          createdAt: new Date().toISOString(),
           metadata: { order_id: razorpay_order_id, payment_id: razorpay_payment_id }
         }));
         await supabase.from('activity_logs').insert(successLogs);
@@ -76,6 +77,7 @@ export default async function handler(req: any, res: any) {
           email,
           action: 'ENROLLMENT_FAILURE',
           courseId: cid,
+          createdAt: new Date().toISOString(),
           metadata: { error: String(lmsErr) }
         }));
         await supabase.from('activity_logs').insert(failureLogs);
