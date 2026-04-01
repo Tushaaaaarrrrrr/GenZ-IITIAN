@@ -22,6 +22,7 @@ export default function CourseSelection() {
   const [loading, setLoading] = useState(true);
   const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("Processing Enrollment...");
   const [step, setStep] = useState<'profile' | 'selection'>('selection');
 
   // Profile Form State
@@ -85,6 +86,7 @@ export default function CourseSelection() {
     if (!profileData.name || !profileData.gender || !profileData.phone) return;
 
     setIsProcessing(true);
+    setLoadingMessage("Saving Profile...");
     try {
       const { error } = await supabase.from('profiles').upsert({
         id: user?.id,
@@ -136,6 +138,7 @@ export default function CourseSelection() {
     }
 
     setIsProcessing(true);
+    setLoadingMessage("Preparing Checkout...");
     const total = calculateTotal();
 
     try {
@@ -168,22 +171,31 @@ export default function CourseSelection() {
         description: `Enrollment in ${selectedCourses.length} Courses`,
         order_id: orderData.id,
         handler: async (response: any) => {
-          const verifyRes = await fetch("/api/verify-payment", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-              email: user?.email,
-              courseIds: selectedCourses,
-            }),
-          });
+          setIsProcessing(true);
+          setLoadingMessage("Processing your payment, please wait...");
+          try {
+            const verifyRes = await fetch("/api/verify-payment", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                email: user?.email,
+                courseIds: selectedCourses,
+              }),
+            });
 
-          if (verifyRes.ok) {
-            navigate("/payment-success");
-          } else {
+            if (verifyRes.ok) {
+              navigate("/payment-success");
+            } else {
+              navigate("/payment-failed");
+            }
+          } catch (err) {
+            console.error("Payment verification error:", err);
             navigate("/payment-failed");
+          } finally {
+            setIsProcessing(false);
           }
         },
         modal: {
@@ -235,10 +247,10 @@ export default function CourseSelection() {
               className="max-w-md w-full bg-white border-[6px] border-[#0b1120] rounded-[3rem] p-10 shadow-[16px_16px_0px_#3b82f6]"
             >
               <Loader2 className="w-16 h-16 text-blue-600 animate-spin mx-auto mb-6" />
-              <h2 className="text-2xl font-black text-[#0b1120] mb-4">Processing Enrollment...</h2>
+              <h2 className="text-2xl font-black text-[#0b1120] mb-4">{loadingMessage}</h2>
               <p className="text-gray-500 font-bold leading-relaxed">
-                Please don't click anything or change the tab. <br />
-                We are processing your order/enrollment.
+                Please do not refresh or change the tab <br />
+                while we confirm your order.
               </p>
             </motion.div>
           </motion.div>

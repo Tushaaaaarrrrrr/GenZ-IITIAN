@@ -12,6 +12,7 @@ export default function Cart() {
   const { cart, removeFromCart, total, clearCart } = useCart();
   const { user, profile, openLoginModal } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("Processing Order...");
   const navigate = useNavigate();
 
   const loadScript = (src: string) => {
@@ -50,6 +51,7 @@ export default function Cart() {
     }
 
     setIsProcessing(true);
+    setLoadingMessage("Preparing Checkout...");
     try {
       const res = await fetch("/api/create-order", {
         method: "POST",
@@ -79,28 +81,37 @@ export default function Cart() {
         description: `Enrollment in ${cart.length} Courses`,
         order_id: orderData.id,
         handler: async (response: any) => {
-          // Verify payment
-          const verifyRes = await fetch("/api/verify-payment", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-              email: user.email,
-              courseIds: cart.flatMap((item) => 
-                item.isBundle && item.bundleCourses && item.bundleCourses.length > 0
-                  ? item.bundleCourses.map(b => b.courseId)
-                  : [item.id]
-              ),
-            }),
-          });
+          setIsProcessing(true);
+          setLoadingMessage("Processing your payment, please wait...");
+          try {
+            // Verify payment
+            const verifyRes = await fetch("/api/verify-payment", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                email: user.email,
+                courseIds: cart.flatMap((item) => 
+                  item.isBundle && item.bundleCourses && item.bundleCourses.length > 0
+                    ? item.bundleCourses.map(b => b.courseId)
+                    : [item.id]
+                ),
+              }),
+            });
 
-          if (verifyRes.ok) {
-            clearCart();
-            navigate("/payment-success");
-          } else {
+            if (verifyRes.ok) {
+              clearCart();
+              navigate("/payment-success");
+            } else {
+              navigate("/payment-failed");
+            }
+          } catch (err) {
+            console.error("Payment verification error:", err);
             navigate("/payment-failed");
+          } finally {
+            setIsProcessing(false);
           }
         },
         modal: {
@@ -141,10 +152,10 @@ export default function Cart() {
               className="max-w-md w-full bg-white border-[6px] border-[#0b1120] rounded-[3rem] p-10 shadow-[16px_16px_0px_#3b82f6]"
             >
               <Loader2 className="w-16 h-16 text-blue-600 animate-spin mx-auto mb-6" />
-              <h2 className="text-2xl font-black text-[#0b1120] mb-4">Processing Order...</h2>
+              <h2 className="text-2xl font-black text-[#0b1120] mb-4">{loadingMessage}</h2>
               <p className="text-gray-500 font-bold leading-relaxed">
-                Please don't click anything or change the tab. <br />
-                We are processing your order/enrollment.
+                Please do not refresh or change the tab <br />
+                while we confirm your order.
               </p>
             </motion.div>
           </motion.div>
