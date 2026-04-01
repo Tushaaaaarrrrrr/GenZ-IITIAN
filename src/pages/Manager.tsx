@@ -368,9 +368,9 @@ export default function Manager() {
                             />
                           </div>
 
-                          <div className="flex items-center gap-6 pt-2">
-                            <div className="flex-grow space-y-2">
-                              <label className="text-xs font-black text-[#10b981] uppercase tracking-widest pl-1">Price</label>
+                          <div className="space-y-6 pt-2">
+                            <div className="space-y-2">
+                              <label className="text-xs font-black text-[#10b981] uppercase tracking-widest pl-1">Price (₹)</label>
                               <div className="relative">
                                 <span className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 font-black text-xl">₹</span>
                                 <input 
@@ -386,9 +386,9 @@ export default function Manager() {
                               <button 
                                 type="button" 
                                 onClick={() => removeBundleCourse(idx)} 
-                                className="mt-6 px-8 py-4 text-red-500 bg-red-50 border-2 border-red-200 rounded-2xl font-black hover:bg-red-500 hover:text-white hover:border-red-500 transition-all flex items-center gap-3"
+                                className="w-full py-4 text-red-500 bg-red-50 border-2 border-red-100 rounded-2xl font-black hover:bg-red-500 hover:text-white hover:border-red-500 transition-all flex items-center justify-center gap-3"
                               >
-                                <Trash2 className="w-5 h-5" /> Remove
+                                <Trash2 className="w-5 h-5" /> Remove Course
                               </button>
                             )}
                           </div>
