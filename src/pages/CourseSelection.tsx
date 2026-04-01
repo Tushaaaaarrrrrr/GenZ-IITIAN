@@ -149,6 +149,11 @@ export default function CourseSelection() {
         }),
       });
 
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Server Error (${res.status}): ${text.slice(0, 100)}`);
+      }
+
       const orderData = await res.json();
       if (!orderData.id) throw new Error("Order creation failed");
 
