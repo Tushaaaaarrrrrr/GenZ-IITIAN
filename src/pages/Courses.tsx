@@ -20,7 +20,7 @@ export default function Courses() {
       .from('courses')
       .select('*')
       .order('isPinned', { ascending: false })
-      .order('created_at', { ascending: false });
+      .order('createdAt', { ascending: false });
     setCourses(data || []);
     setLoading(false);
   };

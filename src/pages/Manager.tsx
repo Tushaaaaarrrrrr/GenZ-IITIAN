@@ -59,7 +59,7 @@ export default function Manager() {
     } else if (activeTab === 'logs') {
       query = supabase.from('activity_logs').select('*').order('timestamp', { ascending: false });
     } else {
-      query = supabase.from('courses').select('*').order('created_at', { ascending: false });
+      query = supabase.from('courses').select('*').order('createdAt', { ascending: false });
     }
 
     const { data: res, error } = await query;
