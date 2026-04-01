@@ -7,7 +7,7 @@ import { CheckCircle2, ArrowRight, GraduationCap } from 'lucide-react';
 export default function PaymentSuccess() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [countdown, setCountdown] = useState(5);
+  const [countdown, setCountdown] = useState(8);
   const LMS_URL = "https://teaching-llm.onrender.com/login";
 
   useEffect(() => {
@@ -63,7 +63,7 @@ export default function PaymentSuccess() {
 
         <div className="flex flex-col items-center gap-6">
           <button
-            onClick={() => window.location.href = LMS_URL}
+            onClick={() => window.open(LMS_URL, '_blank', 'noopener,noreferrer')}
             className="w-full py-6 bg-[#10b981] text-[#0b1120] rounded-3xl font-black text-2xl border-[4px] border-[#0b1120] shadow-[8px_8px_0px_#0b1120] hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center gap-4 group"
           >
             Go to Dashboard <ArrowRight className="w-8 h-8 group-hover:translate-x-2 transition-transform" />

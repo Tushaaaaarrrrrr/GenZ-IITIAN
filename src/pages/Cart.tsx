@@ -127,6 +127,30 @@ export default function Cart() {
 
   return (
     <div className="min-h-screen bg-gray-50 pt-32 pb-20 px-6">
+      <AnimatePresence>
+        {isProcessing && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-[#0b1120]/80 backdrop-blur-md flex items-center justify-center p-6 text-center"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="max-w-md w-full bg-white border-[6px] border-[#0b1120] rounded-[3rem] p-10 shadow-[16px_16px_0px_#3b82f6]"
+            >
+              <Loader2 className="w-16 h-16 text-blue-600 animate-spin mx-auto mb-6" />
+              <h2 className="text-2xl font-black text-[#0b1120] mb-4">Processing Order...</h2>
+              <p className="text-gray-500 font-bold leading-relaxed">
+                Please don't click anything or change the tab. <br />
+                We are processing your order/enrollment.
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="max-w-5xl mx-auto">
         <div className="flex items-end justify-between border-b-[6px] border-[#0b1120] pb-8 mb-12">
           <div>
