@@ -1,5 +1,5 @@
 import { Share, ChevronRight, ChevronDown, X, ClipboardList, FileText } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 const levels = ["Qualifier", "Foundation", "Diploma"] as const;
@@ -145,6 +145,8 @@ export default function Resources() {
   const handleGateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setGateSubmitting(true);
+    const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL || '';
+    const supabaseAnonKey = (import.meta as any).env.VITE_SUPABASE_ANON_KEY || '';
     const form = e.target as HTMLFormElement;
     const formData = new FormData(form);
     const params = new URLSearchParams(window.location.search);
@@ -169,7 +171,7 @@ export default function Resources() {
     } catch { /* no-cors ignores response */ }
 
     localStorage.setItem('resource_access', JSON.stringify({
-      name: formData.get('entry.name'),
+      razorpay_key: (import.meta as any).env.VITE_RAZORPAY_KEY_ID,
       email: formData.get('entry.email'),
       phone: formData.get('entry.phone'),
       level: formData.get('entry.level'),

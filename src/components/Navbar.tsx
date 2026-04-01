@@ -1,16 +1,26 @@
 import { Link } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
-import { Package, PenLine, BookOpen } from 'lucide-react';
+import { Package, PenLine, BookOpen, ShoppingCart, User as UserIcon, LogOut, LayoutDashboard } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [resourcesOpen, setResourcesOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  
+  const { user, profile, signIn, signOut, isManager, openLoginModal } = useAuth();
+  const { cart } = useCart();
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setResourcesOpen(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -53,18 +63,49 @@ export default function Navbar() {
           <Link to="/contact" className="hover:text-black transition-colors">Contact</Link>
         </div>
         <div className="flex items-center gap-3">
-          <a
-            href="https://youtube.com/@Gen-ZIITian/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hidden md:flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm bg-red-500 text-white border-2 border-[#0b1120] hover:bg-red-600 transition-colors"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33 2.78 2.78 0 0 0 1.94 2c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.33 29 29 0 0 0-.46-5.33z"></path><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" fill="white"></polygon></svg>
-            YouTube
-          </a>
-          <a href="https://live.iitpathshala.in/dashboard" target="_blank" rel="noopener noreferrer" className="px-6 py-2.5 rounded-xl font-bold text-sm bg-[#0b1120] text-white hover:bg-gray-800 transition-colors">
-            Log in
-          </a>
+          <Link to="/cart" className="relative p-2 text-gray-700 hover:text-black transition-colors mr-2">
+            <ShoppingCart className="w-6 h-6" />
+            {cart.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-white">
+                {cart.length}
+              </span>
+            )}
+          </Link>
+          
+          {user ? (
+            <div className="relative" ref={userMenuRef}>
+              <button 
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="flex items-center gap-2 px-4 py-2 bg-[#0b1120] text-white rounded-xl font-bold hover:bg-gray-800 transition-colors"
+              >
+                <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-[10px] font-black uppercase">
+                  {profile?.name?.charAt(0) || user.email?.charAt(0).toUpperCase()}
+                </div>
+                <span className="hidden sm:inline">{profile?.name?.split(' ')[0]}</span>
+              </button>
+              {userMenuOpen && (
+                <div className="absolute top-full right-0 mt-3 w-56 bg-white border-[3px] border-[#0b1120] rounded-xl shadow-[6px_6px_0px_#0b1120] py-2 z-50">
+                  <Link to="/profile" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">
+                    <UserIcon className="w-4 h-4" /> My Profile
+                  </Link>
+                  {isManager && (
+                    <Link to="/manager" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 transition-colors">
+                      <LayoutDashboard className="w-4 h-4" /> Manager Dashboard
+                    </Link>
+                  )}
+                  <div className="h-0.5 bg-gray-100 my-2 mx-4" />
+                  <button onClick={signOut} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-gray-500 hover:bg-gray-50 transition-colors">
+                    <LogOut className="w-4 h-4" /> Log out
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button onClick={openLoginModal} className="px-6 py-2.5 rounded-xl font-bold text-sm bg-[#0b1120] text-white hover:bg-gray-800 transition-colors">
+              Log in
+            </button>
+          )}
+
           {/* Mobile menu button */}
           <button
             className="md:hidden w-10 h-10 flex items-center justify-center rounded-lg border-2 border-[#0b1120]"
@@ -77,16 +118,16 @@ export default function Navbar() {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="md:hidden bg-white border-t border-gray-200 px-6 py-4 flex flex-col gap-3 text-sm font-semibold text-gray-700">
-          <Link to="/" onClick={() => setMobileOpen(false)} className="py-2 hover:text-black">Home</Link>
-          <Link to="/courses" onClick={() => setMobileOpen(false)} className="py-2 hover:text-black">Courses</Link>
-          <Link to="/resources" onClick={() => setMobileOpen(false)} className="py-2 hover:text-black">Resources</Link>
-          <Link to="/blog" onClick={() => setMobileOpen(false)} className="py-2 hover:text-black">Blog</Link>
-          <Link to="/docs" onClick={() => setMobileOpen(false)} className="py-2 hover:text-black">Documentation</Link>
-          <Link to="/about" onClick={() => setMobileOpen(false)} className="py-2 hover:text-black">About Us</Link>
-          <Link to="/contact" onClick={() => setMobileOpen(false)} className="py-2 hover:text-black">Contact</Link>
-          <a href="https://youtube.com/@Gen-ZIITian/" target="_blank" rel="noopener noreferrer" className="py-2 text-red-500 font-bold flex items-center gap-2">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33 2.78 2.78 0 0 0 1.94 2c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.33 29 29 0 0 0-.46-5.33z"></path><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon></svg>
+        <div className="md:hidden bg-white border-t border-gray-200 px-6 py-6 flex flex-col gap-4 text-base font-bold text-gray-700">
+          <Link to="/" onClick={() => setMobileOpen(false)} className="py-2">Home</Link>
+          <Link to="/courses" onClick={() => setMobileOpen(false)} className="py-2">Courses</Link>
+          <Link to="/resources" onClick={() => setMobileOpen(false)} className="py-2">Resources</Link>
+          <Link to="/blog" onClick={() => setMobileOpen(false)} className="py-2">Blog</Link>
+          <Link to="/about" onClick={() => setMobileOpen(false)} className="py-2">About Us</Link>
+          <Link to="/contact" onClick={() => setMobileOpen(false)} className="py-2">Contact</Link>
+          <div className="h-0.5 bg-gray-100 my-2" />
+          <a href="https://youtube.com/@Gen-ZIITian/" target="_blank" rel="noopener noreferrer" className="py-2 text-red-500 flex items-center gap-2">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33 2.78 2.78 0 0 0 1.94 2c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.33 29 29 0 0 0-.46-5.33z"></path><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon></svg>
             YouTube
           </a>
         </div>
