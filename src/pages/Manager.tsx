@@ -249,14 +249,7 @@ export default function Manager() {
                       </select>
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Target Audience (Who is this for?)</label>
-                    <input type="text" defaultValue={editingCourse?.who} id="c-who" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Topics learned (comma separated)</label>
-                    <textarea defaultValue={editingCourse?.learn?.join(', ')} id="c-learn" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none h-32" />
-                  </div>
+
                 </div>
 
                 <div className="space-y-6">
@@ -270,10 +263,7 @@ export default function Manager() {
                     <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Brief Description</label>
                     <textarea defaultValue={editingCourse?.description} id="c-desc" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none h-24" />
                   </div>
-                  <div>
-                    <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Learning Outcomes (Long text)</label>
-                    <textarea defaultValue={editingCourse?.outcomes} id="c-outcomes" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none h-32" />
-                  </div>
+
                 </div>
               </div>
 
@@ -284,11 +274,14 @@ export default function Manager() {
                     const name = (document.getElementById('c-name') as HTMLInputElement).value;
                     const price = (document.getElementById('c-price') as HTMLInputElement).value;
                     const isPinned = (document.getElementById('c-pinned') as HTMLSelectElement).value === 'true';
-                    const who = (document.getElementById('c-who') as HTMLInputElement).value;
-                    const learn = (document.getElementById('c-learn') as HTMLTextAreaElement).value;
                     const description = (document.getElementById('c-desc') as HTMLTextAreaElement).value;
-                    const outcomes = (document.getElementById('c-outcomes') as HTMLTextAreaElement).value;
-                    handleCourseAction({ id, name, price, isPinned, who, learn, description, outcomes });
+                    
+                    handleCourseAction({ 
+                      id, name, price, isPinned, description,
+                      who: editingCourse?.who || '',
+                      learn: editingCourse?.learn || [],
+                      outcomes: editingCourse?.outcomes || ''
+                    });
                   }}
                   className="flex-grow py-5 bg-[#10b981] text-[#0b1120] rounded-2xl font-black text-xl border-[4px] border-[#0b1120] flex items-center justify-center gap-3 shadow-[8px_8px_0px_#0b1120] active:translate-y-1 active:shadow-none"
                 >
