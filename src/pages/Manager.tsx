@@ -212,7 +212,15 @@ export default function Manager() {
                         </div>
                         <div>
                           <div className="text-2xl font-black text-[#0b1120]">{log.action}</div>
-                          <div className="text-lg font-bold text-gray-500">{log.email} • {log.createdAt ? new Date(log.createdAt).toLocaleString() : 'N/A'}</div>
+                          <div className="text-lg font-bold text-gray-500">
+                            {log.email} • {log.createdAt || log.created_at ? new Date(log.createdAt || log.created_at).toLocaleString() : 'N/A'}
+                          </div>
+                          {log.metadata?.error && (
+                            <div className="mt-3 p-3 bg-red-50 border-2 border-red-200 rounded-xl text-red-700 text-xs font-bold flex gap-2 items-start">
+                              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                              <span className="break-all">Error: {log.metadata.error}</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div className="text-sm font-mono bg-gray-100 px-6 py-3 rounded-2xl border-2 border-[#0b1120]">
