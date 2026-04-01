@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Search, GraduationCap, Award, ShoppingCart, Loader2 } from 'lucide-react';
+import { Search, GraduationCap, Award, ShoppingCart, Loader2, Star, Calendar, Layers } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useCart } from '../context/CartContext';
 
@@ -88,67 +88,91 @@ export default function Courses() {
                   course.isPinned ? 'ring-4 ring-blue-500/20' : ''
                 }`}
               >
-                <div className="relative aspect-video overflow-hidden border-b-[3px] border-[#0b1120]">
+                <div className="relative aspect-video overflow-hidden border-b-[3px] border-[#0b1120] bg-gray-100">
                   <img
                     src={course.image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=800'}
                     alt={course.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
-                  <div className="absolute top-4 right-4 bg-white px-4 py-2 rounded-full border-2 border-[#0b1120] font-black text-sm shadow-[4px_4px_0px_#0b1120]">
-                    ₹{course.price}
-                  </div>
-                  {course.isPinned && (
+                  {course.isBundle && (
+                    <div className="absolute top-4 right-4 bg-purple-600 text-white px-3 py-1.5 rounded-xl border-2 border-[#0b1120] font-black justify-center items-center gap-2 flex text-xs uppercase shadow-[4px_4px_0px_#0b1120]">
+                      <Layers className="w-4 h-4" /> Bundle
+                    </div>
+                  )}
+                  {course.isPinned && !course.isBundle && (
                     <div className="absolute top-4 left-4 bg-blue-600 text-white px-3 py-1 rounded-full border-2 border-[#0b1120] text-xs font-black shadow-[4px_4px_0px_#0b1120]">
                       FEATURED
                     </div>
                   )}
                 </div>
 
-                <div className="p-8 flex-grow flex flex-col">
-                  {course.learn?.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {course.learn.slice(0, 3).map((tag: string) => (
-                        <span key={tag} className="px-3 py-1 bg-gray-100 border-2 border-[#0b1120] rounded-lg text-xs font-black uppercase text-gray-600">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
+                <div className="p-8 flex-grow flex flex-col relative bg-white">
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {course.subject && (
+                      <span className="px-3 py-1 bg-yellow-100 border-2 border-[#0b1120] rounded-lg text-xs font-black uppercase text-yellow-800">
+                        {course.subject}
+                      </span>
+                    )}
+                    {course.learn?.length > 0 && course.learn.slice(0, 2).map((tag: string) => (
+                      <span key={tag} className="px-3 py-1 bg-gray-100 border-2 border-[#0b1120] rounded-lg text-xs font-black uppercase text-gray-600">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
 
                   <h3 className="text-2xl font-black text-[#0b1120] mb-3 leading-tight group-hover:text-blue-600 transition-colors">
                     {course.name}
                   </h3>
+                  
                   <p className="text-gray-500 font-bold text-sm mb-6 line-clamp-2">
                     {course.description}
                   </p>
 
-                  <div className="grid grid-cols-2 gap-4 mb-8">
-                    <div className="flex items-center gap-2 text-xs font-black text-gray-400 bg-gray-50 p-2 rounded-xl border-2 border-transparent hover:border-gray-100 transition-colors">
-                      <GraduationCap className="w-4 h-4 text-blue-500" /> IITian Instructor
-                    </div>
-                    <div className="flex items-center gap-2 text-xs font-black text-gray-400 bg-gray-50 p-2 rounded-xl">
-                      <Award className="w-4 h-4 text-green-500" /> Certificate
-                    </div>
-                  </div>
+                  <div className="mt-auto">
+                    {course.startDate && (
+                      <div className="flex items-center gap-2 mb-4 text-sm font-bold text-purple-600 bg-purple-50 p-3 rounded-xl border-2 border-purple-100">
+                        <Calendar className="w-4 h-4" /> 
+                        Batch Starts: {new Date(course.startDate).toLocaleDateString()}
+                      </div>
+                    )}
 
-                  <div className="flex gap-3 mt-auto">
-                    <Link
-                      to={`/courses/${course.id}`}
-                      className="flex-1 py-4 bg-white text-[#0b1120] rounded-2xl font-black text-center border-2 border-[#0b1120] hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
-                    >
-                      View Details
-                    </Link>
-                    <button
-                      onClick={() => buyNow({
-                        id: course.id,
-                        name: course.name,
-                        price: course.price,
-                        lms_course_id: String(course.id)
-                      })}
-                      className="flex-1 py-4 bg-[#10b981] text-white rounded-2xl border-2 border-[#0b1120] hover:bg-[#059669] transition-all font-black shadow-[4px_4px_0px_#0b1120] active:translate-y-1 active:translate-x-1 active:shadow-none"
-                    >
-                      Buy Now
-                    </button>
+                    <div className="flex items-end justify-between mb-8">
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-1">
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <Star key={s} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                          ))}
+                        </div>
+                        <span className="text-xs font-bold text-gray-400">4.8 (2k+ reviews)</span>
+                      </div>
+
+                      <div className="text-right">
+                        <div className="text-xs font-black uppercase tracking-widest text-gray-400 mb-1">Starts From</div>
+                        <div className="flex flex-col items-end">
+                          {course.discountPrice && (
+                            <span className="text-sm font-black text-gray-400 line-through">₹{course.price}</span>
+                          )}
+                          <span className="text-3xl font-black text-[#10b981]">
+                            ₹{course.discountPrice || course.price}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <Link
+                        to={`/courses/${course.id}`}
+                        className="flex-1 py-4 bg-white text-[#0b1120] rounded-2xl font-black text-center border-[3px] border-[#0b1120] hover:bg-gray-50 hover:-translate-y-1 transition-all"
+                      >
+                        Explore Details
+                      </Link>
+                      <button
+                        onClick={() => buyNow(course)}
+                        className="flex-1 py-4 bg-[#10b981] text-[#0b1120] rounded-2xl border-[3px] border-[#0b1120] hover:bg-[#0ea5e9] transition-all font-black shadow-[4px_4px_0px_#0b1120] active:translate-y-1 active:translate-x-1 active:shadow-none"
+                      >
+                        Enroll Now
+                      </button>
+                    </div>
                   </div>
                 </div>
               </motion.div>

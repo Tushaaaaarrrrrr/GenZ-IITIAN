@@ -110,13 +110,13 @@ export default function Home() {
 
                   <div className="flex flex-col sm:flex-row gap-4 mt-auto">
                     <Link to="/courses/reattempt" className="flex-1 py-3 bg-white text-[#0b1120] rounded-xl font-bold text-lg border-2 border-[#0b1120] hover:bg-gray-50 transition-colors text-center flex items-center justify-center">
-                      View Details
+                      Explore Details
                     </Link>
                     <button 
                       onClick={() => buyNow({ id: 'reattempt', name: 'Qualifier Reattempt Batch', price: 699, lms_course_id: 'reattempt' })}
                       className="flex-1 py-3 bg-[#10b981] text-white rounded-xl font-bold text-lg border-2 border-[#0b1120] hover:bg-[#059669] transition-colors shadow-[4px_4px_0px_#0b1120] active:translate-y-1 active:translate-x-1 active:shadow-none"
                     >
-                      Buy Now
+                      Enroll Now
                     </button>
                   </div>
                 </div>
@@ -149,13 +149,13 @@ export default function Home() {
 
                   <div className="flex gap-3 mt-auto">
                     <Link to="/courses/foundation-1" className="flex-1 py-2 bg-white text-[#0b1120] rounded-lg font-bold text-sm border-2 border-[#0b1120] hover:bg-gray-50 transition-colors text-center flex items-center justify-center">
-                      View Details
+                      Explore Details
                     </Link>
                     <button 
                       onClick={() => buyNow({ id: 'foundation-1', name: 'Term 1 Quiz 2', price: 799, lms_course_id: 'foundation-1' })}
                       className="flex-1 py-2 bg-[#10b981] text-white rounded-lg font-bold text-sm border-2 border-[#0b1120] hover:bg-[#059669] transition-colors shadow-[2px_2px_0px_#0b1120] active:translate-y-0.5 active:translate-x-0.5 active:shadow-none"
                     >
-                      Buy Now
+                      Enroll Now
                     </button>
                   </div>
                 </div>
@@ -184,13 +184,13 @@ export default function Home() {
 
                   <div className="flex gap-3 mt-auto">
                     <Link to="/courses/foundation-2" className="flex-1 py-2 bg-white text-[#0b1120] rounded-lg font-bold text-sm border-2 border-[#0b1120] hover:bg-gray-50 transition-colors text-center flex items-center justify-center">
-                      View Details
+                      Explore Details
                     </Link>
                     <button 
                       onClick={() => buyNow({ id: 'foundation-2', name: 'Term 2 Quiz 2', price: 799, lms_course_id: 'foundation-2' })}
                       className="flex-1 py-2 bg-[#10b981] text-white rounded-lg font-bold text-sm border-2 border-[#0b1120] hover:bg-[#059669] transition-colors shadow-[2px_2px_0px_#0b1120] active:translate-y-0.5 active:translate-x-0.5 active:shadow-none"
                     >
-                      Buy Now
+                      Enroll Now
                     </button>
                   </div>
                 </div>

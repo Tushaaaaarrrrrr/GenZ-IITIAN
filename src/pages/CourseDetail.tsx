@@ -12,7 +12,9 @@ import {
   Star,
   ArrowLeft,
   ShoppingCart,
-  Loader2
+  Loader2,
+  Calendar,
+  Layers
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useCart } from '../context/CartContext';
@@ -77,11 +79,16 @@ export default function CourseDetail() {
             </Link>
             
             <div className="flex gap-3 mb-6">
-              {course.learn?.slice(0, 3).map((tag: string) => (
-                <span key={tag} className="px-4 py-1 bg-white/10 border border-white/20 rounded-full text-xs font-black uppercase tracking-wider">
-                  {tag}
+              {course.subject && (
+                <span className="px-4 py-1 bg-yellow-400/20 text-yellow-400 border border-yellow-400/50 rounded-full text-xs font-black uppercase tracking-wider">
+                  {course.subject}
                 </span>
-              ))}
+              )}
+              {course.isBundle && (
+                <span className="px-4 py-1 bg-purple-500/20 text-purple-400 border border-purple-500/50 rounded-full text-xs font-black uppercase tracking-wider flex items-center gap-2">
+                  <Layers className="w-3 h-3" /> Bundle
+                </span>
+              )}
             </div>
 
             <h1 className="text-4xl md:text-6xl font-black mb-6 leading-tight">
@@ -109,21 +116,29 @@ export default function CourseDetail() {
             className="relative lg:block"
           >
             <div className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] p-10 shadow-[15px_15px_0px_#10b981] text-[#0b1120]">
-              <div className="text-5xl font-black mb-4">₹{course.price}</div>
+              <div className="text-xs font-black uppercase tracking-widest text-gray-400 mb-2">Enrollment Summary</div>
+              <div className="flex items-baseline gap-4 mb-8">
+                <div className="text-5xl font-black">₹{course.discountPrice || course.price}</div>
+                {course.discountPrice && (
+                  <div className="text-2xl font-black text-gray-400 line-through">₹{course.price}</div>
+                )}
+              </div>
               
               <div className="space-y-4 mb-10">
                 <div className="font-black text-gray-400 text-sm uppercase tracking-widest border-b-2 border-gray-100 pb-2">Includes</div>
-                {[
-                  'Full lifetime access',
-                  'Certificate of completion',
-                  'Doubt clearing sessions',
-                  'Industry-led projects'
-                ].map((item) => (
-                  <div key={item} className="flex items-center gap-3 font-bold text-gray-600">
-                    <CheckCircle2 className="w-5 h-5 text-green-500" />
-                    {item}
+                <div className="flex items-center gap-3 font-bold text-gray-600">
+                  <CheckCircle2 className="w-5 h-5 text-green-500" /> Full lifetime access
+                </div>
+                {course.startDate && (
+                  <div className="flex items-center gap-3 font-bold text-gray-600">
+                    <Calendar className="w-5 h-5 text-blue-500" /> Starts: {new Date(course.startDate).toLocaleDateString()}
                   </div>
-                ))}
+                )}
+                {course.endDate && (
+                  <div className="flex items-center gap-3 font-bold text-gray-600">
+                    <Calendar className="w-5 h-5 text-red-500" /> Ends: {new Date(course.endDate).toLocaleDateString()}
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-col gap-4">
@@ -148,6 +163,26 @@ export default function CourseDetail() {
       {/* Course Content */}
       <section className="py-24 px-6 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-20">
         <div className="lg:col-span-2 space-y-16">
+          {/* Bundle Content */}
+          {course.isBundle && course.bundleCourses?.length > 0 && (
+            <div>
+              <h2 className="text-3xl font-black text-[#0b1120] mb-8 flex items-center gap-4">
+                <div className="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center text-purple-600 border-2 border-[#0b1120]">
+                  <Layers className="w-6 h-6" />
+                </div>
+                Included in this Bundle
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {course.bundleCourses.map((bc: any, idx: number) => (
+                  <div key={idx} className="p-5 bg-white border-2 border-[#0b1120] rounded-2xl font-bold flex items-start gap-4 shadow-[4px_4px_0px_#0b1120]">
+                    <CheckCircle2 className="w-6 h-6 text-purple-600 mt-0.5 shrink-0" />
+                    {bc.courseName}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Who is this for? */}
           {course.who && (
             <div>

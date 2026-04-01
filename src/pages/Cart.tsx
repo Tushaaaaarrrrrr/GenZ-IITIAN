@@ -56,7 +56,11 @@ export default function Cart() {
         body: JSON.stringify({
           amount: total,
           email: user.email,
-          courseIds: cart.map(item => item.id),
+          courseIds: cart.flatMap((item) => 
+            item.isBundle && item.bundleCourses && item.bundleCourses.length > 0
+              ? item.bundleCourses.map(b => b.courseId)
+              : [item.id]
+          ),
         }),
       });
 
@@ -83,7 +87,11 @@ export default function Cart() {
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
               email: user.email,
-              courseIds: cart.map(item => item.id),
+              courseIds: cart.flatMap((item) => 
+                item.isBundle && item.bundleCourses && item.bundleCourses.length > 0
+                  ? item.bundleCourses.map(b => b.courseId)
+                  : [item.id]
+              ),
             }),
           });
 
