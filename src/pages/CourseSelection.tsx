@@ -27,7 +27,8 @@ export default function CourseSelection() {
   // Profile Form State
   const [profileData, setProfileData] = useState({
     name: '',
-    gender: ''
+    gender: '',
+    phone: ''
   });
 
   useEffect(() => {
@@ -44,9 +45,10 @@ export default function CourseSelection() {
     if (profile) {
       setProfileData({
           name: profile.name || '',
-          gender: profile.gender || ''
+          gender: profile.gender || '',
+          phone: profile.phone || ''
       });
-      if (!profile.name || !profile.gender) {
+      if (!profile.name || !profile.gender || !profile.phone) {
         setStep('profile');
       } else {
         setStep('selection');
@@ -80,7 +82,7 @@ export default function CourseSelection() {
 
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profileData.name || !profileData.gender) return;
+    if (!profileData.name || !profileData.gender || !profileData.phone) return;
 
     setIsProcessing(true);
     try {
@@ -88,7 +90,8 @@ export default function CourseSelection() {
         id: user?.id,
         email: user?.email,
         name: profileData.name,
-        gender: profileData.gender
+        gender: profileData.gender,
+        phone: profileData.phone
       });
       if (error) throw error;
       setStep('selection');
@@ -214,14 +217,21 @@ export default function CourseSelection() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
-            <div className={`flex flex-col items-center gap-3 p-6 rounded-3xl border-[3px] transition-all ${step === 'profile' ? 'bg-blue-600 border-[#0b1120] text-white shadow-[8px_8px_0px_#0b1120]' : 'bg-green-50 border-green-200 text-green-700'}`}>
+            <button 
+              onClick={() => setStep('profile')}
+              className={`flex flex-col items-center gap-3 p-6 rounded-3xl border-[3px] transition-all w-full text-left ${step === 'profile' ? 'bg-blue-600 border-[#0b1120] text-white shadow-[8px_8px_0px_#0b1120]' : 'bg-green-50 border-green-200 text-green-700 cursor-pointer hover:bg-green-100'}`}
+            >
                 <User className="w-8 h-8" />
                 <span className="font-black text-xs uppercase">Step 1: Profile</span>
-            </div>
-            <div className={`flex flex-col items-center gap-3 p-6 rounded-3xl border-[3px] transition-all ${step === 'selection' ? 'bg-blue-600 border-[#0b1120] text-white shadow-[8px_8px_0px_#0b1120]' : 'bg-white border-gray-200 text-gray-400'}`}>
+            </button>
+            <button 
+              disabled={!profileData.name || !profileData.gender || !profileData.phone}
+              onClick={() => setStep('selection')}
+              className={`flex flex-col items-center gap-3 p-6 rounded-3xl border-[3px] transition-all w-full text-left ${step === 'selection' ? 'bg-blue-600 border-[#0b1120] text-white shadow-[8px_8px_0px_#0b1120]' : 'bg-white border-gray-200 text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed'}`}
+            >
                 <CreditCard className="w-8 h-8" />
                 <span className="font-black text-xs uppercase">Step 2: Payment</span>
-            </div>
+            </button>
             <div className="md:col-span-2 bg-white/50 border-2 border-dashed border-gray-300 rounded-3xl p-6 flex items-center justify-center border-[#0b1120]/10">
                 <div className="flex items-center gap-3 text-gray-400 font-bold">
                     <ShieldCheck className="w-6 h-6" />
@@ -257,6 +267,18 @@ export default function CourseSelection() {
                     value={profileData.name}
                     onChange={e => setProfileData({...profileData, name: e.target.value})}
                     placeholder="Enter your name"
+                    className="w-full px-8 py-5 bg-gray-50 border-[4px] border-[#0b1120] rounded-2xl font-black text-xl focus:bg-white focus:shadow-[8px_8px_0px_#3b82f6] transition-all outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-black text-[#0b1120] uppercase mb-4">Phone Number (WhatsApp Preferred)</label>
+                  <input 
+                    required
+                    type="tel"
+                    value={profileData.phone}
+                    onChange={e => setProfileData({...profileData, phone: e.target.value})}
+                    placeholder="e.g. +91 9876543210"
                     className="w-full px-8 py-5 bg-gray-50 border-[4px] border-[#0b1120] rounded-2xl font-black text-xl focus:bg-white focus:shadow-[8px_8px_0px_#3b82f6] transition-all outline-none"
                   />
                 </div>
@@ -328,7 +350,6 @@ export default function CourseSelection() {
                                         </div>
                                         <div>
                                             <div className="font-black text-lg text-[#0b1120]">{bc.courseName}</div>
-                                            <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Course ID: {bc.courseId}</div>
                                         </div>
                                     </div>
                                     <span className="font-black text-xl text-[#0b1120]">₹{bc.price}</span>
