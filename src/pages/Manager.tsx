@@ -349,23 +349,26 @@ export default function Manager() {
                       {bundleCourses.map((bc, idx) => (
                         <div key={idx} className="space-y-2 bg-white p-4 rounded-xl border-2 border-[#0b1120] shadow-[4px_4px_0px_#0b1120]">
                           <div className="flex gap-4 items-end">
-                            <div className="w-1/3 space-y-1">
-                              <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest pl-1">Link ID (LMS)</label>
-                              <input value={bc.courseId} onChange={e => updateBundleCourse(idx, 'courseId', e.target.value)} placeholder="e.g. py-101" className="w-full px-4 py-2 bg-blue-50/50 border-2 border-blue-200 rounded-xl text-sm font-bold outline-none focus:border-blue-400 focus:bg-white transition-all" />
+                            <div className="w-1/4 space-y-1">
+                              <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest pl-1">Course ID</label>
+                              <input value={bc.courseId} onChange={e => updateBundleCourse(idx, 'courseId', e.target.value)} placeholder="e.g. py-101" className="w-full px-4 py-2 bg-blue-50/50 border-2 border-blue-200 rounded-xl text-sm font-bold outline-none focus:border-blue-400 focus:bg-white transition-all uppercase" />
                             </div>
                             <div className="flex-grow space-y-1">
-                              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Display Name</label>
-                              <input value={bc.courseName} onChange={e => updateBundleCourse(idx, 'courseName', e.target.value)} placeholder="Course Title" className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-[#0b1120] transition-all" />
+                              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Course Title</label>
+                              <input value={bc.courseName} onChange={e => updateBundleCourse(idx, 'courseName', e.target.value)} placeholder="Introduction to..." className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-[#0b1120] transition-all" />
+                            </div>
+                            <div className="w-24 space-y-1">
+                              <label className="text-[10px] font-black text-[#10b981] uppercase tracking-widest pl-1">Price</label>
+                              <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">₹</span>
+                                <input type="number" value={bc.price} onChange={e => updateBundleCourse(idx, 'price', parseInt(e.target.value) || 0)} className="w-full pl-6 pr-3 py-2 border-2 border-gray-200 rounded-xl text-sm font-black outline-none focus:border-[#10b981] transition-all" />
+                              </div>
                             </div>
                             {isBundle && (
                               <button type="button" onClick={() => removeBundleCourse(idx)} className="p-2.5 text-red-500 hover:bg-red-50 rounded-xl border-2 border-transparent hover:border-red-100 transition-all mb-0.5">
                                 <X className="w-4 h-4" />
                               </button>
                             )}
-                          </div>
-                          <div className="flex items-center gap-2">
-                             <div className="text-[10px] font-black uppercase text-gray-400">Price (₹)</div>
-                             <input type="number" value={bc.price} onChange={e => updateBundleCourse(idx, 'price', parseInt(e.target.value) || 0)} className="w-24 px-3 py-1 border-2 border-gray-100 rounded-lg text-xs font-bold" />
                           </div>
                         </div>
                       ))}
