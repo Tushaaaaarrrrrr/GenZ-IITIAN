@@ -63,15 +63,6 @@ export default function Navbar() {
           <Link to="/contact" className="hover:text-black transition-colors">Contact</Link>
         </div>
         <div className="flex items-center gap-3">
-          <Link to="/cart" className="relative p-2 text-gray-700 hover:text-black transition-colors mr-2">
-            <ShoppingCart className="w-6 h-6" />
-            {cart.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-white">
-                {cart.length}
-              </span>
-            )}
-          </Link>
-          
           {user ? (
             <div className="relative" ref={userMenuRef}>
               <button 

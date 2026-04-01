@@ -142,18 +142,12 @@ export default function CourseDetail() {
               </div>
 
               <div className="flex flex-col gap-4">
-                <button 
-                  onClick={handleEnrollNow}
-                  className="w-full py-5 bg-[#0b1120] text-white rounded-2xl font-black text-xl border-2 border-[#0b1120] hover:bg-white hover:text-[#0b1120] transition-all flex items-center justify-center gap-2 shadow-[6px_6px_0px_#0b1120] active:translate-y-1 active:shadow-none"
+                <Link 
+                  to={`/checkout/${course.id}`}
+                  className="w-full py-5 bg-[#0b1120] text-white rounded-2xl font-black text-xl border-2 border-[#0b1120] hover:bg-white hover:text-[#0b1120] transition-all flex items-center justify-center gap-2 shadow-[6px_6px_0px_#0b1120] active:translate-y-1 active:shadow-none text-center"
                 >
                   Enroll Now <ChevronRight className="w-6 h-6" />
-                </button>
-                <button 
-                  onClick={() => addToCart(course)}
-                  className="w-full py-4 bg-white text-[#0b1120] rounded-2xl font-black border-2 border-[#0b1120] hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
-                >
-                  <ShoppingCart className="w-5 h-5" /> Add to Cart
-                </button>
+                </Link>
               </div>
             </div>
           </motion.div>

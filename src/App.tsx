@@ -21,6 +21,7 @@ import DocsDetail from './pages/DocsDetail';
 import GradedAssignment from './pages/GradedAssignment';
 import Cart from './pages/Cart';
 import Profile from './pages/Profile';
+import CourseSelection from './pages/CourseSelection';
 import Manager from './pages/Manager';
 import LoginModal from './components/LoginModal';
 
@@ -68,6 +69,7 @@ export default function App() {
                 <Route path="/newsletter" element={<Newsletter />} />
                 <Route path="/knowledge" element={<SEODirectory />} />
                 <Route path="/cart" element={<Cart />} />
+                <Route path="/checkout/:id" element={<CourseSelection />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/manager" element={<Manager />} />
                 {/* pSEO catch-all — must be last */}

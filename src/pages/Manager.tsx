@@ -16,7 +16,7 @@ export default function Manager() {
   const [editingCourse, setEditingCourse] = useState<any>(null);
   const [showAddCourse, setShowAddCourse] = useState(false);
   const [isBundle, setIsBundle] = useState(false);
-  const [bundleCourses, setBundleCourses] = useState<{courseId: string, courseName: string}[]>([]);
+  const [bundleCourses, setBundleCourses] = useState<{courseId: string, courseName: string, price: number}[]>([]);
 
   useEffect(() => {
     if (editingCourse) {
@@ -24,18 +24,18 @@ export default function Manager() {
       setBundleCourses(editingCourse.bundleCourses || []);
     } else {
       setIsBundle(false);
-      setBundleCourses([]);
+      setBundleCourses([{ courseId: '', courseName: '', price: 0 }]);
     }
   }, [editingCourse, showAddCourse]);
 
   const addBundleCourse = () => {
     if (bundleCourses.length >= 6) return;
-    setBundleCourses([...bundleCourses, { courseId: '', courseName: '' }]);
+    setBundleCourses([...bundleCourses, { courseId: '', courseName: '', price: 0 }]);
   };
 
-  const updateBundleCourse = (index: number, key: 'courseId' | 'courseName', value: string) => {
+  const updateBundleCourse = (index: number, key: 'courseId' | 'courseName' | 'price', value: string | number) => {
     const updated = [...bundleCourses];
-    updated[index][key] = value;
+    (updated[index] as any)[key] = value;
     setBundleCourses(updated);
   };
 
@@ -76,16 +76,16 @@ export default function Manager() {
       const cleanedCourse = {
         id: course.id || course.name.toLowerCase().replace(/ /g, '-'),
         name: course.name,
-        description: course.description,
+        description: course.subtitle, // subtitle maps to description in DB for now
         price: parseInt(course.price as string),
         isPinned: course.isPinned || false,
-        learn: typeof course.learn === 'string' ? course.learn.split(',').map((s: string) => s.trim()) : course.learn,
-        who: course.who,
-        outcomes: course.outcomes,
+        learn: [],
+        who: '',
+        outcomes: '',
         discountPrice: course.discountPrice ? parseInt(course.discountPrice) : null,
         isBundle: course.isBundle || false,
         bundleCourses: course.bundleCourses || [],
-        subject: course.subject || null,
+        subject: course.category || null,
         startDate: course.startDate || null,
         endDate: course.endDate || null,
       };
@@ -220,7 +220,13 @@ export default function Manager() {
                         <img src={course.image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=800'} className="w-full h-full object-cover" />
                       </div>
                       <h3 className="text-2xl font-black text-[#0b1120] mb-2">{course.name}</h3>
-                      <div className="text-3xl font-black text-[#10b981] mb-6">₹{course.price}</div>
+                      <div className="text-3xl font-black text-[#10b981] mb-6">
+                        {course.discountPrice ? (
+                          <><span className="text-sm text-gray-400 line-through mr-2">₹{course.price}</span>₹{course.discountPrice}</>
+                        ) : (
+                          `₹${course.price}`
+                        )}
+                      </div>
                       
                       <div className="space-y-2 mb-8">
                         <div className="text-xs font-black uppercase tracking-widest text-gray-400">Database ID (Text)</div>
@@ -269,28 +275,32 @@ export default function Manager() {
                     <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Course Name</label>
                     <input type="text" defaultValue={editingCourse?.name} id="c-name" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none" />
                   </div>
+                  <div>
+                    <label className="block text-sm font-black text-[#0b1120] uppercase mb-1">Subtitle / Brief Description</label>
+                    <textarea defaultValue={editingCourse?.description} id="c-subtitle" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none h-32" />
+                  </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Price (₹)</label>
+                      <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Display Price / Starts From (₹)</label>
                       <input type="number" defaultValue={editingCourse?.price} id="c-price" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none" />
                     </div>
                     <div>
-                      <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Discount Price (₹)</label>
+                      <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Discount Display Price (₹)</label>
                       <input type="number" defaultValue={editingCourse?.discountPrice} id="c-discount" placeholder="Optional" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none" />
                     </div>
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div>
+                      <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Category</label>
+                      <input type="text" defaultValue={editingCourse?.subject} id="c-category" placeholder="e.g. Data Science" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none" />
+                    </div>
+                    <div>
                       <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Pinned?</label>
                       <select id="c-pinned" defaultValue={editingCourse?.isPinned ? 'true' : 'false'} className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-black focus:ring-[6px] ring-blue-100 outline-none bg-white">
                         <option value="false">Regular</option>
                         <option value="true">Pinned</option>
                       </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Subject / Category</label>
-                      <input type="text" defaultValue={editingCourse?.subject} id="c-subject" placeholder="e.g. Data Science" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none" />
                     </div>
                   </div>
 
@@ -304,37 +314,6 @@ export default function Manager() {
                       <input type="datetime-local" defaultValue={editingCourse?.endDate ? new Date(editingCourse.endDate).toISOString().slice(0, 16) : ''} id="c-end" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none bg-white" />
                     </div>
                   </div>
-
-                  <div className="p-6 bg-blue-50/50 border-[3px] border-[#0b1120] rounded-2xl space-y-4">
-                    <div className="flex items-center justify-between">
-                      <label className="block text-sm font-black text-[#0b1120] uppercase">Is this a Bundle?</label>
-                      <button type="button" onClick={() => setIsBundle(!isBundle)} className={`w-14 h-8 rounded-full border-2 border-[#0b1120] flex items-center p-1 transition-colors ${isBundle ? 'bg-[#10b981]' : 'bg-gray-300'}`}>
-                        <div className={`w-5 h-5 bg-white rounded-full border-2 border-[#0b1120] transition-transform ${isBundle ? 'translate-x-6' : ''}`} />
-                      </button>
-                    </div>
-
-                    {isBundle && (
-                      <div className="pt-4 border-t-2 border-[#0b1120]/10 space-y-4">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Included Courses ({bundleCourses.length}/6)</span>
-                          {bundleCourses.length < 6 && (
-                            <button type="button" onClick={addBundleCourse} className="text-xs font-black bg-[#0b1120] text-white px-3 py-1 rounded-lg hover:bg-gray-800">
-                              + ADD COURSE
-                            </button>
-                          )}
-                        </div>
-                        {bundleCourses.map((bc, idx) => (
-                          <div key={idx} className="flex gap-2 items-center bg-white p-2 rounded-xl border-2 border-gray-200">
-                            <input value={bc.courseId} onChange={e => updateBundleCourse(idx, 'courseId', e.target.value)} placeholder="Internal ID" className="w-1/3 px-3 py-2 border-2 border-gray-200 rounded-lg text-sm font-bold bg-transparent" />
-                            <input value={bc.courseName} onChange={e => updateBundleCourse(idx, 'courseName', e.target.value)} placeholder="Display Name" className="flex-grow px-3 py-2 border-2 border-gray-200 rounded-lg text-sm font-bold bg-transparent" />
-                            <button type="button" onClick={() => removeBundleCourse(idx)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
                 </div>
 
                 <div className="space-y-6">
@@ -344,11 +323,48 @@ export default function Manager() {
                       <input type="text" placeholder="python-basics" id="c-id" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none bg-blue-50" />
                     </div>
                   )}
-                  <div>
-                    <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Brief Description</label>
-                    <textarea defaultValue={editingCourse?.description} id="c-desc" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none h-24" />
-                  </div>
 
+                  <div className="p-6 bg-blue-50/50 border-[3px] border-[#0b1120] rounded-2xl space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex flex-col">
+                        <label className="block text-sm font-black text-[#0b1120] uppercase">Enable Bundle System</label>
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-tighter">Toggle to add multiple sub-courses</span>
+                      </div>
+                      <button type="button" onClick={() => setIsBundle(!isBundle)} className={`w-14 h-8 rounded-full border-2 border-[#0b1120] flex items-center p-1 transition-colors ${isBundle ? 'bg-[#10b981]' : 'bg-gray-300'}`}>
+                        <div className={`w-5 h-5 bg-white rounded-full border-2 border-[#0b1120] transition-transform ${isBundle ? 'translate-x-6' : ''}`} />
+                      </button>
+                    </div>
+
+                    <div className="pt-4 border-t-2 border-[#0b1120]/10 space-y-4">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+                          {isBundle ? `Included Courses (${bundleCourses.length}/6)` : 'Main Enrollment ID'}
+                        </span>
+                        {isBundle && bundleCourses.length < 6 && (
+                          <button type="button" onClick={addBundleCourse} className="text-xs font-black bg-[#0b1120] text-white px-3 py-1 rounded-lg hover:bg-gray-800">
+                            + ADD COURSE
+                          </button>
+                        )}
+                      </div>
+                      {bundleCourses.map((bc, idx) => (
+                        <div key={idx} className="space-y-2 bg-white p-4 rounded-xl border-2 border-[#0b1120] shadow-[4px_4px_0px_#0b1120]">
+                          <div className="flex gap-2 items-center">
+                            <input value={bc.courseId} onChange={e => updateBundleCourse(idx, 'courseId', e.target.value)} placeholder="Internal LMS ID" className="w-1/3 px-3 py-2 border-2 border-gray-200 rounded-lg text-sm font-bold bg-transparent" />
+                            <input value={bc.courseName} onChange={e => updateBundleCourse(idx, 'courseName', e.target.value)} placeholder="Display Name" className="flex-grow px-3 py-2 border-2 border-gray-200 rounded-lg text-sm font-bold bg-transparent" />
+                            {isBundle && (
+                              <button type="button" onClick={() => removeBundleCourse(idx)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
+                                <X className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                             <div className="text-[10px] font-black uppercase text-gray-400">Price (₹)</div>
+                             <input type="number" value={bc.price} onChange={e => updateBundleCourse(idx, 'price', parseInt(e.target.value) || 0)} className="w-24 px-3 py-1 border-2 border-gray-100 rounded-lg text-xs font-bold" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -357,16 +373,16 @@ export default function Manager() {
                   onClick={() => {
                     const id = (document.getElementById('c-id') as HTMLInputElement)?.value || editingCourse?.id;
                     const name = (document.getElementById('c-name') as HTMLInputElement).value;
+                    const subtitle = (document.getElementById('c-subtitle') as HTMLTextAreaElement).value;
                     const price = (document.getElementById('c-price') as HTMLInputElement).value;
                     const discountPrice = (document.getElementById('c-discount') as HTMLInputElement).value;
                     const isPinned = (document.getElementById('c-pinned') as HTMLSelectElement).value === 'true';
-                    const subject = (document.getElementById('c-subject') as HTMLInputElement).value;
+                    const category = (document.getElementById('c-category') as HTMLInputElement).value;
                     const startDate = (document.getElementById('c-start') as HTMLInputElement).value;
                     const endDate = (document.getElementById('c-end') as HTMLInputElement).value;
-                    const description = (document.getElementById('c-desc') as HTMLTextAreaElement).value;
-                    
-                    if (isBundle && bundleCourses.length === 0) {
-                      alert('A bundle must contain at least 1 course!');
+
+                    if (bundleCourses.length === 0 || bundleCourses.some(bc => !bc.courseId || !bc.courseName)) {
+                      alert('Please fill course ID and name for at least one entry!');
                       return;
                     }
                     if (discountPrice && parseInt(discountPrice) >= parseInt(price)) {
@@ -375,16 +391,13 @@ export default function Manager() {
                     }
 
                     handleCourseAction({ 
-                      id, name, price, isPinned, description,
+                      id, name, price, isPinned, subtitle,
+                      category,
                       discountPrice: discountPrice || null,
                       isBundle,
-                      bundleCourses: isBundle ? bundleCourses : [],
-                      subject: subject || null,
+                      bundleCourses,
                       startDate: startDate ? new Date(startDate).toISOString() : null,
                       endDate: endDate ? new Date(endDate).toISOString() : null,
-                      who: editingCourse?.who || '',
-                      learn: editingCourse?.learn || [],
-                      outcomes: editingCourse?.outcomes || ''
                     });
                   }}
                   className="flex-grow py-5 bg-[#10b981] text-[#0b1120] rounded-2xl font-black text-xl border-[4px] border-[#0b1120] flex items-center justify-center gap-3 shadow-[8px_8px_0px_#0b1120] active:translate-y-1 active:shadow-none"
