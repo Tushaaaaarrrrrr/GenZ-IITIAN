@@ -348,11 +348,17 @@ export default function Manager() {
                       </div>
                       {bundleCourses.map((bc, idx) => (
                         <div key={idx} className="space-y-2 bg-white p-4 rounded-xl border-2 border-[#0b1120] shadow-[4px_4px_0px_#0b1120]">
-                          <div className="flex gap-2 items-center">
-                            <input value={bc.courseId} onChange={e => updateBundleCourse(idx, 'courseId', e.target.value)} placeholder="Internal LMS ID" className="w-1/3 px-3 py-2 border-2 border-gray-200 rounded-lg text-sm font-bold bg-transparent" />
-                            <input value={bc.courseName} onChange={e => updateBundleCourse(idx, 'courseName', e.target.value)} placeholder="Display Name" className="flex-grow px-3 py-2 border-2 border-gray-200 rounded-lg text-sm font-bold bg-transparent" />
+                          <div className="flex gap-4 items-end">
+                            <div className="w-1/3 space-y-1">
+                              <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest pl-1">Link ID (LMS)</label>
+                              <input value={bc.courseId} onChange={e => updateBundleCourse(idx, 'courseId', e.target.value)} placeholder="e.g. py-101" className="w-full px-4 py-2 bg-blue-50/50 border-2 border-blue-200 rounded-xl text-sm font-bold outline-none focus:border-blue-400 focus:bg-white transition-all" />
+                            </div>
+                            <div className="flex-grow space-y-1">
+                              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Display Name</label>
+                              <input value={bc.courseName} onChange={e => updateBundleCourse(idx, 'courseName', e.target.value)} placeholder="Course Title" className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-[#0b1120] transition-all" />
+                            </div>
                             {isBundle && (
-                              <button type="button" onClick={() => removeBundleCourse(idx)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
+                              <button type="button" onClick={() => removeBundleCourse(idx)} className="p-2.5 text-red-500 hover:bg-red-50 rounded-xl border-2 border-transparent hover:border-red-100 transition-all mb-0.5">
                                 <X className="w-4 h-4" />
                               </button>
                             )}
