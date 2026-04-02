@@ -80,22 +80,22 @@ export default function ResourceDetail() {
         <div className="min-h-screen bg-white font-sans selection:bg-blue-100">
             {/* Header */}
             <div className="bg-[#0b1120] text-white">
-                <div className="max-w-7xl mx-auto px-6 py-10">
+                <div className="max-w-7xl mx-auto px-6 py-6">
                     <Link
                         to="/resources"
-                        className="inline-flex items-center gap-1.5 text-sm font-bold text-gray-400 hover:text-white transition-colors mb-6"
+                        className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-400 hover:text-white transition-colors mb-4"
                     >
-                        <ChevronLeft className="w-4 h-4" /> Back to Resources
+                        <ChevronLeft className="w-3.5 h-3.5" /> Back to Resources
                     </Link>
-
-                    <div className="flex items-center gap-3 mb-2">
-                        <span className="px-3 py-1 bg-[#10b981] text-white text-xs font-black rounded-full uppercase tracking-wider">
+                    
+                    <div className="flex items-center gap-2 mb-1.5">
+                        <span className="px-2.5 py-0.5 bg-[#10b981] text-white text-[10px] font-black rounded-full uppercase tracking-wider">
                             {decodedLevel}
                         </span>
                     </div>
 
-                    <h1 className="text-3xl md:text-5xl font-black mb-3">{decodedSubject}</h1>
-                    <p className="text-gray-400 font-medium">
+                    <h1 className="text-2xl md:text-4xl font-black mb-1">{decodedSubject}</h1>
+                    <p className="text-xs text-gray-400 font-medium">
                         {resources.length} resource{resources.length !== 1 ? 's' : ''} available
                     </p>
                 </div>
@@ -109,17 +109,17 @@ export default function ResourceDetail() {
                             <button
                                 key={tab.key}
                                 onClick={() => setActiveTab(tab.key)}
-                                className={`flex items-center gap-2 py-4 px-5 text-sm font-black whitespace-nowrap border-b-[3px] transition-all ${activeTab === tab.key
+                                className={`flex items-center gap-2 py-3 px-4 text-xs font-black whitespace-nowrap border-b-[3px] transition-all ${activeTab === tab.key
                                     ? `border-[${tab.color}] text-[#0b1120]`
                                     : 'border-transparent text-gray-400 hover:text-[#0b1120]'
                                     }`}
                                 style={activeTab === tab.key ? { borderColor: tab.color } : {}}
                             >
-                                <tab.icon className="w-4 h-4" />
+                                <tab.icon className="w-3.5 h-3.5" />
                                 {tab.label}
                                 {tab.count > 0 && (
                                     <span
-                                        className="text-xs px-2 py-0.5 rounded-full font-black"
+                                        className="text-[10px] px-1.5 py-0.5 rounded-full font-black"
                                         style={{
                                             background: activeTab === tab.key ? tab.color + '20' : '#f1f5f9',
                                             color: activeTab === tab.key ? tab.color : '#94a3b8',
@@ -135,7 +135,7 @@ export default function ResourceDetail() {
             </div>
 
             {/* Content */}
-            <div className="max-w-7xl mx-auto px-6 py-10">
+            <div className="max-w-7xl mx-auto px-6 py-6">
 
                 {currentTabResources.length === 0 ? (
                     <div className="text-center py-20">
@@ -167,23 +167,23 @@ export default function ResourceDetail() {
                                             href={resource.url}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="group flex items-start gap-4 p-5 bg-white border-[3px] border-[#0b1120] rounded-2xl hover:-translate-y-1 hover:-translate-x-1 shadow-[4px_4px_0px_#0b1120] hover:shadow-[8px_8px_0px_#0b1120] transition-all"
+                                            className="group flex items-start gap-4 p-4 bg-white border-[3px] border-[#0b1120] rounded-xl hover:-translate-y-1 hover:-translate-x-1 shadow-[3px_3px_0px_#0b1120] hover:shadow-[6px_6px_0px_#0b1120] transition-all"
                                         >
                                             <div
                                                 className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
                                                 style={{ background: currentTabConfig.color + '15' }}
                                             >
-                                                <ClipboardList className="w-5 h-5" style={{ color: currentTabConfig.color }} />
+                                                <ClipboardList className="w-4 h-4" style={{ color: currentTabConfig.color }} />
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <h3 className="font-black text-[#0b1120] mb-1 group-hover:text-[#10b981] transition-colors">
+                                                <h3 className="font-black text-[#0b1120] mb-0.5 group-hover:text-[#10b981] transition-colors text-sm">
                                                     {resource.title}
                                                 </h3>
                                                 {resource.description && (
-                                                    <p className="text-sm text-gray-500 font-medium">{resource.description}</p>
+                                                    <p className="text-xs text-gray-500 font-medium">{resource.description}</p>
                                                 )}
                                             </div>
-                                            <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-[#10b981] transition-colors shrink-0 mt-1" />
+                                            <ExternalLink className="w-3.5 h-3.5 text-gray-400 group-hover:text-[#10b981] transition-colors shrink-0 mt-1" />
                                         </a>
                                     ))}
                                 </div>
@@ -192,29 +192,29 @@ export default function ResourceDetail() {
                     </div>
                 ) : (
                     /* Notes / Videos / Tools - flat list */
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {currentTabResources.map((resource) => (
                             <a
                                 key={resource.id}
                                 href={resource.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="group flex flex-col p-6 bg-white border-[3px] border-[#0b1120] rounded-2xl hover:-translate-y-1 hover:-translate-x-1 shadow-[4px_4px_0px_#0b1120] hover:shadow-[8px_8px_0px_#0b1120] transition-all"
+                                className="group flex flex-col p-4 bg-white border-[3px] border-[#0b1120] rounded-xl hover:-translate-y-1 hover:-translate-x-1 shadow-[3px_3px_0px_#0b1120] hover:shadow-[6px_6px_0px_#0b1120] transition-all"
                             >
                                 <div
-                                    className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
+                                    className="w-10 h-10 rounded-xl flex items-center justify-center mb-3"
                                     style={{ background: currentTabConfig.color + '15' }}
                                 >
-                                    <currentTabConfig.icon className="w-6 h-6" style={{ color: currentTabConfig.color }} />
+                                    <currentTabConfig.icon className="w-5 h-5" style={{ color: currentTabConfig.color }} />
                                 </div>
-                                <h3 className="font-black text-[#0b1120] text-lg mb-2 group-hover:text-[#10b981] transition-colors">
+                                <h3 className="font-black text-[#0b1120] text-base mb-1.5 group-hover:text-[#10b981] transition-colors">
                                     {resource.title}
                                 </h3>
                                 {resource.description && (
-                                    <p className="text-sm text-gray-500 font-medium mb-4 flex-1">{resource.description}</p>
+                                    <p className="text-xs text-gray-500 font-medium mb-3 flex-1">{resource.description}</p>
                                 )}
-                                <div className="flex items-center gap-2 text-sm text-gray-500 font-bold mt-auto">
-                                    Open Resource <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                <div className="flex items-center gap-1.5 text-xs text-gray-500 font-bold mt-auto">
+                                    Open Resource <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                                 </div>
                             </a>
                         ))}

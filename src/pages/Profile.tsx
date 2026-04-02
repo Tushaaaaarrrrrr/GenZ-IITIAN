@@ -31,16 +31,16 @@ export default function Profile() {
   if (!user) return <div className="min-h-screen flex items-center justify-center font-black">PLEASE LOG IN TO VIEW PROFILE</div>;
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-32 pb-20 px-6">
+    <div className="min-h-screen bg-gray-50 pt-24 pb-12 px-6">
       <div className="max-w-4xl mx-auto space-y-12">
         {/* Profile Card */}
-        <section className="bg-white border-[4px] border-[#0b1120] rounded-[3rem] p-10 lg:p-14 shadow-[12px_12px_0px_#3b82f6] flex flex-col md:flex-row gap-10 items-center">
-          <div className="w-32 h-32 bg-blue-100 border-[4px] border-[#0b1120] rounded-[2rem] flex items-center justify-center shrink-0 shadow-[6px_6px_0px_#0b1120]">
-            <User className="w-16 h-16 text-blue-600" />
+        <section className="bg-white border-[4px] border-[#0b1120] rounded-[2rem] p-8 lg:p-10 shadow-[8px_8px_0px_#3b82f6] flex flex-col md:flex-row gap-8 items-center">
+          <div className="w-24 h-24 bg-blue-100 border-[4px] border-[#0b1120] rounded-2xl flex items-center justify-center shrink-0 shadow-[4px_4px_0px_#0b1120]">
+            <User className="w-12 h-12 text-blue-600" />
           </div>
-          <div className="flex-grow text-center md:text-left space-y-4">
-            <h1 className="text-4xl lg:text-5xl font-black text-[#0b1120]">{profile?.name || 'Student'}</h1>
-            <div className="flex flex-wrap justify-center md:justify-start gap-6">
+          <div className="flex-grow text-center md:text-left space-y-3">
+            <h1 className="text-3xl lg:text-4xl font-black text-[#0b1120]">{profile?.name || 'Student'}</h1>
+            <div className="flex flex-wrap justify-center md:justify-start gap-4">
               <div className="flex items-center gap-2 font-bold text-gray-500">
                 <Mail className="w-5 h-5 text-blue-500" /> {user.email}
               </div>
@@ -49,20 +49,20 @@ export default function Profile() {
               </div>
             </div>
           </div>
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2">
             <button 
               onClick={signOut}
-              className="px-8 py-4 bg-red-50 text-red-600 border-2 border-red-200 rounded-2xl font-black hover:bg-red-600 hover:text-white transition-all flex items-center justify-center gap-2 w-full"
+              className="px-6 py-3 bg-red-50 text-red-600 border-2 border-red-200 rounded-xl font-black hover:bg-red-600 hover:text-white transition-all flex items-center justify-center gap-2 w-full text-sm"
             >
-              <LogOut className="w-5 h-5" /> Logout
+              <LogOut className="w-4 h-4" /> Logout
             </button>
           </div>
         </section>
 
         {/* Order History */}
-        <section className="space-y-8">
-          <h2 className="text-3xl font-black text-[#0b1120] flex items-center gap-4">
-            <ShoppingBag className="w-8 h-8 text-blue-600" /> Order History
+        <section className="space-y-6">
+          <h2 className="text-2xl font-black text-[#0b1120] flex items-center gap-3">
+            <ShoppingBag className="w-6 h-6 text-blue-600" /> Order History
           </h2>
 
           {loading ? (
@@ -78,7 +78,7 @@ export default function Profile() {
                   key={order.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-white border-[3px] border-[#0b1120] rounded-[2rem] p-8 hover:shadow-[10px_10px_0px_#10b981] transition-all flex justify-between items-center"
+                  className="bg-white border-[3px] border-[#0b1120] rounded-[2rem] p-6 hover:shadow-[6px_6px_0px_#10b981] transition-all flex justify-between items-center"
                 >
                   <div className="space-y-3">
                     <div className="flex items-center gap-3">
@@ -98,8 +98,8 @@ export default function Profile() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-3xl font-black text-[#0b1120]">₹{order.total_amount}</div>
-                    <div className="text-xs font-black text-gray-400 mt-1 uppercase tracking-widest">Transaction ID: {order.order_id}</div>
+                    <div className="text-2xl font-black text-[#0b1120]">₹{order.total_amount}</div>
+                    <div className="text-[10px] font-black text-gray-400 mt-1 uppercase tracking-widest">ID: {order.order_id}</div>
                   </div>
                 </motion.div>
               ))}

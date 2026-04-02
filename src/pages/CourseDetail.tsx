@@ -64,7 +64,7 @@ export default function CourseDetail() {
   return (
     <div className="min-h-screen bg-white pb-20">
       {/* Hero Header */}
-      <div className="bg-[#0b1120] text-white pt-32 pb-20 px-6 relative overflow-hidden">
+      <div className="bg-[#0b1120] text-white pt-24 pb-12 px-6 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500 rounded-full blur-[120px] translate-x-1/2 -translate-y-1/2"></div>
         </div>
@@ -91,11 +91,11 @@ export default function CourseDetail() {
               )}
             </div>
 
-            <h1 className="text-4xl md:text-6xl font-black mb-6 leading-tight">
+            <h1 className="text-3xl md:text-5xl font-black mb-4 leading-tight">
               {course.name}
             </h1>
             
-            <p className="text-xl text-gray-400 font-bold mb-10 leading-relaxed">
+            <p className="text-lg text-gray-400 font-bold mb-8 leading-relaxed">
               {course.description}
             </p>
 
@@ -115,27 +115,27 @@ export default function CourseDetail() {
             animate={{ opacity: 1, scale: 1 }}
             className="relative lg:block"
           >
-            <div className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] p-10 shadow-[15px_15px_0px_#10b981] text-[#0b1120]">
+            <div className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] p-6 shadow-[8px_8px_0px_#10b981] text-[#0b1120]">
               <div className="text-xs font-black uppercase tracking-widest text-gray-400 mb-2">Enrollment Summary</div>
-              <div className="flex items-baseline gap-4 mb-8">
-                <div className="text-5xl font-black">₹{course.discountPrice || course.price}</div>
+              <div className="flex items-baseline gap-4 mb-6">
+                <div className="text-4xl font-black">₹{course.discountPrice || course.price}</div>
                 {course.discountPrice && (
                   <div className="text-2xl font-black text-gray-400 line-through">₹{course.price}</div>
                 )}
               </div>
               
-              <div className="space-y-4 mb-10">
+              <div className="space-y-3 mb-8">
                 <div className="font-black text-gray-400 text-sm uppercase tracking-widest border-b-2 border-gray-100 pb-2">Includes</div>
-                <div className="flex items-center gap-3 font-bold text-gray-600">
+                <div className="flex items-center gap-3 font-bold text-gray-600 text-sm">
                   <CheckCircle2 className="w-5 h-5 text-green-500" /> Full lifetime access
                 </div>
                 {course.startDate && (
-                  <div className="flex items-center gap-3 font-bold text-gray-600">
+                  <div className="flex items-center gap-3 font-bold text-gray-600 text-sm">
                     <Calendar className="w-5 h-5 text-blue-500" /> Starts: {new Date(course.startDate).toLocaleDateString()}
                   </div>
                 )}
                 {course.endDate && (
-                  <div className="flex items-center gap-3 font-bold text-gray-600">
+                  <div className="flex items-center gap-3 font-bold text-gray-600 text-sm">
                     <Calendar className="w-5 h-5 text-red-500" /> Ends: {new Date(course.endDate).toLocaleDateString()}
                   </div>
                 )}
@@ -155,8 +155,8 @@ export default function CourseDetail() {
       </div>
 
       {/* Course Content */}
-      <section className="py-24 px-6 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-20">
-        <div className="lg:col-span-2 space-y-16">
+      <section className="py-16 px-6 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-12">
+        <div className="lg:col-span-2 space-y-12">
           {/* Bundle Content */}
           {course.isBundle && course.bundleCourses?.length > 0 && (
             <div>

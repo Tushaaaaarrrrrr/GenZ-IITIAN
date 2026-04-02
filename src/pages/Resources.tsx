@@ -197,47 +197,47 @@ export default function Resources() {
               <p className="text-gray-500 font-medium text-sm">Please fill this form to continue to the resource page</p>
             </div>
 
-            <form onSubmit={handleGateSubmit} className="flex flex-col gap-5">
-              <div className="flex flex-col gap-1.5">
-                <label className="font-bold text-[#0b1120] text-sm">Full Name *</label>
+            <form onSubmit={handleGateSubmit} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1">
+                <label className="font-bold text-[#0b1120] text-xs">Full Name *</label>
                 <input
                   name="entry.name"
                   type="text"
                   placeholder="Your full name"
-                  className="w-full px-5 py-3.5 rounded-xl bg-gray-50 border-[3px] border-[#0b1120] text-[#0b1120] placeholder-gray-400 focus:outline-none focus:bg-white focus:border-[#10b981] transition-colors font-medium"
+                  className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border-[3px] border-[#0b1120] text-[#0b1120] placeholder-gray-400 focus:outline-none focus:bg-white focus:border-[#10b981] transition-colors font-medium text-sm"
                   required
                 />
               </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="font-bold text-[#0b1120] text-sm">Email Address *</label>
+              <div className="flex flex-col gap-1">
+                <label className="font-bold text-[#0b1120] text-xs">Email Address *</label>
                 <input
                   name="entry.email"
                   type="email"
                   placeholder="your@email.com"
-                  className="w-full px-5 py-3.5 rounded-xl bg-gray-50 border-[3px] border-[#0b1120] text-[#0b1120] placeholder-gray-400 focus:outline-none focus:bg-white focus:border-[#10b981] transition-colors font-medium"
+                  className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border-[3px] border-[#0b1120] text-[#0b1120] placeholder-gray-400 focus:outline-none focus:bg-white focus:border-[#10b981] transition-colors font-medium text-sm"
                   required
                 />
               </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="font-bold text-[#0b1120] text-sm">WhatsApp / Phone Number *</label>
+              <div className="flex flex-col gap-1">
+                <label className="font-bold text-[#0b1120] text-xs">WhatsApp / Phone Number *</label>
                 <div className="flex gap-3">
-                  <div className="w-20 px-3 py-3.5 rounded-xl bg-gray-100 border-[3px] border-[#0b1120] text-[#0b1120] font-bold flex items-center justify-center shrink-0 text-sm">
+                  <div className="w-16 px-2 py-2.5 rounded-xl bg-gray-100 border-[3px] border-[#0b1120] text-[#0b1120] font-bold flex items-center justify-center shrink-0 text-xs">
                     +91
                   </div>
                   <input
                     name="entry.phone"
                     type="tel"
                     placeholder="98765 43210"
-                    className="w-full px-5 py-3.5 rounded-xl bg-gray-50 border-[3px] border-[#0b1120] text-[#0b1120] placeholder-gray-400 focus:outline-none focus:bg-white focus:border-[#10b981] transition-colors font-medium"
+                    className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border-[3px] border-[#0b1120] text-[#0b1120] placeholder-gray-400 focus:outline-none focus:bg-white focus:border-[#10b981] transition-colors font-medium text-sm"
                     required
                   />
                 </div>
               </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="font-bold text-[#0b1120] text-sm">Your Level *</label>
+              <div className="flex flex-col gap-1">
+                <label className="font-bold text-[#0b1120] text-xs">Your Level *</label>
                 <select
                   name="entry.level"
-                  className="w-full px-5 py-3.5 rounded-xl bg-gray-50 border-[3px] border-[#0b1120] text-[#0b1120] focus:outline-none focus:bg-white focus:border-[#10b981] transition-colors font-medium appearance-none cursor-pointer"
+                  className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border-[3px] border-[#0b1120] text-[#0b1120] focus:outline-none focus:bg-white focus:border-[#10b981] transition-colors font-medium appearance-none cursor-pointer text-sm"
                   required
                 >
                   <option value="">Select your level</option>
@@ -249,7 +249,7 @@ export default function Resources() {
               <button
                 type="submit"
                 disabled={gateSubmitting}
-                className="w-full py-4 bg-[#10b981] text-white rounded-xl font-black text-lg border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#0b1120] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[10px_10px_0px_#0b1120] transition-all mt-2 disabled:opacity-60"
+                className="w-full py-3 bg-[#10b981] text-white rounded-xl font-black text-base border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[6px_6px_0px_#0b1120] transition-all mt-1 disabled:opacity-60"
               >
                 {gateSubmitting ? '⏳ Submitting...' : '🚀 Continue to Resources'}
               </button>
@@ -262,30 +262,30 @@ export default function Resources() {
       )}
 
       {/* Header */}
-      <div className="max-w-7xl mx-auto px-6 pt-12 pb-8">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-          <h1 className="text-4xl md:text-5xl font-black text-[#0b1120] tracking-tight">
+      <div className="max-w-7xl mx-auto px-6 pt-10 pb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h1 className="text-3xl md:text-4xl font-black text-[#0b1120] tracking-tight">
             IITM BS DEGREE RESOURCES
           </h1>
-          <button onClick={handleShare} className="flex items-center gap-2 px-6 py-3 bg-white border-[3px] border-[#0b1120] rounded-xl text-sm font-bold text-[#0b1120] hover:-translate-y-1 hover:-translate-x-1 shadow-[4px_4px_0px_#0b1120] hover:shadow-[6px_6px_0px_#0b1120] transition-all w-fit shrink-0">
-            <Share className="w-4 h-4" /> {copied ? "Copied!" : "Share"}
+          <button onClick={handleShare} className="flex items-center gap-2 px-5 py-2.5 bg-white border-[3px] border-[#0b1120] rounded-xl text-xs font-bold text-[#0b1120] hover:-translate-y-1 hover:-translate-x-1 shadow-[3px_3px_0px_#0b1120] hover:shadow-[5px_5px_0px_#0b1120] transition-all w-fit shrink-0">
+            <Share className="w-3 h-3" /> {copied ? "Copied!" : "Share"}
           </button>
         </div>
 
-        <div className="mt-8 bg-[#fff7ed] border-[3px] border-[#0b1120] rounded-2xl p-6 shadow-[6px_6px_0px_#f59e0b]">
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-600 mb-2">New Section</p>
+        <div className="mt-6 bg-[#fff7ed] border-[3px] border-[#0b1120] rounded-2xl p-4 shadow-[4px_4px_0px_#f59e0b]">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600 mb-1">New Section</p>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <h2 className="text-2xl font-black text-[#0b1120]">Graded Assignment</h2>
-              <p className="text-gray-600 font-medium mt-1">
+              <h2 className="text-xl font-black text-[#0b1120]">Graded Assignment</h2>
+              <p className="text-gray-600 font-medium mt-0.5 text-sm">
                 Open the dedicated page, choose your level and subject, then browse Week 1 to Week 12.
               </p>
             </div>
             <Link
               to="/graded-assignment"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-[#0b1120] text-white border-[3px] border-[#0b1120] rounded-xl font-black text-sm hover:-translate-y-1 hover:-translate-x-1 shadow-[4px_4px_0px_#10b981] transition-all"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#0b1120] text-white border-[3px] border-[#0b1120] rounded-xl font-black text-xs hover:-translate-y-1 hover:-translate-x-1 shadow-[3px_3px_0px_#10b981] transition-all"
             >
-              Open Graded Assignment <ChevronRight className="w-4 h-4" />
+              Open Graded Assignment <ChevronRight className="w-3 h-3" />
             </Link>
           </div>
         </div>
@@ -297,15 +297,15 @@ export default function Resources() {
           <div className="flex items-center gap-8 overflow-x-auto hide-scrollbar">
             <button
               onClick={() => setActiveTab('notes')}
-              className={`flex items-center gap-2 py-4 text-sm font-black whitespace-nowrap border-b-[3px] transition-colors ${activeTab === 'notes' ? 'border-[#10b981] text-[#0b1120]' : 'border-transparent text-gray-500 hover:text-[#0b1120]'}`}
+              className={`flex items-center gap-2 py-3 text-xs font-black whitespace-nowrap border-b-[3px] transition-colors ${activeTab === 'notes' ? 'border-[#10b981] text-[#0b1120]' : 'border-transparent text-gray-500 hover:text-[#0b1120]'}`}
             >
-              <FileText className="w-4 h-4" /> Study Notes
+              <FileText className="w-3.5 h-3.5" /> Study Notes
             </button>
             <button
               onClick={() => setActiveTab('pyqs')}
-              className={`flex items-center gap-2 py-4 text-sm font-black whitespace-nowrap border-b-[3px] transition-colors ${activeTab === 'pyqs' ? 'border-[#f59e0b] text-[#0b1120]' : 'border-transparent text-gray-500 hover:text-[#0b1120]'}`}
+              className={`flex items-center gap-2 py-3 text-xs font-black whitespace-nowrap border-b-[3px] transition-colors ${activeTab === 'pyqs' ? 'border-[#f59e0b] text-[#0b1120]' : 'border-transparent text-gray-500 hover:text-[#0b1120]'}`}
             >
-              <ClipboardList className="w-4 h-4" /> PYQs
+              <ClipboardList className="w-3.5 h-3.5" /> PYQs
             </button>
           </div>
         </div>
@@ -318,8 +318,8 @@ export default function Resources() {
           {/* Filters */}
           <div className="flex flex-wrap items-center gap-4 mb-8" ref={dropdownRef}>
             <div className="relative">
-              <button onClick={() => toggleDropdown('level')} className={`flex items-center gap-2 px-5 py-2.5 border-[3px] border-[#0b1120] rounded-xl text-sm font-bold hover:-translate-y-1 hover:-translate-x-1 shadow-[4px_4px_0px_#0b1120] hover:shadow-[6px_6px_0px_#0b1120] transition-all ${selectedLevel ? 'bg-[#10b981] text-white' : 'bg-white text-[#0b1120]'}`}>
-                {selectedLevel || "Level"} <ChevronDown className={`w-4 h-4 transition-transform ${openDropdown === 'level' ? 'rotate-180' : ''}`} />
+              <button onClick={() => toggleDropdown('level')} className={`flex items-center gap-2 px-4 py-2 border-[3px] border-[#0b1120] rounded-xl text-xs font-bold hover:-translate-y-1 hover:-translate-x-1 shadow-[3px_3px_0px_#0b1120] hover:shadow-[5px_5px_0px_#0b1120] transition-all ${selectedLevel ? 'bg-[#10b981] text-white' : 'bg-white text-[#0b1120]'}`}>
+                {selectedLevel || "Level"} <ChevronDown className={`w-3.5 h-3.5 transition-transform ${openDropdown === 'level' ? 'rotate-180' : ''}`} />
               </button>
               {openDropdown === 'level' && (
                 <div className="absolute top-full left-0 mt-2 w-48 bg-white border-[3px] border-[#0b1120] rounded-xl shadow-[4px_4px_0px_#0b1120] z-50 overflow-hidden">
@@ -333,8 +333,8 @@ export default function Resources() {
             </div>
 
             <div className="relative">
-              <button onClick={() => toggleDropdown('subjects')} className={`flex items-center gap-2 px-5 py-2.5 border-[3px] border-[#0b1120] rounded-xl text-sm font-bold hover:-translate-y-1 hover:-translate-x-1 shadow-[4px_4px_0px_#0b1120] hover:shadow-[6px_6px_0px_#0b1120] transition-all ${selectedSubject ? 'bg-[#10b981] text-white' : 'bg-white text-[#0b1120]'}`}>
-                {selectedSubject || "Subjects"} <ChevronDown className={`w-4 h-4 transition-transform ${openDropdown === 'subjects' ? 'rotate-180' : ''}`} />
+              <button onClick={() => toggleDropdown('subjects')} className={`flex items-center gap-2 px-4 py-2 border-[3px] border-[#0b1120] rounded-xl text-xs font-bold hover:-translate-y-1 hover:-translate-x-1 shadow-[3px_3px_0px_#0b1120] hover:shadow-[5px_5px_0px_#0b1120] transition-all ${selectedSubject ? 'bg-[#10b981] text-white' : 'bg-white text-[#0b1120]'}`}>
+                {selectedSubject || "Subjects"} <ChevronDown className={`w-3.5 h-3.5 transition-transform ${openDropdown === 'subjects' ? 'rotate-180' : ''}`} />
               </button>
               {openDropdown === 'subjects' && (
                 <div className="absolute top-full left-0 mt-2 w-56 bg-white border-[3px] border-[#0b1120] rounded-xl shadow-[4px_4px_0px_#0b1120] z-50 overflow-hidden max-h-64 overflow-y-auto">
@@ -346,8 +346,8 @@ export default function Resources() {
             </div>
 
             {(selectedLevel || selectedSubject) && (
-              <button onClick={clearFilters} className="flex items-center gap-1.5 px-4 py-2.5 bg-red-50 border-[3px] border-red-400 rounded-xl text-sm font-bold text-red-600 hover:bg-red-100 transition-all">
-                <X className="w-3.5 h-3.5" /> Clear
+              <button onClick={clearFilters} className="flex items-center gap-1 px-3 py-2 bg-red-50 border-[3px] border-red-400 rounded-xl text-xs font-bold text-red-600 hover:bg-red-100 transition-all">
+                <X className="w-3 h-3" /> Clear
               </button>
             )}
           </div>
@@ -363,10 +363,10 @@ export default function Resources() {
                   <h2 className="text-3xl font-black text-[#0b1120] mb-6 border-b-4 border-gray-100 pb-3">{level} Level</h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                     {filteredSubjects.map((subj, i) => (
-                      <Link key={i} to={`/resources/${encodeURIComponent(level)}/${encodeURIComponent(subj)}`} className="p-6 bg-white border-[3px] border-[#0b1120] rounded-2xl hover:-translate-y-1 hover:-translate-x-1 shadow-[4px_4px_0px_#0b1120] hover:shadow-[8px_8px_0px_#0b1120] transition-all cursor-pointer group flex flex-col h-full">
-                        <div className="font-black text-[#0b1120] text-xl mb-4 group-hover:text-[#10b981] transition-colors">{subj}</div>
-                        <div className="mt-auto flex items-center gap-2 text-sm text-gray-600 font-bold">
-                          View Resources <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                      <Link key={i} to={`/resources/${encodeURIComponent(level)}/${encodeURIComponent(subj)}`} className="p-4 bg-white border-[3px] border-[#0b1120] rounded-xl hover:-translate-y-1 hover:-translate-x-1 shadow-[3px_3px_0px_#0b1120] hover:shadow-[6px_6px_0px_#0b1120] transition-all cursor-pointer group flex flex-col h-full">
+                        <div className="font-black text-[#0b1120] text-lg mb-3 group-hover:text-[#10b981] transition-colors">{subj}</div>
+                        <div className="mt-auto flex items-center gap-2 text-xs text-gray-600 font-bold">
+                          View Resources <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                         </div>
                       </Link>
                     ))}
@@ -388,12 +388,12 @@ export default function Resources() {
           {/* Step 1: Level Selection */}
           <div className="mb-8">
             <h3 className="text-sm font-black text-gray-400 uppercase tracking-wider mb-3">Step 1 — Select Level</h3>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2">
               {(["Qualifier", "Foundation", "Diploma"] as const).map((lv) => (
                 <button
                   key={lv}
                   onClick={() => { setPyqLevel(lv); setPyqSubject(null); setPyqExam(null); }}
-                  className={`px-6 py-3 border-[3px] border-[#0b1120] rounded-xl text-sm font-black transition-all hover:-translate-y-0.5 ${pyqLevel === lv ? 'bg-[#f59e0b] text-white shadow-[4px_4px_0px_#0b1120]' : 'bg-white text-[#0b1120] shadow-[3px_3px_0px_#0b1120]'}`}
+                  className={`px-4 py-2 border-[3px] border-[#0b1120] rounded-xl text-xs font-black transition-all hover:-translate-y-0.5 ${pyqLevel === lv ? 'bg-[#f59e0b] text-white shadow-[3px_3px_0px_#0b1120]' : 'bg-white text-[#0b1120] shadow-[2px_2px_0px_#0b1120]'}`}
                 >
                   {lv}
                 </button>
@@ -404,12 +404,12 @@ export default function Resources() {
           {/* Step 2: Subject Selection */}
           <div className="mb-8">
             <h3 className="text-sm font-black text-gray-400 uppercase tracking-wider mb-3">Step 2 — Select Subject</h3>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2">
               {pyqSubjects.map((subj) => (
                 <button
                   key={subj}
                   onClick={() => { setPyqSubject(subj); setPyqExam(null); }}
-                  className={`px-5 py-2.5 border-[3px] border-[#0b1120] rounded-xl text-sm font-bold transition-all hover:-translate-y-0.5 ${pyqSubject === subj ? 'bg-[#0b1120] text-white shadow-[4px_4px_0px_#f59e0b]' : 'bg-white text-[#0b1120] shadow-[3px_3px_0px_#0b1120]'}`}
+                  className={`px-4 py-2 border-[3px] border-[#0b1120] rounded-xl text-xs font-bold transition-all hover:-translate-y-0.5 ${pyqSubject === subj ? 'bg-[#0b1120] text-white shadow-[3px_3px_0px_#f59e0b]' : 'bg-white text-[#0b1120] shadow-[2px_2px_0px_#0b1120]'}`}
                 >
                   {subj}
                 </button>
@@ -421,10 +421,10 @@ export default function Resources() {
           {pyqSubject && availableExamTypes.length > 1 && (
             <div className="mb-10">
               <h3 className="text-sm font-black text-gray-400 uppercase tracking-wider mb-3">Step 3 — Select Exam Type</h3>
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => setPyqExam(null)}
-                  className={`px-5 py-2.5 border-[3px] border-[#0b1120] rounded-xl text-sm font-bold transition-all hover:-translate-y-0.5 ${pyqExam === null ? 'bg-[#10b981] text-white shadow-[4px_4px_0px_#0b1120]' : 'bg-white text-[#0b1120] shadow-[3px_3px_0px_#0b1120]'}`}
+                  className={`px-4 py-2 border-[3px] border-[#0b1120] rounded-xl text-xs font-bold transition-all hover:-translate-y-0.5 ${pyqExam === null ? 'bg-[#10b981] text-white shadow-[3px_3px_0px_#0b1120]' : 'bg-white text-[#0b1120] shadow-[2px_2px_0px_#0b1120]'}`}
                 >
                   All
                 </button>
@@ -432,7 +432,7 @@ export default function Resources() {
                   <button
                     key={ex}
                     onClick={() => setPyqExam(ex)}
-                    className={`px-5 py-2.5 border-[3px] border-[#0b1120] rounded-xl text-sm font-bold transition-all hover:-translate-y-0.5 ${pyqExam === ex ? 'bg-[#10b981] text-white shadow-[4px_4px_0px_#0b1120]' : 'bg-white text-[#0b1120] shadow-[3px_3px_0px_#0b1120]'}`}
+                    className={`px-4 py-2 border-[3px] border-[#0b1120] rounded-xl text-xs font-bold transition-all hover:-translate-y-0.5 ${pyqExam === ex ? 'bg-[#10b981] text-white shadow-[3px_3px_0px_#0b1120]' : 'bg-white text-[#0b1120] shadow-[2px_2px_0px_#0b1120]'}`}
                   >
                     {ex}
                   </button>

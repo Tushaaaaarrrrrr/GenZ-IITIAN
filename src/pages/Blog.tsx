@@ -80,7 +80,7 @@ function BlogCard({ post }: { post: BlogPost }) {
         <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
         <span>{post.read_time}</span>
       </div>
-      <h3 className="text-xl font-black text-[#0b1120] leading-tight group-hover:text-[#10b981] transition-colors">
+      <h3 className="text-lg font-black text-[#0b1120] leading-tight group-hover:text-[#10b981] transition-colors">
         {post.title}
       </h3>
     </Link>
@@ -128,34 +128,34 @@ export default function Blog() {
 
   return (
     <div className="min-h-screen bg-white text-[#0b1120] font-sans selection:bg-blue-100">
-      <div className="max-w-7xl mx-auto px-6 py-24">
-        <div className="text-center mb-16">
-          <h1 className="text-5xl lg:text-6xl font-black text-[#0b1120] mb-6">Our Blog</h1>
-          <p className="text-xl text-gray-600 font-medium max-w-2xl mx-auto">
+      <div className="max-w-7xl mx-auto px-6 py-16">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl lg:text-5xl font-black text-[#0b1120] mb-4">Our Blog</h1>
+          <p className="text-lg text-gray-600 font-medium max-w-2xl mx-auto">
             Insights, tips, and strategies to help you excel in your online degree program.
           </p>
         </div>
 
         {/* Docs Slider */}
-        <div className="mb-14">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-black text-[#0b1120] flex items-center gap-3">
-              <BookOpen className="w-7 h-7" /> Documentation
+        <div className="mb-10">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-black text-[#0b1120] flex items-center gap-3">
+              <BookOpen className="w-6 h-6" /> Documentation
             </h2>
             <Link to="/docs" className="text-sm font-bold text-[#10b981] hover:underline">View all docs →</Link>
           </div>
           <div className="relative">
-            <div className="flex gap-5 overflow-x-auto pb-4 scrollbar-thin snap-x snap-mandatory" style={{ scrollbarWidth: 'thin' }}>
+            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin snap-x snap-mandatory" style={{ scrollbarWidth: 'thin' }}>
               {docsData.map(doc => (
                 <Link
                   key={doc.slug}
                   to={`/docs/${doc.slug}`}
-                  className="snap-start shrink-0 w-72 rounded-2xl border-[3px] border-[#0b1120] p-5 bg-white shadow-[4px_4px_0px_#0b1120] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[8px_8px_0px_#0b1120] transition-all group"
+                  className="snap-start shrink-0 w-64 rounded-2xl border-[3px] border-[#0b1120] p-4 bg-white shadow-[4px_4px_0px_#0b1120] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[8px_8px_0px_#0b1120] transition-all group"
                 >
-                  <div className="mb-3">{iconMap[doc.icon] || <BookOpen className="w-7 h-7 text-[#0b1120]" />}</div>
-                  <h3 className="text-base font-black text-[#0b1120] mb-1.5 group-hover:text-[#10b981] transition-colors">{doc.title}</h3>
-                  <p className="text-xs text-gray-500 font-medium leading-relaxed mb-3 line-clamp-2">{doc.description}</p>
-                  <span className="text-xs font-bold text-[#10b981]">{doc.sections.reduce((s, sec) => s + sec.items.length, 0)} articles</span>
+                  <div className="mb-2">{iconMap[doc.icon] || <BookOpen className="w-6 h-6 text-[#0b1120]" />}</div>
+                  <h3 className="text-sm font-black text-[#0b1120] mb-1 group-hover:text-[#10b981] transition-colors">{doc.title}</h3>
+                  <p className="text-[10px] text-gray-500 font-medium leading-relaxed mb-2 line-clamp-2">{doc.description}</p>
+                  <span className="text-[10px] font-bold text-[#10b981]">{doc.sections.reduce((s, sec) => s + sec.items.length, 0)} articles</span>
                 </Link>
               ))}
             </div>
@@ -163,8 +163,8 @@ export default function Blog() {
         </div>
 
         {/* Filter / Sort / Search Bar */}
-        <div className="mb-12 rounded-2xl border-[3px] border-[#0b1120] bg-gray-50 p-6 shadow-[4px_4px_0px_#0b1120]">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="mb-10 rounded-2xl border-[3px] border-[#0b1120] bg-gray-50 p-4 shadow-[4px_4px_0px_#0b1120]">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-black uppercase tracking-wider text-gray-500 mb-2">Category</label>
               <select

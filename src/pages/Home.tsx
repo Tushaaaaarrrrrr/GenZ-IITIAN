@@ -35,22 +35,22 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white text-[#0b1120] font-sans selection:bg-blue-100 overflow-hidden">
       {/* Hero Section */}
-      <section className="relative pt-10 pb-12 sm:pt-16 sm:pb-24 px-4 sm:px-6 max-w-7xl mx-auto">
+      <section className="relative pt-8 pb-10 sm:pt-12 sm:pb-16 px-4 sm:px-6 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 items-center">
           {/* Text Content */}
           <div className="relative z-10 flex flex-col items-start">
-            <div className="inline-block px-4 py-1.5 bg-[#eef2ff] text-[#0b1120] font-bold text-sm rounded-full border-2 border-[#0b1120] mb-6">
+            <div className="inline-block px-3 py-1 bg-[#eef2ff] text-[#0b1120] font-bold text-[10px] rounded-full border-2 border-[#0b1120] mb-4">
               India's Best platform for Online/Hybrid Degree students.
             </div>
 
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black leading-[1.1] tracking-tight mb-3 sm:mb-4 text-[#0b1120]">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black leading-[1.1] tracking-tight mb-2 sm:mb-3 text-[#0b1120]">
               Welcome to <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500">
                 Gen-Z IITian
               </span>
             </h1>
 
-            <p className="text-sm sm:text-base text-gray-600 font-medium mb-4 sm:mb-6 max-w-xl leading-relaxed">
+            <p className="text-xs sm:text-sm text-gray-600 font-medium mb-4 sm:mb-5 max-w-xl leading-relaxed">
               We help online and hybrid degree students master IIT-level courses with smart notes, quizzes, PYQs, and expert-led lectures.
             </p>
 
@@ -73,9 +73,9 @@ export default function Home() {
       </section>
 
       {/* Featured Courses Section */}
-      <section className="bg-[#0b1120] py-16 border-t-[3px] border-b-[3px] border-[#0b1120] relative overflow-hidden">
+      <section className="bg-[#0b1120] py-12 border-t-[3px] border-b-[3px] border-[#0b1120] relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 relative z-10">
-          <h2 className="text-3xl lg:text-4xl font-black text-white mb-10">
+          <h2 className="text-2xl lg:text-3xl font-black text-white mb-8">
             Featured Cohorts
           </h2>
 
@@ -231,36 +231,36 @@ export default function Home() {
       </section>
 
       {/* Stats & Features Section */}
-      <section className="max-w-7xl mx-auto px-6 py-16">
+      <section className="max-w-7xl mx-auto px-6 py-12">
         {/* Stats Row */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
           {/* Stat Card 1 */}
-          <div className="bg-[#eef2ff] border-[3px] border-[#0b1120] rounded-2xl p-6 text-center shadow-[6px_6px_0px_#0b1120]">
-            <h3 className="text-3xl font-black text-[#0b1120] mb-2">
+          <div className="bg-[#eef2ff] border-[3px] border-[#0b1120] rounded-2xl p-4 text-center shadow-[4px_4px_0px_#0b1120]">
+            <h3 className="text-2xl font-black text-[#0b1120] mb-1">
               <AnimatedNumber value={13.8} decimals={1} suffix="K+" />
             </h3>
-            <p className="text-[#0b1120] font-bold text-sm">YouTube Subscribers</p>
+            <p className="text-[#0b1120] font-bold text-xs">YouTube Subscribers</p>
           </div>
           {/* Stat Card 2 */}
-          <div className="bg-[#10b981] border-[3px] border-[#0b1120] rounded-2xl p-6 text-center shadow-[6px_6px_0px_#0b1120]">
-            <h3 className="text-3xl font-black text-white mb-2">
+          <div className="bg-[#10b981] border-[3px] border-[#0b1120] rounded-2xl p-4 text-center shadow-[4px_4px_0px_#0b1120]">
+            <h3 className="text-2xl font-black text-white mb-1">
               <AnimatedNumber value={623} suffix="+" />
             </h3>
-            <p className="text-[#0b1120] font-bold text-sm">Students Learning</p>
+            <p className="text-[#0b1120] font-bold text-xs">Students Learning</p>
           </div>
           {/* Stat Card 3 */}
-          <div className="bg-white border-[3px] border-[#0b1120] rounded-2xl p-6 text-center shadow-[6px_6px_0px_#0b1120]">
-            <h3 className="text-3xl font-black text-[#0b1120] mb-2">
+          <div className="bg-white border-[3px] border-[#0b1120] rounded-2xl p-4 text-center shadow-[4px_4px_0px_#0b1120]">
+            <h3 className="text-2xl font-black text-[#0b1120] mb-1">
               <AnimatedNumber value={34} suffix="+" />
             </h3>
-            <p className="text-[#0b1120] font-bold text-sm">IIT-Level Courses</p>
+            <p className="text-[#0b1120] font-bold text-xs">IIT-Level Courses</p>
           </div>
         </div>
 
         {/* Features Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Feature Card 1 */}
-          <div className="bg-[#10b981] border-[3px] border-[#0b1120] rounded-2xl p-6 shadow-[6px_6px_0px_#0b1120] relative overflow-hidden">
+          <div className="bg-[#10b981] border-[3px] border-[#0b1120] rounded-2xl p-5 shadow-[4px_4px_0px_#0b1120] relative overflow-hidden">
             {/* Grid Background */}
             <div
               className="absolute inset-0 opacity-10"
@@ -314,7 +314,7 @@ export default function Home() {
           </div>
 
           {/* Feature Card 2 */}
-          <div className="bg-[#0b1120] border-[3px] border-[#0b1120] rounded-2xl p-6 shadow-[6px_6px_0px_#10b981] relative overflow-hidden flex flex-col justify-center">
+          <div className="bg-[#0b1120] border-[3px] border-[#0b1120] rounded-2xl p-5 shadow-[4px_4px_0px_#10b981] relative overflow-hidden flex flex-col justify-center">
             {/* Grid Background */}
             <div
               className="absolute inset-0 opacity-10"
@@ -335,7 +335,7 @@ export default function Home() {
       </section>
 
       {/* Experience Section */}
-      <section className="bg-[#10b981] py-16 border-b-[3px] border-[#0b1120] relative overflow-hidden">
+      <section className="bg-[#10b981] py-12 border-b-[3px] border-[#0b1120] relative overflow-hidden">
         {/* Grid Background */}
         <div
           className="absolute inset-0 opacity-10"
@@ -346,9 +346,9 @@ export default function Home() {
         ></div>
 
         <div className="max-w-7xl mx-auto px-6 relative z-10">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl lg:text-4xl font-black text-[#0b1120] mb-3">Experience Gen-Z IITian</h2>
-            <p className="text-[#0b1120] text-base font-bold max-w-2xl mx-auto">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl lg:text-3xl font-black text-[#0b1120] mb-2">Experience Gen-Z IITian</h2>
+            <p className="text-[#0b1120] text-sm font-bold max-w-2xl mx-auto">
               See how our platform simplifies complex concepts and helps you ace your exams with ease.
             </p>
           </div>
@@ -378,18 +378,18 @@ export default function Home() {
       </section>
 
       {/* Why Gen-Z IITian Comparison */}
-      <section className="bg-white py-16 border-t-[3px] border-[#0b1120] relative overflow-hidden">
+      <section className="bg-white py-12 border-t-[3px] border-[#0b1120] relative overflow-hidden">
         {/* Decorative elements */}
         <div className="absolute top-20 left-10 w-20 h-20 bg-yellow-300 rounded-full border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] opacity-50"></div>
         <div className="absolute bottom-20 right-10 w-32 h-32 bg-blue-300 rounded-3xl border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#0b1120] rotate-12 opacity-50"></div>
 
         <div className="max-w-5xl mx-auto px-6 relative z-10">
-          <div className="text-center mb-10">
-            <div className="inline-block px-3 py-1 bg-purple-100 text-purple-800 font-bold text-xs rounded-full border-2 border-purple-800 w-fit mb-3">
+          <div className="text-center mb-8">
+            <div className="inline-block px-3 py-1 bg-purple-100 text-purple-800 font-bold text-[10px] rounded-full border-2 border-purple-800 w-fit mb-2">
               The Clear Choice
             </div>
-            <h2 className="text-3xl lg:text-4xl font-black text-[#0b1120] mb-3">Why Gen-Z IITian?</h2>
-            <p className="text-gray-600 text-base font-medium">Compare and see the difference for yourself.</p>
+            <h2 className="text-2xl lg:text-3xl font-black text-[#0b1120] mb-2">Why Gen-Z IITian?</h2>
+            <p className="text-gray-600 text-sm font-medium">Compare and see the difference for yourself.</p>
           </div>
 
           <div className="relative pt-5">
@@ -441,8 +441,8 @@ export default function Home() {
       </section>
 
       {/* Community Section */}
-      <section className="max-w-7xl mx-auto px-6 py-16">
-        <div className="bg-[#1e293b] border-[3px] border-[#0b1120] rounded-2xl p-6 lg:p-10 shadow-[8px_8px_0px_#0b1120] relative overflow-hidden flex flex-col lg:flex-row gap-12 items-center">
+      <section className="max-w-7xl mx-auto px-6 py-12">
+        <div className="bg-[#1e293b] border-[3px] border-[#0b1120] rounded-2xl p-5 lg:p-8 shadow-[6px_6px_0px_#0b1120] relative overflow-hidden flex flex-col lg:flex-row gap-10 items-center">
 
           {/* Text Content */}
           <div className="w-full lg:w-1/2 relative z-10">
@@ -515,11 +515,11 @@ export default function Home() {
       </section>
 
       {/* Testimonials Section */}
-      <section className="bg-[#f8fafc] py-24 border-t-[3px] border-[#0b1120]">
+      <section className="bg-[#f8fafc] py-16 border-t-[3px] border-[#0b1120]">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl lg:text-4xl font-black text-[#0b1120] mb-3 max-w-[18rem] md:max-w-none mx-auto leading-tight">Student Reviews &amp; Shared Experiences</h2>
-            <p className="text-gray-600 text-base font-medium">Discover honest reviews and inspiring stories from students across India.</p>
+          <div className="text-center mb-8">
+            <h2 className="text-2xl lg:text-3xl font-black text-[#0b1120] mb-2 max-w-[18rem] md:max-w-none mx-auto leading-tight">Student Reviews &amp; Shared Experiences</h2>
+            <p className="text-gray-600 text-sm font-medium">Discover honest reviews and inspiring stories from students across India.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
@@ -589,8 +589,8 @@ export default function Home() {
       </section>
 
       {/* Become Instructor Section */}
-      <section className="max-w-7xl mx-auto px-6 py-16">
-        <div className="bg-[#eef2ff] border-[3px] border-[#0b1120] rounded-2xl p-6 lg:p-10 shadow-[8px_8px_0px_#0b1120] relative overflow-hidden flex flex-col lg:flex-row gap-12 items-center">
+      <section className="max-w-7xl mx-auto px-6 py-12">
+        <div className="bg-[#eef2ff] border-[3px] border-[#0b1120] rounded-2xl p-5 lg:p-8 shadow-[6px_6px_0px_#0b1120] relative overflow-hidden flex flex-col lg:flex-row gap-10 items-center">
 
           {/* Left Side: Stats/Callout */}
           <div className="w-full lg:w-1/3 flex flex-col gap-6 relative z-10">

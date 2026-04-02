@@ -137,7 +137,7 @@ export default function Cart() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-32 pb-20 px-6">
+    <div className="min-h-screen bg-gray-50 pt-20 pb-12 px-6">
       <AnimatePresence>
         {isProcessing && (
           <motion.div
@@ -149,7 +149,7 @@ export default function Cart() {
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="max-w-md w-full bg-white border-[6px] border-[#0b1120] rounded-[3rem] p-10 shadow-[16px_16px_0px_#3b82f6]"
+              className="max-w-md w-full bg-white border-[4px] border-[#0b1120] rounded-2xl p-6 shadow-[10px_10px_0px_#3b82f6]"
             >
               <Loader2 className="w-16 h-16 text-blue-600 animate-spin mx-auto mb-6" />
               <h2 className="text-2xl font-black text-[#0b1120] mb-4">{loadingMessage}</h2>
@@ -163,10 +163,10 @@ export default function Cart() {
       </AnimatePresence>
 
       <div className="max-w-5xl mx-auto">
-        <div className="flex items-end justify-between border-b-[6px] border-[#0b1120] pb-8 mb-12">
+        <div className="flex items-end justify-between border-b-[4px] border-[#0b1120] pb-6 mb-8">
           <div>
-            <h1 className="text-5xl font-black text-[#0b1120] mb-2">Your Cart</h1>
-            <p className="text-xl text-gray-500 font-bold tracking-tight">Ready to level up your skills?</p>
+            <h1 className="text-3xl font-black text-[#0b1120] mb-1">Your Cart</h1>
+            <p className="text-base text-gray-500 font-bold tracking-tight">Ready to level up your skills?</p>
           </div>
           <div className="hidden md:flex items-center gap-3 text-sm font-black text-gray-400">
             <ShieldCheck className="w-5 h-5 text-green-500" /> Secure Checkout
@@ -174,12 +174,12 @@ export default function Cart() {
         </div>
 
         {cart.length === 0 ? (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-20 bg-white border-[4px] border-dashed border-gray-200 rounded-[3rem]">
-            <ShoppingBag className="w-20 h-20 text-gray-200 mx-auto mb-6" />
-            <h3 className="text-3xl font-black text-[#0b1120] mb-4">Your cart is empty</h3>
-            <p className="text-gray-500 font-bold mb-10">Don't let your future wait. Pick a course and start learning.</p>
-            <Link to="/courses" className="inline-flex items-center gap-3 px-10 py-5 bg-[#0b1120] text-white rounded-2xl font-black text-xl border-[4px] border-[#0b1120] shadow-[8px_8px_0px_#3b82f6] hover:translate-y-1 hover:shadow-none transition-all">
-              Browse Courses <ArrowRight className="w-6 h-6" />
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-16 bg-white border-[3px] border-dashed border-gray-200 rounded-2xl">
+            <ShoppingBag className="w-16 h-16 text-gray-200 mx-auto mb-4" />
+            <h3 className="text-2xl font-black text-[#0b1120] mb-2">Your cart is empty</h3>
+            <p className="text-gray-500 font-bold text-sm mb-8">Don't let your future wait. Pick a course and start learning.</p>
+            <Link to="/courses" className="inline-flex items-center gap-2.5 px-6 py-3.5 bg-[#0b1120] text-white rounded-xl font-black text-lg border-[3px] border-[#0b1120] shadow-[5px_5px_0px_#3b82f6] hover:translate-y-1 hover:shadow-none transition-all">
+              Browse Courses <ArrowRight className="w-5 h-5" />
             </Link>
           </motion.div>
         ) : (
@@ -193,40 +193,40 @@ export default function Cart() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 20 }}
-                    className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] p-6 flex gap-6 items-center shadow-[8px_8px_0px_#0b1120]"
+                    className="bg-white border-[3px] border-[#0b1120] rounded-2xl p-4 flex gap-4 items-center shadow-[6px_6px_0px_#0b1120]"
                   >
-                    <div className="w-24 h-24 lg:w-32 lg:h-32 bg-gray-100 rounded-3xl border-2 border-[#0b1120] overflow-hidden flex-shrink-0">
+                    <div className="w-20 h-20 lg:w-24 lg:h-24 bg-gray-100 rounded-2xl border-2 border-[#0b1120] overflow-hidden flex-shrink-0">
                       <img src={item.image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=300'} className="w-full h-full object-cover" alt={item.name} />
                     </div>
                     <div className="flex-grow">
-                      <h3 className="text-xl lg:text-2xl font-black text-[#0b1120] mb-2">{item.name}</h3>
-                      <div className="text-2xl font-black text-[#10b981]">₹{item.price}</div>
+                      <h3 className="text-lg font-black text-[#0b1120] mb-1">{item.name}</h3>
+                      <div className="text-xl font-black text-[#10b981]">₹{item.price}</div>
                     </div>
-                    <button onClick={() => removeFromCart(item.id)} className="p-4 text-red-500 hover:bg-red-50 rounded-2xl transition-colors shrink-0">
-                      <Trash2 className="w-6 h-6" />
+                    <button onClick={() => removeFromCart(item.id)} className="p-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors shrink-0">
+                      <Trash2 className="w-5 h-5" />
                     </button>
                   </motion.div>
                 ))}
               </AnimatePresence>
             </div>
 
-            <div className="lg:col-span-1 sticky top-32">
-              <div className="bg-white border-[4px] border-[#0b1120] rounded-[3rem] p-10 shadow-[12px_12px_0px_#0b1120]">
-                <h3 className="text-2xl font-black text-[#0b1120] mb-8 border-b-2 border-gray-100 pb-4">Order Summary</h3>
+            <div className="lg:col-span-1 sticky top-24">
+              <div className="bg-white border-[3px] border-[#0b1120] rounded-2xl p-6 shadow-[8px_8px_0px_#0b1120]">
+                <h3 className="text-lg font-black text-[#0b1120] mb-6 border-b-2 border-gray-100 pb-3">Order Summary</h3>
                 
-                <div className="space-y-4 mb-10">
-                  <div className="flex justify-between font-bold text-gray-500">
+                <div className="space-y-3 mb-8">
+                  <div className="flex justify-between font-bold text-gray-500 text-sm">
                     <span>Items ({cart.length})</span>
                     <span>₹{total}</span>
                   </div>
-                  <div className="flex justify-between font-bold text-gray-500">
+                  <div className="flex justify-between font-bold text-gray-500 text-sm">
                     <span>Discount</span>
                     <span className="text-green-600">₹0</span>
                   </div>
-                  <div className="h-0.5 bg-gray-100 my-4" />
+                  <div className="h-0.5 bg-gray-100 my-3" />
                   <div className="flex justify-between items-end">
-                    <span className="font-black text-[#0b1120]">Total</span>
-                    <span className="text-4xl font-black text-[#0b1120]">₹{total}</span>
+                    <span className="font-black text-[#0b1120] text-sm">Total</span>
+                    <span className="text-2xl font-black text-[#0b1120]">₹{total}</span>
                   </div>
                 </div>
 
@@ -235,12 +235,12 @@ export default function Cart() {
                   whileTap={{ scale: 0.98 }}
                   disabled={isProcessing}
                   onClick={handleCheckout}
-                  className="w-full py-5 bg-[#10b981] text-[#0b1120] rounded-2xl font-black text-xl border-[4px] border-[#0b1120] shadow-[8px_8px_0px_#0b1120] flex items-center justify-center gap-3 hover:shadow-none hover:translate-y-1 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full py-4 bg-[#10b981] text-[#0b1120] rounded-xl font-black text-lg border-[3px] border-[#0b1120] shadow-[5px_5px_0px_#0b1120] flex items-center justify-center gap-2.5 hover:shadow-none hover:translate-y-1 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isProcessing ? (
-                    <><Loader2 className="w-6 h-6 animate-spin" /> Processing...</>
+                    <><Loader2 className="w-5 h-5 animate-spin" /> Processing...</>
                   ) : (
-                    <>Checkout Now <ArrowRight className="w-6 h-6" /></>
+                    <>Checkout Now <ArrowRight className="w-5 h-5" /></>
                   )}
                 </motion.button>
 

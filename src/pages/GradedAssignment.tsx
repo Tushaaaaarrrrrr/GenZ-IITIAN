@@ -22,10 +22,10 @@ export default function GradedAssignment() {
 
   return (
     <div className="min-h-screen bg-white">
-      <section className="max-w-7xl mx-auto px-6 pt-10 pb-6">
-        <p className="text-sm font-black uppercase tracking-wider text-[#10b981] mb-2">Resources</p>
-        <h1 className="text-4xl md:text-5xl font-black text-[#0b1120] tracking-tight">Graded Assignment</h1>
-        <p className="mt-3 text-gray-600 font-medium max-w-3xl">
+      <section className="max-w-7xl mx-auto px-6 pt-8 pb-4">
+        <p className="text-[10px] font-black uppercase tracking-wider text-[#10b981] mb-1">Resources</p>
+        <h1 className="text-3xl md:text-4xl font-black text-[#0b1120] tracking-tight">Graded Assignment</h1>
+        <p className="mt-2 text-gray-600 font-medium max-w-3xl text-sm">
           Choose your level, subject, and week to view graded assignment questions. Weekly questions can be added here anytime.
         </p>
       </section>
@@ -38,7 +38,7 @@ export default function GradedAssignment() {
                 <button
                   key={level}
                   onClick={() => handleLevelChange(level)}
-                  className={`px-5 py-2.5 rounded-xl border-[3px] border-[#0b1120] text-sm font-black transition-all hover:-translate-y-0.5 ${selectedLevel === level ? 'bg-[#10b981] text-white shadow-[4px_4px_0px_#0b1120]' : 'bg-white text-[#0b1120] shadow-[3px_3px_0px_#0b1120]'}`}
+                  className={`px-4 py-2 rounded-xl border-[3px] border-[#0b1120] text-xs font-black transition-all hover:-translate-y-0.5 ${selectedLevel === level ? 'bg-[#10b981] text-white shadow-[3px_3px_0px_#0b1120]' : 'bg-white text-[#0b1120] shadow-[2px_2px_0px_#0b1120]'}`}
                 >
                   {level}
                 </button>
@@ -50,7 +50,7 @@ export default function GradedAssignment() {
               <select
                 value={selectedSubject}
                 onChange={(event) => setSelectedSubject(event.target.value)}
-                className="w-full px-4 py-3 border-[3px] border-[#0b1120] rounded-xl bg-white text-[#0b1120] font-bold focus:outline-none"
+                className="w-full px-3.5 py-2.5 border-[3px] border-[#0b1120] rounded-xl bg-white text-[#0b1120] font-bold text-sm focus:outline-none"
               >
                 {subjects.map((subject) => (
                   <option key={subject} value={subject}>
@@ -63,14 +63,14 @@ export default function GradedAssignment() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 items-start">
-          <aside className="bg-white border-[3px] border-[#0b1120] rounded-2xl p-4 shadow-[5px_5px_0px_#0b1120] lg:sticky lg:top-28">
-            <h2 className="text-sm font-black uppercase tracking-wider text-gray-500 mb-3">Weeks</h2>
+          <aside className="bg-white border-[3px] border-[#0b1120] rounded-2xl p-4 shadow-[4px_4px_0px_#0b1120] lg:sticky lg:top-24">
+            <h2 className="text-[10px] font-black uppercase tracking-wider text-gray-500 mb-3">Weeks</h2>
             <div className="space-y-2">
               {weeks.map((week) => (
                 <button
                   key={week}
                   onClick={() => setSelectedWeek(week)}
-                  className={`w-full text-left px-4 py-2.5 rounded-xl border-[2px] border-[#0b1120] text-sm font-bold transition-all ${selectedWeek === week ? 'bg-[#0b1120] text-white shadow-[3px_3px_0px_#10b981]' : 'bg-white text-[#0b1120] hover:bg-gray-100'}`}
+                  className={`w-full text-left px-3 py-2 rounded-xl border-[2px] border-[#0b1120] text-xs font-bold transition-all ${selectedWeek === week ? 'bg-[#0b1120] text-white shadow-[2px_2px_0px_#10b981]' : 'bg-white text-[#0b1120] hover:bg-gray-100'}`}
                 >
                   {week}
                 </button>
@@ -78,27 +78,27 @@ export default function GradedAssignment() {
             </div>
           </aside>
 
-          <div className="bg-white border-[3px] border-[#0b1120] rounded-2xl p-8 shadow-[6px_6px_0px_#0b1120] min-h-[430px]">
-            <div className="flex flex-wrap items-center gap-3 mb-5">
-              <span className="px-3 py-1 rounded-full border border-green-200 bg-green-50 text-green-700 text-xs font-black">
+          <div className="bg-white border-[3px] border-[#0b1120] rounded-2xl p-6 shadow-[6px_6px_0px_#0b1120] min-h-[430px]">
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+              <span className="px-2.5 py-1 rounded-full border border-green-200 bg-green-50 text-green-700 text-[10px] font-black">
                 {selectedLevel}
               </span>
-              <span className="px-3 py-1 rounded-full border border-blue-200 bg-blue-50 text-blue-700 text-xs font-black">
+              <span className="px-2.5 py-1 rounded-full border border-blue-200 bg-blue-50 text-blue-700 text-[10px] font-black">
                 {selectedSubject}
               </span>
-              <span className="px-3 py-1 rounded-full border border-amber-200 bg-amber-50 text-amber-700 text-xs font-black">
+              <span className="px-2.5 py-1 rounded-full border border-amber-200 bg-amber-50 text-amber-700 text-[10px] font-black">
                 {selectedWeek}
               </span>
             </div>
 
-            <h3 className="text-2xl font-black text-[#0b1120] mb-2">Questions</h3>
-            <p className="text-gray-600 font-medium mb-6">
+            <h3 className="text-xl font-black text-[#0b1120] mb-1.5">Questions</h3>
+            <p className="text-gray-600 font-medium mb-6 text-sm">
               Add graded assignment questions for {selectedSubject} in {selectedWeek} here.
             </p>
 
-            <div className="border-[3px] border-dashed border-gray-300 rounded-2xl p-8 bg-gray-50">
-              <p className="text-gray-500 font-semibold">No questions added yet.</p>
-              <p className="text-sm text-gray-400 mt-2">Once you add questions, this section will show the full list for the selected week.</p>
+            <div className="border-[3px] border-dashed border-gray-300 rounded-2xl p-6 bg-gray-50">
+              <p className="text-gray-500 font-bold text-sm">No questions added yet.</p>
+              <p className="text-xs text-gray-400 mt-2">Once you add questions, this section will show the full list for the selected week.</p>
             </div>
           </div>
         </div>
