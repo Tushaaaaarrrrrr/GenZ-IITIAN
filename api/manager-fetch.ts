@@ -19,13 +19,13 @@ export default async function handler(req: any, res: any) {
 
   try {
     if (tab === 'orders') {
-      const { data, error } = await supabase.from('website_orders').select('*').order('createdAt', { ascending: false });
+      const { data, error } = await supabase.from('website_orders').select('*').order('created_at', { ascending: false });
       if (error) throw error;
       return res.status(200).json(data || []);
     } 
     
     if (tab === 'logs') {
-      const { data, error } = await supabase.from('activity_logs').select('*').order('createdAt', { ascending: false }).limit(100);
+      const { data, error } = await supabase.from('activity_logs').select('*').order('created_at', { ascending: false }).limit(100);
       if (error) throw error;
       return res.status(200).json(data || []);
     } 
@@ -59,7 +59,7 @@ export default async function handler(req: any, res: any) {
 
       // 2. Fetch Stats
       const [ordersRes, studentsRes, totalStudentsRes] = await Promise.all([
-        supabase.from('website_orders').select('*').gte('createdAt', isoDateFrom),
+        supabase.from('website_orders').select('*').gte('created_at', isoDateFrom),
         supabase.from('profiles').select('id', { count: 'exact' }).gte('created_at', isoDateFrom),
         supabase.from('profiles').select('id', { count: 'exact' })
       ]);

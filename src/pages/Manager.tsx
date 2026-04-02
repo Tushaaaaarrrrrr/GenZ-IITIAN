@@ -3,14 +3,21 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { LayoutDashboard, ShoppingBag, ScrollText, BookOpen, Plus, Search, Trash2, Edit, Save, X, Loader2, AlertCircle, User, Download, TrendingUp, TrendingDown, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation, NavLink } from 'react-router-dom';
 
 type Tab = 'dashboard' | 'orders' | 'users' | 'logs' | 'courses';
 
 export default function Manager() {
   const { isManager, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+  const location = useLocation();
+
+  // Derive active tab from URL path
+  const activeTab = (location.pathname.split('/').pop() || 'dashboard') as Tab;
+  
+  // Validate tab - if path is just /manager, it's dashboard. If invalid, could redirect.
+  const validTabs: Tab[] = ['dashboard', 'orders', 'users', 'logs', 'courses'];
+  const effectiveTab = validTabs.includes(activeTab) ? activeTab : 'dashboard';
   const [data, setData] = useState<any>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'today' | '7days' | 'month' | 'all'>('all');
@@ -50,12 +57,12 @@ export default function Manager() {
 
   useEffect(() => {
     if (isManager) fetchData();
-  }, [activeTab, isManager, filter]);
+  }, [effectiveTab, isManager, filter]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/manager-fetch?tab=${activeTab}&filter=${filter}`);
+      const res = await fetch(`/api/manager-fetch?tab=${effectiveTab}&filter=${filter}`);
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.error || 'Failed to fetch manager data');
@@ -71,7 +78,7 @@ export default function Manager() {
   };
 
   const exportUsers = () => {
-    if (activeTab !== 'users' || !Array.isArray(data)) return;
+    if (effectiveTab !== 'users' || !Array.isArray(data)) return;
     
     const headers = ['Name', 'Email', 'Phone', 'Gender', 'Joined At'];
     const rows = data.map(u => [
@@ -138,22 +145,24 @@ export default function Manager() {
         
         <nav className="space-y-4 flex-grow">
           {[
-            { id: 'dashboard', icon: LayoutDashboard },
-            { id: 'orders', icon: ShoppingBag },
-            { id: 'users', icon: User },
-            { id: 'logs', icon: ScrollText },
-            { id: 'courses', icon: BookOpen }
+            { id: 'dashboard', icon: LayoutDashboard, path: '/manager' },
+            { id: 'orders', icon: ShoppingBag, path: '/manager/orders' },
+            { id: 'users', icon: User, path: '/manager/users' },
+            { id: 'logs', icon: ScrollText, path: '/manager/logs' },
+            { id: 'courses', icon: BookOpen, path: '/manager/courses' }
           ].map((tab) => (
-            <button
+            <NavLink
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as Tab)}
-              className={`w-full flex items-center gap-4 px-4 py-4 rounded-2xl font-black transition-all border-2 ${
-                activeTab === tab.id ? 'bg-blue-600 border-white shadow-[4px_4px_0px_#fff]' : 'hover:bg-white/5 border-transparent text-gray-400'
-              }`}
+              to={tab.path}
+              end={tab.id === 'dashboard'}
+              className={({ isActive }) => `
+                w-full flex items-center gap-4 px-4 py-4 rounded-2xl font-black transition-all border-2
+                ${isActive ? 'bg-blue-600 border-white text-white shadow-[4px_4px_0px_#fff]' : 'hover:bg-white/5 border-transparent text-gray-400'}
+              `}
             >
               <tab.icon className="w-6 h-6" />
               <span className="hidden lg:block capitalize">{tab.id}</span>
-            </button>
+            </NavLink>
           ))}
         </nav>
       </div>
@@ -163,11 +172,11 @@ export default function Manager() {
         <div className="max-w-6xl mx-auto space-y-12">
           <div className="flex justify-between items-end border-b-[6px] border-[#0b1120] pb-8">
             <div>
-              <h1 className="text-5xl font-black text-[#0b1120] capitalize mb-2">{activeTab}</h1>
+              <h1 className="text-5xl font-black text-[#0b1120] capitalize mb-2">{effectiveTab}</h1>
               <p className="text-xl text-gray-500 font-bold tracking-tight">Platform administration dashboard.</p>
             </div>
             <div className="flex gap-4">
-              {activeTab === 'dashboard' && (
+              {effectiveTab === 'dashboard' && (
                 <select 
                   value={filter} 
                   onChange={(e) => setFilter(e.target.value as any)}
@@ -179,7 +188,7 @@ export default function Manager() {
                   <option value="month">Last Month</option>
                 </select>
               )}
-              {activeTab === 'users' && (
+              {effectiveTab === 'users' && (
                 <button 
                   onClick={exportUsers}
                   className="flex items-center gap-3 px-8 py-4 bg-[#3b82f6] text-white rounded-2xl font-black border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#0b1120] hover:translate-y-1 hover:shadow-none transition-all"
@@ -187,7 +196,7 @@ export default function Manager() {
                   <Download className="w-6 h-6" /> Export CSV
                 </button>
               )}
-              {activeTab === 'courses' && (
+              {effectiveTab === 'courses' && (
                 <button 
                   onClick={() => setShowAddCourse(true)}
                   className="flex items-center gap-3 px-8 py-4 bg-[#10b981] text-[#0b1120] rounded-2xl font-black border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#0b1120] hover:translate-y-1 hover:shadow-none transition-all"
@@ -202,7 +211,7 @@ export default function Manager() {
             <div className="flex justify-center p-24 text-gray-300 animate-pulse font-black text-2xl uppercase tracking-widest">Loading Data...</div>
           ) : (
             <div className="space-y-8">
-              {activeTab === 'dashboard' && (
+              {effectiveTab === 'dashboard' && (
                 <div className="space-y-12">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                     {[
@@ -249,7 +258,7 @@ export default function Manager() {
                 </div>
               )}
 
-              {activeTab === 'users' && (
+              {effectiveTab === 'users' && (
                 <div className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] overflow-hidden shadow-[12px_12px_0px_#0b1120]">
                   <table className="w-full text-left">
                     <thead className="bg-gray-50 border-b-[3px] border-gray-100 font-black text-sm uppercase text-gray-400">
@@ -284,7 +293,7 @@ export default function Manager() {
                 </div>
               )}
 
-              {activeTab === 'orders' && (
+              {effectiveTab === 'orders' && (
                 <div className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] overflow-hidden shadow-[12px_12px_0px_#0b1120]">
                   <table className="w-full text-left">
                     <thead className="bg-gray-50 border-b-[3px] border-gray-100 font-black text-sm uppercase text-gray-400">
@@ -312,10 +321,10 @@ export default function Manager() {
                           </td>
                           <td className="px-8 py-6">
                             <div className="text-sm font-bold text-gray-500 whitespace-nowrap">
-                              {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}
+                              {order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}
                             </div>
                             <div className="text-[10px] text-gray-400 font-mono">
-                              {order.createdAt ? new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                              {order.created_at ? new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                             </div>
                           </td>
                           <td className="px-8 py-6 text-right font-black text-xl">₹{order.total_amount}</td>
@@ -333,7 +342,7 @@ export default function Manager() {
                 </div>
               )}
 
-              {activeTab === 'logs' && (
+              {effectiveTab === 'logs' && (
                 <div className="grid grid-cols-1 gap-6">
                   {data.map((log) => (
                     <div key={log.id} className="bg-white border-[3px] border-[#0b1120] rounded-[2rem] p-8 flex justify-between items-center hover:shadow-[8px_8px_0px_#3b82f6] transition-all">
@@ -346,7 +355,7 @@ export default function Manager() {
                         <div>
                           <div className="text-2xl font-black text-[#0b1120]">{log.action}</div>
                           <div className="text-lg font-bold text-gray-500">
-                            {log.email} • {log.createdAt || log.created_at || log.inserted_at ? new Date(log.createdAt || log.created_at || log.inserted_at).toLocaleString() : 'N/A'}
+                            {log.email} • {log.created_at ? new Date(log.created_at).toLocaleString() : 'N/A'}
                           </div>
                           {log.metadata?.error && (
                             <div className="mt-3 p-3 bg-red-50 border-2 border-red-200 rounded-xl text-red-700 text-xs font-bold flex gap-2 items-start">
@@ -364,7 +373,7 @@ export default function Manager() {
                 </div>
               )}
 
-              {activeTab === 'courses' && (
+              {effectiveTab === 'courses' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
                   {data.map((course) => (
                     <div key={course.id} className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] p-8 shadow-[10px_10px_0px_#0b1120] flex flex-col hover:shadow-[10px_10px_0px_#10b981] transition-all">

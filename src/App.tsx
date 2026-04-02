@@ -76,7 +76,7 @@ export default function App() {
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/checkout/:id" element={<CourseSelection />} />
                 <Route path="/profile" element={<Profile />} />
-                <Route path="/manager" element={<Manager />} />
+                <Route path="/manager/*" element={<Manager />} />
                 <Route path="/terms" element={<TermsAndConditions />} />
                 <Route path="/privacy" element={<PrivacyPolicy />} />
                 <Route path="/refund" element={<RefundPolicy />} />
