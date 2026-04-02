@@ -64,32 +64,50 @@ export default function Navbar() {
         </div>
         <div className="flex items-center gap-3">
           {user ? (
-            <div className="relative" ref={userMenuRef}>
+            <div className="flex items-center gap-3">
               <button 
-                onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="flex items-center gap-2 px-4 py-2 bg-[#0b1120] text-white rounded-xl font-bold hover:bg-gray-800 transition-colors"
+                onClick={() => window.open('https://class.genziitian.in', '_blank', 'noopener,noreferrer')}
+                className="hidden lg:flex items-center gap-2 px-4 py-2 bg-blue-600 text-white border-2 border-[#0b1120] rounded-xl font-bold hover:-translate-y-0.5 transition-all shadow-[3px_3px_0px_#0b1120] hover:shadow-none"
               >
-                <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-[10px] font-black uppercase">
-                  {profile?.name?.charAt(0) || user.email?.charAt(0).toUpperCase()}
-                </div>
-                <span className="hidden sm:inline">{profile?.name?.split(' ')[0]}</span>
+                <LayoutDashboard className="w-4 h-4" />
+                <span>Dashboard</span>
               </button>
-              {userMenuOpen && (
-                <div className="absolute top-full right-0 mt-3 w-56 bg-white border-[3px] border-[#0b1120] rounded-xl shadow-[6px_6px_0px_#0b1120] py-2 z-50">
-                  <Link to="/profile" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">
-                    <UserIcon className="w-4 h-4" /> My Profile
-                  </Link>
-                  {isManager && (
-                    <Link to="/manager" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 transition-colors">
-                      <LayoutDashboard className="w-4 h-4" /> Manager Dashboard
+              <div className="relative" ref={userMenuRef}>
+                <button 
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="flex items-center gap-2 px-4 py-2 bg-[#0b1120] text-white rounded-xl font-bold hover:bg-gray-800 transition-colors border-2 border-transparent"
+                >
+                  <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-[10px] font-black uppercase border border-white/20">
+                    {profile?.name?.charAt(0) || user.email?.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="hidden sm:inline">{profile?.name?.split(' ')[0]}</span>
+                </button>
+                {userMenuOpen && (
+                  <div className="absolute top-full right-0 mt-3 w-56 bg-white border-[3px] border-[#0b1120] rounded-xl shadow-[6px_6px_0px_#0b1120] py-2 z-50">
+                    <Link to="/profile" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">
+                      <UserIcon className="w-4 h-4" /> My Profile
                     </Link>
-                  )}
-                  <div className="h-0.5 bg-gray-100 my-2 mx-4" />
-                  <button onClick={signOut} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-gray-500 hover:bg-gray-50 transition-colors">
-                    <LogOut className="w-4 h-4" /> Log out
-                  </button>
-                </div>
-              )}
+                    <button 
+                      onClick={() => {
+                        window.open('https://class.genziitian.in', '_blank', 'noopener,noreferrer');
+                        setUserMenuOpen(false);
+                      }}
+                      className="lg:hidden flex w-full items-center gap-3 px-4 py-2.5 text-sm font-bold text-blue-600 hover:bg-blue-50 transition-colors"
+                    >
+                      <LayoutDashboard className="w-4 h-4" /> Go to Dashboard
+                    </button>
+                    {isManager && (
+                      <Link to="/manager" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 transition-colors">
+                        <LayoutDashboard className="w-4 h-4" /> Manager Dashboard
+                      </Link>
+                    )}
+                    <div className="h-0.5 bg-gray-100 my-2 mx-4" />
+                    <button onClick={signOut} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-gray-500 hover:bg-gray-50 transition-colors">
+                      <LogOut className="w-4 h-4" /> Log out
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
             <button onClick={openLoginModal} className="px-6 py-2.5 rounded-xl font-bold text-sm bg-[#0b1120] text-white hover:bg-gray-800 transition-colors">

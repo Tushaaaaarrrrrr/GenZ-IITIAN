@@ -1,18 +1,19 @@
 import { useAuth } from '../context/AuthContext';
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { LayoutDashboard, ShoppingBag, ScrollText, BookOpen, Plus, Search, Trash2, Edit, Save, X, Loader2, AlertCircle } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, ScrollText, BookOpen, Plus, Search, Trash2, Edit, Save, X, Loader2, AlertCircle, User, Download, TrendingUp, TrendingDown, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 
-type Tab = 'orders' | 'logs' | 'courses';
+type Tab = 'dashboard' | 'orders' | 'users' | 'logs' | 'courses';
 
 export default function Manager() {
   const { isManager, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<Tab>('orders');
-  const [data, setData] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+  const [data, setData] = useState<any>([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<'today' | '7days' | 'month' | 'all'>('all');
   const [editingCourse, setEditingCourse] = useState<any>(null);
   const [showAddCourse, setShowAddCourse] = useState(false);
   const [isBundle, setIsBundle] = useState(false);
@@ -49,24 +50,48 @@ export default function Manager() {
 
   useEffect(() => {
     if (isManager) fetchData();
-  }, [activeTab, isManager]);
+  }, [activeTab, isManager, filter]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/manager-fetch?tab=${activeTab}`);
+      const res = await fetch(`/api/manager-fetch?tab=${activeTab}&filter=${filter}`);
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.error || 'Failed to fetch manager data');
       }
       const result = await res.json();
-      setData(result || []);
+      setData(result || (activeTab === 'dashboard' ? {} : []));
     } catch (err: any) {
       console.error(`Manager Fetch Error [${activeTab}]:`, err.message);
-      setData([]);
+      setData(activeTab === 'dashboard' ? {} : []);
     } finally {
       setLoading(false);
     }
+  };
+
+  const exportUsers = () => {
+    if (activeTab !== 'users' || !Array.isArray(data)) return;
+    
+    const headers = ['Name', 'Email', 'Phone', 'Gender', 'Joined At'];
+    const rows = data.map(u => [
+      u.name || '',
+      u.email || '',
+      u.phone || '',
+      u.gender || '',
+      u.created_at ? new Date(u.created_at).toLocaleString() : ''
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(r => r.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `users_export_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
   };
 
   const handleCourseAction = async (course: any, isDelete = false) => {
@@ -112,18 +137,22 @@ export default function Manager() {
         </div>
         
         <nav className="space-y-4 flex-grow">
-          {(['orders', 'logs', 'courses'] as Tab[]).map((tab) => (
+          {[
+            { id: 'dashboard', icon: LayoutDashboard },
+            { id: 'orders', icon: ShoppingBag },
+            { id: 'users', icon: User },
+            { id: 'logs', icon: ScrollText },
+            { id: 'courses', icon: BookOpen }
+          ].map((tab) => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as Tab)}
               className={`w-full flex items-center gap-4 px-4 py-4 rounded-2xl font-black transition-all border-2 ${
-                activeTab === tab ? 'bg-blue-600 border-white shadow-[4px_4px_0px_#fff]' : 'hover:bg-white/5 border-transparent text-gray-400'
+                activeTab === tab.id ? 'bg-blue-600 border-white shadow-[4px_4px_0px_#fff]' : 'hover:bg-white/5 border-transparent text-gray-400'
               }`}
             >
-              {tab === 'orders' && <ShoppingBag className="w-6 h-6" />}
-              {tab === 'logs' && <ScrollText className="w-6 h-6" />}
-              {tab === 'courses' && <BookOpen className="w-6 h-6" />}
-              <span className="hidden lg:block capitalize">{tab}</span>
+              <tab.icon className="w-6 h-6" />
+              <span className="hidden lg:block capitalize">{tab.id}</span>
             </button>
           ))}
         </nav>
@@ -137,20 +166,124 @@ export default function Manager() {
               <h1 className="text-5xl font-black text-[#0b1120] capitalize mb-2">{activeTab}</h1>
               <p className="text-xl text-gray-500 font-bold tracking-tight">Platform administration dashboard.</p>
             </div>
-            {activeTab === 'courses' && (
-              <button 
-                onClick={() => setShowAddCourse(true)}
-                className="flex items-center gap-3 px-8 py-4 bg-[#10b981] text-[#0b1120] rounded-2xl font-black border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#0b1120] hover:translate-y-1 hover:shadow-none transition-all"
-              >
-                <Plus className="w-6 h-6" /> Create Course
-              </button>
-            )}
+            <div className="flex gap-4">
+              {activeTab === 'dashboard' && (
+                <select 
+                  value={filter} 
+                  onChange={(e) => setFilter(e.target.value as any)}
+                  className="px-6 py-4 bg-white border-[3px] border-[#0b1120] rounded-2xl font-black shadow-[4px_4px_0px_#0b1120] outline-none"
+                >
+                  <option value="all">All Time</option>
+                  <option value="today">Today</option>
+                  <option value="7days">Last 7 Days</option>
+                  <option value="month">Last Month</option>
+                </select>
+              )}
+              {activeTab === 'users' && (
+                <button 
+                  onClick={exportUsers}
+                  className="flex items-center gap-3 px-8 py-4 bg-[#3b82f6] text-white rounded-2xl font-black border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#0b1120] hover:translate-y-1 hover:shadow-none transition-all"
+                >
+                  <Download className="w-6 h-6" /> Export CSV
+                </button>
+              )}
+              {activeTab === 'courses' && (
+                <button 
+                  onClick={() => setShowAddCourse(true)}
+                  className="flex items-center gap-3 px-8 py-4 bg-[#10b981] text-[#0b1120] rounded-2xl font-black border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#0b1120] hover:translate-y-1 hover:shadow-none transition-all"
+                >
+                  <Plus className="w-6 h-6" /> Create Course
+                </button>
+              )}
+            </div>
           </div>
 
           {loading ? (
             <div className="flex justify-center p-24 text-gray-300 animate-pulse font-black text-2xl uppercase tracking-widest">Loading Data...</div>
           ) : (
             <div className="space-y-8">
+              {activeTab === 'dashboard' && (
+                <div className="space-y-12">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    {[
+                      { label: 'Total Earnings', value: `₹${data.totalEarnings || 0}`, icon: TrendingUp, color: 'text-green-600', bg: 'bg-green-50' },
+                      { label: 'Total Failed', value: data.totalFailures || 0, icon: TrendingDown, color: 'text-red-600', bg: 'bg-red-50' },
+                      { label: 'New Students', value: data.newStudents || 0, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
+                      { label: 'Total Students', value: data.totalStudents || 0, icon: User, color: 'text-purple-600', bg: 'bg-purple-50' },
+                    ].map((stat, i) => (
+                      <div key={i} className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] p-8 shadow-[10px_10px_0px_#0b1120] hover:translate-y-1 hover:shadow-none transition-all">
+                        <div className={`w-14 h-14 ${stat.bg} rounded-2xl flex items-center justify-center border-2 border-[#0b1120] mb-6`}>
+                          <stat.icon className={`w-8 h-8 ${stat.color}`} />
+                        </div>
+                        <div className="text-xs font-black uppercase tracking-widest text-gray-400 mb-1">{stat.label}</div>
+                        <div className="text-4xl font-black text-[#0b1120]">{stat.value}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="bg-white border-[4px] border-[#0b1120] rounded-[3rem] p-10 shadow-[15px_15px_0px_#0b1120]">
+                    <h3 className="text-3xl font-black text-[#0b1120] mb-8 flex items-center gap-4">
+                      <ShoppingBag className="w-8 h-8" /> Most Selling Courses
+                    </h3>
+                    <div className="space-y-4">
+                      {data.mostSellingCourses?.length > 0 ? (
+                        data.mostSellingCourses.map((course: any, idx: number) => (
+                          <div key={course.id} className="flex items-center justify-between p-6 bg-gray-50 border-2 border-[#0b1120] rounded-2xl">
+                            <div className="flex items-center gap-6">
+                              <div className="w-10 h-10 bg-[#0b1120] text-white rounded-full flex items-center justify-center font-black text-lg">
+                                {idx + 1}
+                              </div>
+                              <span className="text-xl font-black text-[#0b1120]">{course.id}</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className="text-2xl font-black text-[#3b82f6]">{course.count}</span>
+                              <span className="text-xs font-black uppercase text-gray-400">Sales</span>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-20 text-gray-300 font-black text-2xl uppercase tracking-widest">No Sales Found</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'users' && (
+                <div className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] overflow-hidden shadow-[12px_12px_0px_#0b1120]">
+                  <table className="w-full text-left">
+                    <thead className="bg-gray-50 border-b-[3px] border-gray-100 font-black text-sm uppercase text-gray-400">
+                      <tr>
+                        <th className="px-8 py-6">Name</th>
+                        <th className="px-8 py-6">Email</th>
+                        <th className="px-8 py-6">Phone</th>
+                        <th className="px-8 py-6">Gender</th>
+                        <th className="px-8 py-6">Joined At</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y-[3px] divide-gray-50 font-bold">
+                      {data.map((user: any) => (
+                        <tr key={user.id} className="hover:bg-blue-50/50 transition-colors">
+                          <td className="px-8 py-6">
+                            <div className="text-lg font-black text-[#0b1120]">{user.name || 'N/A'}</div>
+                          </td>
+                          <td className="px-8 py-6 text-gray-500">{user.email}</td>
+                          <td className="px-8 py-6 text-gray-500 font-mono">{user.phone || 'N/A'}</td>
+                          <td className="px-8 py-6">
+                            <span className="px-3 py-1 bg-gray-100 border-2 border-[#0b1120] rounded-lg text-[10px] font-black uppercase">
+                              {user.gender || 'N/A'}
+                            </span>
+                          </td>
+                          <td className="px-8 py-6 text-gray-400 text-sm">
+                            {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
               {activeTab === 'orders' && (
                 <div className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] overflow-hidden shadow-[12px_12px_0px_#0b1120]">
                   <table className="w-full text-left">
