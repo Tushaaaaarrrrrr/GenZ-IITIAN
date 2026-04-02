@@ -188,13 +188,13 @@ export default function Resources() {
       {/* ====== GATE POPUP ====== */}
       {showGate && !hasAccess && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white border-[3px] border-[#0b1120] rounded-3xl p-8 lg:p-10 max-w-lg w-full shadow-[16px_16px_0px_#10b981] relative animate-[fadeIn_0.3s_ease-out]">
-            <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#eef2ff] border-[3px] border-[#0b1120] mb-4 shadow-[4px_4px_0px_#0b1120]">
-                <span className="text-3xl">📚</span>
+          <div className="bg-white border-[3px] border-[#0b1120] rounded-xl p-6 lg:p-8 max-w-lg w-full shadow-[10px_10px_0px_#10b981] relative animate-[fadeIn_0.3s_ease-out]">
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[#eef2ff] border-[3px] border-[#0b1120] mb-3 shadow-[3px_3px_0px_#0b1120]">
+                <span className="text-2xl">📚</span>
               </div>
-              <h2 className="text-2xl lg:text-3xl font-black text-[#0b1120] mb-2">Access Free Resources</h2>
-              <p className="text-gray-500 font-medium text-sm">Please fill this form to continue to the resource page</p>
+              <h2 className="text-xl lg:text-2xl font-black text-[#0b1120] mb-1.5">Access Free Resources</h2>
+              <p className="text-gray-500 font-medium text-xs">Please fill this form to continue to the resource page</p>
             </div>
 
             <form onSubmit={handleGateSubmit} className="flex flex-col gap-4">
@@ -204,7 +204,7 @@ export default function Resources() {
                   name="entry.name"
                   type="text"
                   placeholder="Your full name"
-                  className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border-[3px] border-[#0b1120] text-[#0b1120] placeholder-gray-400 focus:outline-none focus:bg-white focus:border-[#10b981] transition-colors font-medium text-sm"
+                  className="w-full px-3.5 py-2 rounded-xl bg-gray-50 border-[3px] border-[#0b1120] text-[#0b1120] placeholder-gray-400 focus:outline-none focus:bg-white focus:border-[#10b981] transition-colors font-medium text-sm"
                   required
                 />
               </div>
@@ -214,21 +214,21 @@ export default function Resources() {
                   name="entry.email"
                   type="email"
                   placeholder="your@email.com"
-                  className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border-[3px] border-[#0b1120] text-[#0b1120] placeholder-gray-400 focus:outline-none focus:bg-white focus:border-[#10b981] transition-colors font-medium text-sm"
+                  className="w-full px-3.5 py-2 rounded-xl bg-gray-50 border-[3px] border-[#0b1120] text-[#0b1120] placeholder-gray-400 focus:outline-none focus:bg-white focus:border-[#10b981] transition-colors font-medium text-sm"
                   required
                 />
               </div>
               <div className="flex flex-col gap-1">
                 <label className="font-bold text-[#0b1120] text-xs">WhatsApp / Phone Number *</label>
                 <div className="flex gap-3">
-                  <div className="w-16 px-2 py-2.5 rounded-xl bg-gray-100 border-[3px] border-[#0b1120] text-[#0b1120] font-bold flex items-center justify-center shrink-0 text-xs">
+                  <div className="w-14 px-2 py-2 rounded-xl bg-gray-100 border-[3px] border-[#0b1120] text-[#0b1120] font-bold flex items-center justify-center shrink-0 text-xs">
                     +91
                   </div>
                   <input
                     name="entry.phone"
                     type="tel"
                     placeholder="98765 43210"
-                    className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border-[3px] border-[#0b1120] text-[#0b1120] placeholder-gray-400 focus:outline-none focus:bg-white focus:border-[#10b981] transition-colors font-medium text-sm"
+                    className="w-full px-3.5 py-2 rounded-xl bg-gray-50 border-[3px] border-[#0b1120] text-[#0b1120] placeholder-gray-400 focus:outline-none focus:bg-white focus:border-[#10b981] transition-colors font-medium text-sm"
                     required
                   />
                 </div>
@@ -237,7 +237,7 @@ export default function Resources() {
                 <label className="font-bold text-[#0b1120] text-xs">Your Level *</label>
                 <select
                   name="entry.level"
-                  className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border-[3px] border-[#0b1120] text-[#0b1120] focus:outline-none focus:bg-white focus:border-[#10b981] transition-colors font-medium appearance-none cursor-pointer text-sm"
+                  className="w-full px-3.5 py-2 rounded-xl bg-gray-50 border-[3px] border-[#0b1120] text-[#0b1120] focus:outline-none focus:bg-white focus:border-[#10b981] transition-colors font-medium appearance-none cursor-pointer text-sm"
                   required
                 >
                   <option value="">Select your level</option>
@@ -249,7 +249,7 @@ export default function Resources() {
               <button
                 type="submit"
                 disabled={gateSubmitting}
-                className="w-full py-3 bg-[#10b981] text-white rounded-xl font-black text-base border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[6px_6px_0px_#0b1120] transition-all mt-1 disabled:opacity-60"
+                className="w-full py-2.5 bg-[#10b981] text-white rounded-xl font-black text-sm border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[6px_6px_0px_#0b1120] transition-all mt-1 disabled:opacity-60"
               >
                 {gateSubmitting ? '⏳ Submitting...' : '🚀 Continue to Resources'}
               </button>
