@@ -42,6 +42,12 @@ export default async function handler(req: any, res: any) {
       return res.status(200).json(data || []);
     }
 
+    if (tab === 'instructor-applications') {
+      const { data, error } = await supabase.from('instructor_applications').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      return res.status(200).json(data || []);
+    }
+
     if (tab === 'dashboard') {
       // 1. Calculate Date Range
       let dateFrom = new Date();

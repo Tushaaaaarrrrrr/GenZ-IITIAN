@@ -1,11 +1,11 @@
 import { useAuth } from '../context/AuthContext';
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { LayoutDashboard, ShoppingBag, ScrollText, BookOpen, Plus, Search, Trash2, Edit, Save, X, Loader2, AlertCircle, User, Download, TrendingUp, TrendingDown, Users } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, ScrollText, BookOpen, Plus, Search, Trash2, Edit, Save, X, Loader2, AlertCircle, User, Download, TrendingUp, TrendingDown, Users, ShieldCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate, useLocation, NavLink } from 'react-router-dom';
 
-type Tab = 'dashboard' | 'orders' | 'users' | 'logs' | 'courses';
+type Tab = 'dashboard' | 'orders' | 'users' | 'logs' | 'courses' | 'instructor-applications';
 
 export default function Manager() {
   const { isManager, loading: authLoading } = useAuth();
@@ -16,7 +16,7 @@ export default function Manager() {
   const activeTab = (location.pathname.split('/').pop() || 'dashboard') as Tab;
   
   // Validate tab - if path is just /manager, it's dashboard. If invalid, could redirect.
-  const validTabs: Tab[] = ['dashboard', 'orders', 'users', 'logs', 'courses'];
+  const validTabs: Tab[] = ['dashboard', 'orders', 'users', 'logs', 'courses', 'instructor-applications'];
   const effectiveTab = validTabs.includes(activeTab) ? activeTab : 'dashboard';
   const [data, setData] = useState<any>([]);
   const [loading, setLoading] = useState(true);
@@ -148,6 +148,7 @@ export default function Manager() {
             { id: 'dashboard', icon: LayoutDashboard, path: '/manager' },
             { id: 'orders', icon: ShoppingBag, path: '/manager/orders' },
             { id: 'users', icon: User, path: '/manager/users' },
+            { id: 'instructor-applications', icon: ShieldCheck, path: '/manager/instructor-applications' },
             { id: 'logs', icon: ScrollText, path: '/manager/logs' },
             { id: 'courses', icon: BookOpen, path: '/manager/courses' }
           ].map((tab) => (
@@ -337,6 +338,62 @@ export default function Manager() {
                           </td>
                         </tr>
                       ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {effectiveTab === 'instructor-applications' && (
+                <div className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] overflow-hidden shadow-[12px_12px_0px_#0b1120]">
+                  <table className="w-full text-left">
+                    <thead className="bg-gray-50 border-b-[3px] border-gray-100 font-black text-sm uppercase text-gray-400">
+                      <tr>
+                        <th className="px-8 py-6">Instructor</th>
+                        <th className="px-8 py-6">Subject</th>
+                        <th className="px-8 py-6 text-center">CGPA</th>
+                        <th className="px-8 py-6">Devices</th>
+                        <th className="px-8 py-6">Applied Date</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y-[3px] divide-gray-50 font-bold">
+                      {data.map((app: any) => (
+                        <tr key={app.id} className="hover:bg-blue-50/50 transition-colors">
+                          <td className="px-8 py-6">
+                            <div className="text-[#0b1120] font-black text-lg">{app.name}</div>
+                            <div className="text-gray-500">{app.email}</div>
+                            <div className="text-xs text-gray-400 font-mono mt-1">{app.phone}</div>
+                          </td>
+                          <td className="px-8 py-6">
+                            <span className="px-3 py-1 bg-white border-2 border-[#0b1120] rounded-lg text-xs font-black uppercase text-blue-600">
+                              {app.subject}
+                            </span>
+                          </td>
+                          <td className="px-8 py-6 text-center">
+                            <div className="text-xl font-black text-[#0b1120]">{app.cgpa || 'N/A'}</div>
+                          </td>
+                          <td className="px-8 py-6">
+                            <div className="flex flex-wrap gap-2">
+                              {app.devices?.split(',').map((device: string) => (
+                                <span key={device} className="px-3 py-1 bg-gray-100 border-2 border-[#0b1120] rounded-lg text-[10px] font-black uppercase text-gray-500">
+                                  {device.trim()}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="px-8 py-6">
+                            <div className="text-sm font-bold text-gray-500">
+                              {app.created_at ? new Date(app.created_at).toLocaleDateString() : 'N/A'}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                      {data.length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="px-8 py-20 text-center text-gray-300 font-black text-2xl uppercase tracking-widest">
+                            No Applications Found
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>

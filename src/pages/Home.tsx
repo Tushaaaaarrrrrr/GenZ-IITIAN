@@ -5,7 +5,7 @@ import { useInView, animate } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import HeroAnimation from '../components/HeroAnimation';
-
+import { supabase } from '../lib/supabase';
 
 function AnimatedNumber({ value, decimals = 0, suffix = "" }: { value: number, decimals?: number, suffix?: string }) {
   const [displayValue, setDisplayValue] = useState("0");
@@ -30,7 +30,23 @@ function AnimatedNumber({ value, decimals = 0, suffix = "" }: { value: number, d
 
 export default function Home() {
   const { buyNow } = useCart();
+  const [courses, setCourses] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    fetchCourses();
+  }, []);
+
+  const fetchCourses = async () => {
+    const { data } = await supabase
+      .from('courses')
+      .select('*')
+      .order('isPinned', { ascending: false })
+      .order('createdAt', { ascending: false })
+      .limit(3);
+    setCourses(data || []);
+    setLoading(false);
+  };
 
   return (
     <div className="min-h-screen bg-white text-[#0b1120] font-sans selection:bg-blue-100 overflow-hidden">
@@ -39,28 +55,28 @@ export default function Home() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 items-center">
           {/* Text Content */}
           <div className="relative z-10 flex flex-col items-start">
-            <div className="inline-block px-3 py-1 bg-[#eef2ff] text-[#0b1120] font-bold text-[10px] rounded-full border-2 border-[#0b1120] mb-4">
+            <div className="inline-block px-4 py-1.5 bg-[#eef2ff] text-[#0b1120] font-bold text-xs sm:text-sm rounded-full border-2 border-[#0b1120] mb-5 sm:mb-6">
               India's Best platform for Online/Hybrid Degree students.
             </div>
 
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black leading-[1.1] tracking-tight mb-2 sm:mb-3 text-[#0b1120]">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-[1.05] tracking-tight mb-4 sm:mb-6 text-[#0b1120]">
               Welcome to <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500">
                 Gen-Z IITian
               </span>
             </h1>
 
-            <p className="text-xs sm:text-sm text-gray-600 font-medium mb-4 sm:mb-5 max-w-xl leading-relaxed">
+            <p className="text-base sm:text-lg lg:text-xl text-gray-600 font-medium mb-6 sm:mb-8 max-w-2xl leading-relaxed">
               We help online and hybrid degree students master IIT-level courses with smart notes, quizzes, PYQs, and expert-led lectures.
             </p>
 
-            <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-              <Link to="/courses" className="px-4 py-2.5 sm:px-6 sm:py-3 bg-[#10b981] text-white rounded-xl font-bold text-sm sm:text-base border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[8px_8px_0px_#0b1120] transition-all flex items-center gap-2">
-                Explore Courses <ChevronRight className="w-5 h-5" />
+            <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+              <Link to="/courses" className="px-6 py-3 sm:px-8 sm:py-4 lg:text-lg bg-[#10b981] text-white rounded-xl font-bold text-base border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[8px_8px_0px_#0b1120] transition-all flex items-center gap-2">
+                Explore Courses <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
               </Link>
-              <a href="https://youtube.com/@Gen-ZIITian/" target="_blank" rel="noopener noreferrer" className="px-4 py-2.5 sm:px-6 sm:py-3 bg-white text-[#0b1120] rounded-xl font-bold text-sm sm:text-base border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[8px_8px_0px_#0b1120] transition-all flex items-center gap-2">
-                <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z" /></svg>
+              <a href="https://youtube.com/@Gen-ZIITian/" target="_blank" rel="noopener noreferrer" className="px-6 py-3 sm:px-8 sm:py-4 lg:text-lg bg-white text-[#0b1120] rounded-xl font-bold text-base border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[8px_8px_0px_#0b1120] transition-all flex items-center gap-2">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-red-500 flex items-center justify-center">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="white" className="sm:w-3 sm:h-3"><path d="M8 5v14l11-7z" /></svg>
                 </div>
                 Watch on YouTube
               </a>
@@ -125,106 +141,57 @@ export default function Home() {
 
             {/* Other Courses Row */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-
-              {/* Term 1 Quiz 2 */}
-              <div className="relative group">
-                <div className="absolute inset-0 bg-[#10b981] rounded-2xl translate-y-2 translate-x-2 border-2 border-[#0b1120]"></div>
-                <div className="relative bg-white border-[3px] border-[#0b1120] rounded-2xl p-4 flex flex-col h-full transition-transform hover:-translate-y-1 hover:-translate-x-1">
-                  <div className="w-full aspect-video bg-gray-100 rounded-xl border-2 border-[#0b1120] overflow-hidden mb-6">
-                    <img src="/Image/Fundation Term 1.png" alt="Term 1 Quiz 2" className="w-full h-full object-contain" />
-                  </div>
-                  <h3 className="text-xl font-black text-[#0b1120] mb-2">Term 1 Quiz 2</h3>
-                  <p className="text-gray-600 font-bold text-xs mb-6 flex-grow">
-                    IIT Madras BS Term 1 Quiz 2. Maths 1, Stats 1 and CT.
-                  </p>
-
-                  <div className="flex items-end gap-2 mb-4">
-                    <div className="flex flex-col">
-                      <span className="text-[10px] font-bold text-gray-500 mb-0.5">Starting at</span>
-                      <span className="text-xl font-black text-[#0b1120] leading-none">₹799</span>
+              {loading ? (
+                <div className="col-span-3 text-center py-12">
+                   <div className="inline-block animate-spin w-8 h-8 border-[3px] border-[#10b981] border-t-white rounded-full"></div>
+                </div>
+              ) : courses.map(course => (
+                <div key={course.id} className="relative group">
+                  <div className="absolute inset-0 bg-[#10b981] rounded-2xl translate-y-2 translate-x-2 border-2 border-[#0b1120]"></div>
+                  <div className="relative bg-white border-[3px] border-[#0b1120] rounded-2xl p-4 flex flex-col h-full transition-transform hover:-translate-y-1 hover:-translate-x-1">
+                    
+                    <div className="flex flex-wrap gap-2 mb-4">
+                       {course.subject && (
+                         <span className="px-2 py-0.5 bg-[#d1fae5] text-[#059669] border-2 border-[#0b1120] rounded-full text-[10px] font-black uppercase tracking-wide">
+                           {course.subject}
+                         </span>
+                       )}
+                       {course.isBundle && (
+                         <span className="px-2 py-0.5 bg-purple-100 text-purple-800 border-2 border-[#0b1120] rounded-full text-[10px] font-black uppercase tracking-wide">
+                           Bundle
+                         </span>
+                       )}
                     </div>
-                    <span className="text-xs font-bold text-gray-400 line-through mb-1">₹849</span>
-                    <span className="px-2 py-0.5 bg-[#d1fae5] text-[#059669] border-2 border-[#0b1120] rounded-full text-[8px] font-black mb-1.5">Quiz 2</span>
-                  </div>
 
-                  <div className="flex gap-3 mt-auto">
-                    <Link to="/courses/foundation-1" className="flex-1 py-2 bg-white text-[#0b1120] rounded-lg font-bold text-sm border-2 border-[#0b1120] hover:bg-gray-50 transition-colors text-center flex items-center justify-center">
-                      Explore Details
-                    </Link>
-                    <button 
-                      onClick={() => buyNow({ id: 'foundation-1', name: 'Term 1 Quiz 2', price: 799, lms_course_id: 'foundation-1' })}
-                      className="flex-1 py-2 bg-[#10b981] text-white rounded-lg font-bold text-sm border-2 border-[#0b1120] hover:bg-[#059669] transition-colors shadow-[2px_2px_0px_#0b1120] active:translate-y-0.5 active:translate-x-0.5 active:shadow-none"
-                    >
-                      Enroll Now
-                    </button>
+                    <h3 className="text-xl font-black text-[#0b1120] mb-2">{course.name}</h3>
+                    <p className="text-gray-600 font-bold text-xs mb-6 flex-grow">
+                      {course.description}
+                    </p>
+
+                    <div className="flex items-end gap-2 mb-4">
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-bold text-gray-500 mb-0.5">Starting at</span>
+                        <span className="text-xl font-black text-[#0b1120] leading-none">₹{course.discountPrice || course.price}</span>
+                      </div>
+                      {course.discountPrice && (
+                        <span className="text-xs font-bold text-gray-400 line-through mb-1">₹{course.price}</span>
+                      )}
+                    </div>
+
+                    <div className="flex gap-3 mt-auto">
+                      <Link to={`/courses/${course.id}`} className="flex-1 py-2 bg-white text-[#0b1120] rounded-lg font-bold text-sm border-2 border-[#0b1120] hover:bg-gray-50 transition-colors text-center flex items-center justify-center">
+                        Explore Details
+                      </Link>
+                      <button 
+                        onClick={() => buyNow({ id: course.id, name: course.name, price: course.discountPrice || course.price, lms_course_id: course.id })}
+                        className="flex-1 py-2 bg-[#10b981] text-white rounded-lg font-bold text-sm border-2 border-[#0b1120] hover:bg-[#059669] transition-colors shadow-[2px_2px_0px_#0b1120] active:translate-y-0.5 active:translate-x-0.5 active:shadow-none"
+                      >
+                        Enroll Now
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-
-              {/* Term 2 Quiz 2 */}
-              <div className="relative group">
-                <div className="absolute inset-0 bg-[#10b981] rounded-2xl translate-y-2 translate-x-2 border-2 border-[#0b1120]"></div>
-                <div className="relative bg-white border-[3px] border-[#0b1120] rounded-2xl p-4 flex flex-col h-full transition-transform hover:-translate-y-1 hover:-translate-x-1">
-                  <div className="w-full aspect-video bg-gray-100 rounded-xl border-2 border-[#0b1120] overflow-hidden mb-6">
-                    <img src="/Image/Foundation Term 2.png" alt="Term 2 Quiz 2" className="w-full h-full object-contain" />
-                  </div>
-                  <h3 className="text-xl font-black text-[#0b1120] mb-2">Term 2 Quiz 2</h3>
-                  <p className="text-gray-600 font-bold text-xs mb-6 flex-grow">
-                    IIT Madras BS Term 2 Quiz 2. Maths 2, Stats 2 and Python.
-                  </p>
-
-                  <div className="flex items-end gap-2 mb-4">
-                    <div className="flex flex-col">
-                      <span className="text-[10px] font-bold text-gray-500 mb-0.5">Starting at</span>
-                      <span className="text-xl font-black text-[#0b1120] leading-none">₹799</span>
-                    </div>
-                    <span className="text-xs font-bold text-gray-400 line-through mb-1">₹849</span>
-                    <span className="px-2 py-0.5 bg-[#d1fae5] text-[#059669] border-2 border-[#0b1120] rounded-full text-[8px] font-black mb-1.5">Quiz 2</span>
-                  </div>
-
-                  <div className="flex gap-3 mt-auto">
-                    <Link to="/courses/foundation-2" className="flex-1 py-2 bg-white text-[#0b1120] rounded-lg font-bold text-sm border-2 border-[#0b1120] hover:bg-gray-50 transition-colors text-center flex items-center justify-center">
-                      Explore Details
-                    </Link>
-                    <button 
-                      onClick={() => buyNow({ id: 'foundation-2', name: 'Term 2 Quiz 2', price: 799, lms_course_id: 'foundation-2' })}
-                      className="flex-1 py-2 bg-[#10b981] text-white rounded-lg font-bold text-sm border-2 border-[#0b1120] hover:bg-[#059669] transition-colors shadow-[2px_2px_0px_#0b1120] active:translate-y-0.5 active:translate-x-0.5 active:shadow-none"
-                    >
-                      Enroll Now
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Diploma Quiz 2 */}
-              <div className="relative group">
-                <div className="absolute inset-0 bg-[#10b981] rounded-3xl translate-y-2 translate-x-2 border-2 border-[#0b1120]"></div>
-                <div className="relative bg-white border-[3px] border-[#0b1120] rounded-3xl p-6 flex flex-col h-full transition-transform hover:-translate-y-1 hover:-translate-x-1">
-                  <div className="w-full aspect-video bg-gray-100 rounded-xl border-2 border-[#0b1120] overflow-hidden mb-6">
-                    <img src="/Image/Diploma.png" alt="Diploma Quiz 2" className="w-full h-full object-contain" />
-                  </div>
-                  <h3 className="text-xl font-black text-[#0b1120] mb-2">Diploma Quiz 2</h3>
-                  <p className="text-gray-600 font-bold text-xs mb-6 flex-grow">
-                    Launch by 20 March. Join waiting list for Java, PDSA, DBMS and MLF.
-                  </p>
-
-                  <div className="flex items-end gap-2 mb-6">
-                    <div className="flex flex-col">
-                      <span className="text-xs font-bold text-gray-500 mb-0.5">Starting at</span>
-                      <span className="text-2xl font-black text-[#0b1120] leading-none">Waitlist</span>
-                    </div>
-                    <span className="text-sm font-bold text-gray-400 mb-1">20 March</span>
-                    <span className="px-2 py-0.5 bg-[#d1fae5] text-[#059669] border-2 border-[#0b1120] rounded-full text-[10px] font-black mb-1.5">Quiz 2</span>
-                  </div>
-
-                  <div className="flex gap-3 mt-auto">
-                    <Link to="/courses/diploma" className="w-full py-2 bg-[#0b1120] text-white rounded-lg font-bold text-sm border-2 border-[#0b1120] hover:bg-gray-800 transition-colors text-center flex items-center justify-center">
-                      Join Waiting List
-                    </Link>
-                  </div>
-                </div>
-              </div>
-
+              ))}
             </div>
           </div>
         </div>
@@ -602,9 +569,9 @@ export default function Home() {
               <p className="text-gray-600 font-bold mb-4 text-sm">
                 Do you know our tutor earns 60% of direct revenue from Batches? Start earning today.
               </p>
-              <button className="w-full py-3 bg-[#0b1120] text-white whitespace-nowrap rounded-xl font-bold text-base border-2 border-[#0b1120] hover:bg-gray-800 transition-colors">
+              <Link to="/become-instructor" className="w-full py-3 bg-[#0b1120] text-white whitespace-nowrap rounded-xl font-bold text-base border-2 border-[#0b1120] hover:bg-gray-800 transition-colors block text-center">
                 Become Instructor
-              </button>
+              </Link>
             </div>
           </div>
 
@@ -633,9 +600,9 @@ export default function Home() {
               ))}
             </div>
 
-            <button className="px-8 py-4 bg-[#10b981] text-white rounded-xl font-bold text-lg border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] whitespace-nowrap hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[8px_8px_0px_#0b1120] transition-all">
+            <Link to="/become-instructor" className="px-8 py-4 bg-[#10b981] text-white rounded-xl font-bold text-lg border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] whitespace-nowrap hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[8px_8px_0px_#0b1120] transition-all inline-block">
               Become Instructor
-            </button>
+            </Link>
           </div>
         </div>
       </section>
