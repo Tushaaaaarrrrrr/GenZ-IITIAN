@@ -98,7 +98,7 @@ export default function Navbar() {
                     </button>
                     {isManager && (
                       <Link to="/manager" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 transition-colors">
-                        <LayoutDashboard className="w-4 h-4" /> Manager Dashboard
+                        <LayoutDashboard className="w-4 h-4" /> Manager Panel
                       </Link>
                     )}
                     <div className="h-0.5 bg-gray-100 my-2 mx-4" />

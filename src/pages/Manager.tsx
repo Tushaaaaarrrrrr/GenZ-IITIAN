@@ -4,8 +4,9 @@ import { supabase } from '../lib/supabase';
 import { LayoutDashboard, ShoppingBag, ScrollText, BookOpen, Plus, Search, Trash2, Edit, Save, X, Loader2, AlertCircle, User, Download, TrendingUp, TrendingDown, Users, ShieldCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate, useLocation, NavLink } from 'react-router-dom';
+import { apiService } from '../lib/api';
 
-type Tab = 'dashboard' | 'orders' | 'users' | 'logs' | 'courses' | 'instructor-applications';
+type Tab = 'users' | 'courses';
 
 export default function Manager() {
   const { isManager, loading: authLoading } = useAuth();
@@ -13,11 +14,11 @@ export default function Manager() {
   const location = useLocation();
 
   // Derive active tab from URL path
-  const activeTab = (location.pathname.split('/').pop() || 'dashboard') as Tab;
+  const activeTab = (location.pathname.split('/').pop() || 'users') as Tab;
   
-  // Validate tab - if path is just /manager, it's dashboard. If invalid, could redirect.
-  const validTabs: Tab[] = ['dashboard', 'orders', 'users', 'logs', 'courses', 'instructor-applications'];
-  const effectiveTab = validTabs.includes(activeTab) ? activeTab : 'dashboard';
+  // Validate tab - if path is just /manager, it's users. If invalid, could redirect.
+  const validTabs: Tab[] = ['users', 'courses'];
+  const effectiveTab = validTabs.includes(activeTab) ? activeTab : 'users';
   const [data, setData] = useState<any>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'today' | '7days' | 'month' | 'all'>('all');
@@ -62,16 +63,11 @@ export default function Manager() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/manager-fetch?tab=${effectiveTab}&filter=${filter}`);
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to fetch manager data');
-      }
-      const result = await res.json();
-      setData(result || (activeTab === 'dashboard' ? {} : []));
+      const result = await apiService.managerFetch(effectiveTab, filter);
+      setData(result || []);
     } catch (err: any) {
       console.error(`Manager Fetch Error [${activeTab}]:`, err.message);
-      setData(activeTab === 'dashboard' ? {} : []);
+      setData([]);
     } finally {
       setLoading(false);
     }
@@ -145,11 +141,7 @@ export default function Manager() {
         
         <nav className="space-y-4 flex-grow">
           {[
-            { id: 'dashboard', icon: LayoutDashboard, path: '/manager' },
-            { id: 'orders', icon: ShoppingBag, path: '/manager/orders' },
             { id: 'users', icon: User, path: '/manager/users' },
-            { id: 'instructor-applications', icon: ShieldCheck, path: '/manager/instructor-applications' },
-            { id: 'logs', icon: ScrollText, path: '/manager/logs' },
             { id: 'courses', icon: BookOpen, path: '/manager/courses' }
           ].map((tab) => (
             <NavLink
@@ -174,21 +166,10 @@ export default function Manager() {
           <div className="flex justify-between items-end border-b-[6px] border-[#0b1120] pb-8">
             <div>
               <h1 className="text-5xl font-black text-[#0b1120] capitalize mb-2">{effectiveTab}</h1>
-              <p className="text-xl text-gray-500 font-bold tracking-tight">Platform administration dashboard.</p>
+              <p className="text-xl text-gray-500 font-bold tracking-tight">Platform administration panel.</p>
             </div>
             <div className="flex gap-4">
-              {effectiveTab === 'dashboard' && (
-                <select 
-                  value={filter} 
-                  onChange={(e) => setFilter(e.target.value as any)}
-                  className="px-6 py-4 bg-white border-[3px] border-[#0b1120] rounded-2xl font-black shadow-[4px_4px_0px_#0b1120] outline-none"
-                >
-                  <option value="all">All Time</option>
-                  <option value="today">Today</option>
-                  <option value="7days">Last 7 Days</option>
-                  <option value="month">Last Month</option>
-                </select>
-              )}
+
               {effectiveTab === 'users' && (
                 <button 
                   onClick={exportUsers}
@@ -212,52 +193,7 @@ export default function Manager() {
             <div className="flex justify-center p-24 text-gray-300 animate-pulse font-black text-2xl uppercase tracking-widest">Loading Data...</div>
           ) : (
             <div className="space-y-8">
-              {effectiveTab === 'dashboard' && (
-                <div className="space-y-12">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                    {[
-                      { label: 'Total Earnings', value: `₹${data.totalEarnings || 0}`, icon: TrendingUp, color: 'text-green-600', bg: 'bg-green-50' },
-                      { label: 'Total Failed', value: data.totalFailures || 0, icon: TrendingDown, color: 'text-red-600', bg: 'bg-red-50' },
-                      { label: 'New Students', value: data.newStudents || 0, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
-                      { label: 'Total Students', value: data.totalStudents || 0, icon: User, color: 'text-purple-600', bg: 'bg-purple-50' },
-                    ].map((stat, i) => (
-                      <div key={i} className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] p-8 shadow-[10px_10px_0px_#0b1120] hover:translate-y-1 hover:shadow-none transition-all">
-                        <div className={`w-14 h-14 ${stat.bg} rounded-2xl flex items-center justify-center border-2 border-[#0b1120] mb-6`}>
-                          <stat.icon className={`w-8 h-8 ${stat.color}`} />
-                        </div>
-                        <div className="text-xs font-black uppercase tracking-widest text-gray-400 mb-1">{stat.label}</div>
-                        <div className="text-4xl font-black text-[#0b1120]">{stat.value}</div>
-                      </div>
-                    ))}
-                  </div>
 
-                  <div className="bg-white border-[4px] border-[#0b1120] rounded-[3rem] p-10 shadow-[15px_15px_0px_#0b1120]">
-                    <h3 className="text-3xl font-black text-[#0b1120] mb-8 flex items-center gap-4">
-                      <ShoppingBag className="w-8 h-8" /> Most Selling Courses
-                    </h3>
-                    <div className="space-y-4">
-                      {data.mostSellingCourses?.length > 0 ? (
-                        data.mostSellingCourses.map((course: any, idx: number) => (
-                          <div key={course.id} className="flex items-center justify-between p-6 bg-gray-50 border-2 border-[#0b1120] rounded-2xl">
-                            <div className="flex items-center gap-6">
-                              <div className="w-10 h-10 bg-[#0b1120] text-white rounded-full flex items-center justify-center font-black text-lg">
-                                {idx + 1}
-                              </div>
-                              <span className="text-xl font-black text-[#0b1120]">{course.id}</span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <span className="text-2xl font-black text-[#3b82f6]">{course.count}</span>
-                              <span className="text-xs font-black uppercase text-gray-400">Sales</span>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-center py-20 text-gray-300 font-black text-2xl uppercase tracking-widest">No Sales Found</div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {effectiveTab === 'users' && (
                 <div className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] overflow-hidden shadow-[12px_12px_0px_#0b1120]">
@@ -294,141 +230,11 @@ export default function Manager() {
                 </div>
               )}
 
-              {effectiveTab === 'orders' && (
-                <div className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] overflow-hidden shadow-[12px_12px_0px_#0b1120]">
-                  <table className="w-full text-left">
-                    <thead className="bg-gray-50 border-b-[3px] border-gray-100 font-black text-sm uppercase text-gray-400">
-                      <tr>
-                        <th className="px-8 py-6">User</th>
-                        <th className="px-8 py-6">Courses</th>
-                        <th className="px-8 py-6">Date</th>
-                        <th className="px-8 py-6 text-right">Amount</th>
-                        <th className="px-8 py-6 text-center">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y-[3px] divide-gray-50 font-bold">
-                      {data.map((order) => (
-                        <tr key={order.id} className="hover:bg-blue-50/50 transition-colors">
-                          <td className="px-8 py-6">
-                            <div className="text-[#0b1120]">{order.user_email}</div>
-                            <div className="text-xs text-gray-400 font-mono mt-1">{order.order_id}</div>
-                          </td>
-                          <td className="px-8 py-6">
-                            <div className="flex flex-wrap gap-2">
-                              {order.course_ids?.map((cid: string) => (
-                                <span key={cid} className="px-3 py-1 bg-white border-2 border-[#0b1120] rounded-lg text-[10px] font-black uppercase text-gray-500">{cid}</span>
-                              ))}
-                            </div>
-                          </td>
-                          <td className="px-8 py-6">
-                            <div className="text-sm font-bold text-gray-500 whitespace-nowrap">
-                              {order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}
-                            </div>
-                            <div className="text-[10px] text-gray-400 font-mono">
-                              {order.created_at ? new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
-                            </div>
-                          </td>
-                          <td className="px-8 py-6 text-right font-black text-xl">₹{order.total_amount}</td>
-                          <td className="px-8 py-6 text-center">
-                            <span className={`px-4 py-1.5 rounded-full text-xs font-black border-2 border-[#0b1120] inline-block ${
-                              order.status === 'PAID' ? 'bg-[#d1fae5] text-[#059669]' : 'bg-amber-100 text-amber-600'
-                            }`}>
-                              {order.status}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
 
-              {effectiveTab === 'instructor-applications' && (
-                <div className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] overflow-hidden shadow-[12px_12px_0px_#0b1120]">
-                  <table className="w-full text-left">
-                    <thead className="bg-gray-50 border-b-[3px] border-gray-100 font-black text-sm uppercase text-gray-400">
-                      <tr>
-                        <th className="px-8 py-6">Instructor</th>
-                        <th className="px-8 py-6">Subject</th>
-                        <th className="px-8 py-6 text-center">CGPA</th>
-                        <th className="px-8 py-6">Devices</th>
-                        <th className="px-8 py-6">Applied Date</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y-[3px] divide-gray-50 font-bold">
-                      {data.map((app: any) => (
-                        <tr key={app.id} className="hover:bg-blue-50/50 transition-colors">
-                          <td className="px-8 py-6">
-                            <div className="text-[#0b1120] font-black text-lg">{app.name}</div>
-                            <div className="text-gray-500">{app.email}</div>
-                            <div className="text-xs text-gray-400 font-mono mt-1">{app.phone}</div>
-                          </td>
-                          <td className="px-8 py-6">
-                            <span className="px-3 py-1 bg-white border-2 border-[#0b1120] rounded-lg text-xs font-black uppercase text-blue-600">
-                              {app.subject}
-                            </span>
-                          </td>
-                          <td className="px-8 py-6 text-center">
-                            <div className="text-xl font-black text-[#0b1120]">{app.cgpa || 'N/A'}</div>
-                          </td>
-                          <td className="px-8 py-6">
-                            <div className="flex flex-wrap gap-2">
-                              {app.devices?.split(',').map((device: string) => (
-                                <span key={device} className="px-3 py-1 bg-gray-100 border-2 border-[#0b1120] rounded-lg text-[10px] font-black uppercase text-gray-500">
-                                  {device.trim()}
-                                </span>
-                              ))}
-                            </div>
-                          </td>
-                          <td className="px-8 py-6">
-                            <div className="text-sm font-bold text-gray-500">
-                              {app.created_at ? new Date(app.created_at).toLocaleDateString() : 'N/A'}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                      {data.length === 0 && (
-                        <tr>
-                          <td colSpan={5} className="px-8 py-20 text-center text-gray-300 font-black text-2xl uppercase tracking-widest">
-                            No Applications Found
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              )}
 
-              {effectiveTab === 'logs' && (
-                <div className="grid grid-cols-1 gap-6">
-                  {data.map((log) => (
-                    <div key={log.id} className="bg-white border-[3px] border-[#0b1120] rounded-[2rem] p-8 flex justify-between items-center hover:shadow-[8px_8px_0px_#3b82f6] transition-all">
-                      <div className="flex gap-6 items-center">
-                        <div className={`p-4 rounded-2xl border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] ${
-                          log.action?.includes('SUCCESS') ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
-                        }`}>
-                          <ScrollText className="w-8 h-8" />
-                        </div>
-                        <div>
-                          <div className="text-2xl font-black text-[#0b1120]">{log.action}</div>
-                          <div className="text-lg font-bold text-gray-500">
-                            {log.email} • {log.created_at ? new Date(log.created_at).toLocaleString() : 'N/A'}
-                          </div>
-                          {log.metadata?.error && (
-                            <div className="mt-3 p-3 bg-red-50 border-2 border-red-200 rounded-xl text-red-700 text-xs font-bold flex gap-2 items-start">
-                              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                              <span className="break-all">Error: {log.metadata.error}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <div className="text-sm font-mono bg-gray-100 px-6 py-3 rounded-2xl border-2 border-[#0b1120]">
-                        ID: {log.courseId || 'N/A'}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+
+
+
 
               {effectiveTab === 'courses' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">

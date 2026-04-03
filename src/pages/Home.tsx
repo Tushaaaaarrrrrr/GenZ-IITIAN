@@ -569,9 +569,14 @@ export default function Home() {
               <p className="text-gray-600 font-bold mb-4 text-sm">
                 Do you know our tutor earns 60% of direct revenue from Batches? Start earning today.
               </p>
-              <Link to="/become-instructor" className="w-full py-3 bg-[#0b1120] text-white whitespace-nowrap rounded-xl font-bold text-base border-2 border-[#0b1120] hover:bg-gray-800 transition-colors block text-center">
+              <a 
+                href="https://docs.google.com/forms/d/e/1FAIpQLSd-56OO4DsZ7Dx6jzq7hNr8mcJ1hL0WTgSEtSocyWCa3ayVCQ/viewform" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="w-full py-3 bg-[#0b1120] text-white whitespace-nowrap rounded-xl font-bold text-base border-2 border-[#0b1120] hover:bg-gray-800 transition-colors block text-center"
+              >
                 Become Instructor
-              </Link>
+              </a>
             </div>
           </div>
 
@@ -600,9 +605,14 @@ export default function Home() {
               ))}
             </div>
 
-            <Link to="/become-instructor" className="px-8 py-4 bg-[#10b981] text-white rounded-xl font-bold text-lg border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] whitespace-nowrap hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[8px_8px_0px_#0b1120] transition-all inline-block">
+            <a 
+              href="https://docs.google.com/forms/d/e/1FAIpQLSd-56OO4DsZ7Dx6jzq7hNr8mcJ1hL0WTgSEtSocyWCa3ayVCQ/viewform" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="px-8 py-4 bg-[#10b981] text-white rounded-xl font-bold text-lg border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] whitespace-nowrap hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[8px_8px_0px_#0b1120] transition-all inline-block"
+            >
               Become Instructor
-            </Link>
+            </a>
           </div>
         </div>
       </section>

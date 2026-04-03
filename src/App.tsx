@@ -29,7 +29,6 @@ import RefundPolicy from './pages/RefundPolicy';
 import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentFailed from './pages/PaymentFailed';
 import LoginModal from './components/LoginModal';
-import BecomeInstructorForm from './pages/BecomeInstructorForm';
 
 export default function App() {
   useEffect(() => {
@@ -83,7 +82,6 @@ export default function App() {
                 <Route path="/refund" element={<RefundPolicy />} />
                 <Route path="/payment-success" element={<PaymentSuccess />} />
                 <Route path="/payment-failed" element={<PaymentFailed />} />
-                <Route path="/become-instructor" element={<BecomeInstructorForm />} />
                 {/* pSEO catch-all — must be last */}
                 <Route path="/*" element={<SEOPage />} />
               </Routes>

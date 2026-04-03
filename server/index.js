@@ -14,8 +14,14 @@ dotenv.config({ path: path.join(__dirname, '..', '.env') });
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-const ADMIN_USER = process.env.ADMIN_USER || 'admin';
-const ADMIN_PASS = process.env.ADMIN_PASS || 'genz@2025';
+const ADMIN_USER = process.env.ADMIN_USER;
+const ADMIN_PASS = process.env.ADMIN_PASS;
+
+if (!ADMIN_USER || !ADMIN_PASS) {
+  console.error('\x1b[31m%s\x1b[0m', '❌ ERROR: ADMIN_USER and ADMIN_PASS must be defined in environment variables!');
+  console.error('Please set these in your .env file or hosting panel.');
+  process.exit(1);
+}
 
 const sessions = new Map();
 

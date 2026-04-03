@@ -16,7 +16,9 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const MANAGER_EMAIL = 'lkiitmng2428@gmail.com';
+// Manager role is now determined from the 'role' column in the profiles table.
+// To make someone a manager, run in Supabase SQL Editor:
+//   UPDATE profiles SET role = 'MANAGER' WHERE email = 'their@email.com';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -80,7 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value = {
     user,
     profile,
-    isManager: user?.email === MANAGER_EMAIL,
+    isManager: profile?.role === 'MANAGER',
     loading,
     isLoginModalOpen,
     openLoginModal,

@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { User, Mail, Calendar, ShoppingBag, LogOut, Loader2, CheckCircle2 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { apiService } from '../lib/api';
 
 export default function Profile() {
   const { user, profile, signOut, loading: authLoading } = useAuth();
@@ -15,9 +16,7 @@ export default function Profile() {
 
   const fetchOrders = async () => {
     try {
-      const res = await fetch(`/api/get-orders?email=${encodeURIComponent(user?.email || '')}`);
-      if (!res.ok) throw new Error('Failed to fetch orders');
-      const data = await res.json();
+      const data = await apiService.getOrders(user?.email || '');
       setOrders(data || []);
     } catch (err) {
       console.error('Order fetch error:', err);

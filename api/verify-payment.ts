@@ -8,7 +8,7 @@ export default async function handler(req: any, res: any) {
   const { razorpay_order_id, razorpay_payment_id, razorpay_signature, email, courseIds } = req.body;
 
   const supabase_url = process.env.VITE_SUPABASE_URL;
-  const service_role = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+  const service_role = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const razorpay_secret = process.env.RAZORPAY_SECRET;
   const lms_enroll_url = process.env.LMS_ENROLL_URL || "https://class.genziitian.in/api/external-enroll";
 

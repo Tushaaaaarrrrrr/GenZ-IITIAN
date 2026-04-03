@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { Trash2, ShoppingBag, ArrowRight, ShieldCheck, Loader2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { apiService } from '../lib/api';
 
 const RAZORPAY_SCRIPT_URL = "https://checkout.razorpay.com/v1/checkout.js";
 
@@ -53,21 +54,15 @@ export default function Cart() {
     setIsProcessing(true);
     setLoadingMessage("Preparing Checkout...");
     try {
-      const res = await fetch("/api/create-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount: total,
-          email: user.email,
-          courseIds: cart.flatMap((item) => 
-            item.isBundle && item.bundleCourses && item.bundleCourses.length > 0
-              ? item.bundleCourses.map(b => b.courseId)
-              : [item.id]
-          ),
-        }),
+      const orderData = await apiService.createOrder({
+        amount: total,
+        email: user.email,
+        courseIds: cart.flatMap((item) => 
+          item.isBundle && item.bundleCourses && item.bundleCourses.length > 0
+            ? item.bundleCourses.map(b => b.courseId)
+            : [item.id]
+        ),
       });
-
-      const orderData = await res.json();
       if (!orderData.id) throw new Error("Order creation failed");
 
       const scriptLoaded = await loadScript(RAZORPAY_SCRIPT_URL);
@@ -85,28 +80,20 @@ export default function Cart() {
           setLoadingMessage("Processing your payment, please wait...");
           try {
             // Verify payment
-            const verifyRes = await fetch("/api/verify-payment", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-                email: user.email,
-                courseIds: cart.flatMap((item) => 
-                  item.isBundle && item.bundleCourses && item.bundleCourses.length > 0
-                    ? item.bundleCourses.map(b => b.courseId)
-                    : [item.id]
-                ),
-              }),
+            await apiService.verifyPayment({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              email: user.email,
+              courseIds: cart.flatMap((item) => 
+                item.isBundle && item.bundleCourses && item.bundleCourses.length > 0
+                  ? item.bundleCourses.map(b => b.courseId)
+                  : [item.id]
+              ),
             });
 
-            if (verifyRes.ok) {
-              clearCart();
-              navigate("/payment-success");
-            } else {
-              navigate("/payment-failed");
-            }
+            clearCart();
+            navigate("/payment-success");
           } catch (err) {
             console.error("Payment verification error:", err);
             navigate("/payment-failed");
