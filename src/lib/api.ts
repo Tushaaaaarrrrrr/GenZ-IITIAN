@@ -13,6 +13,17 @@ const getAuthHeaders = async (): Promise<Record<string, string>> => {
   return {};
 };
 
+const readJsonResponse = async (res: Response) => {
+  const contentType = res.headers.get('content-type') || '';
+  const rawText = await res.text();
+
+  if (contentType.includes('application/json')) {
+    return rawText ? JSON.parse(rawText) : {};
+  }
+
+  throw new Error(`API returned ${contentType || 'non-JSON'} instead of JSON`);
+};
+
 export const apiService = {
   // 1. Manager Dashboard Data
   managerFetch: async (tab: string, filter: string = 'all') => {
@@ -22,10 +33,10 @@ export const apiService = {
         headers: { ...authHeaders },
       });
       if (!res.ok) {
-        const errorData = await res.json();
+        const errorData = await readJsonResponse(res);
         throw new Error(errorData.error || 'Failed to fetch manager data');
       }
-      return res.json();
+      return readJsonResponse(res);
     } else {
       // Direct Supabase Mode (Hostinger/Production)
       try {
@@ -65,10 +76,10 @@ export const apiService = {
         headers: { ...authHeaders },
       });
       if (!res.ok) {
-        const errorData = await res.json();
+        const errorData = await readJsonResponse(res);
         throw new Error(errorData.error || 'Failed to fetch orders');
       }
-      return res.json();
+      return readJsonResponse(res);
     } else {
       // Direct Supabase Mode
       const { data, error } = await supabase
@@ -82,14 +93,14 @@ export const apiService = {
   },
 
   // 4. Create Razorpay Order
-  createOrder: async (payload: { amount: number, email: string, courseIds: string[], discountCode?: string }) => {
+  createOrder: async (payload: { amount: number, email: string, courseIds: string[], discountCode?: string, bundleId?: string }) => {
     if (!isProduction) {
       const res = await fetch('/api/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
+      const data = await readJsonResponse(res);
       if (!res.ok) throw new Error(data.error || 'Order creation failed');
       return data;
     } else {
@@ -103,7 +114,7 @@ export const apiService = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
+      const data = await readJsonResponse(res);
       if (!res.ok) throw new Error(data.error || 'Order creation failed (Production)');
       return data;
     }
@@ -118,10 +129,10 @@ export const apiService = {
         body: JSON.stringify(payload),
       });
       if (!res.ok) {
-        const errorData = await res.json();
+        const errorData = await readJsonResponse(res);
         throw new Error(errorData.error || 'Payment verification failed');
       }
-      return res.json();
+      return readJsonResponse(res);
     } else {
       // Payment verification REQUIRE a backend secret.
       const PROD_VERIFY_URL = import.meta.env.VITE_PROD_VERIFY_URL || '/api/verify-payment';
@@ -132,12 +143,10 @@ export const apiService = {
         body: JSON.stringify(payload),
       });
       if (!res.ok) {
-        const errorData = await res.json();
+        const errorData = await readJsonResponse(res);
         throw new Error(errorData.error || 'Payment verification failed (Production)');
       }
-      return res.json();
+      return readJsonResponse(res);
     }
   }
 };
-
-

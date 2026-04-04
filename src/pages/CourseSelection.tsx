@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../lib/supabase';
+import { apiService } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { Check, Loader2, ShieldCheck, AlertCircle, User, UserCheck, CreditCard, ArrowRight, BookOpen } from 'lucide-react';
 
@@ -288,31 +289,13 @@ export default function CourseSelection() {
     const total = calculateTotal();
 
     try {
-      const res = await fetch("/api/create-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount: Math.max(total - discountAmount, 0),
-          email: user?.email,
-          courseIds: selectedCourses,
-          bundleId: course?.isBundle ? course.id : undefined,
-          discountCode: appliedDiscountCode || undefined,
-        }),
+      const orderData = await apiService.createOrder({
+        amount: Math.max(total - discountAmount, 0),
+        email: user?.email || '',
+        courseIds: selectedCourses,
+        bundleId: course?.isBundle ? course.id : undefined,
+        discountCode: appliedDiscountCode || undefined,
       });
-
-      if (!res.ok) {
-        let errorMessage = `Server Error (${res.status})`;
-        try {
-          const errorData = await res.json();
-          errorMessage = errorData.error || errorMessage;
-        } catch {
-          const text = await res.text();
-          if (text) errorMessage = `${errorMessage}: ${text.slice(0, 160)}`;
-        }
-        throw new Error(errorMessage);
-      }
-
-      const orderData = await res.json();
       if (!orderData.id) throw new Error("Order creation failed");
 
       const scriptLoaded = await loadScript(RAZORPAY_SCRIPT_URL);
@@ -331,32 +314,19 @@ export default function CourseSelection() {
           setIsProcessing(true);
           setLoadingMessage("Processing your payment, please wait...");
           try {
-            const verifyRes = await fetch("/api/verify-payment", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-                email: user?.email,
-                courseIds: selectedCourses,
-                discountCode: appliedDiscountCode || undefined,
-              }),
+            await apiService.verifyPayment({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              email: user?.email,
+              courseIds: selectedCourses,
+              discountCode: appliedDiscountCode || undefined,
             });
 
-            if (verifyRes.ok) {
-              navigate("/payment-success");
-            } else {
-              let errorMessage = "Payment verification failed. Please try again.";
-              try {
-                const errorData = await verifyRes.json();
-                errorMessage = errorData.error || errorMessage;
-              } catch {}
-              setPaymentError(errorMessage);
-            }
-          } catch (err) {
+            navigate("/payment-success");
+          } catch (err: any) {
             console.error("Payment verification error:", err);
-            setPaymentError("Payment verification failed. Please try again.");
+            setPaymentError(err?.message || "Payment verification failed. Please try again.");
           } finally {
             setIsProcessing(false);
           }
