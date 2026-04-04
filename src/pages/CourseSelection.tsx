@@ -594,11 +594,62 @@ export default function CourseSelection() {
               key="selection"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="grid grid-cols-1 lg:grid-cols-12 gap-12"
+              className="space-y-6"
             >
-              <div className="lg:col-span-7 space-y-6">
-                <div className="bg-white border-[3px] border-[#0b1120] rounded-2xl p-5 shadow-[8px_8px_0px_#0b1120]">
-                    <h2 className="text-xl font-black text-[#0b1120] mb-4">Select Your Courses</h2>
+              {course.isBundle && (
+                  <div className={`p-4 md:p-6 rounded-2xl border-[4px] transition-all duration-500 shadow-[10px_10px_0px_#0b1120] ${isAllBundleSelected ? 'bg-green-50 border-[#10b981]' : 'bg-blue-50 border-[#0b1120]'}`}>
+                      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                          <div className="flex items-center gap-4">
+                              <div className={`w-12 h-12 rounded-xl border-2 border-[#0b1120] flex items-center justify-center shadow-[4px_4px_0px_#0b1120] ${isAllBundleSelected ? 'bg-[#10b981]' : 'bg-white'}`}>
+                                  <Star className={`w-6 h-6 ${isAllBundleSelected ? 'text-white' : 'text-blue-500'}`} fill={isAllBundleSelected ? 'white' : 'transparent'} strokeWidth={3} />
+                              </div>
+                              <div>
+                                  <div className="font-black text-lg md:text-xl text-[#0b1120] uppercase tracking-tight leading-tight">
+                                      {isAllBundleSelected 
+                                          ? "🎉 Bundle Price Unlocked!" 
+                                          : `Select All ${course.bundleCourses.length} Courses to Save ₹${course.bundleCourses.reduce((s: any, b: any) => s + b.price, 0) - (course.bundleDiscountPrice || 0)}`
+                                      }
+                                  </div>
+                                  <p className="text-[10px] md:text-sm text-gray-500 font-bold uppercase tracking-widest mt-0.5">
+                                      {isAllBundleSelected ? "Use the code below to claim your massive savings" : "The more you study, the more you save. Secure the full qualifier package."}
+                                  </p>
+                              </div>
+                          </div>
+
+                          {isAllBundleSelected ? (
+                              <div className="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto">
+                                  <div className="px-6 py-2.5 bg-white border-[3px] border-[#0b1120] rounded-xl font-mono font-black text-xl tracking-[0.3em] text-[#0b1120] shadow-[4px_4px_0px_#0b1120]">
+                                      {course.bundleDiscountCode}
+                                  </div>
+                                  {!appliedDiscountCode && (
+                                      <button 
+                                          onClick={() => {
+                                              setDiscountCodeInput(course.bundleDiscountCode);
+                                              setTimeout(() => applyDiscount(), 100);
+                                          }}
+                                          className="px-8 py-3 bg-[#0b1120] text-white rounded-xl font-black text-sm uppercase shadow-[4px_4px_0px_#10b981] hover:translate-y-1 hover:shadow-none transition-all active:translate-y-1.5"
+                                      >
+                                          Apply Bundle Pricing
+                                      </button>
+                                  )}
+                              </div>
+                          ) : (
+                              <div className="w-full md:w-64 bg-white border-[3px] border-[#0b1120] rounded-full h-5 overflow-hidden shadow-[4px_4px_0px_#0b1120]">
+                                  <motion.div 
+                                      initial={{ width: 0 }}
+                                      animate={{ width: `${(selectedCourses.length / course.bundleCourses.length) * 100}%` }}
+                                      className="h-full bg-blue-500 transition-all duration-700"
+                                  />
+                              </div>
+                          )}
+                      </div>
+                  </div>
+              )}
+
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+                <div className="lg:col-span-7 space-y-6">
+                  <div className="bg-white border-[3px] border-[#0b1120] rounded-2xl p-5 shadow-[8px_8px_0px_#0b1120]">
+                      <h2 className="text-xl font-black text-[#0b1120] mb-4">Select Your Courses</h2>
                     
                     {!course.isBundle ? (
                         <div className="p-3.5 bg-blue-50 border-[2px] border-[#0b1120] rounded-xl flex items-center justify-between">
@@ -641,47 +692,6 @@ export default function CourseSelection() {
                     <div className="space-y-3 mb-6">
                         {course.isBundle && (
                             <div className="space-y-3">
-                                {/* Bundle Progress Offer */}
-                                <div className={`p-4 rounded-xl border-[3px] transition-all duration-500 ${isAllBundleSelected ? 'bg-green-50 border-[#10b981] shadow-[4px_4px_0px_#10b981]' : 'bg-blue-50 border-blue-200'}`}>
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <div className={`w-8 h-8 rounded-lg border-2 border-[#0b1120] flex items-center justify-center ${isAllBundleSelected ? 'bg-[#10b981]' : 'bg-white'}`}>
-                                            <Star className={`w-4 h-4 ${isAllBundleSelected ? 'text-white' : 'text-blue-500'}`} fill={isAllBundleSelected ? 'white' : 'transparent'} />
-                                        </div>
-                                        <div className="font-black text-[10px] md:text-xs text-[#0b1120] uppercase tracking-tight leading-tight">
-                                            {isAllBundleSelected 
-                                                ? "🎉 Bundle Price Unlocked!" 
-                                                : `Select All ${course.bundleCourses.length} Courses to Save ₹${course.bundleCourses.reduce((s: any, b: any) => s + b.price, 0) - (course.bundleDiscountPrice || 0)}`
-                                            }
-                                        </div>
-                                    </div>
-                                    {isAllBundleSelected ? (
-                                        <div className="space-y-2">
-                                            <div className="p-2 bg-white border-2 border-[#0b1120] rounded-lg text-center font-mono font-black text-sm tracking-[0.2em] text-[#0b1120]">
-                                                {course.bundleDiscountCode}
-                                            </div>
-                                            {!appliedDiscountCode && (
-                                                <button 
-                                                    onClick={() => {
-                                                        setDiscountCodeInput(course.bundleDiscountCode);
-                                                        setTimeout(() => applyDiscount(), 100);
-                                                    }}
-                                                    className="w-full py-1.5 bg-[#0b1120] text-white rounded-lg font-black text-[10px] uppercase shadow-[2px_2px_0px_#10b981] hover:translate-y-0.5 hover:shadow-none transition-all"
-                                                >
-                                                    Apply Bundle Pricing
-                                                </button>
-                                            )}
-                                        </div>
-                                    ) : (
-                                        <div className="w-full h-1.5 bg-white border border-blue-200 rounded-full overflow-hidden">
-                                            <motion.div 
-                                                initial={{ width: 0 }}
-                                                animate={{ width: `${(selectedCourses.length / course.bundleCourses.length) * 100}%` }}
-                                                className="h-full bg-blue-500"
-                                            />
-                                        </div>
-                                    )}
-                                </div>
-
                                 {/* Summary List */}
                                 <div className="space-y-1.5 pt-2">
                                     {course.bundleCourses.filter((bc: SubCourse) => selectedCourses.includes(bc.courseId)).map((bc: SubCourse) => (
@@ -757,6 +767,7 @@ export default function CourseSelection() {
                     </p>
                 </div>
               </div>
+            </div>
             </motion.div>
           )}
         </AnimatePresence>

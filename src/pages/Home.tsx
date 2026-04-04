@@ -221,21 +221,12 @@ export default function Home() {
                         >
                           Explore Details
                         </Link>
-                        <button
-                          onClick={() =>
-                            buyNow({
-                              id: featuredCourse.id,
-                              name: featuredCourse.name,
-                              price: featuredCourse.discountPrice || featuredCourse.price,
-                              lms_course_id: String(featuredCourse.id),
-                              isBundle: featuredCourse.isBundle,
-                              bundleCourses: featuredCourse.bundleCourses
-                            })
-                          }
-                          className="flex-1 py-3 bg-[#10b981] text-white rounded-xl font-bold text-lg border-2 border-[#0b1120] hover:bg-[#059669] transition-colors shadow-[4px_4px_0px_#0b1120] active:translate-y-1 active:translate-x-1 active:shadow-none"
+                        <Link
+                          to={`/checkout/${featuredCourse.id}`}
+                          className="flex-1 py-3 bg-[#10b981] text-white rounded-xl font-bold text-lg border-2 border-[#0b1120] hover:bg-[#059669] transition-colors shadow-[4px_4px_0px_#0b1120] active:translate-y-1 active:translate-x-1 active:shadow-none flex items-center justify-center"
                         >
                           Enroll Now
-                        </button>
+                        </Link>
                       </div>
                     </div>
                   </div>

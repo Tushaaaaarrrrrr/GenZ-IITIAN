@@ -38,7 +38,7 @@ const cohortBenefits: {
 }[] = [
   {
     title: 'Structured Foundation Mastery',
-    description: 'Complete preparation for Mathematics 1, Statistics 1, Computational Thinking, and English 1, aligned exactly with the IIT Madras pattern.',
+    description: 'Build strong fundamentals with a clear, step-by-step approach designed to make difficult topics easier to understand and apply.',
     icon: BookOpen,
     tintClassName: 'bg-blue-100'
   },
@@ -50,25 +50,25 @@ const cohortBenefits: {
   },
   {
     title: 'Live Problem-Solving Sessions',
-    description: 'IIT-level explanations for mathematical reasoning, logical thinking, data interpretation, and programming logic.',
+    description: 'Join live sessions focused on concept clarity, guided practice, and solving important problems with the right exam approach.',
     icon: Video,
     tintClassName: 'bg-purple-100'
   },
   {
-    title: 'Mock Qualifier Exams',
-    description: 'Full-length simulated Qualifier exams with time-bound practice, performance analytics, and personalized feedback.',
+    title: 'Mock Tests and Practice',
+    description: 'Strengthen your preparation with timed tests, targeted practice, performance insights, and feedback that helps you improve steadily.',
     icon: BarChart3,
     tintClassName: 'bg-green-100'
   },
   {
-    title: 'Cutoff-Oriented Prep Plan',
-    description: 'We train you specifically to clear weekly assignment thresholds and qualify for the final exam with high scores.',
+    title: 'Exam-Oriented Prep Plan',
+    description: 'Follow a smart preparation strategy that helps you stay consistent, avoid common mistakes, and perform better in exams.',
     icon: Target,
     tintClassName: 'bg-orange-100'
   },
   {
     title: 'IIT-Focused Mentorship',
-    description: 'Strategy sessions for Data Science, Mgmt. and Aero degrees, including degree selection and post-qualifier roadmaps.',
+    description: 'Get practical guidance from seniors on study strategy, course planning, and the best way to move forward with confidence.',
     icon: Award,
     tintClassName: 'bg-cyan-100'
   },
@@ -335,10 +335,7 @@ export default function CourseDetail() {
           <div className="sticky top-24 space-y-8">
             <div className="bg-white border-[3px] border-[#0b1120] rounded-3xl p-8 shadow-[8px_8px_0px_#0b1120]">
               <h3 className="text-xl font-black text-[#0b1120] mb-6 border-b-2 border-gray-100 pb-4">GENz IITian</h3>
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-16 h-16 rounded-2xl bg-blue-100 border-2 border-[#0b1120] overflow-hidden">
-                  <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=150" alt="GENz IITian mentor" />
-                </div>
+              <div className="mb-6">
                 <div>
                   <div className="font-black text-[#0b1120]">Learn from IITM BS Seniors</div>
                   <div className="text-xs font-bold text-blue-600 uppercase">Real Guidance</div>

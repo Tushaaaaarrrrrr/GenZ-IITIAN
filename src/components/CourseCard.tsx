@@ -94,21 +94,12 @@ export default function CourseCard({ course, className = '' }: CourseCardProps) 
             >
               View Details {'>'}
             </Link>
-            <button
-              onClick={() =>
-                buyNow({
-                  id: course.id,
-                  name: course.name,
-                  price: displayPrice,
-                  lms_course_id: String(course.id),
-                  isBundle: course.isBundle,
-                  bundleCourses: course.bundleCourses
-                })
-              }
-              className="w-full py-3.5 bg-[#1e293b] text-white rounded-xl border-[3px] border-[#1e293b] hover:bg-black transition-all font-black text-sm lg:text-base active:translate-y-1 text-center"
+            <Link
+              to={`/checkout/${course.id}`}
+              className="w-full py-3.5 bg-[#1e293b] text-white rounded-xl border-[3px] border-[#1e293b] hover:bg-black transition-all font-black text-sm lg:text-base active:translate-y-1 flex items-center justify-center"
             >
-              Pay Now
-            </button>
+              Enroll Now
+            </Link>
           </div>
         </div>
       </div>
