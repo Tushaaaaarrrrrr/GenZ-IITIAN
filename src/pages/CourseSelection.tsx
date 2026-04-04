@@ -34,6 +34,7 @@ export default function CourseSelection() {
   const [isApplyingDiscount, setIsApplyingDiscount] = useState(false);
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   // Profile Form State
   const [profileData, setProfileData] = useState({
@@ -185,6 +186,8 @@ export default function CourseSelection() {
       setDiscountAmount(calculatedDiscount);
       setAppliedDiscountCode(coupon.code);
       setDiscountCodeInput('');
+      setShowSuccessModal(true);
+      setTimeout(() => setShowSuccessModal(false), 3500);
     } catch (err: any) {
       setDiscountError(err.message);
       setDiscountAmount(0);
@@ -348,6 +351,23 @@ export default function CourseSelection() {
               <p className="text-gray-500 font-bold text-[10px] uppercase tracking-widest">Please don't close this window</p>
             </div>
           </motion.div>
+          </motion.div>
+        )}
+
+        {showSuccessModal && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8, y: 50 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 50 }}
+            className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[200] bg-white border-[4px] border-[#0b1120] rounded-2xl p-4 shadow-[8px_8px_0px_#10b981] flex items-center gap-4 whitespace-nowrap"
+          >
+            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center border-2 border-[#0b1120]">
+              <span className="text-2xl">🎉</span>
+            </div>
+            <div className="text-left pr-4">
+              <h4 className="font-black text-[#0b1120] uppercase tracking-tight text-base">Discount Applied!</h4>
+              <p className="font-bold text-gray-500 text-xs uppercase">Your savings are securely locked in</p>
+            </div>
           </motion.div>
         )}
 
