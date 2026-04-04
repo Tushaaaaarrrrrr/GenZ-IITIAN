@@ -124,71 +124,125 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Stats & Features Section */}
-      <section className="max-w-7xl mx-auto px-6 py-12">
-        {/* Stats Row */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 mb-16">
+      {/* Stats & Ecosystem Section */}
+      <section className="max-w-7xl mx-auto px-6 py-12 space-y-16">
+        {/* New Stats Row */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
           {[
-            { value: 15, suffix: "K+", label: "Active Learners", sub: "Across India" },
-            { value: 95, suffix: "%", label: "Success Rate", sub: "In Qualifier Exams" },
-            { value: 50, suffix: "+", label: "Expert Tutors", sub: "IITians & Experts" },
-            { value: 4.9, suffix: "/5", label: "Student Rating", sub: "Verified Reviews", decimals: 1 }
+            { value: 13, suffix: "K+", label: "YouTube Subscribers", bgColor: "bg-[#f1f5f9]" },
+            { value: 1000, suffix: "+", label: "Students Learning", bgColor: "bg-[#10b981]", textColor: "text-white" },
+            { value: 50, suffix: "+", label: "IIT-Level Courses", bgColor: "bg-white" }
           ].map((stat, i) => (
-            <div key={i} className="bg-white border-[3px] border-[#0b1120] rounded-2xl p-6 shadow-[5px_5px_0px_#0b1120] text-center hover:translate-y-[-4px] transition-transform">
-              <div className="text-3xl font-black text-[#0b1120] mb-1">
-                <AnimatedNumber value={stat.value} decimals={stat.decimals} suffix={stat.suffix} />
+            <div key={i} className={`${stat.bgColor} border-[3px] border-[#0b1120] rounded-3xl p-8 shadow-[6px_6px_0px_#0b1120] text-center hover:translate-y-[-4px] transition-transform`}>
+              <div className={`text-4xl lg:text-5xl font-black ${stat.textColor || 'text-[#0b1120]'} mb-2`}>
+                <AnimatedNumber value={stat.value} suffix={stat.suffix} />
               </div>
-              <div className="text-sm font-black text-blue-600 uppercase tracking-tight">{stat.label}</div>
-              <div className="text-[10px] font-bold text-gray-400 mt-1 uppercase">{stat.sub}</div>
+              <div className={`text-sm lg:text-base font-black ${stat.textColor || 'text-[#0b1120]'} uppercase tracking-tight`}>{stat.label}</div>
             </div>
           ))}
         </div>
 
-        {/* Feature Highlights */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
-          <div className="space-y-8">
-            <h2 className="text-3xl lg:text-4xl font-black text-[#0b1120] leading-tight">
-              Why thousands of IITians <br />
-              <span className="text-[#10b981]">choose Gen-Z.</span>
-            </h2>
-            <div className="space-y-6">
-              {[
-                { title: "IIT Level Curriculum", desc: "Courses designed matching the exact standard of IIT Madras degree programs." },
-                { title: "PYQ Analysis Blocks", desc: "Step-by-step breakdown of previous year questions to master exam patterns." },
-                { title: "Live Doubt Clearing", desc: "Interact with tutors who have already cracked the qualifier and diploma." }
-              ].map((f, i) => (
-                <div key={i} className="flex gap-4">
-                  <div className="shrink-0 w-12 h-12 bg-[#e0f2fe] border-2 border-[#0b1120] rounded-xl flex items-center justify-center shadow-[3px_3px_0px_#0b1120]">
-                    <CheckCircle2 className="w-6 h-6 text-blue-600" />
-                  </div>
-                  <div>
-                    <h4 className="font-black text-[#0b1120] text-lg mb-1">{f.title}</h4>
-                    <p className="text-gray-500 font-bold text-sm leading-relaxed">{f.desc}</p>
-                  </div>
-                </div>
-              ))}
+        {/* Ecosystem Triple Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+          {/* Left Card: Ecosystem Features */}
+          <div className="bg-[#10b981] border-[4px] border-[#0b1120] rounded-[2.5rem] p-8 lg:p-12 shadow-[10px_10px_0px_#0b1120] relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-bl-full border-l-4 border-b-4 border-[#0b1120]/20 pointer-events-none"></div>
+            <div className="relative z-10">
+              <h2 className="text-3xl lg:text-5xl font-black text-white leading-[1.1] mb-6">
+                Experience the Powerful and Best Ecosystem
+              </h2>
+              <p className="text-white/90 font-bold text-lg mb-10 max-w-lg">
+                See how our platform simplifies complex concepts and helps you ace your exams with ease.
+              </p>
+              
+              <div className="flex flex-wrap gap-3">
+                {[
+                  "Daily Live", "Recorded classes", "Weekly Mock Test", 
+                  "Live Doubts", "Graded Practice", "Assignments", 
+                  "Imp Ques & Blueprint", "Curated"
+                ].map((tag, i) => (
+                  <span key={i} className="px-5 py-2.5 bg-white border-[3px] border-[#0b1120] rounded-full text-sm font-black text-[#0b1120] shadow-[3px_3px_0px_#0b1120] whitespace-nowrap">
+                    {tag}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
 
-          <div className="relative">
-            <div className="absolute inset-0 bg-[#0b1120] rounded-[2.5rem] rotate-3 -z-10 shadow-[10px_10px_0px_#10b981]"></div>
-            <div className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] p-10 relative overflow-hidden h-[400px] flex items-center justify-center">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-bl-full border-l-4 border-b-4 border-[#0b1120]"></div>
-              <div className="relative text-center">
-                <div className="inline-block p-4 bg-orange-100 rounded-2xl border-[3px] border-[#0b1120] mb-6 animate-bounce">
-                  <Award className="w-12 h-12 text-orange-500" />
-                </div>
-                <h3 className="text-2xl font-black text-[#0b1120] mb-4">Master Your <br /> Future Today</h3>
-                <p className="text-gray-500 font-bold max-w-[200px] mx-auto text-sm">Join the most active community of online IITians.</p>
-              </div>
-              <div className="absolute bottom-6 left-6 right-6 p-4 bg-blue-50 border-[3px] border-[#0b1120] rounded-xl flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-blue-500 border-2 border-[#0b1120]" />
-                <div className="flex-1">
-                  <div className="h-2 w-24 bg-[#0b1120]/20 rounded-full mb-2" />
-                  <div className="h-2 w-16 bg-[#0b1120]/10 rounded-full" />
-                </div>
-                <Star className="w-6 h-6 text-yellow-400 fill-current" />
-              </div>
+          {/* Right Card: Mentoring */}
+          <div className="bg-[#0b1120] border-[4px] border-[#0b1120] rounded-[2.5rem] p-8 lg:p-12 shadow-[10px_10px_0px_#10b981] relative overflow-hidden flex flex-col justify-center min-h-[400px]">
+            {/* Grid Pattern Background */}
+            <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
+            
+            <div className="relative z-10">
+              <h2 className="text-3xl lg:text-5xl font-black text-white leading-[1.1] mb-6">
+                Personally mentoring India's next top engineers
+              </h2>
+              <p className="text-gray-400 font-bold text-lg leading-relaxed max-w-lg">
+                Taking you from basics to advanced through practical learning and real-world problem solving.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Comparison Section */}
+      <section className="py-20 bg-white relative overflow-hidden">
+        {/* Decorative Shapes */}
+        <div className="absolute top-20 left-[5%] w-16 h-16 bg-yellow-200 rounded-full border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] opacity-50 animate-pulse"></div>
+        <div className="absolute bottom-40 right-[8%] w-20 h-20 bg-blue-200 rounded-2xl border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#0b1120] opacity-50 rotate-12"></div>
+
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <div className="inline-block px-5 py-2 bg-[#f3e8ff] text-[#7c3aed] border-[2px] border-[#7c3aed] rounded-full font-black text-sm mb-4">
+              The Clear Choice
+            </div>
+            <h2 className="text-4xl lg:text-6xl font-black text-[#0b1120] mb-4">Why Gen-Z IITian?</h2>
+            <p className="text-gray-500 font-bold text-lg">Compare and see the difference for yourself.</p>
+          </div>
+
+          <div className="relative overflow-x-auto pb-8">
+            <div className="min-w-[800px] border-[4px] border-[#0b1120] rounded-[2rem] bg-white shadow-[12px_12px_0px_#0b1120] overflow-hidden">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-[#0b1120] text-white">
+                    <th className="p-8 text-2xl font-black border-b-[4px] border-[#0b1120]">Features</th>
+                    <th className="p-8 text-2xl font-black text-center bg-[#dcfce7] text-[#0b1120] relative border-b-[4px] border-[#0b1120]">
+                      <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-[#10b981] text-white text-xs font-black rounded-full border-2 border-[#0b1120] uppercase tracking-wider whitespace-nowrap">
+                        Your Best Bet
+                      </div>
+                      GenZ IITian
+                    </th>
+                    <th className="p-8 text-xl font-black text-center border-b-[4px] border-[#0b1120]">YouTube Lectures</th>
+                    <th className="p-8 text-xl font-black text-center border-b-[4px] border-[#0b1120]">Other Courses</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y-[3px] divide-[#0b1120]">
+                  {[
+                    "Affordable", "Live Lec + Recordings", "Premium Notes",
+                    "Live Doubt Session", "Revision Session", "Mentorship Session",
+                    "Resume + LinkedIn Workshops", "Short Notes", "Subject wise blueprint"
+                  ].map((feature, i) => (
+                    <tr key={i} className="group hover:bg-gray-50 transition-colors">
+                      <td className="p-6 font-black text-[#0b1120] text-lg flex items-center gap-3">
+                        <div className="w-2 h-2 rounded-full bg-[#0b1120]"></div>
+                        {feature}
+                      </td>
+                      <td className="p-6 text-center bg-[#f0fdf4] border-x-[3px] border-[#0b1120]/10">
+                        <div className="inline-flex items-center justify-center w-10 h-10 rounded-full border-[3px] border-[#10b981] bg-white shadow-[2px_2px_0px_#10b981]">
+                          <CheckCircle2 className="w-6 h-6 text-[#10b981]" />
+                        </div>
+                      </td>
+                      <td className="p-6 text-center grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-100 transition-all">
+                        <XIcon className="w-8 h-8 text-red-400 mx-auto" />
+                      </td>
+                      <td className="p-6 text-center grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-100 transition-all">
+                        <XIcon className="w-8 h-8 text-red-400 mx-auto" />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
