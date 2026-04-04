@@ -236,7 +236,9 @@ export default function Home() {
                 {secondaryCourses.length > 0 && (
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
                     {secondaryCourses.map((course) => (
-                      <CourseCard key={course.id} course={course} />
+                      <div key={course.id}>
+                        <CourseCard course={course} />
+                      </div>
                     ))}
                   </div>
                 )}

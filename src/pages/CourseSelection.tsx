@@ -783,38 +783,38 @@ export default function CourseSelection() {
                 </p>
             </div>
 
-            <div className="bg-white border-[6px] border-[#0b1120] rounded-[3rem] p-8 md:p-16 shadow-[20px_20px_0px_#0b1120] grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                <div className="space-y-10">
+            <div className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] p-6 md:p-10 shadow-[15px_15px_0px_#0b1120] grid grid-cols-1 lg:grid-cols-3 gap-10 items-center">
+                <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-8">
                     {[
-                        { title: "Proven Academic Structure", desc: "Meticulously designed roadmap for consistent progress." },
-                        { title: "Expert Strategy & Roadmap", desc: "Direct guidance from those who've cracked it." },
-                        { title: "Real-Time Accountability", desc: "Live doubt clearing and progress monitoring." },
-                        { title: "Extensive Mock Practice", desc: "High-yield PYQ analysis and exam-style simulator." }
+                        { title: "Academic Structure", desc: "Meticulously designed roadmap for consistent progress." },
+                        { title: "Expert Strategy", desc: "Direct guidance from those who've cracked it." },
+                        { title: "Real-Time Support", desc: "Live doubt clearing and progress monitoring." },
+                        { title: "Mock Practice", desc: "High-yield PYQ analysis and exam-style simulator." }
                     ].map((item, idx) => (
-                        <div key={idx} className="flex gap-6 items-start group">
-                            <div className="shrink-0 w-12 h-12 bg-green-50 border-[3px] border-[#0b1120] rounded-2xl flex items-center justify-center shadow-[4px_4px_0px_#0b1120] group-hover:-translate-y-1 transition-transform">
-                                <CheckCircle2 className="w-6 h-6 text-[#10b981]" strokeWidth={3} />
+                        <div key={idx} className="flex gap-4 items-start group">
+                            <div className="shrink-0 w-10 h-10 bg-green-50 border-[2px] border-[#0b1120] rounded-xl flex items-center justify-center shadow-[3px_3px_0px_#0b1120] group-hover:-translate-y-1 transition-transform">
+                                <CheckCircle2 className="w-5 h-5 text-[#10b981]" strokeWidth={3} />
                             </div>
                             <div>
-                                <h4 className="text-xl md:text-2xl font-black text-[#0b1120] tracking-tight">{item.title}</h4>
-                                <p className="text-sm md:text-base text-gray-500 font-bold mt-1 uppercase tracking-tighter">{item.desc}</p>
+                                <h4 className="text-lg font-black text-[#0b1120] tracking-tight">{item.title}</h4>
+                                <p className="text-[10px] text-gray-500 font-bold mt-0.5 uppercase tracking-tighter leading-tight">{item.desc}</p>
                             </div>
                         </div>
                     ))}
                 </div>
 
-                <div className="relative group">
-                    <div className="absolute -inset-4 bg-blue-50 rounded-[2.5rem] -rotate-1 group-hover:rotate-0 transition-transform -z-10 border-[3px] border-[#0b1120]" />
-                    <div className="bg-blue-600 border-[6px] border-[#0b1120] rounded-[2.5rem] p-10 md:p-14 shadow-[20px_20px_0px_#0b1120] relative overflow-hidden">
-                        <Quote className="absolute -top-4 -left-4 w-32 h-32 text-white/10 -rotate-12" />
-                        <p className="text-xl md:text-2xl font-black text-white italic leading-relaxed relative z-10">
-                            "Gen-Z IITian bridges the gap between self-study and success. We don't just teach the syllabus; we prepare you for the challenge of being an IITian."
+                <div className="lg:col-span-1 relative group">
+                    <div className="absolute -inset-2 bg-blue-50 rounded-3xl -rotate-1 group-hover:rotate-0 transition-transform -z-10 border-2 border-[#0b1120]" />
+                    <div className="bg-blue-600 border-[4px] border-[#0b1120] rounded-3xl p-6 md:p-8 shadow-[10px_10px_0px_#0b1120] relative overflow-hidden">
+                        <Quote className="absolute -top-2 -left-2 w-16 h-16 text-white/10 -rotate-12" />
+                        <p className="text-sm md:text-base font-black text-white italic leading-snug relative z-10">
+                            "Gen-Z IITian bridges the gap between self-study and success. We prepare you for the challenge of being an IITian."
                         </p>
-                        <div className="mt-8 flex items-center gap-4 relative z-10">
-                            <div className="w-12 h-12 rounded-full border-4 border-white bg-blue-400" />
+                        <div className="mt-4 flex items-center gap-3 relative z-10">
+                            <div className="w-8 h-8 rounded-full border-2 border-white bg-blue-400" />
                             <div>
-                                <div className="text-white font-black text-lg tracking-tight">Founder Team</div>
-                                <div className="text-blue-200 font-bold text-xs uppercase tracking-widest">IIT Madras Qualifier Mentors</div>
+                                <div className="text-white font-black text-xs tracking-tight">Founder Team</div>
+                                <div className="text-blue-200 font-bold text-[8px] uppercase tracking-widest">IIT Madras Mentors</div>
                             </div>
                         </div>
                     </div>
