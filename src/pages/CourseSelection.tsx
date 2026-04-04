@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -17,6 +17,7 @@ import { CheckCircle2, Star, Quote } from 'lucide-react';
 
 export default function CourseSelection() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const { user, profile, loading: authLoading, openLoginModal } = useAuth();
   const navigate = useNavigate();
 
@@ -37,6 +38,7 @@ export default function CourseSelection() {
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const courseLookupId = searchParams.get('courseId') || id;
 
   // Profile Form State
   const [profileData, setProfileData] = useState({
@@ -71,7 +73,7 @@ export default function CourseSelection() {
 
   const fetchCourse = async () => {
     try {
-      const { data, error } = await supabase.from('courses').select('*').eq('id', id).single();
+      const { data, error } = await supabase.from('courses').select('*').eq('id', courseLookupId).single();
       if (error) throw error;
       setCourse(data);
       
@@ -119,7 +121,7 @@ export default function CourseSelection() {
 
   useEffect(() => {
     fetchCourse();
-  }, [id]);
+  }, [courseLookupId]);
 
   const toggleCourse = (courseId: string) => {
     setSelectedCourses(prev => {

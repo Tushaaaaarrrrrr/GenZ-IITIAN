@@ -55,6 +55,15 @@ export default async function handler(req: any, res: any) {
       return res.status(200).json(data || []);
     }
 
+    if (tab === 'discounts') {
+      const { data, error } = await supabase
+        .from('discount_coupons')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return res.status(200).json(data || []);
+    }
+
 
 
 
@@ -65,5 +74,4 @@ export default async function handler(req: any, res: any) {
     return res.status(500).json({ error: err.message });
   }
 }
-
 

@@ -33,6 +33,7 @@ export default function Manager() {
   const [showAddDiscount, setShowAddDiscount] = useState(false);
   const [discountOptions, setDiscountOptions] = useState<any[]>([]); // To hold courses
   const [editingDiscount, setEditingDiscount] = useState<any>(null);
+  const discountOptionMap = new Map(discountOptions.map(option => [option.id, option]));
 
   useEffect(() => {
     if (editingCourse) {
@@ -71,16 +72,36 @@ export default function Manager() {
     if (isManager) fetchData();
   }, [effectiveTab, isManager, filter]);
 
+  useEffect(() => {
+    if ((showAddDiscount || editingDiscount) && discountOptions.length === 0) {
+      fetchDiscountOptions();
+    }
+  }, [showAddDiscount, editingDiscount]);
+
+  const fetchDiscountOptions = async () => {
+    try {
+      const coursesData = await apiService.managerFetch('courses');
+      setDiscountOptions(coursesData || []);
+    } catch (err) {
+      console.error('Failed to fetch discount options via manager API, falling back to direct Supabase:', err);
+      const { data: coursesData, error } = await supabase.from('courses').select('*').order('name');
+      if (error) throw error;
+      setDiscountOptions(coursesData || []);
+    }
+  };
+
   const fetchData = async () => {
     setLoading(true);
     try {
-      const result = await apiService.managerFetch(effectiveTab, filter);
-      setData(result || []);
-
       if (effectiveTab === 'discounts') {
-         // Also fetch courses so manager can pick which course it applies to
-         const coursesData = await apiService.managerFetch('courses');
-         setDiscountOptions(coursesData || []);
+        const [discountsData] = await Promise.all([
+          apiService.managerFetch('discounts', filter),
+          fetchDiscountOptions()
+        ]);
+        setData(discountsData || []);
+      } else {
+        const result = await apiService.managerFetch(effectiveTab, filter);
+        setData(result || []);
       }
     } catch (err: any) {
       console.error(`Manager Fetch Error [${activeTab}]:`, err.message);
@@ -355,7 +376,9 @@ export default function Manager() {
                         <div>
                           <div className="text-[10px] font-black uppercase text-gray-400 mb-1">Applies To</div>
                           <div className="text-sm font-bold text-[#0b1120] bg-gray-50 border-2 border-dashed border-gray-200 p-2 rounded-lg truncate">
-                            {discount.applies_to === 'ALL' ? 'Everything (Global)' : `Course ID: ${discount.applies_to}`}
+                            {discount.applies_to === 'ALL'
+                              ? 'Everything (Global)'
+                              : `${discountOptionMap.get(discount.applies_to)?.name || discount.applies_to} ${discountOptionMap.get(discount.applies_to)?.isBundle ? '[Bundle]' : '[Course]'} (${discount.applies_to})`}
                           </div>
                         </div>
                       </div>
@@ -653,7 +676,9 @@ export default function Manager() {
                   <select id="d-applies" defaultValue={editingDiscount?.applies_to || 'ALL'} className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-purple-100 outline-none bg-white">
                     <option value="ALL">ALL COURSES (Global Discount)</option>
                     {discountOptions.map(c => (
-                      <option key={c.id} value={c.id}>{c.name} ({c.id})</option>
+                      <option key={c.id} value={c.id}>
+                        {c.name} {c.isBundle ? '[Bundle]' : '[Course]'} ({c.id})
+                      </option>
                     ))}
                   </select>
                 </div>

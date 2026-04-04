@@ -19,8 +19,7 @@ import {
   Target
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useCart } from '../context/CartContext';
-import { useAuth } from '../context/AuthContext';
+import { getCheckoutPath } from '../utils/courseRouting';
 
 function formatCourseDate(date: string) {
   return new Date(date).toLocaleDateString('en-GB', {
@@ -85,8 +84,6 @@ export default function CourseDetail() {
   const navigate = useNavigate();
   const [course, setCourse] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const { addToCart, buyNow } = useCart();
-  const { user, openLoginModal } = useAuth();
 
   useEffect(() => {
     fetchCourse();
@@ -106,17 +103,6 @@ export default function CourseDetail() {
     }
     setCourse(data);
     setLoading(false);
-  };
-
-  const handleEnrollNow = () => {
-    if (course) {
-      buyNow({
-        id: course.id,
-        name: course.name,
-        price: course.price,
-        lms_course_id: String(course.id)
-      });
-    }
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin w-12 h-12 text-[#0b1120]" /></div>;
@@ -217,7 +203,7 @@ export default function CourseDetail() {
 
               <div className="flex flex-col gap-4">
                 <Link 
-                  to={`/checkout/${course.id}`}
+                  to={getCheckoutPath({ id: String(course.id), name: course.name })}
                   className="w-full py-5 bg-[#0b1120] text-white rounded-2xl font-black text-xl border-2 border-[#0b1120] hover:bg-white hover:text-[#0b1120] transition-all flex items-center justify-center gap-2 shadow-[6px_6px_0px_#0b1120] active:translate-y-1 active:shadow-none text-center"
                 >
                   Enroll Now <ChevronRight className="w-6 h-6" />

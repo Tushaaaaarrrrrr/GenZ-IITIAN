@@ -3,10 +3,10 @@ import { motion } from 'motion/react';
 import { ChevronRight, Award, CheckCircle2, X as XIcon, Star, Layers, GraduationCap } from 'lucide-react';
 import { useInView, animate } from 'motion/react';
 import { Link } from 'react-router-dom';
-import { useCart } from '../context/CartContext';
 import CourseCard, { CourseCardData } from '../components/CourseCard';
 import HeroAnimation from '../components/HeroAnimation';
 import { supabase } from '../lib/supabase';
+import { getCheckoutPath } from '../utils/courseRouting';
 
 function AnimatedNumber({ value, decimals = 0, suffix = "" }: { value: number, decimals?: number, suffix?: string }) {
   const [displayValue, setDisplayValue] = useState("0");
@@ -30,7 +30,6 @@ function AnimatedNumber({ value, decimals = 0, suffix = "" }: { value: number, d
 }
 
 export default function Home() {
-  const { buyNow } = useCart();
   const [courses, setCourses] = useState<CourseCardData[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -222,7 +221,7 @@ export default function Home() {
                           Explore Details
                         </Link>
                         <Link
-                          to={`/checkout/${featuredCourse.id}`}
+                          to={getCheckoutPath({ id: String(featuredCourse.id), name: featuredCourse.name })}
                           className="flex-1 py-3 bg-[#10b981] text-white rounded-xl font-bold text-lg border-2 border-[#0b1120] hover:bg-[#059669] transition-colors shadow-[4px_4px_0px_#0b1120] active:translate-y-1 active:translate-x-1 active:shadow-none flex items-center justify-center"
                         >
                           Enroll Now
