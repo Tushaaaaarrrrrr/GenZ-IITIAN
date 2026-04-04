@@ -630,7 +630,7 @@ export default function CourseSelection() {
                                       }
                                   </div>
                                   <p className="text-[10px] md:text-sm text-gray-500 font-bold uppercase tracking-widest mt-0.5">
-                                      {isAllBundleSelected ? "Use the code below to claim your massive savings" : "The more you study, the more you save. Secure the full qualifier package."}
+                                      {isAllBundleSelected ? "Use the code below to claim the bundle price." : "Unlock the bundle price by selecting all courses."}
                                   </p>
                               </div>
                           </div>
