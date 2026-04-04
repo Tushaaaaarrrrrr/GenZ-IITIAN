@@ -423,7 +423,25 @@ export default function Manager() {
                 <div className="space-y-6">
                   <div>
                     <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Course Name</label>
-                    <input type="text" defaultValue={editingCourse?.name} id="c-name" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none" />
+                    <input 
+                      type="text" 
+                      defaultValue={editingCourse?.name} 
+                      id="c-name" 
+                      onChange={(e) => {
+                        if (!editingCourse) {
+                          const idInput = document.getElementById('c-id') as HTMLInputElement;
+                          if (idInput) {
+                            idInput.value = e.target.value
+                              .toLowerCase()
+                              .trim()
+                              .replace(/[^\w\s-]/g, '')
+                              .replace(/[\s_-]+/g, '-')
+                              .replace(/^-+|-+$/g, '');
+                          }
+                        }
+                      }}
+                      className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none" 
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-black text-[#0b1120] uppercase mb-1">Subtitle / Brief Description</label>
