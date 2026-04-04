@@ -30,15 +30,6 @@ const razorpay = (razorpayKeyId && razorpaySecret)
   ? new Razorpay({ key_id: razorpayKeyId, key_secret: razorpaySecret })
   : null;
 
-const ADMIN_USER = process.env.ADMIN_USER;
-const ADMIN_PASS = process.env.ADMIN_PASS;
-
-if (!ADMIN_USER || !ADMIN_PASS) {
-  console.error('\x1b[31m%s\x1b[0m', '❌ ERROR: ADMIN_USER and ADMIN_PASS must be defined in environment variables!');
-  console.error('Please set these in your .env file or hosting panel.');
-  process.exit(1);
-}
-
 const sessions = new Map();
 
 app.use(express.json());
@@ -69,6 +60,11 @@ function authMiddleware(req, res, next) {
 
 app.post('/api/auth/login', (req, res) => {
     const { username, password } = req.body;
+    const ADMIN_USER = process.env.ADMIN_USER;
+    const ADMIN_PASS = process.env.ADMIN_PASS;
+    if (!ADMIN_USER || !ADMIN_PASS) {
+        return res.status(503).json({ error: 'Admin login is not configured.' });
+    }
     if (username === ADMIN_USER && password === ADMIN_PASS) {
         const token = crypto.randomBytes(32).toString('hex');
         sessions.set(token, { user: username, expires: Date.now() + 24 * 60 * 60 * 1000 });
