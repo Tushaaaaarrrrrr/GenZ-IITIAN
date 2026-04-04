@@ -201,8 +201,9 @@ export default function CourseSelection() {
 
       // 3. Check if applies to these courses
       if (coupon.applies_to !== 'ALL') {
-        const targetsSelectedCourse = selectedCourses.includes(coupon.applies_to);
-        const targetsCurrentBundle = course?.isBundle && coupon.applies_to === course.id;
+        const targetId = coupon.applies_to.trim().toLowerCase();
+        const targetsSelectedCourse = selectedCourses.some(id => id.trim().toLowerCase() === targetId);
+        const targetsCurrentBundle = course?.isBundle && (course.id || "").trim().toLowerCase() === targetId;
 
         if (!targetsSelectedCourse && !targetsCurrentBundle) {
           throw new Error(`This code doesn't apply to the selected courses.`);

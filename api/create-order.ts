@@ -135,11 +135,12 @@ export default async function handler(req: any, res: any) {
 
          // Check applies_to
          if (coupon.applies_to !== 'ALL') {
-            const targetsSelectedCourse = courseIds.includes(coupon.applies_to);
-            const targetsBundle = Boolean(bundleId) && coupon.applies_to === bundleId;
+            const targetId = (coupon.applies_to || "").trim().toLowerCase();
+            const targetsSelectedCourse = courseIds.some((id: string) => (id || "").trim().toLowerCase() === targetId);
+            const targetsBundle = Boolean(bundleId) && (bundleId || "").trim().toLowerCase() === targetId;
 
             if (!targetsSelectedCourse && !targetsBundle) {
-              return res.status(400).json({ error: 'Discount code does not apply to selected courses' });
+               return res.status(400).json({ error: 'Discount code does not apply to selected courses' });
             }
          }
 
