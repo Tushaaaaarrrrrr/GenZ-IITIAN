@@ -5,7 +5,7 @@ import Razorpay from 'razorpay';
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { razorpay_order_id, razorpay_payment_id, razorpay_signature, email, courseIds } = req.body;
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature, email, courseIds, discountCode } = req.body;
 
   const supabase_url = process.env.VITE_SUPABASE_URL;
   const service_role = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -68,6 +68,18 @@ export default async function handler(req: any, res: any) {
           metadata: { order_id: razorpay_order_id, payment_id: razorpay_payment_id }
         }));
         await supabase.from('activity_logs').insert(successLogs);
+
+        // 5. Track Discount Code Usage
+        if (discountCode) {
+            const { data: couponCheck } = await supabase.from('discount_coupons').select('code').eq('code', discountCode).maybeSingle();
+            if (couponCheck) {
+                await supabase.from('coupon_uses').insert({
+                    code: discountCode,
+                    user_email: email,
+                    order_id: razorpay_order_id
+                });
+            }
+        }
 
       } catch (lmsErr) {
         console.error(`LMS Enrollment Error for ${email}:`, lmsErr);

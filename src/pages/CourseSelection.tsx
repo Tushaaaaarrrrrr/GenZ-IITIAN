@@ -26,6 +26,15 @@ export default function CourseSelection() {
   const [step, setStep] = useState<'profile' | 'selection'>('selection');
   const [showProfilePrompt, setShowProfilePrompt] = useState(false);
 
+  // Discount Logic
+  const [discountCodeInput, setDiscountCodeInput] = useState('');
+  const [appliedDiscountCode, setAppliedDiscountCode] = useState<string | null>(null);
+  const [discountAmount, setDiscountAmount] = useState(0);
+  const [discountError, setDiscountError] = useState('');
+  const [isApplyingDiscount, setIsApplyingDiscount] = useState(false);
+
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+
   // Profile Form State
   const [profileData, setProfileData] = useState({
     name: '',
@@ -126,6 +135,78 @@ export default function CourseSelection() {
       .reduce((sum: number, bc: SubCourse) => sum + bc.price, 0);
   };
 
+  const applyDiscount = async () => {
+    if (!discountCodeInput.trim()) return;
+    if (!user) {
+      openLoginModal();
+      return;
+    }
+    setIsApplyingDiscount(true);
+    setDiscountError('');
+    try {
+      const codeToApply = discountCodeInput.trim().toUpperCase();
+      // 1. Check if it exists
+      const { data: coupon, error } = await supabase
+        .from('discount_coupons')
+        .select('*')
+        .eq('code', codeToApply)
+        .single();
+      
+      if (error || !coupon) throw new Error('Invalid or expired discount code.');
+
+      // 2. Check if user already used it
+      const { data: usage } = await supabase
+        .from('coupon_uses')
+        .select('*')
+        .eq('code', coupon.code)
+        .eq('user_email', user.email)
+        .maybeSingle();
+      
+      if (usage) throw new Error('You have already used this discount code.');
+
+      // 3. Check if applies to these courses
+      if (coupon.applies_to !== 'ALL') {
+        const hasValidCourse = selectedCourses.includes(coupon.applies_to);
+        if (!hasValidCourse) throw new Error(`This code doesn't apply to the selected courses.`);
+      }
+
+      const total = calculateTotal();
+
+      // 4. Calculate discount
+      let calculatedDiscount = 0;
+      if (coupon.discount_percentage) {
+        calculatedDiscount = Math.floor(total * (coupon.discount_percentage / 100));
+      } else if (coupon.discount_amount) {
+        calculatedDiscount = coupon.discount_amount;
+      }
+
+      if (calculatedDiscount > total) calculatedDiscount = total;
+
+      setDiscountAmount(calculatedDiscount);
+      setAppliedDiscountCode(coupon.code);
+      setDiscountCodeInput('');
+    } catch (err: any) {
+      setDiscountError(err.message);
+      setDiscountAmount(0);
+      setAppliedDiscountCode(null);
+    } finally {
+      setIsApplyingDiscount(false);
+    }
+  };
+
+  const removeDiscount = () => {
+    setAppliedDiscountCode(null);
+    setDiscountAmount(0);
+    setDiscountError('');
+  };
+
+  // Re-calculate discount if course selection changes
+  useEffect(() => {
+    if (appliedDiscountCode) {
+       removeDiscount(); // Clear discount if sub-courses change to be safe
+    }
+  }, [selectedCourses, course]);
+
   const loadScript = (src: string) => {
     return new Promise((resolve) => {
       const script = document.createElement("script");
@@ -142,6 +223,11 @@ export default function CourseSelection() {
       return;
     }
 
+    setShowConfirmModal(true);
+  };
+
+  const proceedToPayment = async () => {
+    setShowConfirmModal(false);
     setIsProcessing(true);
     setLoadingMessage("Preparing Checkout...");
     const total = calculateTotal();
@@ -151,9 +237,10 @@ export default function CourseSelection() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          amount: total,
+          amount: Math.max(total - discountAmount, 0),
           email: user?.email,
           courseIds: selectedCourses,
+          discountCode: appliedDiscountCode || undefined,
         }),
       });
 
@@ -188,6 +275,7 @@ export default function CourseSelection() {
                 razorpay_signature: response.razorpay_signature,
                 email: user?.email,
                 courseIds: selectedCourses,
+                discountCode: appliedDiscountCode || undefined,
               }),
             });
 
@@ -260,6 +348,70 @@ export default function CourseSelection() {
               <p className="text-gray-500 font-bold text-[10px] uppercase tracking-widest">Please don't close this window</p>
             </div>
           </motion.div>
+          </motion.div>
+        )}
+
+        {showConfirmModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-[#0b1120]/80 backdrop-blur-md flex items-center justify-center p-6 text-center"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-white border-[4px] border-[#0b1120] rounded-2xl p-6 md:p-8 flex flex-col items-center gap-6 shadow-[8px_8px_0px_#10b981] max-w-sm w-full mx-6 text-left"
+            >
+              <div className="w-full">
+                <h3 className="text-xl font-black text-[#0b1120] mb-4 uppercase tracking-tight text-center">Confirm Enrollment</h3>
+                
+                <div className="space-y-2 mb-4">
+                    {course.isBundle ? (
+                        course.bundleCourses.filter((bc: SubCourse) => selectedCourses.includes(bc.courseId)).map((bc: SubCourse) => (
+                            <div key={bc.courseId} className="flex justify-between font-bold text-gray-600 text-sm">
+                                <span>{bc.courseName}</span>
+                                <span>₹{bc.price}</span>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="flex justify-between font-bold text-gray-600 text-sm">
+                            <span>{course.name}</span>
+                            <span>₹{course.discountPrice || course.price}</span>
+                        </div>
+                    )}
+                </div>
+
+                <div className="h-0.5 bg-gray-200 mb-4" />
+
+                {appliedDiscountCode && (
+                    <div className="flex justify-between font-black text-green-600 text-sm mb-2 pb-2 border-b border-gray-100">
+                        <span>Discount ({appliedDiscountCode})</span>
+                        <span>-₹{discountAmount}</span>
+                    </div>
+                )}
+
+                <div className="flex justify-between font-black text-xl text-[#0b1120] mb-6">
+                    <span>Total You Pay</span>
+                    <span>₹{Math.max(calculateTotal() - discountAmount, 0)}</span>
+                </div>
+
+                <div className="flex gap-3">
+                    <button 
+                        onClick={() => setShowConfirmModal(false)}
+                        className="flex-1 py-3 bg-gray-100 text-[#0b1120] border-2 border-gray-300 rounded-xl font-black transition-colors hover:bg-gray-200"
+                    >
+                        Cancel
+                    </button>
+                    <button 
+                        onClick={proceedToPayment}
+                        className="flex-1 py-3 bg-[#10b981] text-white border-2 border-[#0b1120] rounded-xl font-black transition-colors hover:bg-[#059669]"
+                    >
+                        Pay ₹{Math.max(calculateTotal() - discountAmount, 0)}
+                    </button>
+                </div>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -461,11 +613,53 @@ export default function CourseSelection() {
                                 ))}
                             </div>
                         )}
-                        <div className="h-0.5 bg-gray-100 my-3" />
+
+                        {/* Discount Applier */}
+                        <div className="py-2 border-t border-b border-gray-100 my-4">
+                          {!appliedDiscountCode ? (
+                            <div className="space-y-2">
+                              <div className="flex gap-2">
+                                <input 
+                                  type="text" 
+                                  placeholder="Discount Code" 
+                                  value={discountCodeInput}
+                                  onChange={(e) => setDiscountCodeInput(e.target.value.toUpperCase())}
+                                  className="flex-grow px-3 py-2 bg-gray-50 border-[2px] border-gray-200 rounded-lg font-black text-sm outline-none focus:border-[#10b981] uppercase placeholder:normal-case"
+                                />
+                                <button 
+                                  onClick={applyDiscount}
+                                  disabled={isApplyingDiscount || !discountCodeInput.trim()}
+                                  className="px-4 py-2 bg-[#0b1120] text-white rounded-lg font-black text-xs hover:bg-gray-800 transition-colors disabled:opacity-50"
+                                >
+                                  {isApplyingDiscount ? 'WAIT...' : 'APPLY'}
+                                </button>
+                              </div>
+                              {discountError && <p className="text-red-500 font-bold text-[10px] uppercase">{discountError}</p>}
+                            </div>
+                          ) : (
+                            <div className="p-3 bg-green-50 border-2 border-green-200 rounded-lg flex items-center justify-between">
+                              <div>
+                                <div className="text-[10px] font-black text-green-600 uppercase">Discount Applied!</div>
+                                <div className="text-sm font-black text-[#0b1120] font-mono tracking-widest">{appliedDiscountCode}</div>
+                              </div>
+                              <button onClick={removeDiscount} className="text-[10px] font-black text-red-500 hover:underline uppercase">Remove</button>
+                            </div>
+                          )}
+                        </div>
+
+                        {appliedDiscountCode && (
+                          <div className="flex justify-between font-bold text-gray-500 text-sm">
+                            <span>Discount</span>
+                            <span className="text-green-600">-₹{discountAmount}</span>
+                          </div>
+                        )}
+
                         <div className="flex justify-between items-end">
                             <div>
                                 <div className="text-[9px] font-black uppercase text-gray-400 mb-0.5">Grand Total</div>
-                                <div className="text-2xl font-black text-[#0b1120]">₹{calculateTotal()}</div>
+                                <div className="flex items-end gap-2">
+                                    <div className="text-2xl font-black text-[#0b1120]">₹{Math.max(calculateTotal() - discountAmount, 0)}</div>
+                                </div>
                             </div>
                         </div>
                     </div>

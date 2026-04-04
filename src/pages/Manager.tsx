@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate, useLocation, NavLink } from 'react-router-dom';
 import { apiService } from '../lib/api';
 
-type Tab = 'users' | 'courses';
+type Tab = 'users' | 'courses' | 'discounts';
 
 export default function Manager() {
   const { isManager, loading: authLoading } = useAuth();
@@ -17,7 +17,7 @@ export default function Manager() {
   const activeTab = (location.pathname.split('/').pop() || 'users') as Tab;
   
   // Validate tab - if path is just /manager, it's users. If invalid, could redirect.
-  const validTabs: Tab[] = ['users', 'courses'];
+  const validTabs: Tab[] = ['users', 'courses', 'discounts'];
   const effectiveTab = validTabs.includes(activeTab) ? activeTab : 'users';
   const [data, setData] = useState<any>([]);
   const [loading, setLoading] = useState(true);
@@ -26,14 +26,25 @@ export default function Manager() {
   const [showAddCourse, setShowAddCourse] = useState(false);
   const [isBundle, setIsBundle] = useState(false);
   const [bundleCourses, setBundleCourses] = useState<{courseId: string, courseName: string, price: number}[]>([]);
+  const [bundleDiscountPrice, setBundleDiscountPrice] = useState<number | ''>('');
+  const [bundleDiscountCode, setBundleDiscountCode] = useState('');
+
+  // Discount Coupons state
+  const [showAddDiscount, setShowAddDiscount] = useState(false);
+  const [discountOptions, setDiscountOptions] = useState<any[]>([]); // To hold courses
+  const [editingDiscount, setEditingDiscount] = useState<any>(null);
 
   useEffect(() => {
     if (editingCourse) {
       setIsBundle(editingCourse.isBundle || false);
       setBundleCourses(editingCourse.bundleCourses || []);
+      setBundleDiscountPrice(editingCourse.bundleDiscountPrice || '');
+      setBundleDiscountCode(editingCourse.bundleDiscountCode || '');
     } else {
       setIsBundle(false);
       setBundleCourses([{ courseId: '', courseName: '', price: 0 }]);
+      setBundleDiscountPrice('');
+      setBundleDiscountCode('');
     }
   }, [editingCourse, showAddCourse]);
 
@@ -65,6 +76,12 @@ export default function Manager() {
     try {
       const result = await apiService.managerFetch(effectiveTab, filter);
       setData(result || []);
+
+      if (effectiveTab === 'discounts') {
+         // Also fetch courses so manager can pick which course it applies to
+         const coursesData = await apiService.managerFetch('courses');
+         setDiscountOptions(coursesData || []);
+      }
     } catch (err: any) {
       console.error(`Manager Fetch Error [${activeTab}]:`, err.message);
       setData([]);
@@ -115,6 +132,8 @@ export default function Manager() {
         discountPrice: course.discountPrice ? parseInt(course.discountPrice) : null,
         isBundle: course.isBundle || false,
         bundleCourses: course.bundleCourses || [],
+        bundleDiscountPrice: course.bundleDiscountPrice || null,
+        bundleDiscountCode: course.bundleDiscountCode || null,
         subject: course.category || null,
         startDate: course.startDate || null,
         endDate: course.endDate || null,
@@ -124,6 +143,26 @@ export default function Manager() {
       if (error) alert(error.message);
       setEditingCourse(null);
       setShowAddCourse(false);
+    }
+    fetchData();
+  };
+
+  const handleDiscountAction = async (discount: any, isDelete = false) => {
+    if (isDelete) {
+      if (!confirm('Are you sure you want to delete this discount code?')) return;
+      await supabase.from('discount_coupons').delete().eq('id', discount.id);
+    } else {
+      const cleanedDiscount = {
+        ...(discount.id ? { id: discount.id } : {}),
+        code: discount.code.toUpperCase(),
+        discount_percentage: discount.discount_percentage ? parseInt(discount.discount_percentage) : null,
+        discount_amount: discount.discount_amount ? parseInt(discount.discount_amount) : null,
+        applies_to: discount.applies_to || 'ALL'
+      };
+      const { error } = await supabase.from('discount_coupons').upsert(cleanedDiscount, { onConflict: 'code' });
+      if (error) alert(error.message);
+      setEditingDiscount(null);
+      setShowAddDiscount(false);
     }
     fetchData();
   };
@@ -142,7 +181,8 @@ export default function Manager() {
         <nav className="space-y-4 flex-grow">
           {[
             { id: 'users', icon: User, path: '/manager/users' },
-            { id: 'courses', icon: BookOpen, path: '/manager/courses' }
+            { id: 'courses', icon: BookOpen, path: '/manager/courses' },
+            { id: 'discounts', icon: ShoppingBag, path: '/manager/discounts' }
           ].map((tab) => (
             <NavLink
               key={tab.id}
@@ -184,6 +224,14 @@ export default function Manager() {
                   className="flex items-center gap-3 px-8 py-4 bg-[#10b981] text-[#0b1120] rounded-2xl font-black border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#0b1120] hover:translate-y-1 hover:shadow-none transition-all"
                 >
                   <Plus className="w-6 h-6" /> Create Course
+                </button>
+              )}
+              {effectiveTab === 'discounts' && (
+                <button 
+                  onClick={() => setShowAddDiscount(true)}
+                  className="flex items-center gap-3 px-8 py-4 bg-purple-500 text-white rounded-2xl font-black border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#0b1120] hover:translate-y-1 hover:shadow-none transition-all"
+                >
+                  <Plus className="w-6 h-6" /> New Coupon
                 </button>
               )}
             </div>
@@ -266,6 +314,61 @@ export default function Manager() {
                         </button>
                         <button 
                           onClick={() => handleCourseAction(course, true)}
+                          className="p-4 text-red-500 bg-red-50 border-2 border-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-colors"
+                        >
+                          <Trash2 className="w-6 h-6" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {effectiveTab === 'discounts' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                  {data.map((discount) => (
+                    <div key={discount.id} className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] p-8 shadow-[10px_10px_0px_#0b1120] flex flex-col hover:shadow-[10px_10px_0px_#8b5cf6] transition-all">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="px-4 py-2 bg-purple-100 text-purple-700 font-black rounded-lg border-2 border-purple-200 tracking-widest uppercase text-xs">
+                          COUPON CODE
+                        </div>
+                        <div className="flex items-center text-xs font-bold text-gray-400 gap-1 uppercase tracking-widest">
+                          <Users className="w-4 h-4" /> Used {discount.used_count || 0} times
+                        </div>
+                      </div>
+                      
+                      <h3 className="text-4xl font-black text-[#0b1120] mb-2 font-mono uppercase tracking-widest border-b-4 border-gray-100 pb-4 break-all">
+                        {discount.code}
+                      </h3>
+                      
+                      <div className="my-6 space-y-4">
+                        <div>
+                          <div className="text-[10px] font-black uppercase text-gray-400 mb-1">Discount Value</div>
+                          {discount.discount_percentage ? (
+                            <div className="text-2xl font-black text-purple-600">{discount.discount_percentage}% OFF</div>
+                          ) : discount.discount_amount ? (
+                            <div className="text-2xl font-black text-purple-600">₹{discount.discount_amount} OFF</div>
+                          ) : (
+                            <div className="text-xl font-black text-gray-400">Invalid Config</div>
+                          )}
+                        </div>
+                        <div>
+                          <div className="text-[10px] font-black uppercase text-gray-400 mb-1">Applies To</div>
+                          <div className="text-sm font-bold text-[#0b1120] bg-gray-50 border-2 border-dashed border-gray-200 p-2 rounded-lg truncate">
+                            {discount.applies_to === 'ALL' ? 'Everything (Global)' : `Course ID: ${discount.applies_to}`}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-4 mt-auto border-t-4 border-gray-50 pt-6">
+                        <button 
+                          onClick={() => setEditingDiscount(discount)}
+                          className="flex-grow py-4 bg-[#0b1120] text-white rounded-2xl font-black border-2 border-[#0b1120] hover:bg-white hover:text-[#0b1120] transition-colors flex items-center justify-center gap-2 shadow-[4px_4px_0px_#0b1120] hover:shadow-none translate-y-[-4px] hover:translate-y-0 active:translate-y-1"
+                        >
+                          <Edit className="w-5 h-5" /> Edit
+                        </button>
+                        <button 
+                          onClick={() => handleDiscountAction(discount, true)}
                           className="p-4 text-red-500 bg-red-50 border-2 border-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-colors"
                         >
                           <Trash2 className="w-6 h-6" />
@@ -419,6 +522,47 @@ export default function Manager() {
                         </div>
                       ))}
                     </div>
+
+                    {isBundle && (
+                      <div className="mt-6 p-6 bg-green-50 border-[3px] border-[#10b981] rounded-2xl space-y-4">
+                        <h4 className="text-sm font-black text-[#0b1120] uppercase flex items-center gap-2">
+                          🎁 Bundle Discount Settings
+                        </h4>
+                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-tighter">
+                          This discount applies only when a student selects ALL courses and enters the code.
+                        </p>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <label className="text-xs font-black text-[#10b981] uppercase tracking-widest pl-1">Bundle Discount Price (₹)</label>
+                            <div className="relative">
+                              <span className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 font-black text-xl">₹</span>
+                              <input
+                                type="number"
+                                value={bundleDiscountPrice}
+                                onChange={e => setBundleDiscountPrice(e.target.value ? parseInt(e.target.value) : '')}
+                                placeholder="e.g. 799"
+                                className="w-full pl-12 pr-6 py-4 border-2 border-green-200 rounded-2xl font-black text-xl outline-none focus:border-[#10b981] transition-all bg-white"
+                              />
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-xs font-black text-[#10b981] uppercase tracking-widest pl-1">Discount Code</label>
+                            <input
+                              type="text"
+                              value={bundleDiscountCode}
+                              onChange={e => setBundleDiscountCode(e.target.value.toUpperCase())}
+                              placeholder="e.g. TERM1SAVE"
+                              className="w-full px-6 py-4 border-2 border-green-200 rounded-2xl font-black text-lg outline-none focus:border-[#10b981] transition-all bg-white uppercase"
+                            />
+                          </div>
+                        </div>
+                        {bundleDiscountPrice && bundleCourses.length > 0 && (
+                          <div className="p-3 bg-white border-2 border-green-200 rounded-xl text-xs font-bold text-gray-600">
+                            Individual total: ₹{bundleCourses.reduce((s, bc) => s + (bc.price || 0), 0)} → Bundle price: <span className="text-[#10b981] font-black">₹{bundleDiscountPrice}</span> (Save ₹{bundleCourses.reduce((s, bc) => s + (bc.price || 0), 0) - Number(bundleDiscountPrice)})
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -451,6 +595,8 @@ export default function Manager() {
                       discountPrice: discountPrice || null,
                       isBundle,
                       bundleCourses,
+                      bundleDiscountPrice: isBundle && bundleDiscountPrice ? Number(bundleDiscountPrice) : null,
+                      bundleDiscountCode: isBundle && bundleDiscountCode ? bundleDiscountCode : null,
                       startDate: startDate ? new Date(startDate).toISOString() : null,
                       endDate: endDate ? new Date(endDate).toISOString() : null,
                     });
@@ -460,6 +606,89 @@ export default function Manager() {
                   <Save className="w-6 h-6" /> Confirm Changes
                 </button>
                 <button onClick={() => { setShowAddCourse(false); setEditingCourse(null); }} className="px-10 py-5 bg-white text-[#0b1120] rounded-2xl font-black border-[4px] border-[#0b1120] hover:bg-gray-50 flex items-center justify-center">
+                  Abort
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Discount Modal */}
+      <AnimatePresence>
+        {(showAddDiscount || editingDiscount) && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 lg:p-12">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { setShowAddDiscount(false); setEditingDiscount(null); }} className="absolute inset-0 bg-[#0b1120]/60 backdrop-blur-md" />
+            <motion.div 
+              initial={{ scale: 0.9, y: 30 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 30 }}
+              className="relative bg-white border-[6px] border-[#0b1120] rounded-[3.5rem] p-10 lg:p-16 w-full max-w-2xl shadow-[20px_20px_0px_#0b1120]"
+            >
+              <h2 className="text-4xl font-black text-[#0b1120] mb-8 flex items-center gap-4">
+                {editingDiscount ? 'Update Coupon' : 'Create Coupon'}
+              </h2>
+
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Coupon Code*</label>
+                  <input type="text" defaultValue={editingDiscount?.code} id="d-code" placeholder="e.g. WELCOME100" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-black text-xl uppercase focus:ring-[6px] ring-purple-100 outline-none" />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Discount (%)</label>
+                    <input type="number" defaultValue={editingDiscount?.discount_percentage} id="d-percent" placeholder="e.g. 10" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-purple-100 outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">OR Amount (₹)</label>
+                    <input type="number" defaultValue={editingDiscount?.discount_amount} id="d-amount" placeholder="e.g. 500" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-purple-100 outline-none" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-black text-[#0b1120] uppercase mb-3 text-gray-500 text-xs">⚠️ Leave ONE of the above blank. If both are filled, Percentage might take priority depending on backend logic.</label>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Applies To:</label>
+                  <select id="d-applies" defaultValue={editingDiscount?.applies_to || 'ALL'} className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-purple-100 outline-none bg-white">
+                    <option value="ALL">ALL COURSES (Global Discount)</option>
+                    {discountOptions.map(c => (
+                      <option key={c.id} value={c.id}>{c.name} ({c.id})</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex gap-6 mt-12">
+                <button 
+                  onClick={() => {
+                    const code = (document.getElementById('d-code') as HTMLInputElement).value;
+                    const discount_percentage = (document.getElementById('d-percent') as HTMLInputElement).value;
+                    const discount_amount = (document.getElementById('d-amount') as HTMLInputElement).value;
+                    const applies_to = (document.getElementById('d-applies') as HTMLSelectElement).value;
+
+                    if (!code) {
+                      alert('Please enter a coupon code.');
+                      return;
+                    }
+                    if (!discount_percentage && !discount_amount) {
+                      alert('Please specify either a percentage or an amount.');
+                      return;
+                    }
+
+                    handleDiscountAction({ 
+                      id: editingDiscount?.id,
+                      code,
+                      discount_percentage,
+                      discount_amount,
+                      applies_to
+                    });
+                  }}
+                  className="flex-grow py-5 bg-purple-500 text-white rounded-2xl font-black text-xl border-[4px] border-[#0b1120] flex items-center justify-center gap-3 shadow-[8px_8px_0px_#0b1120] active:translate-y-1 active:shadow-none hover:bg-purple-600 transition-colors"
+                >
+                  <Save className="w-6 h-6" /> Confirm Changes
+                </button>
+                <button onClick={() => { setShowAddDiscount(false); setEditingDiscount(null); }} className="px-10 py-5 bg-white text-[#0b1120] rounded-2xl font-black border-[4px] border-[#0b1120] hover:bg-gray-50 flex items-center justify-center">
                   Abort
                 </button>
               </div>

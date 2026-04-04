@@ -16,6 +16,76 @@ export default function Cart() {
   const [loadingMessage, setLoadingMessage] = useState("Processing Order...");
   const navigate = useNavigate();
 
+  // Discount logic states
+  const [discountCodeInput, setDiscountCodeInput] = useState('');
+  const [appliedDiscountCode, setAppliedDiscountCode] = useState<string | null>(null);
+  const [discountAmount, setDiscountAmount] = useState(0);
+  const [discountError, setDiscountError] = useState('');
+  const [isApplyingDiscount, setIsApplyingDiscount] = useState(false);
+
+  const applyDiscount = async () => {
+    if (!discountCodeInput.trim()) return;
+    if (!user) {
+      openLoginModal();
+      return;
+    }
+    setIsApplyingDiscount(true);
+    setDiscountError('');
+    try {
+      const codeToApply = discountCodeInput.trim().toUpperCase();
+      // 1. Check if it exists
+      const { data: coupon, error } = await supabase
+        .from('discount_coupons')
+        .select('*')
+        .eq('code', codeToApply)
+        .single();
+      
+      if (error || !coupon) throw new Error('Invalid or expired discount code.');
+
+      // 2. Check if user already used it
+      const { data: usage } = await supabase
+        .from('coupon_uses')
+        .select('*')
+        .eq('code', coupon.code)
+        .eq('user_email', user.email)
+        .maybeSingle();
+      
+      if (usage) throw new Error('You have already used this discount code.');
+
+      // 3. Check if applies to these courses
+      if (coupon.applies_to !== 'ALL') {
+        const hasValidCourse = cart.some(item => item.id === coupon.applies_to);
+        if (!hasValidCourse) throw new Error(`This code doesn't apply to the selected courses.`);
+      }
+
+      // 4. Calculate discount
+      let calculatedDiscount = 0;
+      if (coupon.discount_percentage) {
+        calculatedDiscount = Math.floor(total * (coupon.discount_percentage / 100));
+      } else if (coupon.discount_amount) {
+        calculatedDiscount = coupon.discount_amount;
+      }
+
+      if (calculatedDiscount > total) calculatedDiscount = total;
+
+      setDiscountAmount(calculatedDiscount);
+      setAppliedDiscountCode(coupon.code);
+      setDiscountCodeInput('');
+    } catch (err: any) {
+      setDiscountError(err.message);
+      setDiscountAmount(0);
+      setAppliedDiscountCode(null);
+    } finally {
+      setIsApplyingDiscount(false);
+    }
+  };
+
+  const removeDiscount = () => {
+    setAppliedDiscountCode(null);
+    setDiscountAmount(0);
+    setDiscountError('');
+  };
+
   const loadScript = (src: string) => {
     return new Promise((resolve) => {
       const script = document.createElement("script");
@@ -55,13 +125,14 @@ export default function Cart() {
     setLoadingMessage("Preparing Checkout...");
     try {
       const orderData = await apiService.createOrder({
-        amount: total,
+        amount: Math.max(total - discountAmount, 0), // Backend will recalculate, this is mostly ignored
         email: user.email,
         courseIds: cart.flatMap((item) => 
           item.isBundle && item.bundleCourses && item.bundleCourses.length > 0
             ? item.bundleCourses.map(b => b.courseId)
             : [item.id]
         ),
+        discountCode: appliedDiscountCode || undefined, // Pass global discount code
       });
       if (!orderData.id) throw new Error("Order creation failed");
 
@@ -90,6 +161,7 @@ export default function Cart() {
                   ? item.bundleCourses.map(b => b.courseId)
                   : [item.id]
               ),
+              discountCode: appliedDiscountCode || undefined,
             });
 
             clearCart();
@@ -206,14 +278,48 @@ export default function Cart() {
                     <span>Items ({cart.length})</span>
                     <span>₹{total}</span>
                   </div>
+
+                  {/* Discount Applier */}
+                  <div className="py-2 border-t border-b border-gray-100 my-4">
+                    {!appliedDiscountCode ? (
+                      <div className="space-y-2">
+                        <div className="flex gap-2">
+                          <input 
+                            type="text" 
+                            placeholder="Discount Code" 
+                            value={discountCodeInput}
+                            onChange={(e) => setDiscountCodeInput(e.target.value.toUpperCase())}
+                            className="flex-grow px-3 py-2 bg-gray-50 border-2 border-gray-200 rounded-lg font-black text-sm outline-none focus:border-[#10b981] uppercase placeholder:normal-case"
+                          />
+                          <button 
+                            onClick={applyDiscount}
+                            disabled={isApplyingDiscount || !discountCodeInput.trim()}
+                            className="px-4 py-2 bg-[#0b1120] text-white rounded-lg font-black text-xs hover:bg-gray-800 transition-colors disabled:opacity-50"
+                          >
+                            {isApplyingDiscount ? 'WAIT...' : 'APPLY'}
+                          </button>
+                        </div>
+                        {discountError && <p className="text-red-500 font-bold text-[10px] uppercase">{discountError}</p>}
+                      </div>
+                    ) : (
+                      <div className="p-3 bg-green-50 border-2 border-green-200 rounded-lg flex items-center justify-between">
+                        <div>
+                          <div className="text-[10px] font-black text-green-600 uppercase">Discount Applied!</div>
+                          <div className="text-sm font-black text-[#0b1120] font-mono tracking-widest">{appliedDiscountCode}</div>
+                        </div>
+                        <button onClick={removeDiscount} className="text-[10px] font-black text-red-500 hover:underline uppercase">Remove</button>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="flex justify-between font-bold text-gray-500 text-sm">
                     <span>Discount</span>
-                    <span className="text-green-600">₹0</span>
+                    <span className="text-green-600">-₹{discountAmount}</span>
                   </div>
                   <div className="h-0.5 bg-gray-100 my-3" />
                   <div className="flex justify-between items-end">
                     <span className="font-black text-[#0b1120] text-sm">Total</span>
-                    <span className="text-2xl font-black text-[#0b1120]">₹{total}</span>
+                    <span className="text-2xl font-black text-[#0b1120]">₹{Math.max(total - discountAmount, 0)}</span>
                   </div>
                 </div>
 

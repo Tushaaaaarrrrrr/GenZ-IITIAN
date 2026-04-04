@@ -40,6 +40,12 @@ export const apiService = {
           if (error) throw error;
           return data || [];
         }
+
+        if (tab === 'discounts') {
+          const { data, error } = await supabase.from('discount_coupons').select('*').order('created_at', { ascending: false });
+          if (error) throw error;
+          return data || [];
+        }
         
         throw new Error('Invalid tab for managerFetch');
       } catch (err: any) {
@@ -76,7 +82,7 @@ export const apiService = {
   },
 
   // 4. Create Razorpay Order
-  createOrder: async (payload: { amount: number, email: string, courseIds: string[] }) => {
+  createOrder: async (payload: { amount: number, email: string, courseIds: string[], discountCode?: string }) => {
     if (!isProduction) {
       const res = await fetch('/api/create-order', {
         method: 'POST',

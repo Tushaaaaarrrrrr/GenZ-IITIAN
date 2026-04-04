@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Search, GraduationCap, Award, ShoppingCart, Loader2, Star, Calendar, Layers } from 'lucide-react';
+import { Search, GraduationCap, Award, ShoppingCart, Loader2, Star, Calendar, Layers, RefreshCcw } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useCart } from '../context/CartContext';
 
@@ -77,66 +77,85 @@ export default function Courses() {
             <h3 className="text-2xl font-black text-gray-400">No courses found matching your search.</h3>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
             {filteredCourses.map((course) => (
               <motion.div
                 key={course.id}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                className={`group bg-white border-[3px] border-[#0b1120] rounded-2xl overflow-hidden hover:shadow-[12px_12px_0px_#10b981] transition-all flex flex-col ${
+                className={`group bg-white border-[4px] border-[#0b1120] rounded-[32px] overflow-hidden hover:shadow-[12px_12px_0px_#ef4444] transition-all flex flex-col ${
                   course.isPinned ? 'ring-4 ring-blue-500/20' : ''
                 }`}
               >
-                <div className="p-6 flex-grow flex flex-col relative bg-white">
-                  <div className="flex flex-wrap gap-2 mb-6">
-                    {course.subject && (
-                      <span className="px-4 py-1.5 bg-yellow-100 border-2 border-[#0b1120] rounded-xl text-xs font-black uppercase text-yellow-800">
-                        {course.subject}
+                <div className="p-8 flex-grow flex flex-col relative bg-white">
+                  
+                  {/* Top Icon Box */}
+                  <div className="w-14 h-14 bg-pink-100 border-[3px] border-[#0b1120] rounded-2xl flex items-center justify-center mb-6">
+                    {course.isBundle ? <RefreshCcw className="w-6 h-6 text-[#0b1120]" /> : <GraduationCap className="w-6 h-6 text-[#0b1120]" />}
+                  </div>
+
+                  <h3 className="text-2xl font-black text-[#0b1120] mb-3 leading-tight group-hover:text-blue-600 transition-colors">
+                    {course.name}
+                  </h3>
+                  
+                  <p className="text-gray-600 font-bold text-sm mb-6 flex-grow">
+                    {course.description}
+                  </p>
+
+                  <div className="flex flex-wrap gap-2 mb-8">
+                    {course.isBundle && course.bundleCourses && course.bundleCourses.map((bc: any, idx: number) => (
+                      <span key={idx} className="px-3 py-1 bg-gray-50 border-2 border-gray-200 rounded-xl text-xs font-black text-gray-700">
+                        {bc.courseName}
                       </span>
-                    )}
-                    {course.isBundle && (
-                      <span className="px-4 py-1.5 bg-purple-100 border-2 border-[#0b1120] rounded-xl text-xs font-black uppercase text-purple-800 flex items-center gap-2">
-                        <Layers className="w-4 h-4" /> Bundle
+                    ))}
+                    {!course.isBundle && course.subject && (
+                      <span className="px-3 py-1 bg-gray-50 border-2 border-gray-200 rounded-xl text-xs font-black text-gray-700">
+                        {course.subject}
                       </span>
                     )}
                   </div>
 
-                  <h3 className="text-xl font-black text-[#0b1120] mb-3 leading-tight group-hover:text-blue-600 transition-colors">
-                    {course.name}
-                  </h3>
-                  
-                  <p className="text-gray-500 font-bold text-sm mb-6">
-                    {course.description}
-                  </p>
+                  <div className="h-0.5 w-full bg-gray-100 mb-6"></div>
 
                   <div className="mt-auto">
-                    <div className="flex items-end justify-between mb-6">
-                      <div>
-                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Starts From</div>
-                        <div className="flex flex-col">
-                          {course.discountPrice && (
-                            <span className="text-xs font-black text-gray-400 line-through">₹{course.price}</span>
-                          )}
-                          <span className="text-3xl font-black text-[#10b981]">
+                    <div className="flex items-end justify-between mb-8">
+                      <div className="flex items-center gap-1">
+                        <div className="flex text-amber-400">
+                          <Star className="w-4 h-4 fill-current" />
+                          <Star className="w-4 h-4 fill-current" />
+                          <Star className="w-4 h-4 fill-current" />
+                          <Star className="w-4 h-4 fill-current" />
+                          <Star className="w-4 h-4 fill-current" />
+                        </div>
+                        <span className="text-gray-500 font-bold text-sm ml-1">(4.9)</span>
+                      </div>
+
+                      <div className="text-right">
+                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1">Starts From</div>
+                        <div className="flex flex-col items-end leading-none">
+                          <span className="text-2xl font-black text-[#0b1120]">
                             ₹{course.discountPrice || course.price}
                           </span>
+                          {course.discountPrice && (
+                            <span className="text-xs font-black text-gray-400 line-through mt-1">₹{course.price}</span>
+                          )}
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex flex-col gap-3">
+                    <div className="grid grid-cols-2 gap-3">
                       <Link
                         to={`/courses/${course.id}`}
-                        className="w-full py-3 bg-white text-[#0b1120] rounded-xl font-black text-center text-lg border-[3px] border-[#0b1120] hover:bg-gray-50 transition-all active:translate-y-1"
+                        className="w-full py-3.5 bg-white text-[#0b1120] rounded-xl font-black text-center text-sm lg:text-base border-[3px] border-[#0b1120] hover:bg-gray-50 transition-all active:translate-y-1"
                       >
-                        Explore
+                        View Details {'>'}
                       </Link>
                       <Link
                         to={`/checkout/${course.id}`}
-                        className="w-full py-3 bg-[#10b981] text-[#0b1120] rounded-xl border-[3px] border-[#0b1120] hover:bg-[#0ea5e9] transition-all font-black text-lg shadow-[4px_4px_0px_#0b1120] active:translate-y-1 active:translate-x-1 active:shadow-none text-center"
+                        className="w-full py-3.5 bg-[#1e293b] text-white rounded-xl border-[3px] border-[#1e293b] hover:bg-black transition-all font-black text-sm lg:text-base active:translate-y-1 text-center"
                       >
-                        Buy Now
+                        Pay Now
                       </Link>
                     </div>
                   </div>
