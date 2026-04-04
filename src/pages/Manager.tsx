@@ -464,6 +464,47 @@ export default function Manager() {
                       <input type="datetime-local" defaultValue={editingCourse?.endDate ? new Date(editingCourse.endDate).toISOString().slice(0, 16) : ''} id="c-end" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none bg-white" />
                     </div>
                   </div>
+
+                  {isBundle && (
+                    <div className="p-6 bg-green-50 border-[3px] border-[#10b981] rounded-2xl space-y-4 mt-6">
+                      <h4 className="text-sm font-black text-[#0b1120] uppercase flex items-center gap-2">
+                        🎁 Bundle Discount Settings
+                      </h4>
+                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-tighter">
+                        This discount applies only when a student selects ALL courses and enters the code.
+                      </p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-xs font-black text-[#10b981] uppercase tracking-widest pl-1">Bundle Discount Price (₹)</label>
+                          <div className="relative">
+                            <span className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 font-black text-xl">₹</span>
+                            <input
+                              type="number"
+                              value={bundleDiscountPrice}
+                              onChange={e => setBundleDiscountPrice(e.target.value ? parseInt(e.target.value) : '')}
+                              placeholder="e.g. 799"
+                              className="w-full pl-12 pr-6 py-4 border-2 border-green-200 rounded-2xl font-black text-xl outline-none focus:border-[#10b981] transition-all bg-white"
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs font-black text-[#10b981] uppercase tracking-widest pl-1">Discount Code</label>
+                          <input
+                            type="text"
+                            value={bundleDiscountCode}
+                            onChange={e => setBundleDiscountCode(e.target.value.toUpperCase())}
+                            placeholder="e.g. TERM1SAVE"
+                            className="w-full px-6 py-4 border-2 border-green-200 rounded-2xl font-black text-lg outline-none focus:border-[#10b981] transition-all bg-white uppercase"
+                          />
+                        </div>
+                      </div>
+                      {bundleDiscountPrice && bundleCourses.length > 0 && (
+                        <div className="p-3 bg-white border-2 border-green-200 rounded-xl text-xs font-bold text-gray-600">
+                          Individual total: ₹{bundleCourses.reduce((s, bc) => s + (bc.price || 0), 0)} → Bundle price: <span className="text-[#10b981] font-black">₹{bundleDiscountPrice}</span> (Save ₹{bundleCourses.reduce((s, bc) => s + (bc.price || 0), 0) - Number(bundleDiscountPrice)})
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-6">
@@ -546,46 +587,7 @@ export default function Manager() {
                       ))}
                     </div>
 
-                    {isBundle && (
-                      <div className="mt-6 p-6 bg-green-50 border-[3px] border-[#10b981] rounded-2xl space-y-4">
-                        <h4 className="text-sm font-black text-[#0b1120] uppercase flex items-center gap-2">
-                          🎁 Bundle Discount Settings
-                        </h4>
-                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-tighter">
-                          This discount applies only when a student selects ALL courses and enters the code.
-                        </p>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <label className="text-xs font-black text-[#10b981] uppercase tracking-widest pl-1">Bundle Discount Price (₹)</label>
-                            <div className="relative">
-                              <span className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 font-black text-xl">₹</span>
-                              <input
-                                type="number"
-                                value={bundleDiscountPrice}
-                                onChange={e => setBundleDiscountPrice(e.target.value ? parseInt(e.target.value) : '')}
-                                placeholder="e.g. 799"
-                                className="w-full pl-12 pr-6 py-4 border-2 border-green-200 rounded-2xl font-black text-xl outline-none focus:border-[#10b981] transition-all bg-white"
-                              />
-                            </div>
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-xs font-black text-[#10b981] uppercase tracking-widest pl-1">Discount Code</label>
-                            <input
-                              type="text"
-                              value={bundleDiscountCode}
-                              onChange={e => setBundleDiscountCode(e.target.value.toUpperCase())}
-                              placeholder="e.g. TERM1SAVE"
-                              className="w-full px-6 py-4 border-2 border-green-200 rounded-2xl font-black text-lg outline-none focus:border-[#10b981] transition-all bg-white uppercase"
-                            />
-                          </div>
-                        </div>
-                        {bundleDiscountPrice && bundleCourses.length > 0 && (
-                          <div className="p-3 bg-white border-2 border-green-200 rounded-xl text-xs font-bold text-gray-600">
-                            Individual total: ₹{bundleCourses.reduce((s, bc) => s + (bc.price || 0), 0)} → Bundle price: <span className="text-[#10b981] font-black">₹{bundleDiscountPrice}</span> (Save ₹{bundleCourses.reduce((s, bc) => s + (bc.price || 0), 0) - Number(bundleDiscountPrice)})
-                          </div>
-                        )}
-                      </div>
-                    )}
+
                   </div>
                 </div>
               </div>
