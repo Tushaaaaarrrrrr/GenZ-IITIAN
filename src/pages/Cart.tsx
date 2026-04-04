@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -22,6 +22,11 @@ export default function Cart() {
   const [discountAmount, setDiscountAmount] = useState(0);
   const [discountError, setDiscountError] = useState('');
   const [isApplyingDiscount, setIsApplyingDiscount] = useState(false);
+  const [paymentError, setPaymentError] = useState('');
+
+  useEffect(() => {
+    loadScript(RAZORPAY_SCRIPT_URL);
+  }, []);
 
   const applyDiscount = async () => {
     if (!discountCodeInput.trim()) return;
@@ -88,6 +93,18 @@ export default function Cart() {
 
   const loadScript = (src: string) => {
     return new Promise((resolve) => {
+      if ((window as any).Razorpay) {
+        resolve(true);
+        return;
+      }
+
+      const existingScript = document.querySelector(`script[src="${src}"]`) as HTMLScriptElement | null;
+      if (existingScript) {
+        existingScript.addEventListener('load', () => resolve(true), { once: true });
+        existingScript.addEventListener('error', () => resolve(false), { once: true });
+        return;
+      }
+
       const script = document.createElement("script");
       script.src = src;
       script.onload = () => resolve(true);
@@ -121,6 +138,7 @@ export default function Cart() {
       }
     }
 
+    setPaymentError('');
     setIsProcessing(true);
     setLoadingMessage("Preparing Checkout...");
     try {
@@ -137,7 +155,9 @@ export default function Cart() {
       if (!orderData.id) throw new Error("Order creation failed");
 
       const scriptLoaded = await loadScript(RAZORPAY_SCRIPT_URL);
-      if (!scriptLoaded) throw new Error("Razorpay SDK failed to load");
+      if (!scriptLoaded || !(window as any).Razorpay) {
+        throw new Error("Razorpay checkout could not load. Disable ad blockers and try again.");
+      }
 
       const options = {
         key: (import.meta as any).env.VITE_RAZORPAY_KEY_ID,
@@ -168,14 +188,14 @@ export default function Cart() {
             navigate("/payment-success");
           } catch (err) {
             console.error("Payment verification error:", err);
-            navigate("/payment-failed");
+            setPaymentError("Payment verification failed. Please try again.");
           } finally {
             setIsProcessing(false);
           }
         },
         modal: {
           ondismiss: () => {
-            navigate("/payment-failed");
+            setIsProcessing(false);
           }
         },
         prefill: {
@@ -186,10 +206,14 @@ export default function Cart() {
       };
 
       const rzp = new (window as any).Razorpay(options);
+      rzp.on?.('payment.failed', (response: any) => {
+        setIsProcessing(false);
+        setPaymentError(response?.error?.description || "Payment failed. Please try again.");
+      });
       rzp.open();
     } catch (err: any) {
       console.error(err);
-      navigate("/payment-failed");
+      setPaymentError(err?.message || "Unable to start Razorpay checkout.");
     } finally {
       setIsProcessing(false);
     }
@@ -316,6 +340,11 @@ export default function Cart() {
                     <span>Discount</span>
                     <span className="text-green-600">-₹{discountAmount}</span>
                   </div>
+                  {paymentError && (
+                    <div className="p-3 bg-red-50 border-2 border-red-200 rounded-lg">
+                      <p className="text-red-600 font-bold text-[10px] uppercase leading-relaxed">{paymentError}</p>
+                    </div>
+                  )}
                   <div className="h-0.5 bg-gray-100 my-3" />
                   <div className="flex justify-between items-end">
                     <span className="font-black text-[#0b1120] text-sm">Total</span>

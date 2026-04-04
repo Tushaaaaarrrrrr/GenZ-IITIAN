@@ -35,6 +35,7 @@ export default function CourseSelection() {
   const [discountAmount, setDiscountAmount] = useState(0);
   const [discountError, setDiscountError] = useState('');
   const [isApplyingDiscount, setIsApplyingDiscount] = useState(false);
+  const [paymentError, setPaymentError] = useState('');
 
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const courseLookupId = searchParams.get('courseId') || id;
@@ -121,6 +122,10 @@ export default function CourseSelection() {
   useEffect(() => {
     fetchCourse();
   }, [courseLookupId]);
+
+  useEffect(() => {
+    loadScript(RAZORPAY_SCRIPT_URL);
+  }, []);
 
   const toggleCourse = (courseId: string) => {
     setSelectedCourses(prev => {
@@ -251,6 +256,18 @@ export default function CourseSelection() {
 
   const loadScript = (src: string) => {
     return new Promise((resolve) => {
+      if ((window as any).Razorpay) {
+        resolve(true);
+        return;
+      }
+
+      const existingScript = document.querySelector(`script[src="${src}"]`) as HTMLScriptElement | null;
+      if (existingScript) {
+        existingScript.addEventListener('load', () => resolve(true), { once: true });
+        existingScript.addEventListener('error', () => resolve(false), { once: true });
+        return;
+      }
+
       const script = document.createElement("script");
       script.src = src;
       script.onload = () => resolve(true);
@@ -265,6 +282,7 @@ export default function CourseSelection() {
       return;
     }
 
+    setPaymentError('');
     setIsProcessing(true);
     setLoadingMessage("Preparing Checkout...");
     const total = calculateTotal();
@@ -283,15 +301,24 @@ export default function CourseSelection() {
       });
 
       if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`Server Error (${res.status}): ${text.slice(0, 100)}`);
+        let errorMessage = `Server Error (${res.status})`;
+        try {
+          const errorData = await res.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch {
+          const text = await res.text();
+          if (text) errorMessage = `${errorMessage}: ${text.slice(0, 160)}`;
+        }
+        throw new Error(errorMessage);
       }
 
       const orderData = await res.json();
       if (!orderData.id) throw new Error("Order creation failed");
 
       const scriptLoaded = await loadScript(RAZORPAY_SCRIPT_URL);
-      if (!scriptLoaded) throw new Error("Razorpay SDK failed to load");
+      if (!scriptLoaded || !(window as any).Razorpay) {
+        throw new Error("Razorpay checkout could not load. Disable ad blockers and try again.");
+      }
 
       const options = {
         key: (import.meta as any).env.VITE_RAZORPAY_KEY_ID,
@@ -320,18 +347,23 @@ export default function CourseSelection() {
             if (verifyRes.ok) {
               navigate("/payment-success");
             } else {
-              navigate("/payment-failed");
+              let errorMessage = "Payment verification failed. Please try again.";
+              try {
+                const errorData = await verifyRes.json();
+                errorMessage = errorData.error || errorMessage;
+              } catch {}
+              setPaymentError(errorMessage);
             }
           } catch (err) {
             console.error("Payment verification error:", err);
-            navigate("/payment-failed");
+            setPaymentError("Payment verification failed. Please try again.");
           } finally {
             setIsProcessing(false);
           }
         },
         modal: {
           ondismiss: () => {
-            navigate("/payment-failed");
+            setIsProcessing(false);
           }
         },
         prefill: {
@@ -342,10 +374,14 @@ export default function CourseSelection() {
       };
 
       const rzp = new (window as any).Razorpay(options);
+      rzp.on?.('payment.failed', (response: any) => {
+        setIsProcessing(false);
+        setPaymentError(response?.error?.description || "Payment failed. Please try again.");
+      });
       rzp.open();
     } catch (err: any) {
       console.error(err);
-      navigate("/payment-failed");
+      setPaymentError(err?.message || "Unable to start Razorpay checkout.");
     } finally {
       setIsProcessing(false);
     }
@@ -682,9 +718,9 @@ export default function CourseSelection() {
                                   {isApplyingDiscount ? 'WAIT...' : 'APPLY'}
                                 </button>
                               </div>
-                              {discountError && <p className="text-red-500 font-bold text-[10px] uppercase">{discountError}</p>}
-                            </div>
-                          ) : (
+                        {discountError && <p className="text-red-500 font-bold text-[10px] uppercase">{discountError}</p>}
+                      </div>
+                    ) : (
                             <div className="p-3 bg-green-50 border-2 border-green-200 rounded-lg flex items-center justify-between">
                               <div>
                                 <div className="text-[10px] font-black text-green-600 uppercase">Discount Applied!</div>
@@ -694,6 +730,12 @@ export default function CourseSelection() {
                             </div>
                           )}
                         </div>
+
+                        {paymentError && (
+                          <div className="p-3 bg-red-50 border-2 border-red-200 rounded-lg">
+                            <p className="text-red-600 font-bold text-[10px] uppercase leading-relaxed">{paymentError}</p>
+                          </div>
+                        )}
 
                         {appliedDiscountCode && (
                           <div className="flex justify-between font-bold text-gray-500 text-sm">
