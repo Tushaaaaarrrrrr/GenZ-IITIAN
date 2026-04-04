@@ -8,6 +8,15 @@ import { apiService } from '../lib/api';
 
 type Tab = 'users' | 'courses' | 'discounts';
 
+function sanitizeCourseId(value: string) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 export default function Manager() {
   const { isManager, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -140,9 +149,12 @@ export default function Manager() {
       if (!confirm('Are you sure you want to delete this course?')) return;
       await supabase.from('courses').delete().eq('id', course.id);
     } else {
+      const nextCourseId = course.id || sanitizeCourseId(course.name);
+      const previousCourseId = course.previousId || null;
+
       // Ensure specific fields for existing schema
       const cleanedCourse = {
-        id: course.id || course.name.toLowerCase().replace(/ /g, '-'),
+        id: nextCourseId,
         name: course.name,
         description: course.subtitle, // subtitle maps to description in DB for now
         price: parseInt(course.price as string),
@@ -160,7 +172,85 @@ export default function Manager() {
         endDate: course.endDate || null,
       };
 
-      const { error } = await supabase.from('courses').upsert(cleanedCourse);
+      let error = null;
+
+      if (previousCourseId && previousCourseId !== nextCourseId) {
+        const { data: existingCourse } = await supabase
+          .from('courses')
+          .select('id')
+          .eq('id', nextCourseId)
+          .maybeSingle();
+
+        if (existingCourse) {
+          alert('That database ID is already in use. Please choose a unique one.');
+          return;
+        }
+
+        const { data: allCourses, error: fetchCoursesError } = await supabase.from('courses').select('*');
+        if (fetchCoursesError) {
+          alert(fetchCoursesError.message);
+          return;
+        }
+
+        const coursesToUpdate = (allCourses || [])
+          .filter((existing: any) =>
+            existing.id !== previousCourseId &&
+            existing.bundleCourses?.some((bundleCourse: any) => bundleCourse.courseId === previousCourseId)
+          )
+          .map((existing: any) => ({
+            ...existing,
+            bundleCourses: existing.bundleCourses.map((bundleCourse: any) =>
+              bundleCourse.courseId === previousCourseId
+                ? { ...bundleCourse, courseId: nextCourseId }
+                : bundleCourse
+            )
+          }));
+
+        const { error: insertError } = await supabase.from('courses').insert(cleanedCourse);
+        if (insertError) {
+          alert(insertError.message);
+          return;
+        }
+
+        if (coursesToUpdate.length > 0) {
+          const { error: referenceUpdateError } = await supabase.from('courses').upsert(coursesToUpdate);
+          if (referenceUpdateError) {
+            alert(referenceUpdateError.message);
+            return;
+          }
+        }
+
+        const { data: discountsToUpdate, error: fetchDiscountsError } = await supabase
+          .from('discount_coupons')
+          .select('*')
+          .eq('applies_to', previousCourseId);
+
+        if (fetchDiscountsError) {
+          alert(fetchDiscountsError.message);
+          return;
+        }
+
+        if ((discountsToUpdate || []).length > 0) {
+          const { error: discountUpdateError } = await supabase.from('discount_coupons').upsert(
+            discountsToUpdate.map((discount: any) => ({
+              ...discount,
+              applies_to: nextCourseId
+            }))
+          );
+
+          if (discountUpdateError) {
+            alert(discountUpdateError.message);
+            return;
+          }
+        }
+
+        const { error: deleteOldError } = await supabase.from('courses').delete().eq('id', previousCourseId);
+        error = deleteOldError;
+      } else {
+        const response = await supabase.from('courses').upsert(cleanedCourse);
+        error = response.error;
+      }
+
       if (error) alert(error.message);
       setEditingCourse(null);
       setShowAddCourse(false);
@@ -526,12 +616,16 @@ export default function Manager() {
                 </div>
 
                 <div className="space-y-6">
-                  {!editingCourse && (
-                    <div>
-                      <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">URL ID (Unique Text)</label>
-                      <input type="text" placeholder="python-basics" id="c-id" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none bg-blue-50" />
-                    </div>
-                  )}
+                  <div>
+                    <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">URL ID (Unique Text)</label>
+                    <input
+                      type="text"
+                      defaultValue={editingCourse?.id}
+                      placeholder="python-basics"
+                      id="c-id"
+                      className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none bg-blue-50"
+                    />
+                  </div>
 
                   <div className="p-6 bg-blue-50/50 border-[3px] border-[#0b1120] rounded-2xl space-y-4">
                     <div className="flex items-center justify-between">
@@ -613,7 +707,8 @@ export default function Manager() {
               <div className="flex gap-6 mt-16">
                 <button 
                   onClick={() => {
-                    const id = (document.getElementById('c-id') as HTMLInputElement)?.value || editingCourse?.id;
+                    const rawId = (document.getElementById('c-id') as HTMLInputElement)?.value || editingCourse?.id;
+                    const id = sanitizeCourseId(rawId);
                     const name = (document.getElementById('c-name') as HTMLInputElement).value;
                     const subtitle = (document.getElementById('c-subtitle') as HTMLTextAreaElement).value;
                     const price = (document.getElementById('c-price') as HTMLInputElement).value;
@@ -623,6 +718,10 @@ export default function Manager() {
                     const startDate = (document.getElementById('c-start') as HTMLInputElement).value;
                     const endDate = (document.getElementById('c-end') as HTMLInputElement).value;
 
+                    if (!id) {
+                      alert('Please enter a valid database ID.');
+                      return;
+                    }
                     if (bundleCourses.length === 0 || bundleCourses.some(bc => !bc.courseId || !bc.courseName)) {
                       alert('Please fill course ID and name for at least one entry!');
                       return;
@@ -633,7 +732,7 @@ export default function Manager() {
                     }
 
                     handleCourseAction({ 
-                      id, name, price, isPinned, subtitle,
+                      id, previousId: editingCourse?.id, name, price, isPinned, subtitle,
                       category,
                       discountPrice: discountPrice || null,
                       isBundle,

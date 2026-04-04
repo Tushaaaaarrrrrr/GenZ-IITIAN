@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { ChevronRight, Award, CheckCircle2, X as XIcon, Star, Layers, GraduationCap } from 'lucide-react';
+import { motion } from 'motion/react';
+import { ChevronRight, Award, CheckCircle2, X as XIcon, Star } from 'lucide-react';
 import { useInView, animate } from 'motion/react';
 import { Link } from 'react-router-dom';
-import { useCart } from '../context/CartContext';
 import CourseCard, { CourseCardData } from '../components/CourseCard';
 import HeroAnimation from '../components/HeroAnimation';
 import { supabase } from '../lib/supabase';
@@ -30,7 +29,6 @@ function AnimatedNumber({ value, decimals = 0, suffix = "" }: { value: number, d
 }
 
 export default function Home() {
-  const { buyNow } = useCart();
   const [courses, setCourses] = useState<CourseCardData[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -47,9 +45,6 @@ export default function Home() {
     setCourses(data || []);
     setLoading(false);
   };
-
-  const featuredCourse = courses[0];
-  const secondaryCourses = courses.slice(1);
 
   return (
     <div className="min-h-screen bg-white text-[#0b1120] font-sans selection:bg-blue-100 overflow-hidden">
@@ -74,14 +69,20 @@ export default function Home() {
             </p>
 
             <div className="flex flex-wrap items-center gap-4 sm:gap-6">
-              <Link to="/courses" className="px-6 py-3 sm:px-8 sm:py-4 lg:text-lg bg-[#10b981] text-white rounded-xl font-bold text-base border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[8px_8px_0px_#0b1120] transition-all flex items-center gap-2">
+              <Link to="/courses" className="px-6 py-3 sm:px-8 sm:py-4 lg:text-lg bg-[#10b981] text-white rounded-xl font-bold text-base border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[8px_8px_0px_#10b981] transition-all flex items-center gap-2">
                 Explore Courses <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
               </Link>
-              <a href="https://youtube.com/@Gen-ZIITian/" target="_blank" rel="noopener noreferrer" className="px-6 py-3 sm:px-8 sm:py-4 lg:text-lg bg-white text-[#0b1120] rounded-xl font-bold text-base border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[8px_8px_0px_#0b1120] transition-all flex items-center gap-2">
-                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-red-500 flex items-center justify-center">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="white" className="sm:w-3 sm:h-3"><path d="M8 5v14l11-7z" /></svg>
+              <a href="https://chat.whatsapp.com/Gi4D9yAd99p7q1XeVh0J1e" target="_blank" rel="noopener noreferrer" className="px-6 py-3 sm:px-8 sm:py-4 lg:text-lg bg-white text-[#0b1120] rounded-xl font-bold text-base border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[8px_8px_0px_#10b981] transition-all flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
+                  <span className="text-xs text-white">💬</span>
                 </div>
-                Watch on YouTube
+                WhatsApp Community
+              </a>
+              <a href="https://youtube.com/@Gen-ZIITian/" target="_blank" rel="noopener noreferrer" className="px-6 py-3 sm:px-8 sm:py-4 lg:text-lg bg-white text-[#0b1120] rounded-xl font-bold text-base border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[8px_8px_0px_#10b981] transition-all flex items-center gap-2">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-red-500 flex items-center justify-center">
+                   <svg width="12" height="12" viewBox="0 0 24 24" fill="white" className="sm:w-3 sm:h-3"><path d="M8 5v14l11-7z" /></svg>
+                </div>
+                YouTube
               </a>
             </div>
           </div>
@@ -95,12 +96,7 @@ export default function Home() {
       <section className="bg-[#0b1120] py-12 border-t-[3px] border-b-[3px] border-[#0b1120] relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 relative z-10">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-8">
-            <div>
-              <h2 className="text-2xl lg:text-3xl font-black text-white">Featured Cohorts</h2>
-              <p className="text-sm font-bold text-gray-300 mt-2">
-                This section now pulls directly from the live courses list, so every new course or bundle also appears here.
-              </p>
-            </div>
+            <h2 className="text-2xl lg:text-3xl font-black text-white">Featured Cohorts</h2>
             <Link
               to="/courses"
               className="inline-flex items-center gap-2 text-sm font-black text-[#0b1120] bg-white border-[3px] border-[#0b1120] rounded-xl px-5 py-3 shadow-[4px_4px_0px_#10b981] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[8px_8px_0px_#10b981] transition-all"
@@ -109,142 +105,22 @@ export default function Home() {
             </Link>
           </div>
 
-          <div className="space-y-12">
-            {loading ? (
-              <div className="text-center py-12">
-                <div className="inline-block animate-spin w-8 h-8 border-[3px] border-[#10b981] border-t-white rounded-full"></div>
-              </div>
-            ) : !featuredCourse ? (
-              <div className="bg-white border-[3px] border-[#0b1120] rounded-2xl p-8 text-center shadow-[8px_8px_0px_#10b981]">
-                <h3 className="text-2xl font-black text-[#0b1120] mb-2">No courses published yet</h3>
-                <p className="text-sm font-bold text-gray-500">Add courses from the manager panel and they will appear here automatically.</p>
-              </div>
-            ) : (
-              <>
-                <div className="relative group">
-                  <div className="absolute inset-0 bg-[#10b981] rounded-2xl translate-y-2 translate-x-2 border-2 border-[#0b1120]"></div>
-                  <div className="relative bg-white border-[3px] border-[#0b1120] rounded-2xl p-4 lg:p-6 flex flex-col lg:flex-row gap-8 transition-transform hover:-translate-y-1 hover:-translate-x-1">
-                    <div className="w-full lg:w-1/2 aspect-video rounded-2xl border-2 border-[#0b1120] overflow-hidden relative bg-[linear-gradient(135deg,#0b1120_0%,#172554_55%,#10b981_100%)]">
-                      <div className="absolute inset-0 opacity-15" style={{ backgroundImage: 'linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
-                      <div className="relative h-full p-5 sm:p-6 flex flex-col justify-between text-white">
-                        <div className="flex flex-wrap gap-2">
-                          {featuredCourse.isPinned && (
-                            <span className="px-3 py-1 bg-[#10b981] text-white font-black text-[10px] rounded-full border-2 border-white/20 uppercase tracking-wide">
-                              Most Popular
-                            </span>
-                          )}
-                          <span className="px-3 py-1 bg-white text-[#0b1120] font-black text-[10px] rounded-full border-2 border-[#0b1120] uppercase tracking-wide">
-                            {featuredCourse.isBundle ? 'Bundle' : featuredCourse.subject || 'Course'}
-                          </span>
-                        </div>
-
-                        <div>
-                          <div className="w-16 h-16 bg-white text-[#0b1120] rounded-2xl border-[3px] border-[#0b1120] flex items-center justify-center mb-4 shadow-[4px_4px_0px_rgba(11,17,32,0.4)]">
-                            {featuredCourse.isBundle ? <Layers className="w-8 h-8" /> : <GraduationCap className="w-8 h-8" />}
-                          </div>
-                          <h3 className="text-3xl sm:text-4xl font-black leading-tight mb-3">{featuredCourse.name}</h3>
-                          <p className="text-sm sm:text-base font-bold text-white/80 max-w-lg">
-                            {featuredCourse.description}
-                          </p>
-                        </div>
-
-                        <div className="flex flex-wrap gap-3">
-                          <div className="px-4 py-2 rounded-2xl bg-white/10 border-2 border-white/20 backdrop-blur-sm">
-                            <div className="text-[10px] font-black uppercase tracking-wider text-white/60">Starts From</div>
-                            <div className="text-2xl font-black">₹{featuredCourse.discountPrice || featuredCourse.price}</div>
-                          </div>
-                          {featuredCourse.isBundle && (
-                            <div className="px-4 py-2 rounded-2xl bg-white/10 border-2 border-white/20 backdrop-blur-sm">
-                              <div className="text-[10px] font-black uppercase tracking-wider text-white/60">Included Courses</div>
-                              <div className="text-2xl font-black">{featuredCourse.bundleCourses?.length || 0}</div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="w-full lg:w-1/2 flex flex-col justify-center">
-                      <div className="flex flex-wrap items-center gap-2 mb-3">
-                        <div className="inline-block px-3 py-1 bg-[#10b981] text-white font-black text-[10px] rounded-full border-2 border-[#0b1120] uppercase tracking-wide">
-                          {featuredCourse.isPinned ? 'Most Popular' : 'Featured'}
-                        </div>
-                        {featuredCourse.isBundle && (
-                          <div className="inline-block px-3 py-1 bg-purple-100 text-purple-700 font-black text-[10px] rounded-full border-2 border-purple-300 uppercase tracking-wide">
-                            Bundle Offer
-                          </div>
-                        )}
-                      </div>
-
-                      <h3 className="text-2xl lg:text-3xl font-black text-[#0b1120] mb-3 leading-tight">
-                        {featuredCourse.name}
-                      </h3>
-                      <p className="text-gray-600 font-bold mb-6 text-xs lg:text-sm">
-                        {featuredCourse.description}
-                      </p>
-
-                      <div className="flex flex-wrap gap-2 mb-6">
-                        {featuredCourse.isBundle ? (
-                          featuredCourse.bundleCourses?.map((bundleCourse, idx) => (
-                            <span
-                              key={`${bundleCourse.courseId}-${idx}`}
-                              className="px-3 py-1 bg-gray-50 border-2 border-gray-200 rounded-xl text-xs font-black text-gray-700"
-                            >
-                              {bundleCourse.courseName}
-                            </span>
-                          ))
-                        ) : (
-                          featuredCourse.subject && (
-                            <span className="px-3 py-1 bg-gray-50 border-2 border-gray-200 rounded-xl text-xs font-black text-gray-700">
-                              {featuredCourse.subject}
-                            </span>
-                          )
-                        )}
-                      </div>
-
-                      <div className="flex items-end gap-3 mb-4">
-                        <div className="flex flex-col">
-                          <span className="text-[10px] font-bold text-gray-500 mb-0.5">Starting at</span>
-                          <span className="text-3xl font-black text-[#0b1120] leading-none">₹{featuredCourse.discountPrice || featuredCourse.price}</span>
-                        </div>
-                        {featuredCourse.discountPrice && (
-                          <span className="text-lg font-bold text-gray-400 line-through mb-1">₹{featuredCourse.price}</span>
-                        )}
-                        <span className="px-2 py-0.5 bg-[#d1fae5] text-[#059669] border-2 border-[#0b1120] rounded-full text-[10px] font-black mb-2">
-                          {featuredCourse.isBundle ? 'Bundle' : 'Live + Rec'}
-                        </span>
-                      </div>
-
-                      <div className="flex flex-col sm:flex-row gap-4 mt-auto">
-                        <Link
-                          to={`/courses/${featuredCourse.id}`}
-                          className="flex-1 py-3 bg-white text-[#0b1120] rounded-xl font-bold text-lg border-2 border-[#0b1120] hover:bg-gray-50 transition-colors text-center flex items-center justify-center"
-                        >
-                          Explore Details
-                        </Link>
-                        <Link 
-                          onClick={() => buyNow(featuredCourse)}
-                          to="/cart"
-                          className="flex-1 py-3 bg-[#10b981] text-white rounded-xl font-bold text-lg border-2 border-[#0b1120] hover:bg-[#059669] transition-colors shadow-[4px_4px_0px_#0b1120] active:translate-y-1 active:translate-x-1 active:shadow-none flex items-center justify-center"
-                        >
-                          Enroll Now
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {secondaryCourses.length > 0 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-                    {secondaryCourses.map((course) => (
-                      <div key={course.id}>
-                        <CourseCard course={course} />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
-          </div>
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="inline-block animate-spin w-8 h-8 border-[3px] border-[#10b981] border-t-white rounded-full"></div>
+            </div>
+          ) : courses.length === 0 ? (
+            <div className="bg-white border-[3px] border-[#0b1120] rounded-2xl p-8 text-center shadow-[8px_8px_0px_#10b981]">
+              <h3 className="text-2xl font-black text-[#0b1120] mb-2">No courses published yet</h3>
+              <p className="text-sm font-bold text-gray-500">Add courses from the manager panel and they will appear here automatically.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+              {courses.slice(0, 3).map((course) => (
+                <CourseCard key={course.id} course={course} />
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
