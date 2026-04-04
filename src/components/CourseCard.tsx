@@ -1,6 +1,5 @@
 import { GraduationCap, RefreshCcw, Star } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { useCart } from '../context/CartContext';
+import { Link, useNavigate } from 'react-router-dom';
 
 export type CourseCardData = {
   id: string;
@@ -20,13 +19,14 @@ type CourseCardProps = {
 };
 
 export default function CourseCard({ course, className = '' }: CourseCardProps) {
-  const { buyNow } = useCart();
+  const navigate = useNavigate();
 
   const displayPrice = course.discountPrice || course.price;
 
   return (
     <div
-      className={`group relative bg-white border-[4px] border-[#0b1120] rounded-[32px] overflow-hidden hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[12px_12px_0px_#ef4444] transition-all flex flex-col ${
+      onClick={() => navigate(`/courses/${course.id}`)}
+      className={`group relative bg-white border-[4px] border-[#0b1120] rounded-[32px] overflow-hidden hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[12px_12px_0px_#ef4444] transition-all flex flex-col cursor-pointer ${
         course.isPinned ? 'ring-4 ring-blue-500/20' : ''
       } ${className}`}
     >
@@ -90,12 +90,14 @@ export default function CourseCard({ course, className = '' }: CourseCardProps) 
           <div className="grid grid-cols-2 gap-3">
             <Link
               to={`/courses/${course.id}`}
+              onClick={(e) => e.stopPropagation()}
               className="w-full py-3.5 bg-white text-[#0b1120] rounded-xl font-black text-center text-sm lg:text-base border-[3px] border-[#0b1120] hover:bg-gray-50 transition-all active:translate-y-1"
             >
               View Details {'>'}
             </Link>
             <Link
               to={`/checkout/${course.id}`}
+              onClick={(e) => e.stopPropagation()}
               className="w-full py-3.5 bg-[#1e293b] text-white rounded-xl border-[3px] border-[#1e293b] hover:bg-black transition-all font-black text-sm lg:text-base active:translate-y-1 flex items-center justify-center"
             >
               Enroll Now

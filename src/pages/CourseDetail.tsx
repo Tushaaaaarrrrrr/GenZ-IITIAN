@@ -176,7 +176,7 @@ export default function CourseDetail() {
             className="relative lg:block"
           >
             <div className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] p-6 shadow-[8px_8px_0px_#10b981] text-[#0b1120]">
-              <div className="text-xs font-black uppercase tracking-widest text-gray-400 mb-2">Enrollment Summary</div>
+              <div className="text-xs font-black uppercase tracking-widest text-gray-400 mb-2">Course Starts From</div>
               <div className="flex items-baseline gap-4 mb-6">
                 <div className="text-4xl font-black">₹{course.discountPrice || course.price}</div>
                 {course.discountPrice && (

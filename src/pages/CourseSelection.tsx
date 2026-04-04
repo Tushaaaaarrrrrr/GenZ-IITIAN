@@ -566,8 +566,10 @@ export default function CourseSelection() {
                                           : `Select All ${course.bundleCourses.length} Courses to Save ₹${course.bundleCourses.reduce((s: any, b: any) => s + b.price, 0) - (course.bundleDiscountPrice || 0)}`
                                       }
                                   </div>
-                                  <p className="text-[10px] md:text-sm text-gray-500 font-bold uppercase tracking-widest mt-0.5">
-                                      {isAllBundleSelected ? "Use the code below to claim the bundle price." : "Unlock the bundle price by selecting all courses."}
+                                  <p className="text-[9px] md:text-xs text-gray-500 font-bold uppercase tracking-[0.18em] mt-1 leading-snug">
+                                      {isAllBundleSelected
+                                        ? `Apply the code to get ₹${course.bundleCourses.reduce((s: any, b: any) => s + b.price, 0) - (course.bundleDiscountPrice || 0)} discount.`
+                                        : "Select all courses to unlock the bundle price."}
                                   </p>
                               </div>
                           </div>
