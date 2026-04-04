@@ -36,7 +36,6 @@ export default function CourseSelection() {
   const [discountError, setDiscountError] = useState('');
   const [isApplyingDiscount, setIsApplyingDiscount] = useState(false);
 
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const courseLookupId = searchParams.get('courseId') || id;
 
@@ -202,8 +201,12 @@ export default function CourseSelection() {
 
       // 3. Check if applies to these courses
       if (coupon.applies_to !== 'ALL') {
-        const hasValidCourse = selectedCourses.includes(coupon.applies_to);
-        if (!hasValidCourse) throw new Error(`This code doesn't apply to the selected courses.`);
+        const targetsSelectedCourse = selectedCourses.includes(coupon.applies_to);
+        const targetsCurrentBundle = course?.isBundle && coupon.applies_to === course.id;
+
+        if (!targetsSelectedCourse && !targetsCurrentBundle) {
+          throw new Error(`This code doesn't apply to the selected courses.`);
+        }
       }
 
       const total = calculateTotal();
@@ -261,11 +264,6 @@ export default function CourseSelection() {
       return;
     }
 
-    setShowConfirmModal(true);
-  };
-
-  const proceedToPayment = async () => {
-    setShowConfirmModal(false);
     setIsProcessing(true);
     setLoadingMessage("Preparing Checkout...");
     const total = calculateTotal();
@@ -278,6 +276,7 @@ export default function CourseSelection() {
           amount: Math.max(total - discountAmount, 0),
           email: user?.email,
           courseIds: selectedCourses,
+          bundleId: course?.isBundle ? course.id : undefined,
           discountCode: appliedDiscountCode || undefined,
         }),
       });
@@ -406,69 +405,6 @@ export default function CourseSelection() {
           </motion.div>
         )}
 
-        {showConfirmModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-[#0b1120]/80 backdrop-blur-md flex items-center justify-center p-6 text-center"
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="bg-white border-[4px] border-[#0b1120] rounded-2xl p-6 md:p-8 flex flex-col items-center gap-6 shadow-[8px_8px_0px_#10b981] max-w-sm w-full mx-6 text-left"
-            >
-              <div className="w-full">
-                <h3 className="text-xl font-black text-[#0b1120] mb-4 uppercase tracking-tight text-center">Confirm Enrollment</h3>
-                
-                <div className="space-y-2 mb-4">
-                    {course.isBundle ? (
-                        course.bundleCourses.filter((bc: SubCourse) => selectedCourses.includes(bc.courseId)).map((bc: SubCourse) => (
-                            <div key={bc.courseId} className="flex justify-between font-bold text-gray-600 text-sm">
-                                <span>{bc.courseName}</span>
-                                <span>₹{bc.price}</span>
-                            </div>
-                        ))
-                    ) : (
-                        <div className="flex justify-between font-bold text-gray-600 text-sm">
-                            <span>{course.name}</span>
-                            <span>₹{course.discountPrice || course.price}</span>
-                        </div>
-                    )}
-                </div>
-
-                <div className="h-0.5 bg-gray-200 mb-4" />
-
-                {appliedDiscountCode && (
-                    <div className="flex justify-between font-black text-green-600 text-sm mb-2 pb-2 border-b border-gray-100">
-                        <span>Discount ({appliedDiscountCode})</span>
-                        <span>-₹{discountAmount}</span>
-                    </div>
-                )}
-
-                <div className="flex justify-between font-black text-xl text-[#0b1120] mb-6">
-                    <span>Total You Pay</span>
-                    <span>₹{Math.max(calculateTotal() - discountAmount, 0)}</span>
-                </div>
-
-                <div className="flex gap-3">
-                    <button 
-                        onClick={() => setShowConfirmModal(false)}
-                        className="flex-1 py-3 bg-gray-100 text-[#0b1120] border-2 border-gray-300 rounded-xl font-black transition-colors hover:bg-gray-200"
-                    >
-                        Cancel
-                    </button>
-                    <button 
-                        onClick={proceedToPayment}
-                        className="flex-1 py-3 bg-[#10b981] text-white border-2 border-[#0b1120] rounded-xl font-black transition-colors hover:bg-[#059669]"
-                    >
-                        Pay ₹{Math.max(calculateTotal() - discountAmount, 0)}
-                    </button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
       </AnimatePresence>
 
       <div className="max-w-4xl mx-auto">
