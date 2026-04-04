@@ -164,7 +164,24 @@ export default function CourseSelection() {
     setDiscountError('');
     try {
       const codeToApply = discountCodeInput.trim().toUpperCase();
-      // 1. Check if it exists
+
+      // 0. Handle Special Course Bundle Code first (stored on the course record)
+      if (course?.isBundle && course.bundleDiscountCode && codeToApply === course.bundleDiscountCode.toUpperCase()) {
+          if (!isAllBundleSelected) throw new Error('Please select ALL bundle courses to use this code.');
+          
+          const total = calculateTotal();
+          const bundlePrice = course.bundleDiscountPrice || total;
+          const calculatedDiscount = Math.max(total - bundlePrice, 0);
+          
+          setDiscountAmount(calculatedDiscount);
+          setAppliedDiscountCode(codeToApply);
+          setDiscountCodeInput('');
+          setShowSuccessModal(true);
+          setTimeout(() => setShowSuccessModal(false), 3500);
+          return;
+      }
+
+      // 1. Check if it exists in the global coupons table
       const { data: coupon, error } = await supabase
         .from('discount_coupons')
         .select('*')
