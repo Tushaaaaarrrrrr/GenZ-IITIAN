@@ -13,6 +13,8 @@ interface SubCourse {
   price: number;
 }
 
+import { CheckCircle2, Star, Quote } from 'lucide-react';
+
 export default function CourseSelection() {
   const { id } = useParams<{ id: string }>();
   const { user, profile, loading: authLoading, openLoginModal } = useAuth();
@@ -120,12 +122,26 @@ export default function CourseSelection() {
   }, [id]);
 
   const toggleCourse = (courseId: string) => {
-    setSelectedCourses(prev => 
-      prev.includes(courseId) 
+    setSelectedCourses(prev => {
+      const next = prev.includes(courseId) 
         ? prev.filter(i => i !== courseId) 
-        : [...prev, courseId]
-    );
+        : [...prev, courseId];
+      
+      // Auto-revoke bundle discount if criteria broken
+      if (course?.isBundle && appliedDiscountCode === course?.bundleDiscountCode) {
+         const allIds = course.bundleCourses.map((bc: any) => bc.courseId);
+         const isStillComplete = allIds.every((id: string) => next.includes(id));
+         if (!isStillComplete) {
+            setAppliedDiscountCode(null);
+            setDiscountAmount(0);
+         }
+      }
+      return next;
+    });
   };
+
+  const isAllBundleSelected = course?.isBundle && 
+    course.bundleCourses?.every((bc: any) => selectedCourses.includes(bc.courseId));
 
   const calculateTotal = () => {
     if (!course) return 0;
@@ -624,13 +640,57 @@ export default function CourseSelection() {
                     
                     <div className="space-y-3 mb-6">
                         {course.isBundle && (
-                            <div className="space-y-2">
-                                {course.bundleCourses.filter((bc: SubCourse) => selectedCourses.includes(bc.courseId)).map((bc: SubCourse) => (
-                                    <div key={bc.courseId} className="flex justify-between font-bold text-gray-500 text-[10px]">
-                                        <span>{bc.courseName}</span>
-                                        <span>₹{bc.price}</span>
+                            <div className="space-y-3">
+                                {/* Bundle Progress Offer */}
+                                <div className={`p-4 rounded-xl border-[3px] transition-all duration-500 ${isAllBundleSelected ? 'bg-green-50 border-[#10b981] shadow-[4px_4px_0px_#10b981]' : 'bg-blue-50 border-blue-200'}`}>
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className={`w-8 h-8 rounded-lg border-2 border-[#0b1120] flex items-center justify-center ${isAllBundleSelected ? 'bg-[#10b981]' : 'bg-white'}`}>
+                                            <Star className={`w-4 h-4 ${isAllBundleSelected ? 'text-white' : 'text-blue-500'}`} fill={isAllBundleSelected ? 'white' : 'transparent'} />
+                                        </div>
+                                        <div className="font-black text-[10px] md:text-xs text-[#0b1120] uppercase tracking-tight leading-tight">
+                                            {isAllBundleSelected 
+                                                ? "🎉 Bundle Price Unlocked!" 
+                                                : `Select All ${course.bundleCourses.length} Courses to Save ₹${course.bundleCourses.reduce((s: any, b: any) => s + b.price, 0) - (course.bundleDiscountPrice || 0)}`
+                                            }
+                                        </div>
                                     </div>
-                                ))}
+                                    {isAllBundleSelected ? (
+                                        <div className="space-y-2">
+                                            <div className="p-2 bg-white border-2 border-[#0b1120] rounded-lg text-center font-mono font-black text-sm tracking-[0.2em] text-[#0b1120]">
+                                                {course.bundleDiscountCode}
+                                            </div>
+                                            {!appliedDiscountCode && (
+                                                <button 
+                                                    onClick={() => {
+                                                        setDiscountCodeInput(course.bundleDiscountCode);
+                                                        setTimeout(() => applyDiscount(), 100);
+                                                    }}
+                                                    className="w-full py-1.5 bg-[#0b1120] text-white rounded-lg font-black text-[10px] uppercase shadow-[2px_2px_0px_#10b981] hover:translate-y-0.5 hover:shadow-none transition-all"
+                                                >
+                                                    Apply Bundle Pricing
+                                                </button>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="w-full h-1.5 bg-white border border-blue-200 rounded-full overflow-hidden">
+                                            <motion.div 
+                                                initial={{ width: 0 }}
+                                                animate={{ width: `${(selectedCourses.length / course.bundleCourses.length) * 100}%` }}
+                                                className="h-full bg-blue-500"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Summary List */}
+                                <div className="space-y-1.5 pt-2">
+                                    {course.bundleCourses.filter((bc: SubCourse) => selectedCourses.includes(bc.courseId)).map((bc: SubCourse) => (
+                                        <div key={bc.courseId} className="flex justify-between font-bold text-gray-500 text-[9px] uppercase tracking-tight">
+                                            <span>{bc.courseName}</span>
+                                            <span>₹{bc.price}</span>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         )}
 
@@ -700,6 +760,54 @@ export default function CourseSelection() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Why Gen-Z IITian? Section */}
+        <div className="mt-24 mb-16">
+            <div className="text-center mb-16">
+                <h2 className="text-4xl md:text-5xl font-black text-[#0b1120] mb-4 tracking-tight">Why Gen-Z IITian?</h2>
+                <p className="text-lg md:text-xl text-gray-500 font-bold max-w-3xl mx-auto px-4 leading-relaxed">
+                    Most students fail the Qualifier not because they lack intelligence — but because they <span className="text-red-500 underline decoration-[3px]">lack structure.</span>
+                </p>
+            </div>
+
+            <div className="bg-white border-[6px] border-[#0b1120] rounded-[3rem] p-8 md:p-16 shadow-[20px_20px_0px_#0b1120] grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <div className="space-y-10">
+                    {[
+                        { title: "Proven Academic Structure", desc: "Meticulously designed roadmap for consistent progress." },
+                        { title: "Expert Strategy & Roadmap", desc: "Direct guidance from those who've cracked it." },
+                        { title: "Real-Time Accountability", desc: "Live doubt clearing and progress monitoring." },
+                        { title: "Extensive Mock Practice", desc: "High-yield PYQ analysis and exam-style simulator." }
+                    ].map((item, idx) => (
+                        <div key={idx} className="flex gap-6 items-start group">
+                            <div className="shrink-0 w-12 h-12 bg-green-50 border-[3px] border-[#0b1120] rounded-2xl flex items-center justify-center shadow-[4px_4px_0px_#0b1120] group-hover:-translate-y-1 transition-transform">
+                                <CheckCircle2 className="w-6 h-6 text-[#10b981]" strokeWidth={3} />
+                            </div>
+                            <div>
+                                <h4 className="text-xl md:text-2xl font-black text-[#0b1120] tracking-tight">{item.title}</h4>
+                                <p className="text-sm md:text-base text-gray-500 font-bold mt-1 uppercase tracking-tighter">{item.desc}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="relative group">
+                    <div className="absolute -inset-4 bg-blue-50 rounded-[2.5rem] -rotate-1 group-hover:rotate-0 transition-transform -z-10 border-[3px] border-[#0b1120]" />
+                    <div className="bg-blue-600 border-[6px] border-[#0b1120] rounded-[2.5rem] p-10 md:p-14 shadow-[20px_20px_0px_#0b1120] relative overflow-hidden">
+                        <Quote className="absolute -top-4 -left-4 w-32 h-32 text-white/10 -rotate-12" />
+                        <p className="text-xl md:text-2xl font-black text-white italic leading-relaxed relative z-10">
+                            "Gen-Z IITian bridges the gap between self-study and success. We don't just teach the syllabus; we prepare you for the challenge of being an IITian."
+                        </p>
+                        <div className="mt-8 flex items-center gap-4 relative z-10">
+                            <div className="w-12 h-12 rounded-full border-4 border-white bg-blue-400" />
+                            <div>
+                                <div className="text-white font-black text-lg tracking-tight">Founder Team</div>
+                                <div className="text-blue-200 font-bold text-xs uppercase tracking-widest">IIT Madras Qualifier Mentors</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
       </div>
     </div>
   );

@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
-import { ChevronRight, Award, CheckCircle2, X as XIcon, Star, RefreshCcw, GraduationCap } from 'lucide-react';
+import { ChevronRight, Award, CheckCircle2, X as XIcon, Star, Layers, GraduationCap } from 'lucide-react';
 import { useInView, animate } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import CourseCard, { CourseCardData } from '../components/CourseCard';
 import HeroAnimation from '../components/HeroAnimation';
 import { supabase } from '../lib/supabase';
 
@@ -30,7 +31,7 @@ function AnimatedNumber({ value, decimals = 0, suffix = "" }: { value: number, d
 
 export default function Home() {
   const { buyNow } = useCart();
-  const [courses, setCourses] = useState<any[]>([]);
+  const [courses, setCourses] = useState<CourseCardData[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -42,11 +43,13 @@ export default function Home() {
       .from('courses')
       .select('*')
       .order('isPinned', { ascending: false })
-      .order('createdAt', { ascending: false })
-      .limit(3);
+      .order('createdAt', { ascending: false });
     setCourses(data || []);
     setLoading(false);
   };
+
+  const featuredCourse = courses[0];
+  const secondaryCourses = courses.slice(1);
 
   return (
     <div className="min-h-screen bg-white text-[#0b1120] font-sans selection:bg-blue-100 overflow-hidden">
@@ -91,140 +94,162 @@ export default function Home() {
       {/* Featured Courses Section */}
       <section className="bg-[#0b1120] py-12 border-t-[3px] border-b-[3px] border-[#0b1120] relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 relative z-10">
-          <h2 className="text-2xl lg:text-3xl font-black text-white mb-8">
-            Featured Cohorts
-          </h2>
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-8">
+            <div>
+              <h2 className="text-2xl lg:text-3xl font-black text-white">Featured Cohorts</h2>
+              <p className="text-sm font-bold text-gray-300 mt-2">
+                This section now pulls directly from the live courses list, so every new course or bundle also appears here.
+              </p>
+            </div>
+            <Link
+              to="/courses"
+              className="inline-flex items-center gap-2 text-sm font-black text-[#0b1120] bg-white border-[3px] border-[#0b1120] rounded-xl px-5 py-3 shadow-[4px_4px_0px_#10b981] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[8px_8px_0px_#10b981] transition-all"
+            >
+              See All Courses <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
 
           <div className="flex flex-col gap-8">
-            {/* Main Reattempt Course Card */}
-            <div className="relative group">
-              <div className="absolute inset-0 bg-[#10b981] rounded-2xl translate-y-2 translate-x-2 border-2 border-[#0b1120]"></div>
-              <div className="relative bg-white border-[3px] border-[#0b1120] rounded-2xl p-4 lg:p-6 flex flex-col lg:flex-row gap-8 transition-transform hover:-translate-y-1 hover:-translate-x-1">
-                {/* Image */}
-                <div className="w-full lg:w-1/2 aspect-video bg-gray-100 rounded-2xl border-2 border-[#0b1120] overflow-hidden relative">
-                  <img src="/Image/Qualifier.png" alt="Qualifier Reattempt Batch" className="w-full h-full object-contain" />
-                </div>
-
-                {/* Content */}
-                <div className="w-full lg:w-1/2 flex flex-col justify-center">
-                  <div className="inline-block px-3 py-1 bg-[#10b981] text-white font-black text-[10px] rounded-full border-2 border-[#0b1120] w-fit mb-3 uppercase tracking-wide">
-                    Most Popular
-                  </div>
-                  <h3 className="text-2xl lg:text-3xl font-black text-[#0b1120] mb-3 leading-tight">Qualifier Reattempt Batch</h3>
-                  <p className="text-gray-600 font-bold mb-6 text-xs lg:text-sm">
-                    For qualifier students: live + recording batch with weekly doubt support, PYQ lectures and graded assignment recordings.
-                  </p>
-
-                  <div className="flex items-end gap-3 mb-4">
-                    <div className="flex flex-col">
-                      <span className="text-[10px] font-bold text-gray-500 mb-0.5">Starting at</span>
-                      <span className="text-3xl font-black text-[#0b1120] leading-none">₹699</span>
-                    </div>
-                    <span className="text-lg font-bold text-gray-400 line-through mb-1">₹999</span>
-                    <span className="px-2 py-0.5 bg-[#d1fae5] text-[#059669] border-2 border-[#0b1120] rounded-full text-[10px] font-black mb-2">Live + Rec</span>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row gap-4 mt-auto">
-                    <Link to="/courses/reattempt" className="flex-1 py-3 bg-white text-[#0b1120] rounded-xl font-bold text-lg border-2 border-[#0b1120] hover:bg-gray-50 transition-colors text-center flex items-center justify-center">
-                      Explore Details
-                    </Link>
-                    <button 
-                      onClick={() => buyNow({ id: 'reattempt', name: 'Qualifier Reattempt Batch', price: 699, lms_course_id: 'reattempt' })}
-                      className="flex-1 py-3 bg-[#10b981] text-white rounded-xl font-bold text-lg border-2 border-[#0b1120] hover:bg-[#059669] transition-colors shadow-[4px_4px_0px_#0b1120] active:translate-y-1 active:translate-x-1 active:shadow-none"
-                    >
-                      Enroll Now
-                    </button>
-                  </div>
-                </div>
+            {loading ? (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin w-8 h-8 border-[3px] border-[#10b981] border-t-white rounded-full"></div>
               </div>
-            </div>
-
-            {/* Other Courses Row */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {loading ? (
-                <div className="col-span-3 text-center py-12">
-                   <div className="inline-block animate-spin w-8 h-8 border-[3px] border-[#10b981] border-t-white rounded-full"></div>
-                </div>
-              ) : courses.map(course => (
-                <div
-                  key={course.id}
-                  className={`group relative bg-white border-[4px] border-[#0b1120] rounded-[32px] overflow-hidden hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[12px_12px_0px_#ef4444] transition-all flex flex-col ${
-                    course.isPinned ? 'ring-4 ring-blue-500/20' : ''
-                  }`}
-                >
-                  <div className="p-6 flex-grow flex flex-col relative bg-white h-full">
-                    
-                    {/* Top Icon Box */}
-                    <div className="w-14 h-14 bg-pink-100 border-[3px] border-[#0b1120] rounded-2xl flex items-center justify-center mb-6">
-                      {course.isBundle ? <RefreshCcw className="w-6 h-6 text-[#0b1120]" /> : <GraduationCap className="w-6 h-6 text-[#0b1120]" />}
-                    </div>
-
-                    <h3 className="text-2xl font-black text-[#0b1120] mb-3 leading-tight group-hover:text-blue-600 transition-colors">
-                      {course.name}
-                    </h3>
-                    
-                    <p className="text-gray-600 font-bold text-sm mb-6 flex-grow">
-                      {course.description}
-                    </p>
-
-                    <div className="flex flex-wrap gap-2 mb-8">
-                      {course.isBundle && course.bundleCourses && course.bundleCourses.map((bc: any, idx: number) => (
-                        <span key={idx} className="px-3 py-1 bg-gray-50 border-2 border-gray-200 rounded-xl text-xs font-black text-gray-700">
-                          {bc.courseName}
-                        </span>
-                      ))}
-                      {!course.isBundle && course.subject && (
-                        <span className="px-3 py-1 bg-gray-50 border-2 border-gray-200 rounded-xl text-xs font-black text-gray-700">
-                          {course.subject}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="h-0.5 w-full bg-gray-100 mb-6"></div>
-
-                    <div className="mt-auto">
-                      <div className="flex items-end justify-between mb-8">
-                        <div className="flex items-center gap-1">
-                          <div className="flex text-amber-400">
-                            {[...Array(5)].map((_, idx) => (
-                              <Star key={idx} className="w-4 h-4 fill-current" />
-                            ))}
-                          </div>
-                          <span className="text-gray-500 font-bold text-sm ml-1">(4.9)</span>
+            ) : !featuredCourse ? (
+              <div className="bg-white border-[3px] border-[#0b1120] rounded-2xl p-8 text-center shadow-[8px_8px_0px_#10b981]">
+                <h3 className="text-2xl font-black text-[#0b1120] mb-2">No courses published yet</h3>
+                <p className="text-sm font-bold text-gray-500">Add courses from the manager panel and they will appear here automatically.</p>
+              </div>
+            ) : (
+              <>
+                <div className="relative group">
+                  <div className="absolute inset-0 bg-[#10b981] rounded-2xl translate-y-2 translate-x-2 border-2 border-[#0b1120]"></div>
+                  <div className="relative bg-white border-[3px] border-[#0b1120] rounded-2xl p-4 lg:p-6 flex flex-col lg:flex-row gap-8 transition-transform hover:-translate-y-1 hover:-translate-x-1">
+                    <div className="w-full lg:w-1/2 aspect-video rounded-2xl border-2 border-[#0b1120] overflow-hidden relative bg-[linear-gradient(135deg,#0b1120_0%,#172554_55%,#10b981_100%)]">
+                      <div className="absolute inset-0 opacity-15" style={{ backgroundImage: 'linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
+                      <div className="relative h-full p-5 sm:p-6 flex flex-col justify-between text-white">
+                        <div className="flex flex-wrap gap-2">
+                          {featuredCourse.isPinned && (
+                            <span className="px-3 py-1 bg-[#10b981] text-white font-black text-[10px] rounded-full border-2 border-white/20 uppercase tracking-wide">
+                              Most Popular
+                            </span>
+                          )}
+                          <span className="px-3 py-1 bg-white text-[#0b1120] font-black text-[10px] rounded-full border-2 border-[#0b1120] uppercase tracking-wide">
+                            {featuredCourse.isBundle ? 'Bundle' : featuredCourse.subject || 'Course'}
+                          </span>
                         </div>
 
-                        <div className="text-right">
-                          <div className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1">Starts From</div>
-                          <div className="flex flex-col items-end leading-none">
-                            <span className="text-2xl font-black text-[#0b1120]">
-                              ₹{course.discountPrice || course.price}
-                            </span>
-                            {course.discountPrice && (
-                              <span className="text-xs font-black text-gray-400 line-through mt-1">₹{course.price}</span>
-                            )}
+                        <div>
+                          <div className="w-16 h-16 bg-white text-[#0b1120] rounded-2xl border-[3px] border-[#0b1120] flex items-center justify-center mb-4 shadow-[4px_4px_0px_rgba(11,17,32,0.4)]">
+                            {featuredCourse.isBundle ? <Layers className="w-8 h-8" /> : <GraduationCap className="w-8 h-8" />}
                           </div>
+                          <h3 className="text-3xl sm:text-4xl font-black leading-tight mb-3">{featuredCourse.name}</h3>
+                          <p className="text-sm sm:text-base font-bold text-white/80 max-w-lg">
+                            {featuredCourse.description}
+                          </p>
+                        </div>
+
+                        <div className="flex flex-wrap gap-3">
+                          <div className="px-4 py-2 rounded-2xl bg-white/10 border-2 border-white/20 backdrop-blur-sm">
+                            <div className="text-[10px] font-black uppercase tracking-wider text-white/60">Starts From</div>
+                            <div className="text-2xl font-black">₹{featuredCourse.discountPrice || featuredCourse.price}</div>
+                          </div>
+                          {featuredCourse.isBundle && (
+                            <div className="px-4 py-2 rounded-2xl bg-white/10 border-2 border-white/20 backdrop-blur-sm">
+                              <div className="text-[10px] font-black uppercase tracking-wider text-white/60">Included Courses</div>
+                              <div className="text-2xl font-black">{featuredCourse.bundleCourses?.length || 0}</div>
+                            </div>
+                          )}
                         </div>
                       </div>
+                    </div>
 
-                      <div className="grid grid-cols-2 gap-3">
+                    <div className="w-full lg:w-1/2 flex flex-col justify-center">
+                      <div className="flex flex-wrap items-center gap-2 mb-3">
+                        <div className="inline-block px-3 py-1 bg-[#10b981] text-white font-black text-[10px] rounded-full border-2 border-[#0b1120] uppercase tracking-wide">
+                          {featuredCourse.isPinned ? 'Most Popular' : 'Featured'}
+                        </div>
+                        {featuredCourse.isBundle && (
+                          <div className="inline-block px-3 py-1 bg-purple-100 text-purple-700 font-black text-[10px] rounded-full border-2 border-purple-300 uppercase tracking-wide">
+                            Bundle Offer
+                          </div>
+                        )}
+                      </div>
+
+                      <h3 className="text-2xl lg:text-3xl font-black text-[#0b1120] mb-3 leading-tight">
+                        {featuredCourse.name}
+                      </h3>
+                      <p className="text-gray-600 font-bold mb-6 text-xs lg:text-sm">
+                        {featuredCourse.description}
+                      </p>
+
+                      <div className="flex flex-wrap gap-2 mb-6">
+                        {featuredCourse.isBundle ? (
+                          featuredCourse.bundleCourses?.map((bundleCourse, idx) => (
+                            <span
+                              key={`${bundleCourse.courseId}-${idx}`}
+                              className="px-3 py-1 bg-gray-50 border-2 border-gray-200 rounded-xl text-xs font-black text-gray-700"
+                            >
+                              {bundleCourse.courseName}
+                            </span>
+                          ))
+                        ) : (
+                          featuredCourse.subject && (
+                            <span className="px-3 py-1 bg-gray-50 border-2 border-gray-200 rounded-xl text-xs font-black text-gray-700">
+                              {featuredCourse.subject}
+                            </span>
+                          )
+                        )}
+                      </div>
+
+                      <div className="flex items-end gap-3 mb-4">
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-bold text-gray-500 mb-0.5">Starting at</span>
+                          <span className="text-3xl font-black text-[#0b1120] leading-none">₹{featuredCourse.discountPrice || featuredCourse.price}</span>
+                        </div>
+                        {featuredCourse.discountPrice && (
+                          <span className="text-lg font-bold text-gray-400 line-through mb-1">₹{featuredCourse.price}</span>
+                        )}
+                        <span className="px-2 py-0.5 bg-[#d1fae5] text-[#059669] border-2 border-[#0b1120] rounded-full text-[10px] font-black mb-2">
+                          {featuredCourse.isBundle ? 'Bundle' : 'Live + Rec'}
+                        </span>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row gap-4 mt-auto">
                         <Link
-                          to={`/courses/${course.id}`}
-                          className="w-full py-3.5 bg-white text-[#0b1120] rounded-xl font-black text-center text-sm lg:text-base border-[3px] border-[#0b1120] hover:bg-gray-50 transition-all active:translate-y-1"
+                          to={`/courses/${featuredCourse.id}`}
+                          className="flex-1 py-3 bg-white text-[#0b1120] rounded-xl font-bold text-lg border-2 border-[#0b1120] hover:bg-gray-50 transition-colors text-center flex items-center justify-center"
                         >
-                          View Details {'>'}
+                          Explore Details
                         </Link>
                         <button
-                          onClick={() => buyNow({ id: course.id, name: course.name, price: course.discountPrice || course.price, lms_course_id: course.id })}
-                          className="w-full py-3.5 bg-[#1e293b] text-white rounded-xl border-[3px] border-[#1e293b] hover:bg-black transition-all font-black text-sm lg:text-base active:translate-y-1 text-center"
+                          onClick={() =>
+                            buyNow({
+                              id: featuredCourse.id,
+                              name: featuredCourse.name,
+                              price: featuredCourse.discountPrice || featuredCourse.price,
+                              lms_course_id: String(featuredCourse.id),
+                              isBundle: featuredCourse.isBundle,
+                              bundleCourses: featuredCourse.bundleCourses
+                            })
+                          }
+                          className="flex-1 py-3 bg-[#10b981] text-white rounded-xl font-bold text-lg border-2 border-[#0b1120] hover:bg-[#059669] transition-colors shadow-[4px_4px_0px_#0b1120] active:translate-y-1 active:translate-x-1 active:shadow-none"
                         >
-                          Pay Now
+                          Enroll Now
                         </button>
                       </div>
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
+
+                {secondaryCourses.length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+                    {secondaryCourses.map((course) => (
+                      <CourseCard key={course.id} course={course} />
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
       </section>
