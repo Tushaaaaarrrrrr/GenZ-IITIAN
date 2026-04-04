@@ -437,30 +437,30 @@ export default function CourseSelection() {
       </AnimatePresence>
 
       <div className="max-w-4xl mx-auto">
-        <div className="mb-4 text-center">
-            <h1 className="text-xl lg:text-2xl font-black mb-1 tracking-tight">Complete Enrollment</h1>
-            <p className="text-xs text-gray-500 font-bold max-w-2xl mx-auto italic">You're just one step away from joining {course.name}. Follow the steps below.</p>
+        <div className="mb-6 text-center">
+            <h1 className="text-3xl lg:text-4xl font-black mb-2 tracking-tight">Complete <span className="text-blue-600">Enrollment</span></h1>
+            <p className="text-sm lg:text-base text-gray-500 font-bold max-w-2xl mx-auto italic">You're just one step away from joining {course.name}. Follow the steps below.</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
             <button 
               onClick={() => { setStep('profile'); setShowProfilePrompt(false); }}
-              className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl border-[3px] transition-all w-full text-left ${step === 'profile' ? 'bg-blue-600 border-[#0b1120] text-white shadow-[3px_3px_0px_#0b1120]' : 'bg-green-50 border-green-200 text-green-700 cursor-pointer hover:bg-green-100'}`}
+              className={`flex flex-col items-center gap-2 p-3 lg:p-4 rounded-xl border-[4px] transition-all w-full text-left ${step === 'profile' ? 'bg-blue-600 border-[#0b1120] text-white shadow-[4px_4px_0px_#0b1120]' : 'bg-green-50 border-green-200 text-green-700 cursor-pointer hover:bg-green-100'}`}
             >
-                <User className="w-4 h-4" />
-                <span className="font-black text-[8px] uppercase tracking-wider">Step 1: Profile</span>
+                <User className="w-6 h-6" />
+                <span className="font-black text-[10px] md:text-sm uppercase tracking-wider">Step 1: Profile</span>
             </button>
             <button 
               disabled={!profileData.name || !profileData.gender || !profileData.phone}
               onClick={() => setStep('selection')}
-              className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl border-[3px] transition-all w-full text-left ${step === 'selection' ? 'bg-blue-600 border-[#0b1120] text-white shadow-[3px_3px_0px_#0b1120]' : 'bg-white border-gray-200 text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed'}`}
+              className={`flex flex-col items-center gap-2 p-3 lg:p-4 rounded-xl border-[4px] transition-all w-full text-left ${step === 'selection' ? 'bg-blue-600 border-[#0b1120] text-white shadow-[4px_4px_0px_#0b1120]' : 'bg-white border-gray-200 text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed'}`}
             >
-                <BookOpen className="w-4 h-4" />
-                <span className="font-black text-[8px] uppercase tracking-wider">Step 2: Selection</span>
+                <BookOpen className="w-6 h-6" />
+                <span className="font-black text-[10px] md:text-sm uppercase tracking-wider">Step 2: Selection</span>
             </button>
-            <div className="md:col-span-2 bg-white/50 border-2 border-dashed border-gray-300 rounded-xl p-3 flex items-center justify-center border-[#0b1120]/10">
-                <div className="flex items-center gap-2 text-gray-400 font-bold text-xs">
-                    <ShieldCheck className="w-4 h-4" />
+            <div className="md:col-span-2 bg-white border-2 border-dashed border-gray-300 rounded-xl p-3 lg:p-4 flex items-center justify-center border-[#0b1120]/10">
+                <div className="flex items-center gap-2 text-gray-500 font-black text-sm lg:text-base">
+                    <ShieldCheck className="w-6 h-6" />
                     Secure Checkout by Razorpay
                 </div>
             </div>
