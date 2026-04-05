@@ -41,23 +41,29 @@ export default function Courses() {
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-3xl md:text-5xl font-black text-white mb-4 leading-tight"
+            className="text-4xl md:text-6xl font-black text-white mb-6 leading-tight tracking-tight"
           >
-            Master the Skills of <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-red-400">the Future</span>
+            Learn What <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">Actually Matters</span>
           </motion.h1>
-          <p className="text-base text-gray-400 font-bold mb-8 max-w-2xl mx-auto">
-            Industry-relevant courses designed and taught by IITians and Industry Experts.
-          </p>
+          
+          <div className="max-w-3xl mx-auto mb-10">
+            <p className="text-lg md:text-xl text-gray-300 font-bold mb-3 leading-relaxed">
+              Learn from <span className="text-white">IITM BS seniors</span> with a practical-first approach, clear concepts, real strategies, and zero unnecessary theory.
+            </p>
+            <p className="text-[10px] md:text-xs text-gray-500 font-black uppercase tracking-[0.2em] opacity-80 italic">
+              Note: Access is granted immediately after successful payment verification
+            </p>
+          </div>
 
           <div className="max-w-2xl mx-auto relative group">
             <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 w-6 h-6 group-focus-within:text-blue-400 transition-colors" />
             <input
               type="text"
-              placeholder="Search for courses (Python, Web Dev, AI...)"
+              placeholder="Search for your next course..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-16 pr-8 py-4 bg-white/5 border-2 border-white/10 rounded-2xl text-white font-bold text-base focus:outline-none focus:border-blue-500 focus:bg-white/10 transition-all placeholder:text-gray-500"
+              className="w-full pl-16 pr-8 py-5 bg-white/5 border-2 border-white/10 rounded-2xl text-white font-bold text-lg focus:outline-none focus:border-blue-500 focus:bg-white/10 transition-all placeholder:text-gray-500 shadow-2xl"
             />
           </div>
         </div>

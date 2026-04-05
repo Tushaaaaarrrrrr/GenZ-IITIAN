@@ -380,20 +380,39 @@ app.post('/api/create-order', async (req, res) => {
 // Helper to send data to Google Sheets with timeout
 async function sendToGoogleSheet(payload) {
     const url = process.env.GOOGLE_SHEET_WEBHOOK_URL;
-    if (!url) return;
+    console.log('[DEBUG] GOOGLE_SHEET_WEBHOOK_URL:', url);
+    console.log('[DEBUG] Google Sheet Payload:', JSON.stringify(payload, null, 2));
+
+    if (!url) {
+        console.error('[DEBUG] Google Sheet URL is missing!');
+        return;
+    }
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 3000); // 3-second timeout
 
     try {
-        await fetch(url, {
+        console.log('[DEBUG] Sending request to Google Apps Script...');
+        const res = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ...payload, timestamp: new Date().toISOString() }),
             signal: controller.signal
         });
+
+        const resText = await res.text();
+        console.log('[DEBUG] Google Sheet Response status:', res.status);
+        console.log('[DEBUG] Google Sheet Response text:', resText);
+        
+        if (!res.ok) {
+            console.error('[DEBUG] Google Sheet Fetch failed:', res.status, resText);
+        }
     } catch (err) {
-        console.error('Google Sheet Log Skipped/Failed:', err.name === 'AbortError' ? 'Timeout' : err.message);
+        if (err.name === 'AbortError') {
+            console.error('[DEBUG] Google Sheet Log Timeout (3s)');
+        } else {
+            console.error('[DEBUG] Google Sheet Log Error:', err.message);
+        }
     } finally {
         clearTimeout(timeout);
     }
@@ -443,6 +462,7 @@ async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_p
                 const { data: courses } = await supabase.from('courses').select('name').in('id', courseIds);
                 const courseNames = courses?.map(c => c.name).join('|') || "Unknown Course";
 
+                console.log('[DEBUG] Calling sendToGoogleSheet for successful enrollment...');
                 await sendToGoogleSheet({
                     name: profile?.name || "Student",
                     email,
@@ -511,6 +531,7 @@ app.post('/api/verify-payment', async (req, res) => {
             const { data: courses } = await supabase.from('courses').select('name').in('id', courseIds);
             const courseNames = courses?.map(c => c.name).join('|') || "Unknown Course";
 
+            console.log('[DEBUG] Calling sendToGoogleSheet for signature mismatch failure...');
             await sendToGoogleSheet({
                 name: profile?.name || "Student",
                 email,
@@ -556,6 +577,7 @@ app.post('/api/log-payment-failure', async (req, res) => {
         const { data: courses } = await supabase.from('courses').select('name').in('id', courseIds);
         const courseNames = courses?.map(c => c.name).join('|') || "Unknown Course";
 
+        console.log('[DEBUG] Calling sendToGoogleSheet for logged payment failure...');
         await sendToGoogleSheet({
             name: profile?.name || "Student",
             email,

@@ -1,7 +1,7 @@
 import { useAuth } from '../context/AuthContext';
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { LayoutDashboard, ShoppingBag, ScrollText, BookOpen, Plus, Search, Trash2, Edit, Save, X, Loader2, AlertCircle, User, Download, TrendingUp, TrendingDown, Users, ShieldCheck, CreditCard } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, ScrollText, BookOpen, Plus, Search, Trash2, Edit, Save, X, Loader2, AlertCircle, User, Download, TrendingUp, TrendingDown, Users, ShieldCheck, CreditCard, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate, useLocation, NavLink } from 'react-router-dom';
 import { apiService } from '../lib/api';
@@ -26,11 +26,12 @@ export default function Manager() {
   const activeTab = (location.pathname.split('/').pop() || 'users') as Tab;
   
   // Validate tab - if path is just /manager, it's users. If invalid, could redirect.
-  const validTabs: Tab[] = ['users', 'courses', 'discounts', 'payments', 'catalog'];
+  const validTabs: Tab[] = ['users', 'courses', 'discounts', 'payments'];
   const effectiveTab = validTabs.includes(activeTab) ? activeTab : 'users';
   const [data, setData] = useState<any>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'today' | '7days' | 'month' | 'all'>('all');
+  const [filter, setFilter] = useState<'today' | 'yesterday' | 'lastweek' | '7days' | 'month' | 'all'>('all');
+  const [paymentSearch, setPaymentSearch] = useState('');
   const [editingCourse, setEditingCourse] = useState<any>(null);
   const [showAddCourse, setShowAddCourse] = useState(false);
   const [isBundle, setIsBundle] = useState(false);
@@ -84,7 +85,7 @@ export default function Manager() {
 
   useEffect(() => {
     if (isManager) fetchData();
-  }, [effectiveTab, isManager, filter]);
+  }, [effectiveTab, isManager, filter, paymentSearch]);
 
   useEffect(() => {
     if ((showAddDiscount || editingDiscount) && discountOptions.length === 0) {
@@ -119,12 +120,12 @@ export default function Manager() {
         setData(discountsData || []);
       } else if (effectiveTab === 'payments') {
         const [paymentsData] = await Promise.all([
-          apiService.managerFetch('payments', filter),
+          apiService.managerFetch('payments', filter, paymentSearch),
           fetchDiscountOptions()
         ]);
         setData(paymentsData || []);
       } else {
-        const result = await apiService.managerFetch(effectiveTab, filter);
+        const result = await apiService.managerFetch(effectiveTab, filter, paymentSearch);
         setData(result || []);
       }
     } catch (err: any) {
@@ -156,6 +157,31 @@ export default function Manager() {
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = `users_export_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
+  
+  const exportPayments = () => {
+    if (effectiveTab !== 'payments' || !Array.isArray(data)) return;
+    
+    const headers = ['Order ID', 'Email', 'Courses', 'Amount', 'Status', 'Date'];
+    const rows = data.map(order => [
+      order.order_id || '',
+      order.user_email || '',
+      Array.isArray(order.course_ids) ? order.course_ids.join('; ') : '',
+      order.total_amount || 0,
+      order.status || '',
+      order.createdAt ? new Date(order.createdAt).toISOString() : ''
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(r => r.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `payments_export_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
   };
 
@@ -349,7 +375,6 @@ export default function Manager() {
         <nav className="space-y-4 flex-grow">
           {[
             { id: 'users', icon: User, path: '/manager/users' },
-            { id: 'catalog', icon: ScrollText, path: '/manager/catalog' },
             { id: 'courses', icon: BookOpen, path: '/manager/courses' },
             { id: 'discounts', icon: ShoppingBag, path: '/manager/discounts' },
             { id: 'payments', icon: CreditCard, path: '/manager/payments' }
@@ -379,7 +404,6 @@ export default function Manager() {
               <p className="text-xl text-gray-500 font-bold tracking-tight">Platform administration panel.</p>
             </div>
             <div className="flex gap-4">
-
               {effectiveTab === 'users' && (
                 <button 
                   onClick={exportUsers}
@@ -395,6 +419,23 @@ export default function Manager() {
                 >
                   <Download className="w-6 h-6" /> Export CSV
                 </button>
+              )}
+              {effectiveTab === 'payments' && (
+                <div className="flex gap-4">
+                  <button 
+                    onClick={fetchData}
+                    className="flex items-center gap-3 px-8 py-4 bg-white text-[#0b1120] rounded-2xl font-black border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#0b1120] hover:translate-y-1 hover:shadow-none transition-all"
+                    title="Sync with Database"
+                  >
+                    <RefreshCw className={`w-6 h-6 ${loading ? 'animate-spin' : ''}`} /> Sync
+                  </button>
+                  <button 
+                    onClick={exportPayments}
+                    className="flex items-center gap-3 px-8 py-4 bg-[#3b82f6] text-white rounded-2xl font-black border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#0b1120] hover:translate-y-1 hover:shadow-none transition-all"
+                  >
+                    <Download className="w-6 h-6" /> Export CSV
+                  </button>
+                </div>
               )}
               {effectiveTab === 'courses' && (
                 <button 
@@ -456,106 +497,98 @@ export default function Manager() {
                 </div>
               )}
 
-              {effectiveTab === 'catalog' && (
+              {effectiveTab === 'payments' && (
                 <div className="space-y-6">
-                  <div className="bg-white border-[4px] border-[#0b1120] rounded-[2rem] p-4 flex gap-4 items-center shadow-[6px_6px_0px_#0b1120]">
-                    <Search className="w-6 h-6 text-gray-400 shrink-0 ml-2" />
-                    <input
-                      type="text"
-                      placeholder="Search courses by ID or Name..."
-                      value={catalogSearch}
-                      onChange={(e) => setCatalogSearch(e.target.value)}
-                      className="w-full font-black outline-none text-lg text-[#0b1120] placeholder:text-gray-300"
-                    />
-                    <button 
-                      className="px-6 py-3 bg-[#0b1120] text-white rounded-xl font-black tracking-widest uppercase hover:bg-gray-800 transition-colors shrink-0"
-                    >
-                      Search
-                    </button>
+                  {/* Search and Filters Bar */}
+                  <div className="flex flex-col lg:flex-row gap-6">
+                    {/* Search Input */}
+                    <div className="flex-grow bg-white border-[4px] border-[#0b1120] rounded-[2rem] p-4 flex gap-4 items-center shadow-[6px_6px_0px_#0b1120]">
+                      <Search className="w-6 h-6 text-gray-400 shrink-0 ml-2" />
+                      <input
+                        type="text"
+                        placeholder="Search by email or Order ID..."
+                        value={paymentSearch}
+                        onChange={(e) => setPaymentSearch(e.target.value)}
+                        className="w-full font-black outline-none text-lg text-[#0b1120] placeholder:text-gray-300"
+                      />
+                    </div>
+
+                    {/* Filter Buttons */}
+                    <div className="bg-white border-[4px] border-[#0b1120] rounded-[2rem] p-2 flex gap-2 shadow-[6px_6px_0px_#0b1120] overflow-x-auto whitespace-nowrap">
+                      {[
+                        { id: 'all', label: 'All Time' },
+                        { id: 'today', label: 'Today' },
+                        { id: 'yesterday', label: 'Yesterday' },
+                        { id: 'lastweek', label: 'Last Week' }
+                      ].map((f) => (
+                        <button
+                          key={f.id}
+                          onClick={() => setFilter(f.id as any)}
+                          className={`px-6 py-3 rounded-xl font-black text-sm transition-all ${
+                            filter === f.id 
+                              ? 'bg-[#0b1120] text-white' 
+                              : 'text-gray-400 hover:bg-gray-100'
+                          }`}
+                        >
+                          {f.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  
+
+                  {/* Payments Table */}
                   <div className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] overflow-hidden shadow-[12px_12px_0px_#0b1120]">
                     <table className="w-full text-left">
                       <thead className="bg-gray-50 border-b-[3px] border-gray-100 font-black text-sm uppercase text-gray-400">
                         <tr>
-                          <th className="px-8 py-6">Course ID</th>
-                          <th className="px-8 py-6">Display Name</th>
+                          <th className="px-8 py-6">Order Info</th>
+                          <th className="px-8 py-6">Courses</th>
+                          <th className="px-8 py-6">Amount</th>
+                          <th className="px-8 py-6">Status</th>
+                          <th className="px-8 py-6">Date</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y-[3px] divide-gray-50 font-bold">
-                        {courseCatalog
-                          .filter(c => 
-                            c.id.toLowerCase().includes(catalogSearch.toLowerCase()) || 
-                            c.name.toLowerCase().includes(catalogSearch.toLowerCase())
-                          )
-                          .map((course: any) => (
-                          <tr key={course.id} className="hover:bg-blue-50/50 transition-colors">
-                            <td className="px-8 py-6 font-mono text-gray-500 text-sm">
-                              {course.id}
+                        {data.map((order: any) => (
+                          <tr key={order.order_id} className="hover:bg-blue-50/50 transition-colors">
+                            <td className="px-8 py-6">
+                              <div className="text-lg font-black text-[#0b1120]">{order.user_email}</div>
+                              <div className="text-xs font-mono text-gray-400">{order.order_id}</div>
                             </td>
                             <td className="px-8 py-6">
-                              <div className="text-lg font-black text-[#0b1120]">{course.name}</div>
+                              <div className="flex flex-wrap gap-2">
+                                {Array.isArray(order.course_ids) ? order.course_ids.map((cid: string) => {
+                                  const courseInCatalog = courseCatalog.find(c => c.id === cid);
+                                  const courseInOptions = discountOptions.find(c => c.id === cid);
+                                  return (
+                                    <span key={cid} className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-xs font-black border border-blue-100">
+                                      {courseInCatalog?.name || courseInOptions?.name || cid}
+                                    </span>
+                                  );
+                                }) : <span className="text-gray-400">No courses</span>}
+                              </div>
+                            </td>
+                            <td className="px-8 py-6 text-xl font-black text-[#10b981]">₹{order.total_amount}</td>
+                            <td className="px-8 py-6">
+                              <span className={`px-4 py-2 rounded-xl text-xs font-black uppercase border-2 shadow-[2px_2px_0px_currentColor] ${
+                                order.status === 'PAID' ? 'bg-green-50 text-green-600 border-green-600' :
+                                order.status === 'FAILED' ? 'bg-red-50 text-red-600 border-red-600' :
+                                'bg-yellow-50 text-yellow-600 border-yellow-600'
+                              }`}>
+                                {order.status}
+                              </span>
+                            </td>
+                            <td className="px-8 py-6 text-gray-400 text-sm">
+                              {order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : 'N/A'}
                             </td>
                           </tr>
                         ))}
-                        {courseCatalog.length === 0 && (
-                          <tr><td colSpan={2} className="px-8 py-12 text-center text-gray-400 font-bold">No courses in catalog. Create a course first.</td></tr>
+                        {data.length === 0 && (
+                          <tr><td colSpan={5} className="px-8 py-24 text-center text-gray-300 font-black text-2xl uppercase tracking-widest">No payments found</td></tr>
                         )}
                       </tbody>
                     </table>
                   </div>
-                </div>
-              )}
-
-              {effectiveTab === 'payments' && (
-                <div className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] overflow-hidden shadow-[12px_12px_0px_#0b1120]">
-                  <table className="w-full text-left">
-                    <thead className="bg-gray-50 border-b-[3px] border-gray-100 font-black text-sm uppercase text-gray-400">
-                      <tr>
-                        <th className="px-8 py-6">Order Info</th>
-                        <th className="px-8 py-6">Courses</th>
-                        <th className="px-8 py-6">Amount</th>
-                        <th className="px-8 py-6">Status</th>
-                        <th className="px-8 py-6">Date</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y-[3px] divide-gray-50 font-bold">
-                      {data.map((order: any) => (
-                        <tr key={order.order_id} className="hover:bg-blue-50/50 transition-colors">
-                          <td className="px-8 py-6">
-                            <div className="text-lg font-black text-[#0b1120]">{order.user_email}</div>
-                            <div className="text-xs font-mono text-gray-400">{order.order_id}</div>
-                          </td>
-                          <td className="px-8 py-6">
-                            <div className="flex flex-wrap gap-2">
-                              {Array.isArray(order.course_ids) ? order.course_ids.map((cid: string) => {
-                                const courseInCatalog = courseCatalog.find(c => c.id === cid);
-                                const courseInOptions = discountOptions.find(c => c.id === cid);
-                                return (
-                                  <span key={cid} className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-xs font-black border border-blue-100">
-                                    {courseInCatalog?.name || courseInOptions?.name || cid}
-                                  </span>
-                                );
-                              }) : <span className="text-gray-400">No courses</span>}
-                            </div>
-                          </td>
-                          <td className="px-8 py-6 text-xl font-black text-[#10b981]">₹{order.total_amount}</td>
-                          <td className="px-8 py-6">
-                            <span className={`px-4 py-2 rounded-xl text-xs font-black uppercase border-2 shadow-[2px_2px_0px_currentColor] ${
-                              order.status === 'PAID' ? 'bg-green-50 text-green-600 border-green-600' :
-                              order.status === 'FAILED' ? 'bg-red-50 text-red-600 border-red-600' :
-                              'bg-yellow-50 text-yellow-600 border-yellow-600'
-                            }`}>
-                              {order.status}
-                            </span>
-                          </td>
-                          <td className="px-8 py-6 text-gray-400 text-sm">
-                            {order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : 'N/A'}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
                 </div>
               )}
 

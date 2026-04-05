@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../lib/supabase';
 import { apiService } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
-import { Check, Loader2, ShieldCheck, AlertCircle, User, UserCheck, CreditCard, ArrowRight, BookOpen } from 'lucide-react';
+import { Check, Loader2, ShieldCheck, AlertCircle, User, UserCheck, CreditCard, ArrowRight, BookOpen, Copy, CheckCheck } from 'lucide-react';
 
 const RAZORPAY_SCRIPT_URL = "https://checkout.razorpay.com/v1/checkout.js";
 
@@ -75,6 +75,7 @@ export default function CourseSelection() {
 
 
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [copied, setCopied] = useState(false);
   const courseLookupId = searchParams.get('courseId') || id;
 
   // Profile Form State
@@ -623,41 +624,63 @@ export default function CourseSelection() {
               className="space-y-6"
             >
               {course.isBundle && hasBundleDiscount && (
-                  <div className={`p-4 md:p-6 rounded-2xl border-[4px] transition-all duration-500 shadow-[10px_10px_0px_#0b1120] ${isAllBundleSelected ? 'bg-green-50 border-[#10b981]' : 'bg-blue-50 border-[#0b1120]'}`}>
-                      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                          <div className="flex items-center gap-4">
-                              <div className={`w-12 h-12 rounded-xl border-2 border-[#0b1120] flex items-center justify-center shadow-[4px_4px_0px_#0b1120] ${isAllBundleSelected ? 'bg-[#10b981]' : 'bg-white'}`}>
-                                  <Star className={`w-6 h-6 ${isAllBundleSelected ? 'text-white' : 'text-blue-500'}`} fill={isAllBundleSelected ? 'white' : 'transparent'} strokeWidth={3} />
+                  <div className={`p-4 md:p-6 rounded-3xl border-[4px] transition-all duration-500 shadow-[12px_12px_0px_#0b1120] ${isAllBundleSelected ? 'bg-green-50 border-[#10b981]' : 'bg-blue-50 border-[#0b1120]'}`}>
+                      <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                          <div className="flex items-center gap-5">
+                              <div className={`w-14 h-14 rounded-2xl border-2 border-[#0b1120] flex items-center justify-center shadow-[4px_4px_0px_#0b1120] ${isAllBundleSelected ? 'bg-[#10b981]' : 'bg-white'}`}>
+                                  <Star className={`w-7 h-7 ${isAllBundleSelected ? 'text-white' : 'text-blue-500'}`} fill={isAllBundleSelected ? 'white' : 'transparent'} strokeWidth={3} />
                               </div>
                               <div>
-                                  <div className="font-black text-lg md:text-xl text-[#0b1120] uppercase tracking-tight leading-tight">
+                                  <div className="font-black text-xl md:text-2xl text-[#0b1120] uppercase tracking-tight leading-tight">
                                       {isAllBundleSelected 
                                           ? "🎉 Bundle Price Unlocked!" 
                                           : `Select All ${course.bundleCourses.length} Courses to Save ₹${course.bundleCourses.reduce((s: any, b: any) => s + b.price, 0) - (course.bundleDiscountPrice || 0)}`
                                       }
                                   </div>
-                                  <p className="text-[9px] md:text-xs text-gray-500 font-bold uppercase tracking-[0.18em] mt-1 leading-snug">
-                                      {isAllBundleSelected
-                                        ? `Use code ${course.bundleDiscountCode} to get ₹${bundleTotalRaw - (course.bundleDiscountPrice || 0)} off or just tap to Apply`
-                                        : "Select all courses to unlock the bundle price."}
-                                  </p>
+                                  <div className="text-[10px] md:text-xs text-gray-500 font-bold uppercase tracking-[0.05em] mt-2 flex flex-wrap items-center gap-2 leading-relaxed">
+                                      {isAllBundleSelected ? (
+                                        <>
+                                          Use code 
+                                          <span className="bg-yellow-300 text-[#0b1120] px-2 py-0.5 rounded-lg border-[2px] border-[#0b1120] font-black shadow-[2px_2px_0px_#0b1120] inline-block -rotate-1 transform">
+                                            {course.bundleDiscountCode}
+                                          </span>
+                                          to get ₹{bundleTotalRaw - (course.bundleDiscountPrice || 0)} off or tap to Apply
+                                        </>
+                                      ) : (
+                                        "Select all courses to unlock the bundle price."
+                                      )}
+                                  </div>
                               </div>
                           </div>
 
                           {isAllBundleSelected ? (
-                              <div className="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto">
-                                  <div className="w-20 md:w-24 px-2 py-3 bg-white border-[2px] border-[#0b1120] rounded-xl flex items-center justify-center font-black text-base md:text-xl text-[#0b1120] uppercase tracking-widest">
-                                      {course.bundleDiscountCode}
-                                  </div>
+                              <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+                                  <button 
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(course.bundleDiscountCode);
+                                        setCopied(true);
+                                        setTimeout(() => setCopied(false), 2000);
+                                      }}
+                                      className="group relative w-full md:w-auto flex flex-col items-center gap-1.5"
+                                  >
+                                      <div className="w-full md:w-auto px-5 py-3 bg-white border-[3px] border-[#0b1120] rounded-xl flex items-center justify-center gap-3 font-black text-base md:text-lg text-[#0b1120] uppercase tracking-wider shadow-[4px_4px_0px_#0b1120] hover:translate-y-0.5 hover:shadow-none transition-all active:bg-gray-100">
+                                          {course.bundleDiscountCode}
+                                          {copied ? <CheckCheck className="w-5 h-5 text-green-500" /> : <Copy className="w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors" />}
+                                      </div>
+                                      <span className={`text-[8px] font-black uppercase tracking-widest transition-all ${copied ? 'text-green-600' : 'text-gray-400 opacity-60'}`}>
+                                          {copied ? 'Copied!' : 'Tap to Copy'}
+                                      </span>
+                                  </button>
+
                                   {!appliedDiscountCode && (
                                       <button 
                                           onClick={() => {
                                               setDiscountCodeInput(course.bundleDiscountCode);
                                               setTimeout(() => applyDiscount(), 100);
                                           }}
-                                          className="px-6 py-4 bg-[#0b1120] text-white rounded-2xl font-black text-xs md:text-sm uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-blue-600 transition-colors shadow-[4px_4px_0px_#0b1120]/20"
+                                          className="w-full md:w-auto px-8 py-4 bg-[#0b1120] text-white rounded-2xl font-black text-xs md:text-sm uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-blue-600 transition-all shadow-[6px_6px_0px_#3b82f6] hover:translate-y-1 hover:shadow-none active:translate-y-1 active:shadow-none"
                                       >
-                                          Apply code
+                                          Apply Now
                                       </button>
                                   )}
                               </div>
@@ -723,7 +746,7 @@ export default function CourseSelection() {
                                 {/* Summary List */}
                                 <div className="space-y-1.5 pt-2">
                                     {course.bundleCourses.filter((bc: SubCourse) => selectedCourses.includes(bc.courseId)).map((bc: SubCourse) => (
-                                        <div key={bc.courseId} className="flex justify-between font-bold text-gray-500 text-[9px] uppercase tracking-tight">
+                                        <div key={bc.courseId} className="flex justify-between font-black text-[#0b1120] text-sm uppercase tracking-tight">
                                             <span>{bc.courseName}</span>
                                             <span>₹{bc.price}</span>
                                         </div>
@@ -772,15 +795,15 @@ export default function CourseSelection() {
                         )}
 
                         {appliedDiscountCode && (
-                          <div className="flex justify-between font-bold text-gray-500 text-sm">
-                            <span>Discount</span>
+                          <div className="flex justify-between font-black text-[#0b1120] text-sm mb-2">
+                            <span className="uppercase tracking-tight text-gray-400 text-[11px]">Applied Discount</span>
                             <span className="text-green-600">-₹{discountAmount}</span>
                           </div>
                         )}
 
                         <div className="flex justify-between items-end">
                             <div>
-                                <div className="text-[9px] font-black uppercase text-gray-400 mb-0.5">Grand Total</div>
+                                <div className="text-[11px] font-black uppercase text-gray-400 mb-0.5 tracking-widest">Grand Total</div>
                                 <div className="flex items-end gap-2">
                                     <div className="text-2xl font-black text-[#0b1120]">₹{Math.max(calculateTotal() - discountAmount, 0)}</div>
                                 </div>

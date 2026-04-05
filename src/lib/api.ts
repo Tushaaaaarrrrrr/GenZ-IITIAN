@@ -26,10 +26,10 @@ const readJsonResponse = async (res: Response) => {
 
 export const apiService = {
   // 1. Manager Dashboard Data
-  managerFetch: async (tab: string, filter: string = 'all') => {
+  managerFetch: async (tab: string, filter: string = 'all', search: string = '') => {
     if (!isProduction) {
       const authHeaders = await getAuthHeaders();
-      const res = await fetch(`/api/manager-fetch?tab=${tab}&filter=${filter}`, {
+      const res = await fetch(`/api/manager-fetch?tab=${tab}&filter=${filter}&search=${encodeURIComponent(search)}`, {
         headers: { ...authHeaders },
       });
       if (!res.ok) {
@@ -41,25 +41,64 @@ export const apiService = {
       // Direct Supabase Mode (Hostinger/Production)
       try {
         if (tab === 'courses') {
-          const { data, error } = await supabase.from('courses').select('*').order('name');
+          let query = supabase.from('courses').select('*').order('name');
+          if (search) {
+            query = query.or(`name.ilike.%${search}%,id.ilike.%${search}%`);
+          }
+          const { data, error } = await query;
           if (error) throw error;
           return data || [];
         }
 
         if (tab === 'users') {
-          const { data, error } = await supabase.from('profiles').select('*').order('name');
+          let query = supabase.from('profiles').select('*').order('name');
+          if (search) {
+            query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%`);
+          }
+          const { data, error } = await query;
           if (error) throw error;
           return data || [];
         }
 
         if (tab === 'discounts') {
-          const { data, error } = await supabase.from('discount_coupons').select('*').order('created_at', { ascending: false });
+          let query = supabase.from('discount_coupons').select('*').order('created_at', { ascending: false });
+          if (search) {
+            query = query.ilike('code', `%${search}%`);
+          }
+          const { data, error } = await query;
           if (error) throw error;
           return data || [];
         }
 
         if (tab === 'payments') {
-          const { data, error } = await supabase.from('website_orders').select('*').order('createdAt', { ascending: false });
+          let query = supabase.from('website_orders').select('*').order('createdAt', { ascending: false });
+          
+          if (search) {
+            query = query.or(`user_email.ilike.%${search}%,order_id.ilike.%${search}%`);
+          }
+
+          if (filter !== 'all') {
+            const now = new Date();
+            const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            
+            if (filter === 'today') {
+              query = query.gte('createdAt', startOfToday.toISOString());
+            } else if (filter === 'yesterday') {
+              const startOfYesterday = new Date(startOfToday);
+              startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+              query = query.gte('createdAt', startOfYesterday.toISOString()).lt('createdAt', startOfToday.toISOString());
+            } else if (filter === 'lastweek') {
+              const sevenDaysAgo = new Date(startOfToday);
+              sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+              query = query.gte('createdAt', sevenDaysAgo.toISOString());
+            } else if (filter === 'month') {
+              const thirtyDaysAgo = new Date(startOfToday);
+              thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+              query = query.gte('createdAt', thirtyDaysAgo.toISOString());
+            }
+          }
+
+          const { data, error } = await query;
           if (error) throw error;
           return data || [];
         }
