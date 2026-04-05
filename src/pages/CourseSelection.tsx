@@ -381,7 +381,18 @@ export default function CourseSelection() {
               ? course.bundleCourses.filter((bc: any) => selectedCourses.includes(bc.courseId)).map((bc: any) => bc.courseName).join(', ')
               : course.name;
 
-            navigate("/payment-success", { state: { courseTitle } });
+            navigate("/payment-success", { 
+              state: { 
+                courseTitle,
+                orderDetails: {
+                  order_id: orderData.id,
+                  total_amount: orderData._serverTotal || Math.max(total - discountAmount, 0),
+                  created_at: new Date().toISOString(),
+                  status: 'PAID',
+                  course_ids: selectedCourses
+                }
+              } 
+            });
           } catch (err: any) {
             console.error("Payment verification error:", err);
             setPaymentError(err?.message || "Payment verification failed. Please try again.");

@@ -224,7 +224,25 @@ export default function Cart() {
 
             const courseTitle = cart.map(item => item.name).join(', ');
             clearCart();
-            navigate("/payment-success", { state: { courseTitle } });
+            
+            const flatCourseIds = cart.flatMap((item) => 
+                item.isBundle && item.bundleCourses && item.bundleCourses.length > 0
+                  ? item.bundleCourses.map(b => b.courseId)
+                  : [item.id]
+            );
+
+            navigate("/payment-success", { 
+              state: { 
+                courseTitle,
+                orderDetails: {
+                  order_id: orderData.id,
+                  total_amount: orderData._serverTotal || Math.max(total - discountAmount, 0),
+                  created_at: new Date().toISOString(),
+                  status: 'PAID',
+                  course_ids: flatCourseIds
+                }
+              } 
+            });
           } catch (err) {
             console.error("Payment verification error:", err);
             setPaymentError("Payment verification failed. Please try again.");

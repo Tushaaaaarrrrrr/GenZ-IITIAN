@@ -361,7 +361,7 @@ app.post('/api/create-order', async (req, res) => {
             notes: orderNotes || { user_email: email }
         });
 
-        await supabase.from('website_orders').insert({
+        const { error: insertError } = await supabase.from('website_orders').insert({
             order_id: order.id,
             user_email: email,
             course_ids: courseIds,
@@ -369,6 +369,10 @@ app.post('/api/create-order', async (req, res) => {
             status: 'CREATED',
             discount_code: discountCode || null
         });
+        
+        if (insertError) {
+          console.error('[CRITICAL] Failed to insert into website_orders:', insertError);
+        }
 
         res.json({ ...order, _serverTotal: totalAmount, _discountApplied: discountApplied });
     } catch (err) {
@@ -466,10 +470,16 @@ async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_p
                     if (order) orderAmount = order.total_amount;
                 }
                 
-                if (courseIds && courseIds.length > 0) {
-                    const { data: courses } = await supabase.from('courses').select('name').in('id', courseIds);
+                if (courseIds && Array.isArray(courseIds) && courseIds.length > 0) {
+                    const { data: courses, error: coursesError } = await supabase.from('course_catalog').select('name').in('id', courseIds);
                     if (courses && courses.length > 0) {
                         courseNames = courses.map(c => c.name).join(', ');
+                    } else {
+                        // Fallback to original
+                        const { data: coursesFallback } = await supabase.from('courses').select('name').in('id', courseIds);
+                        if (coursesFallback && coursesFallback.length > 0) {
+                            courseNames = coursesFallback.map(c => c.name).join(', ');
+                        }
                     }
                 }
 
@@ -547,10 +557,15 @@ app.post('/api/verify-payment', async (req, res) => {
                 if (order) orderAmount = order.total_amount;
             }
                 
-            if (courseIds && courseIds.length > 0) {
-                const { data: courses } = await supabase.from('courses').select('name').in('id', courseIds);
+            if (courseIds && Array.isArray(courseIds) && courseIds.length > 0) {
+                const { data: courses } = await supabase.from('course_catalog').select('name').in('id', courseIds);
                 if (courses && courses.length > 0) {
                     courseNames = courses.map(c => c.name).join(', ');
+                } else {
+                    const { data: coursesFallback } = await supabase.from('courses').select('name').in('id', courseIds);
+                    if (coursesFallback && coursesFallback.length > 0) {
+                        courseNames = coursesFallback.map(c => c.name).join(', ');
+                    }
                 }
             }
 
@@ -605,10 +620,15 @@ app.post('/api/log-payment-failure', async (req, res) => {
             if (order) orderAmount = order.total_amount;
         }
                 
-        if (courseIds && courseIds.length > 0) {
-            const { data: courses } = await supabase.from('courses').select('name').in('id', courseIds);
+        if (courseIds && Array.isArray(courseIds) && courseIds.length > 0) {
+            const { data: courses } = await supabase.from('course_catalog').select('name').in('id', courseIds);
             if (courses && courses.length > 0) {
                 courseNames = courses.map(c => c.name).join(', ');
+            } else {
+                const { data: coursesFallback } = await supabase.from('courses').select('name').in('id', courseIds);
+                if (coursesFallback && coursesFallback.length > 0) {
+                    courseNames = coursesFallback.map(c => c.name).join(', ');
+                }
             }
         }
 

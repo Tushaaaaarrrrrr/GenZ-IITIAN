@@ -47,7 +47,7 @@ export default function PaymentSuccess() {
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          // window.location.href = LMS_URL; // Commented out for now so user can see their receipt
+          window.location.href = LMS_URL; 
           return 0;
         }
         return prev - 1;
