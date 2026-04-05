@@ -113,7 +113,7 @@ export default function PaymentSuccess() {
                  <div>
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1.5"><Clock className="w-3 h-3" /> Date & Time</p>
                     <p className="text-sm font-black text-[#0b1120]">
-                      {orderDetails?.createdAt ? new Date(orderDetails.createdAt).toLocaleString() : new Date().toLocaleString()}
+                      {orderDetails?.created_at ? new Date(orderDetails.created_at).toLocaleString() : new Date().toLocaleString()}
                     </p>
                  </div>
               </div>

@@ -458,9 +458,20 @@ async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_p
         if (lmsRes.ok) {
             // --- GOOGLE SHEETS LOGGING (SUCCESS) ---
             try {
-                const { data: order } = await supabase.from('website_orders').select('total_amount').eq('order_id', razorpay_order_id).single();
-                const { data: courses } = await supabase.from('courses').select('name').in('id', courseIds);
-                const courseNames = courses?.map(c => c.name).join('|') || "Unknown Course";
+                let orderAmount = 0;
+                let courseNames = "Unknown Course";
+                
+                if (razorpay_order_id) {
+                    const { data: order } = await supabase.from('website_orders').select('total_amount').eq('order_id', razorpay_order_id).single();
+                    if (order) orderAmount = order.total_amount;
+                }
+                
+                if (courseIds && courseIds.length > 0) {
+                    const { data: courses } = await supabase.from('courses').select('name').in('id', courseIds);
+                    if (courses && courses.length > 0) {
+                        courseNames = courses.map(c => c.name).join(', ');
+                    }
+                }
 
                 console.log('[DEBUG] Calling sendToGoogleSheet for successful enrollment...');
                 await sendToGoogleSheet({
@@ -468,7 +479,7 @@ async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_p
                     email,
                     phone: profile?.phone || "N/A",
                     course_name: courseNames,
-                    price: order?.total_amount || 0,
+                    price: orderAmount,
                     status: 'SUCCESS',
                     payment_id: razorpay_payment_id,
                     order_id: razorpay_order_id
@@ -526,10 +537,22 @@ app.post('/api/verify-payment', async (req, res) => {
     if (expectedSignature !== razorpay_signature) {
         // --- GOOGLE SHEETS LOGGING (FAILED - SIGNATURE) ---
         try {
+            let orderAmount = 0;
+            let courseNames = "Unknown Course";
+            
             const { data: profile } = await supabase.from('profiles').select('name, phone').eq('email', email).single();
-            const { data: order } = await supabase.from('website_orders').select('total_amount').eq('order_id', razorpay_order_id).single();
-            const { data: courses } = await supabase.from('courses').select('name').in('id', courseIds);
-            const courseNames = courses?.map(c => c.name).join('|') || "Unknown Course";
+                
+            if (razorpay_order_id) {
+                const { data: order } = await supabase.from('website_orders').select('total_amount').eq('order_id', razorpay_order_id).single();
+                if (order) orderAmount = order.total_amount;
+            }
+                
+            if (courseIds && courseIds.length > 0) {
+                const { data: courses } = await supabase.from('courses').select('name').in('id', courseIds);
+                if (courses && courses.length > 0) {
+                    courseNames = courses.map(c => c.name).join(', ');
+                }
+            }
 
             console.log('[DEBUG] Calling sendToGoogleSheet for signature mismatch failure...');
             await sendToGoogleSheet({
@@ -537,7 +560,7 @@ app.post('/api/verify-payment', async (req, res) => {
                 email,
                 phone: profile?.phone || "N/A",
                 course_name: courseNames,
-                price: order?.total_amount || 0,
+                price: orderAmount,
                 status: 'FAILED',
                 payment_id: null,
                 order_id: razorpay_order_id,
@@ -572,10 +595,22 @@ app.post('/api/verify-payment', async (req, res) => {
 app.post('/api/log-payment-failure', async (req, res) => {
     const { email, order_id, failure_source, courseIds } = req.body;
     try {
+        let orderAmount = 0;
+        let courseNames = "Unknown Course";
+        
         const { data: profile } = await supabase.from('profiles').select('name, phone').eq('email', email).single();
-        const { data: order } = await supabase.from('website_orders').select('total_amount').eq('order_id', order_id).single();
-        const { data: courses } = await supabase.from('courses').select('name').in('id', courseIds);
-        const courseNames = courses?.map(c => c.name).join('|') || "Unknown Course";
+                
+        if (order_id) {
+            const { data: order } = await supabase.from('website_orders').select('total_amount').eq('order_id', order_id).single();
+            if (order) orderAmount = order.total_amount;
+        }
+                
+        if (courseIds && courseIds.length > 0) {
+            const { data: courses } = await supabase.from('courses').select('name').in('id', courseIds);
+            if (courses && courses.length > 0) {
+                courseNames = courses.map(c => c.name).join(', ');
+            }
+        }
 
         console.log('[DEBUG] Calling sendToGoogleSheet for logged payment failure...');
         await sendToGoogleSheet({
@@ -583,7 +618,7 @@ app.post('/api/log-payment-failure', async (req, res) => {
             email,
             phone: profile?.phone || "N/A",
             course_name: courseNames,
-            price: order?.total_amount || 0,
+            price: orderAmount,
             status: 'FAILED',
             payment_id: null,
             order_id: order_id,
@@ -611,7 +646,7 @@ app.get('/api/manager-fetch', authMiddleware, async (req, res) => {
             return res.json(data);
         }
         if (tab === 'payments') {
-            const { data, error } = await supabase.from('website_orders').select('*').order('createdAt', { ascending: false });
+            const { data, error } = await supabase.from('website_orders').select('*').order('created_at', { ascending: false });
             if (error) throw error;
             return res.json(data);
         }

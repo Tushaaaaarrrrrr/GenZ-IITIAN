@@ -93,7 +93,7 @@ export default function PaymentFailed() {
                  <div>
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1.5"><Clock className="w-3 h-3" /> Time</p>
                     <p className="text-sm font-black text-[#0b1120]">
-                      {orderDetails?.createdAt ? new Date(orderDetails.createdAt).toLocaleTimeString() : new Date().toLocaleTimeString()}
+                      {orderDetails?.created_at ? new Date(orderDetails.created_at).toLocaleTimeString() : new Date().toLocaleTimeString()}
                     </p>
                  </div>
               </div>

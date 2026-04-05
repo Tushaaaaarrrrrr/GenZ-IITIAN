@@ -57,7 +57,7 @@ export default function Profile() {
                 <Mail className="w-5 h-5 text-blue-500" /> {user.email}
               </div>
               <div className="flex items-center gap-2 font-bold text-gray-500">
-                <Calendar className="w-5 h-5 text-red-500" /> Joined {new Date(profile?.createdAt || user.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                <Calendar className="w-5 h-5 text-red-500" /> Joined {new Date(profile?.created_at || user.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
               </div>
             </div>
           </div>
@@ -99,7 +99,7 @@ export default function Profile() {
                       }`}>
                         {order.status === 'PAID' ? 'PAYMENT SUCCESS' : 'PENDING'}
                       </span>
-                      <span className="text-sm font-black text-gray-400">{new Date(order.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                      <span className="text-sm font-black text-gray-400">{new Date(order.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {order.course_ids.map((cid: string) => {

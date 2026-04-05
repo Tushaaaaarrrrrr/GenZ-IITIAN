@@ -51,7 +51,7 @@ export const apiService = {
         }
 
         if (tab === 'users') {
-          let query = supabase.from('profiles').select('*').order('name');
+          let query = supabase.from('profiles').select('*').order('created_at', { ascending: false });
           if (search) {
             query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%`);
           }
@@ -71,7 +71,7 @@ export const apiService = {
         }
 
         if (tab === 'payments') {
-          let query = supabase.from('website_orders').select('*').order('createdAt', { ascending: false });
+          let query = supabase.from('website_orders').select('*').order('created_at', { ascending: false });
           
           if (search) {
             query = query.or(`user_email.ilike.%${search}%,order_id.ilike.%${search}%`);
@@ -82,19 +82,19 @@ export const apiService = {
             const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             
             if (filter === 'today') {
-              query = query.gte('createdAt', startOfToday.toISOString());
+              query = query.gte('created_at', startOfToday.toISOString());
             } else if (filter === 'yesterday') {
               const startOfYesterday = new Date(startOfToday);
               startOfYesterday.setDate(startOfYesterday.getDate() - 1);
-              query = query.gte('createdAt', startOfYesterday.toISOString()).lt('createdAt', startOfToday.toISOString());
+              query = query.gte('created_at', startOfYesterday.toISOString()).lt('created_at', startOfToday.toISOString());
             } else if (filter === 'lastweek') {
               const sevenDaysAgo = new Date(startOfToday);
               sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-              query = query.gte('createdAt', sevenDaysAgo.toISOString());
+              query = query.gte('created_at', sevenDaysAgo.toISOString());
             } else if (filter === 'month') {
               const thirtyDaysAgo = new Date(startOfToday);
               thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-              query = query.gte('createdAt', thirtyDaysAgo.toISOString());
+              query = query.gte('created_at', thirtyDaysAgo.toISOString());
             }
           }
 
@@ -121,7 +121,7 @@ export const apiService = {
         .from('website_orders')
         .select('*')
         .eq('user_email', email)
-        .order('createdAt', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
       if (error) throw error;
@@ -147,7 +147,7 @@ export const apiService = {
         .from('website_orders')
         .select('*')
         .eq('user_email', email)
-        .order('createdAt', { ascending: false });
+        .order('created_at', { ascending: false });
       if (error) throw error;
       return data || [];
     }

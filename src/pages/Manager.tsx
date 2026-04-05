@@ -170,7 +170,7 @@ export default function Manager() {
       Array.isArray(order.course_ids) ? order.course_ids.join('; ') : '',
       order.total_amount || 0,
       order.status || '',
-      order.createdAt ? new Date(order.createdAt).toISOString() : ''
+      order.created_at ? new Date(order.created_at).toISOString() : ''
     ]);
 
     const csvContent = [
@@ -578,8 +578,8 @@ export default function Manager() {
                                 {order.status}
                               </span>
                             </td>
-                            <td className="px-8 py-6 text-gray-400 text-sm">
-                              {order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : 'N/A'}
+                            <td className="px-8 py-6">
+                              {order.created_at ? new Date(order.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : 'N/A'}
                             </td>
                           </tr>
                         ))}
