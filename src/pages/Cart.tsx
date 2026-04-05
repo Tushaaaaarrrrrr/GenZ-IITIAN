@@ -24,6 +24,40 @@ export default function Cart() {
   const [isApplyingDiscount, setIsApplyingDiscount] = useState(false);
   const [paymentError, setPaymentError] = useState('');
 
+  // 🔄 Auto-recovery for mobile users:
+  // If the page reloads after a mobile redirect payment, check if any order was successfully PAID
+  // in the last 10 minutes and redirect to success page automatically.
+  useEffect(() => {
+    if (!user || isProcessing || cart.length === 0) return;
+
+    const checkRecentPayment = async () => {
+      try {
+        const tenMinsAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+        const { data: recentOrders } = await supabase
+          .from('website_orders')
+          .select('*')
+          .eq('user_email', user.email)
+          .eq('status', 'PAID')
+          .gt('created_at', tenMinsAgo)
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (recentOrders && recentOrders.length > 0) {
+          const courseTitle = cart.map(item => item.name).join(', ');
+          clearCart();
+          navigate("/payment-success", { state: { courseTitle } });
+        }
+      } catch (err) {
+        console.error("Auto-recovery check failed:", err);
+      }
+    };
+
+    // Small delay to give the webhook/server time to process the status update
+    const timer = setTimeout(checkRecentPayment, 1500);
+    return () => clearTimeout(timer);
+  }, [user, navigate, clearCart, cart, isProcessing]);
+
+
   useEffect(() => {
     loadScript(RAZORPAY_SCRIPT_URL);
   }, []);
@@ -164,7 +198,11 @@ export default function Cart() {
         amount: orderData.amount,
         currency: "INR",
         name: "GenZ IITIAN",
-        description: `Enrollment in ${cart.length} Courses`,
+        description: cart.map(item => item.name).join(', ').substring(0, 255),
+        notes: {
+          courses: cart.map(item => item.name).join(', '),
+          user_email: user.email
+        },
         order_id: orderData.id,
         handler: async (response: any) => {
           setIsProcessing(true);
@@ -184,8 +222,9 @@ export default function Cart() {
               discountCode: appliedDiscountCode || undefined,
             });
 
+            const courseTitle = cart.map(item => item.name).join(', ');
             clearCart();
-            navigate("/payment-success");
+            navigate("/payment-success", { state: { courseTitle } });
           } catch (err) {
             console.error("Payment verification error:", err);
             setPaymentError("Payment verification failed. Please try again.");

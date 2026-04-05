@@ -57,8 +57,15 @@ export const apiService = {
           if (error) throw error;
           return data || [];
         }
+
+        if (tab === 'payments') {
+          const { data, error } = await supabase.from('website_orders').select('*').order('createdAt', { ascending: false });
+          if (error) throw error;
+          return data || [];
+        }
         
         throw new Error('Invalid tab for managerFetch');
+
       } catch (err: any) {
         console.error('Direct Supabase Fetch Error:', err.message);
         throw err;
@@ -66,7 +73,22 @@ export const apiService = {
     }
   },
 
-
+  getLastOrder: async (email: string) => {
+    if (!isProduction) {
+      // Dev mode fallback
+      return null;
+    } else {
+      const { data, error } = await supabase
+        .from('website_orders')
+        .select('*')
+        .eq('user_email', email)
+        .order('createdAt', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    }
+  },
 
   // 3. Get User Orders
   getOrders: async (email: string) => {

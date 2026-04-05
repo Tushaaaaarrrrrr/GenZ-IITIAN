@@ -102,6 +102,15 @@ export default function Contact() {
           </div>
 
           <div className="flex flex-col gap-8">
+            <div className="bg-[#fff7ed] border-[3px] border-[#0b1120] rounded-3xl p-8 shadow-[8px_8px_0px_#0b1120]">
+              <div className="w-16 h-16 rounded-full bg-orange-100 border-[3px] border-[#0b1120] flex items-center justify-center text-3xl mb-6">
+                👨‍🏫
+              </div>
+              <h3 className="text-2xl font-black text-[#0b1120] mb-2 tracking-tight">FOUNDER : SRIRAM</h3>
+              <p className="text-gray-600 font-bold mb-4">Contact for direct help and support from our founder.</p>
+              <a href="tel:+917970495447" className="text-[#10b981] font-black text-2xl hover:underline text-nowrap">+91 79704 95447</a>
+            </div>
+
             <div className="bg-white border-[3px] border-[#0b1120] rounded-3xl p-8 shadow-[8px_8px_0px_#0b1120]">
               <div className="w-16 h-16 rounded-full bg-blue-100 border-[3px] border-[#0b1120] flex items-center justify-center text-3xl mb-6">
                 📧

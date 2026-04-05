@@ -283,6 +283,7 @@ app.post('/api/create-order', async (req, res) => {
         let totalAmount = 0;
         let discountApplied = false;
         let isBundleDiscountUsed = false;
+        let orderNotes = null;
 
         // --- BUNDLE FLOW ---
         if (bundleId) {
@@ -310,12 +311,21 @@ app.post('/api/create-order', async (req, res) => {
             if (!isBundleDiscountUsed) {
                 totalAmount = bundleSubCourses.filter(bc => courseIds.includes(bc.courseId)).reduce((sum, bc) => sum + Number(bc.price), 0);
             }
-        } else {
             // --- SINGLE COURSE FLOW ---
-            const { data: courses } = await supabase.from('courses').select('id, price, discountPrice').in('id', courseIds);
+            const { data: courses } = await supabase.from('courses').select('id, name, price, discountPrice').in('id', courseIds);
             if (!courses || courses.length === 0) return res.status(400).json({ error: 'Invalid course IDs' });
 
             totalAmount = courses.reduce((sum, c) => sum + Number((c.discountPrice && c.discountPrice > 0) ? c.discountPrice : c.price), 0);
+            
+            // Get course names for notes
+            const courseNames = courses.map(c => c.name).join(', ');
+            orderNotes = { courses: courseNames, user_email: email };
+        }
+
+        // Add bundle name to notes if it's a bundle
+        if (bundleId && !orderNotes) {
+            const { data: bundle } = await supabase.from('courses').select('name').eq('id', bundleId).single();
+            orderNotes = { courses: bundle?.name || 'Bundle', user_email: email };
         }
 
         // --- GLOBAL DISCOUNT ---
@@ -346,7 +356,8 @@ app.post('/api/create-order', async (req, res) => {
         const order = await razorpay.orders.create({
             amount: Math.round(totalAmount * 100),
             currency: 'INR',
-            receipt: `receipt_${Date.now()}`
+            receipt: `receipt_${Date.now()}`,
+            notes: orderNotes || { user_email: email }
         });
 
         await supabase.from('website_orders').insert({
@@ -354,7 +365,8 @@ app.post('/api/create-order', async (req, res) => {
             user_email: email,
             course_ids: courseIds,
             total_amount: totalAmount,
-            status: 'CREATED'
+            status: 'CREATED',
+            discount_code: discountCode || null
         });
 
         res.json({ ...order, _serverTotal: totalAmount, _discountApplied: discountApplied });
@@ -364,11 +376,84 @@ app.post('/api/create-order', async (req, res) => {
     }
 });
 
+// Helper function for LMS enrollment and logging
+async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_payment_id, discountCode }) {
+    if (!supabase) return { success: false, error: 'Supabase not initialized' };
+    
+    // 1. Check if already processed (Idempotency)
+    const { data: existingOrder } = await supabase
+        .from('website_orders')
+        .select('status')
+        .eq('order_id', razorpay_order_id)
+        .single();
+    
+    // If already PAID, we still return success but skip re-enrolling
+    if (existingOrder?.status === 'PAID') {
+        return { success: true, alreadyProcessed: true };
+    }
+
+    const lms_enroll_url = process.env.LMS_ENROLL_URL || "https://class.genziitian.in/api/external-enroll";
+    
+    try {
+        // Update status to PAID immediately to prevent race conditions
+        await supabase.from('website_orders').update({ status: 'PAID' }).eq('order_id', razorpay_order_id);
+        
+        const { data: profile } = await supabase.from('profiles').select('id, name').eq('email', email).single();
+
+        const lmsRes = await fetch(lms_enroll_url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                secret: process.env.EXTERNAL_ENROLL_SECRET,
+                email,
+                name: profile?.name || "Student",
+                courseIds
+            })
+        });
+
+        if (lmsRes.ok) {
+            const successLogs = courseIds.map(cid => ({
+                userId: profile?.id,
+                email,
+                action: 'ENROLLMENT_SUCCESS',
+                courseId: cid,
+                created_at: new Date().toISOString(),
+                metadata: { order_id: razorpay_order_id, payment_id: razorpay_payment_id, source: 'system' }
+            }));
+            await supabase.from('activity_logs').insert(successLogs);
+
+            if (discountCode) {
+                await supabase.from('coupon_uses').upsert({ 
+                    code: discountCode, 
+                    user_email: email, 
+                    order_id: razorpay_order_id 
+                }, { onConflict: 'code,user_email' });
+            }
+            return { success: true };
+        } else {
+            const errorText = await lmsRes.text();
+            throw new Error(errorText);
+        }
+    } catch (err) {
+        console.error('Enrollment Error:', err);
+        const { data: profile } = await supabase.from('profiles').select('id').eq('email', email).single();
+        const failureLogs = courseIds.map(cid => ({
+            userId: profile?.id,
+            email,
+            action: 'ENROLLMENT_FAILURE',
+            courseId: cid,
+            created_at: new Date().toISOString(),
+            metadata: { error: String(err), order_id: razorpay_order_id }
+        }));
+        await supabase.from('activity_logs').insert(failureLogs);
+        return { success: false, error: err.message };
+    }
+}
+
 app.post('/api/verify-payment', async (req, res) => {
     if (!razorpay || !supabase) return res.status(500).json({ error: 'Server configuration error' });
 
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, email, courseIds, discountCode } = req.body;
-    const lms_enroll_url = process.env.LMS_ENROLL_URL || "https://class.genziitian.in/api/external-enroll";
 
     const body = razorpay_order_id + "|" + razorpay_payment_id;
     const expectedSignature = crypto.createHmac('sha256', razorpaySecret).update(body.toString()).digest('hex');
@@ -376,56 +461,95 @@ app.post('/api/verify-payment', async (req, res) => {
     if (expectedSignature !== razorpay_signature) return res.status(400).json({ error: 'Signature mismatch' });
 
     try {
-        await supabase.from('website_orders').update({ status: 'PAID' }).eq('order_id', razorpay_order_id);
-        const { data: profile } = await supabase.from('profiles').select('id, name').eq('email', email).single();
-
-        try {
-            const lmsRes = await fetch(lms_enroll_url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    secret: process.env.EXTERNAL_ENROLL_SECRET,
-                    email,
-                    name: profile?.name || "Student",
-                    courseIds
-                })
-            });
-
-            if (lmsRes.ok) {
-                const successLogs = courseIds.map(cid => ({
-                    userId: profile?.id,
-                    email,
-                    action: 'ENROLLMENT_SUCCESS',
-                    courseId: cid,
-                    created_at: new Date().toISOString(),
-                    metadata: { order_id: razorpay_order_id, payment_id: razorpay_payment_id }
-                }));
-                await supabase.from('activity_logs').insert(successLogs);
-
-                if (discountCode) {
-                    await supabase.from('coupon_uses').insert({ code: discountCode, user_email: email, order_id: razorpay_order_id });
-                }
-            } else {
-                throw new Error(await lmsRes.text());
-            }
-        } catch (lmsErr) {
-            console.error('LMS Error:', lmsErr);
-            const failureLogs = courseIds.map(cid => ({
-                userId: profile?.id,
-                email,
-                action: 'ENROLLMENT_FAILURE',
-                courseId: cid,
-                created_at: new Date().toISOString(),
-                metadata: { error: String(lmsErr) }
-            }));
-            await supabase.from('activity_logs').insert(failureLogs);
+        const result = await enrollUserInLMS({
+            email,
+            courseIds,
+            razorpay_order_id,
+            razorpay_payment_id,
+            discountCode
+        });
+        
+        if (result.success) {
+            res.json({ success: true });
+        } else {
+            res.status(500).json({ error: result.error });
         }
-
-        res.json({ success: true });
     } catch (err) {
         console.error('Verification error:', err);
         res.status(500).json({ error: err.message });
     }
+});
+
+app.get('/api/manager-fetch', authMiddleware, async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not initialized' });
+    const { tab, filter } = req.query;
+
+    try {
+        if (tab === 'courses') {
+            const { data, error } = await supabase.from('courses').select('*').order('name');
+            if (error) throw error;
+            return res.json(data);
+        }
+        if (tab === 'discounts') {
+            const { data, error } = await supabase.from('discount_coupons').select('*').order('created_at', { ascending: false });
+            if (error) throw error;
+            return res.json(data);
+        }
+        if (tab === 'payments') {
+            const { data, error } = await supabase.from('website_orders').select('*').order('createdAt', { ascending: false });
+            if (error) throw error;
+            return res.json(data);
+        }
+        res.status(400).json({ error: 'Invalid tab' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Razorpay Webhook for mobile reliability
+app.post('/api/razorpay-webhook', async (req, res) => {
+    const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+    const signature = req.headers['x-razorpay-signature'];
+
+    if (!secret || !signature) {
+        return res.status(400).json({ error: 'Missing webhook secret or signature' });
+    }
+
+    const expectedSignature = crypto
+        .createHmac('sha256', secret)
+        .update(JSON.stringify(req.body))
+        .digest('hex');
+
+    if (expectedSignature !== signature) {
+        return res.status(400).json({ error: 'Invalid webhook signature' });
+    }
+
+    const event = req.body.event;
+    const payload = req.body.payload;
+
+    if (event === 'order.paid' || event === 'payment.captured') {
+        const payment = payload.payment.entity;
+        const order_id = payment.order_id;
+        
+        // Fetch order details from our DB using order_id
+        const { data: order } = await supabase
+            .from('website_orders')
+            .select('*')
+            .eq('order_id', order_id)
+            .single();
+
+        if (order && order.status !== 'PAID') {
+            await enrollUserInLMS({
+                email: order.user_email,
+                courseIds: order.course_ids,
+                razorpay_order_id: order_id,
+                razorpay_payment_id: payment.id,
+                discountCode: order.discount_code // Ensure this column exists in your DB or handle accordingly
+            });
+        }
+    }
+
+    res.json({ status: 'ok' });
 });
 
 // --- CATCH-ALL FOR FRONTEND ---

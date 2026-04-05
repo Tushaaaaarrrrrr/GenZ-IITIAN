@@ -38,6 +38,42 @@ export default function CourseSelection() {
   const [isApplyingDiscount, setIsApplyingDiscount] = useState(false);
   const [paymentError, setPaymentError] = useState('');
 
+  // 🔄 Auto-recovery for mobile users:
+  // If the page reloads after a mobile redirect payment, check if any order was successfully PAID
+  // in the last 10 minutes and redirect to success page automatically.
+  useEffect(() => {
+    if (!user || isProcessing || !course || selectedCourses.length === 0) return;
+
+    const checkRecentPayment = async () => {
+      try {
+        const tenMinsAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+        const { data: recentOrders } = await supabase
+          .from('website_orders')
+          .select('*')
+          .eq('user_email', user.email)
+          .eq('status', 'PAID')
+          .gt('created_at', tenMinsAgo)
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (recentOrders && recentOrders.length > 0) {
+          const courseTitle = course.isBundle 
+            ? course.bundleCourses.filter((bc: any) => selectedCourses.includes(bc.courseId)).map((bc: any) => bc.courseName).join(', ')
+            : course.name;
+
+          navigate("/payment-success", { state: { courseTitle } });
+        }
+      } catch (err) {
+        console.error("Auto-recovery check failed:", err);
+      }
+    };
+
+    // Small delay to give the webhook/server time to process the status update
+    const timer = setTimeout(checkRecentPayment, 1500);
+    return () => clearTimeout(timer);
+  }, [user, navigate, course, selectedCourses, isProcessing]);
+
+
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const courseLookupId = searchParams.get('courseId') || id;
 
@@ -149,6 +185,15 @@ export default function CourseSelection() {
 
   const isAllBundleSelected = course?.isBundle && 
     course.bundleCourses?.every((bc: any) => selectedCourses.includes(bc.courseId));
+
+  const bundleTotalRaw = course?.isBundle 
+    ? course.bundleCourses?.reduce((sum: number, bc: any) => sum + bc.price, 0) || 0
+    : 0;
+
+  const hasBundleDiscount = course?.isBundle && (
+    (course.bundleDiscountPrice && course.bundleDiscountPrice < bundleTotalRaw) || 
+    !!course.bundleDiscountCode
+  );
 
   const calculateTotal = () => {
     if (!course) return 0;
@@ -308,7 +353,15 @@ export default function CourseSelection() {
         amount: orderData.amount,
         currency: "INR",
         name: "GenZ IITIAN",
-        description: `Enrollment in ${selectedCourses.length} Courses`,
+        description: course.isBundle 
+          ? course.bundleCourses.filter((bc: any) => selectedCourses.includes(bc.courseId)).map((bc: any) => bc.courseName).join(', ').substring(0, 255)
+          : course.name,
+        notes: {
+          courses: course.isBundle 
+            ? course.bundleCourses.filter((bc: any) => selectedCourses.includes(bc.courseId)).map((bc: any) => bc.courseName).join(', ')
+            : course.name,
+          user_email: user?.email
+        },
         order_id: orderData.id,
         handler: async (response: any) => {
           setIsProcessing(true);
@@ -323,7 +376,11 @@ export default function CourseSelection() {
               discountCode: appliedDiscountCode || undefined,
             });
 
-            navigate("/payment-success");
+            const courseTitle = course.isBundle 
+              ? course.bundleCourses.filter((bc: any) => selectedCourses.includes(bc.courseId)).map((bc: any) => bc.courseName).join(', ')
+              : course.name;
+
+            navigate("/payment-success", { state: { courseTitle } });
           } catch (err: any) {
             console.error("Payment verification error:", err);
             setPaymentError(err?.message || "Payment verification failed. Please try again.");
@@ -434,7 +491,7 @@ export default function CourseSelection() {
               className={`flex flex-col items-center gap-2 p-3 lg:p-4 rounded-xl border-[4px] transition-all w-full text-left ${step === 'selection' ? 'bg-blue-600 border-[#0b1120] text-white shadow-[4px_4px_0px_#0b1120]' : 'bg-white border-gray-200 text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed'}`}
             >
                 <BookOpen className="w-6 h-6" />
-                <span className="font-black text-[10px] md:text-sm uppercase tracking-wider">Step 2: Selection</span>
+                <span className="font-black text-[10px] md:text-sm uppercase tracking-wider">Step 2: Checkout</span>
             </button>
             <div className="md:col-span-2 bg-white border-2 border-dashed border-gray-300 rounded-xl p-3 lg:p-4 flex items-center justify-center border-[#0b1120]/10">
                 <div className="flex items-center gap-2 text-gray-500 font-black text-sm lg:text-base">
@@ -558,7 +615,7 @@ export default function CourseSelection() {
               animate={{ opacity: 1, scale: 1 }}
               className="space-y-6"
             >
-              {course.isBundle && (
+              {course.isBundle && hasBundleDiscount && (
                   <div className={`p-4 md:p-6 rounded-2xl border-[4px] transition-all duration-500 shadow-[10px_10px_0px_#0b1120] ${isAllBundleSelected ? 'bg-green-50 border-[#10b981]' : 'bg-blue-50 border-[#0b1120]'}`}>
                       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                           <div className="flex items-center gap-4">
@@ -574,7 +631,7 @@ export default function CourseSelection() {
                                   </div>
                                   <p className="text-[9px] md:text-xs text-gray-500 font-bold uppercase tracking-[0.18em] mt-1 leading-snug">
                                       {isAllBundleSelected
-                                        ? `Apply the code to get ₹${course.bundleCourses.reduce((s: any, b: any) => s + b.price, 0) - (course.bundleDiscountPrice || 0)} discount.`
+                                        ? `Use this Code "${course.bundleDiscountCode}" to get ₹${bundleTotalRaw - (course.bundleDiscountPrice || 0)} discount or click on apply arrow >`
                                         : "Select all courses to unlock the bundle price."}
                                   </p>
                               </div>
@@ -613,9 +670,9 @@ export default function CourseSelection() {
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
                 <div className="lg:col-span-7 space-y-6">
                   <div className="bg-white border-[3px] border-[#0b1120] rounded-2xl p-5 shadow-[8px_8px_0px_#0b1120]">
-                      <h2 className="text-xl font-black text-[#0b1120] mb-4">Select Your Courses</h2>
+                      <h2 className="text-xl font-black text-[#0b1120] mb-4">{!course.isBundle || !hasBundleDiscount || course.isFixedBundle ? 'Course Package' : 'Select Your Courses'}</h2>
                     
-                    {!course.isBundle ? (
+                    {!course.isBundle || !hasBundleDiscount || course.isFixedBundle ? (
                         <div className="p-3.5 bg-blue-50 border-[2px] border-[#0b1120] rounded-xl flex items-center justify-between">
                             <div className="flex items-center gap-2.5">
                                 <div className="w-9 h-9 bg-[#0b1120] rounded-full flex items-center justify-center text-white">
@@ -623,7 +680,7 @@ export default function CourseSelection() {
                                 </div>
                                 <span className="font-black text-base text-[#0b1120]">{course.name}</span>
                             </div>
-                            <span className="font-black text-lg text-[#10b981]">₹{course.discountPrice || course.price}</span>
+                            <span className="font-black text-lg text-[#10b981]">₹{calculateTotal()}</span>
                         </div>
                     ) : (
                         <div className="space-y-2.5">

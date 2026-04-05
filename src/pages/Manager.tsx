@@ -1,12 +1,12 @@
 import { useAuth } from '../context/AuthContext';
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { LayoutDashboard, ShoppingBag, ScrollText, BookOpen, Plus, Search, Trash2, Edit, Save, X, Loader2, AlertCircle, User, Download, TrendingUp, TrendingDown, Users, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, ScrollText, BookOpen, Plus, Search, Trash2, Edit, Save, X, Loader2, AlertCircle, User, Download, TrendingUp, TrendingDown, Users, ShieldCheck, CreditCard } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate, useLocation, NavLink } from 'react-router-dom';
 import { apiService } from '../lib/api';
 
-type Tab = 'users' | 'courses' | 'discounts';
+type Tab = 'users' | 'courses' | 'discounts' | 'payments';
 
 function sanitizeCourseId(value: string) {
   return value
@@ -26,7 +26,7 @@ export default function Manager() {
   const activeTab = (location.pathname.split('/').pop() || 'users') as Tab;
   
   // Validate tab - if path is just /manager, it's users. If invalid, could redirect.
-  const validTabs: Tab[] = ['users', 'courses', 'discounts'];
+  const validTabs: Tab[] = ['users', 'courses', 'discounts', 'payments'];
   const effectiveTab = validTabs.includes(activeTab) ? activeTab : 'users';
   const [data, setData] = useState<any>([]);
   const [loading, setLoading] = useState(true);
@@ -37,6 +37,7 @@ export default function Manager() {
   const [bundleCourses, setBundleCourses] = useState<{courseId: string, courseName: string, price: number}[]>([]);
   const [bundleDiscountPrice, setBundleDiscountPrice] = useState<number | ''>('');
   const [bundleDiscountCode, setBundleDiscountCode] = useState('');
+  const [isFixedBundle, setIsFixedBundle] = useState(false);
 
   // Discount Coupons state
   const [showAddDiscount, setShowAddDiscount] = useState(false);
@@ -50,11 +51,13 @@ export default function Manager() {
       setBundleCourses(editingCourse.bundleCourses || []);
       setBundleDiscountPrice(editingCourse.bundleDiscountPrice || '');
       setBundleDiscountCode(editingCourse.bundleDiscountCode || '');
+      setIsFixedBundle(editingCourse.isFixedBundle || false);
     } else {
       setIsBundle(false);
       setBundleCourses([{ courseId: '', courseName: '', price: 0 }]);
       setBundleDiscountPrice('');
       setBundleDiscountCode('');
+      setIsFixedBundle(false);
     }
   }, [editingCourse, showAddCourse]);
 
@@ -108,6 +111,12 @@ export default function Manager() {
           fetchDiscountOptions()
         ]);
         setData(discountsData || []);
+      } else if (effectiveTab === 'payments') {
+        const [paymentsData] = await Promise.all([
+          apiService.managerFetch('payments', filter),
+          fetchDiscountOptions()
+        ]);
+        setData(paymentsData || []);
       } else {
         const result = await apiService.managerFetch(effectiveTab, filter);
         setData(result || []);
@@ -167,6 +176,7 @@ export default function Manager() {
         bundleCourses: course.bundleCourses || [],
         bundleDiscountPrice: course.bundleDiscountPrice || null,
         bundleDiscountCode: course.bundleDiscountCode || null,
+        isFixedBundle: course.isFixedBundle || false,
         subject: course.category || null,
         startDate: course.startDate || null,
         endDate: course.endDate || null,
@@ -293,7 +303,8 @@ export default function Manager() {
           {[
             { id: 'users', icon: User, path: '/manager/users' },
             { id: 'courses', icon: BookOpen, path: '/manager/courses' },
-            { id: 'discounts', icon: ShoppingBag, path: '/manager/discounts' }
+            { id: 'discounts', icon: ShoppingBag, path: '/manager/discounts' },
+            { id: 'payments', icon: CreditCard, path: '/manager/payments' }
           ].map((tab) => (
             <NavLink
               key={tab.id}
@@ -389,6 +400,58 @@ export default function Manager() {
                 </div>
               )}
 
+              {effectiveTab === 'payments' && (
+                <div className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] overflow-hidden shadow-[12px_12px_0px_#0b1120]">
+                  <table className="w-full text-left">
+                    <thead className="bg-gray-50 border-b-[3px] border-gray-100 font-black text-sm uppercase text-gray-400">
+                      <tr>
+                        <th className="px-8 py-6">Order Info</th>
+                        <th className="px-8 py-6">Courses</th>
+                        <th className="px-8 py-6">Amount</th>
+                        <th className="px-8 py-6">Status</th>
+                        <th className="px-8 py-6">Date</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y-[3px] divide-gray-50 font-bold">
+                      {data.map((order: any) => (
+                        <tr key={order.order_id} className="hover:bg-blue-50/50 transition-colors">
+                          <td className="px-8 py-6">
+                            <div className="text-lg font-black text-[#0b1120]">{order.user_email}</div>
+                            <div className="text-xs font-mono text-gray-400">{order.order_id}</div>
+                          </td>
+                          <td className="px-8 py-6">
+                            <div className="flex flex-wrap gap-2">
+                              {Array.isArray(order.course_ids) ? order.course_ids.map((cid: string) => {
+                                const course = discountOptions.find(c => c.id === cid);
+                                return (
+                                  <span key={cid} className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-xs font-black border border-blue-100">
+                                    {course?.name || cid}
+                                  </span>
+                                );
+                              }) : <span className="text-gray-400">No courses</span>}
+                            </div>
+                          </td>
+                          <td className="px-8 py-6 text-xl font-black text-[#10b981]">₹{order.total_amount}</td>
+                          <td className="px-8 py-6">
+                            <span className={`px-4 py-2 rounded-xl text-xs font-black uppercase border-2 shadow-[2px_2px_0px_currentColor] ${
+                              order.status === 'PAID' ? 'bg-green-50 text-green-600 border-green-600' :
+                              order.status === 'FAILED' ? 'bg-red-50 text-red-600 border-red-600' :
+                              'bg-yellow-50 text-yellow-600 border-yellow-600'
+                            }`}>
+                              {order.status}
+                            </span>
+                          </td>
+                          <td className="px-8 py-6 text-gray-400 text-sm">
+                            {order.createdAt ? new Date(order.createdAt).toLocaleString() : 'N/A'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+
 
 
 
@@ -468,7 +531,7 @@ export default function Manager() {
                           <div className="text-sm font-bold text-[#0b1120] bg-gray-50 border-2 border-dashed border-gray-200 p-2 rounded-lg truncate">
                             {discount.applies_to === 'ALL'
                               ? 'Everything (Global)'
-                              : `${discountOptionMap.get(discount.applies_to)?.name || discount.applies_to} ${discountOptionMap.get(discount.applies_to)?.isBundle ? '[Bundle]' : '[Course]'} (${discount.applies_to})`}
+                              : `${(discountOptionMap.get(discount.applies_to) as any)?.name || discount.applies_to} ${(discountOptionMap.get(discount.applies_to) as any)?.isBundle ? '[Bundle]' : '[Course]'} (${discount.applies_to})`}
                           </div>
                         </div>
                       </div>
@@ -638,6 +701,18 @@ export default function Manager() {
                       </button>
                     </div>
 
+                    {isBundle && (
+                      <div className="flex items-center justify-between pt-2">
+                        <div className="flex flex-col">
+                          <label className="block text-sm font-black text-[#0b1120] uppercase">Fixed Bundle?</label>
+                          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-tighter">Students cannot unselect courses</span>
+                        </div>
+                        <button type="button" onClick={() => setIsFixedBundle(!isFixedBundle)} className={`w-14 h-8 rounded-full border-2 border-[#0b1120] flex items-center p-1 transition-colors ${isFixedBundle ? 'bg-[#3b82f6]' : 'bg-gray-300'}`}>
+                          <div className={`w-5 h-5 bg-white rounded-full border-2 border-[#0b1120] transition-transform ${isFixedBundle ? 'translate-x-6' : ''}`} />
+                        </button>
+                      </div>
+                    )}
+
                     <div className="pt-4 border-t-2 border-[#0b1120]/10 space-y-4">
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">
@@ -739,6 +814,7 @@ export default function Manager() {
                       bundleCourses,
                       bundleDiscountPrice: isBundle && bundleDiscountPrice ? Number(bundleDiscountPrice) : null,
                       bundleDiscountCode: isBundle && bundleDiscountCode ? bundleDiscountCode : null,
+                      isFixedBundle: isBundle && isFixedBundle,
                       startDate: startDate ? new Date(startDate).toISOString() : null,
                       endDate: endDate ? new Date(endDate).toISOString() : null,
                     });
