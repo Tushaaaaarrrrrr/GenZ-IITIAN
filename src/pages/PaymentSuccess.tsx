@@ -24,9 +24,9 @@ export default function PaymentSuccess() {
         const lastOrder = await apiService.getLastOrder(user.email);
         if (lastOrder && lastOrder.status === 'PAID') {
           setOrderDetails(lastOrder);
-          // If we have IDs but no titles, try to fetch titles
+          // If we have IDs but no titles, try to fetch titles from catalog
           if (Array.isArray(lastOrder.course_ids)) {
-            const { data: courses } = await supabase.from('courses').select('name').in('id', lastOrder.course_ids);
+            const { data: courses } = await supabase.from('course_catalog').select('name').in('id', lastOrder.course_ids);
             if (courses && courses.length > 0) {
               setCourseTitles(courses.map(c => c.name).join(', '));
             }

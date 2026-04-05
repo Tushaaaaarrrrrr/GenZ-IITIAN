@@ -311,6 +311,7 @@ app.post('/api/create-order', async (req, res) => {
             if (!isBundleDiscountUsed) {
                 totalAmount = bundleSubCourses.filter(bc => courseIds.includes(bc.courseId)).reduce((sum, bc) => sum + Number(bc.price), 0);
             }
+        } else {
             // --- SINGLE COURSE FLOW ---
             const { data: courses } = await supabase.from('courses').select('id, name, price, discountPrice').in('id', courseIds);
             if (!courses || courses.length === 0) return res.status(400).json({ error: 'Invalid course IDs' });
@@ -376,6 +377,29 @@ app.post('/api/create-order', async (req, res) => {
     }
 });
 
+// Helper to send data to Google Sheets with timeout
+async function sendToGoogleSheet(payload) {
+    const url = process.env.GOOGLE_SHEET_WEBHOOK_URL;
+    if (!url) return;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000); // 3-second timeout
+
+    try {
+        await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...payload, timestamp: new Date().toISOString() }),
+            signal: controller.signal
+        });
+    } catch (err) {
+        console.error('Google Sheet Log Skipped/Failed:', err.name === 'AbortError' ? 'Timeout' : err.message);
+    } finally {
+        clearTimeout(timeout);
+    }
+}
+
+// ========== PAYMENTS (Razorpay) ==========
 // Helper function for LMS enrollment and logging
 async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_payment_id, discountCode }) {
     if (!supabase) return { success: false, error: 'Supabase not initialized' };
@@ -398,7 +422,7 @@ async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_p
         // Update status to PAID immediately to prevent race conditions
         await supabase.from('website_orders').update({ status: 'PAID' }).eq('order_id', razorpay_order_id);
         
-        const { data: profile } = await supabase.from('profiles').select('id, name').eq('email', email).single();
+        const { data: profile } = await supabase.from('profiles').select('id, name, phone').eq('email', email).single();
 
         const lmsRes = await fetch(lms_enroll_url, {
             method: "POST",
@@ -407,11 +431,32 @@ async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_p
                 secret: process.env.EXTERNAL_ENROLL_SECRET,
                 email,
                 name: profile?.name || "Student",
+                phone: profile?.phone || "N/A",
                 courseIds
             })
         });
 
         if (lmsRes.ok) {
+            // --- GOOGLE SHEETS LOGGING (SUCCESS) ---
+            try {
+                const { data: order } = await supabase.from('website_orders').select('total_amount').eq('order_id', razorpay_order_id).single();
+                const { data: courses } = await supabase.from('courses').select('name').in('id', courseIds);
+                const courseNames = courses?.map(c => c.name).join('|') || "Unknown Course";
+
+                await sendToGoogleSheet({
+                    name: profile?.name || "Student",
+                    email,
+                    phone: profile?.phone || "N/A",
+                    course_name: courseNames,
+                    price: order?.total_amount || 0,
+                    status: 'SUCCESS',
+                    payment_id: razorpay_payment_id,
+                    order_id: razorpay_order_id
+                });
+            } catch (sheetErr) {
+                console.error('Sheet Logging Error:', sheetErr);
+            }
+
             const successLogs = courseIds.map(cid => ({
                 userId: profile?.id,
                 email,
@@ -458,7 +503,29 @@ app.post('/api/verify-payment', async (req, res) => {
     const body = razorpay_order_id + "|" + razorpay_payment_id;
     const expectedSignature = crypto.createHmac('sha256', razorpaySecret).update(body.toString()).digest('hex');
 
-    if (expectedSignature !== razorpay_signature) return res.status(400).json({ error: 'Signature mismatch' });
+    if (expectedSignature !== razorpay_signature) {
+        // --- GOOGLE SHEETS LOGGING (FAILED - SIGNATURE) ---
+        try {
+            const { data: profile } = await supabase.from('profiles').select('name, phone').eq('email', email).single();
+            const { data: order } = await supabase.from('website_orders').select('total_amount').eq('order_id', razorpay_order_id).single();
+            const { data: courses } = await supabase.from('courses').select('name').in('id', courseIds);
+            const courseNames = courses?.map(c => c.name).join('|') || "Unknown Course";
+
+            await sendToGoogleSheet({
+                name: profile?.name || "Student",
+                email,
+                phone: profile?.phone || "N/A",
+                course_name: courseNames,
+                price: order?.total_amount || 0,
+                status: 'FAILED',
+                payment_id: null,
+                order_id: razorpay_order_id,
+                failure_source: 'BACKEND_VERIFICATION'
+            });
+        } catch (sheetErr) { }
+
+        return res.status(400).json({ error: 'Signature mismatch' });
+    }
 
     try {
         const result = await enrollUserInLMS({
@@ -476,6 +543,32 @@ app.post('/api/verify-payment', async (req, res) => {
         }
     } catch (err) {
         console.error('Verification error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// LOG FRONTEND FAILURE
+app.post('/api/log-payment-failure', async (req, res) => {
+    const { email, order_id, failure_source, courseIds } = req.body;
+    try {
+        const { data: profile } = await supabase.from('profiles').select('name, phone').eq('email', email).single();
+        const { data: order } = await supabase.from('website_orders').select('total_amount').eq('order_id', order_id).single();
+        const { data: courses } = await supabase.from('courses').select('name').in('id', courseIds);
+        const courseNames = courses?.map(c => c.name).join('|') || "Unknown Course";
+
+        await sendToGoogleSheet({
+            name: profile?.name || "Student",
+            email,
+            phone: profile?.phone || "N/A",
+            course_name: courseNames,
+            price: order?.total_amount || 0,
+            status: 'FAILED',
+            payment_id: null,
+            order_id: order_id,
+            failure_source: failure_source || 'FRONTEND_RAZORPAY'
+        });
+        res.json({ ok: true });
+    } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });

@@ -403,6 +403,13 @@ export default function CourseSelection() {
       const rzp = new (window as any).Razorpay(options);
       rzp.on?.('payment.failed', (response: any) => {
         setIsProcessing(false);
+        // --- LOG FRONTEND FAILURE ---
+        apiService.logPaymentFailure({
+          email: user?.email || '',
+          order_id: orderData.id,
+          failure_source: 'FRONTEND_RAZORPAY',
+          courseIds: selectedCourses
+        });
         setPaymentError(response?.error?.description || "Payment failed. Please try again.");
       });
       rzp.open();
@@ -631,7 +638,7 @@ export default function CourseSelection() {
                                   </div>
                                   <p className="text-[9px] md:text-xs text-gray-500 font-bold uppercase tracking-[0.18em] mt-1 leading-snug">
                                       {isAllBundleSelected
-                                        ? `Use this Code "${course.bundleDiscountCode}" to get ₹${bundleTotalRaw - (course.bundleDiscountPrice || 0)} discount or click on apply arrow >`
+                                        ? `Use code ${course.bundleDiscountCode} to get ₹${bundleTotalRaw - (course.bundleDiscountPrice || 0)} off or just tap to Apply`
                                         : "Select all courses to unlock the bundle price."}
                                   </p>
                               </div>
@@ -639,7 +646,7 @@ export default function CourseSelection() {
 
                           {isAllBundleSelected ? (
                               <div className="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto">
-                                  <div className="px-6 py-2.5 bg-white border-[3px] border-[#0b1120] rounded-xl font-mono font-black text-xl tracking-[0.3em] text-[#0b1120] shadow-[4px_4px_0px_#0b1120]">
+                                  <div className="w-20 md:w-24 px-2 py-3 bg-white border-[2px] border-[#0b1120] rounded-xl flex items-center justify-center font-black text-base md:text-xl text-[#0b1120] uppercase tracking-widest">
                                       {course.bundleDiscountCode}
                                   </div>
                                   {!appliedDiscountCode && (
@@ -648,9 +655,9 @@ export default function CourseSelection() {
                                               setDiscountCodeInput(course.bundleDiscountCode);
                                               setTimeout(() => applyDiscount(), 100);
                                           }}
-                                          className="px-8 py-3 bg-[#0b1120] text-white rounded-xl font-black text-sm uppercase shadow-[4px_4px_0px_#10b981] hover:translate-y-1 hover:shadow-none transition-all active:translate-y-1.5"
+                                          className="px-6 py-4 bg-[#0b1120] text-white rounded-2xl font-black text-xs md:text-sm uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-blue-600 transition-colors shadow-[4px_4px_0px_#0b1120]/20"
                                       >
-                                          Apply Bundle Pricing
+                                          Apply code
                                       </button>
                                   )}
                               </div>

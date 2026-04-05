@@ -170,5 +170,21 @@ export const apiService = {
       }
       return readJsonResponse(res);
     }
+  },
+  
+  // 6. Log Payment Failure
+  logPaymentFailure: async (payload: { email: string, order_id: string, failure_source: string, courseIds: string[] }) => {
+    try {
+      const PROD_API_URL = import.meta.env.VITE_PROD_API_URL || '/api/create-order';
+      const LOG_FAILURE_URL = PROD_API_URL.replace('create-order', 'log-payment-failure');
+      
+      await fetch(LOG_FAILURE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    } catch (err) {
+      console.error('Failed to log payment failure:', err);
+    }
   }
 };

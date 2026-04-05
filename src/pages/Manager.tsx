@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate, useLocation, NavLink } from 'react-router-dom';
 import { apiService } from '../lib/api';
 
-type Tab = 'users' | 'courses' | 'discounts' | 'payments';
+type Tab = 'users' | 'courses' | 'discounts' | 'payments' | 'catalog';
 
 function sanitizeCourseId(value: string) {
   return value
@@ -26,7 +26,7 @@ export default function Manager() {
   const activeTab = (location.pathname.split('/').pop() || 'users') as Tab;
   
   // Validate tab - if path is just /manager, it's users. If invalid, could redirect.
-  const validTabs: Tab[] = ['users', 'courses', 'discounts', 'payments'];
+  const validTabs: Tab[] = ['users', 'courses', 'discounts', 'payments', 'catalog'];
   const effectiveTab = validTabs.includes(activeTab) ? activeTab : 'users';
   const [data, setData] = useState<any>([]);
   const [loading, setLoading] = useState(true);
@@ -42,6 +42,8 @@ export default function Manager() {
   // Discount Coupons state
   const [showAddDiscount, setShowAddDiscount] = useState(false);
   const [discountOptions, setDiscountOptions] = useState<any[]>([]); // To hold courses
+  const [courseCatalog, setCourseCatalog] = useState<any[]>([]); // New state for full course ID -> Name mapping
+  const [catalogSearch, setCatalogSearch] = useState('');
   const [editingDiscount, setEditingDiscount] = useState<any>(null);
   const discountOptionMap = new Map(discountOptions.map(option => [option.id, option]));
 
@@ -105,6 +107,10 @@ export default function Manager() {
   const fetchData = async () => {
     setLoading(true);
     try {
+      // Always fetch catalog for mapping
+      const { data: catalog } = await supabase.from('course_catalog').select('*');
+      setCourseCatalog(catalog || []);
+
       if (effectiveTab === 'discounts') {
         const [discountsData] = await Promise.all([
           apiService.managerFetch('discounts', filter),
@@ -150,6 +156,28 @@ export default function Manager() {
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = `users_export_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
+
+  const exportCatalog = () => {
+    if (effectiveTab !== 'catalog' || !Array.isArray(courseCatalog)) return;
+    
+    const headers = ['Course ID', 'Display Name', 'Last Updated'];
+    const rows = courseCatalog.map(c => [
+      c.id || '',
+      c.name || '',
+      c.updated_at ? new Date(c.updated_at).toLocaleString('en-GB') : ''
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(r => r.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `manager_course_catalog_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
   };
 
@@ -261,7 +289,26 @@ export default function Manager() {
         error = response.error;
       }
 
-      if (error) alert(error.message);
+      if (error) {
+        alert(error.message);
+      } else {
+        // --- SYNC TO COURSE CATALOG ---
+        const catalogEntries = [{ id: cleanedCourse.id, name: cleanedCourse.name }];
+        if (cleanedCourse.isBundle && Array.isArray(cleanedCourse.bundleCourses)) {
+          cleanedCourse.bundleCourses.forEach((bc: any) => {
+            if (bc.courseId && bc.courseName) {
+              catalogEntries.push({ id: bc.courseId, name: bc.courseName });
+            }
+          });
+        }
+        
+        const { error: catalogError } = await supabase
+          .from('course_catalog')
+          .upsert(catalogEntries, { onConflict: 'id' });
+          
+        if (catalogError) console.error('Failed to sync course catalog:', catalogError);
+      }
+
       setEditingCourse(null);
       setShowAddCourse(false);
     }
@@ -302,6 +349,7 @@ export default function Manager() {
         <nav className="space-y-4 flex-grow">
           {[
             { id: 'users', icon: User, path: '/manager/users' },
+            { id: 'catalog', icon: ScrollText, path: '/manager/catalog' },
             { id: 'courses', icon: BookOpen, path: '/manager/courses' },
             { id: 'discounts', icon: ShoppingBag, path: '/manager/discounts' },
             { id: 'payments', icon: CreditCard, path: '/manager/payments' }
@@ -335,6 +383,14 @@ export default function Manager() {
               {effectiveTab === 'users' && (
                 <button 
                   onClick={exportUsers}
+                  className="flex items-center gap-3 px-8 py-4 bg-[#3b82f6] text-white rounded-2xl font-black border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#0b1120] hover:translate-y-1 hover:shadow-none transition-all"
+                >
+                  <Download className="w-6 h-6" /> Export CSV
+                </button>
+              )}
+              {effectiveTab === 'catalog' && (
+                <button 
+                  onClick={exportCatalog}
                   className="flex items-center gap-3 px-8 py-4 bg-[#3b82f6] text-white rounded-2xl font-black border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#0b1120] hover:translate-y-1 hover:shadow-none transition-all"
                 >
                   <Download className="w-6 h-6" /> Export CSV
@@ -400,6 +456,57 @@ export default function Manager() {
                 </div>
               )}
 
+              {effectiveTab === 'catalog' && (
+                <div className="space-y-6">
+                  <div className="bg-white border-[4px] border-[#0b1120] rounded-[2rem] p-4 flex gap-4 items-center shadow-[6px_6px_0px_#0b1120]">
+                    <Search className="w-6 h-6 text-gray-400 shrink-0 ml-2" />
+                    <input
+                      type="text"
+                      placeholder="Search courses by ID or Name..."
+                      value={catalogSearch}
+                      onChange={(e) => setCatalogSearch(e.target.value)}
+                      className="w-full font-black outline-none text-lg text-[#0b1120] placeholder:text-gray-300"
+                    />
+                    <button 
+                      className="px-6 py-3 bg-[#0b1120] text-white rounded-xl font-black tracking-widest uppercase hover:bg-gray-800 transition-colors shrink-0"
+                    >
+                      Search
+                    </button>
+                  </div>
+                  
+                  <div className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] overflow-hidden shadow-[12px_12px_0px_#0b1120]">
+                    <table className="w-full text-left">
+                      <thead className="bg-gray-50 border-b-[3px] border-gray-100 font-black text-sm uppercase text-gray-400">
+                        <tr>
+                          <th className="px-8 py-6">Course ID</th>
+                          <th className="px-8 py-6">Display Name</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y-[3px] divide-gray-50 font-bold">
+                        {courseCatalog
+                          .filter(c => 
+                            c.id.toLowerCase().includes(catalogSearch.toLowerCase()) || 
+                            c.name.toLowerCase().includes(catalogSearch.toLowerCase())
+                          )
+                          .map((course: any) => (
+                          <tr key={course.id} className="hover:bg-blue-50/50 transition-colors">
+                            <td className="px-8 py-6 font-mono text-gray-500 text-sm">
+                              {course.id}
+                            </td>
+                            <td className="px-8 py-6">
+                              <div className="text-lg font-black text-[#0b1120]">{course.name}</div>
+                            </td>
+                          </tr>
+                        ))}
+                        {courseCatalog.length === 0 && (
+                          <tr><td colSpan={2} className="px-8 py-12 text-center text-gray-400 font-bold">No courses in catalog. Create a course first.</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
               {effectiveTab === 'payments' && (
                 <div className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] overflow-hidden shadow-[12px_12px_0px_#0b1120]">
                   <table className="w-full text-left">
@@ -422,10 +529,11 @@ export default function Manager() {
                           <td className="px-8 py-6">
                             <div className="flex flex-wrap gap-2">
                               {Array.isArray(order.course_ids) ? order.course_ids.map((cid: string) => {
-                                const course = discountOptions.find(c => c.id === cid);
+                                const courseInCatalog = courseCatalog.find(c => c.id === cid);
+                                const courseInOptions = discountOptions.find(c => c.id === cid);
                                 return (
                                   <span key={cid} className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-xs font-black border border-blue-100">
-                                    {course?.name || cid}
+                                    {courseInCatalog?.name || courseInOptions?.name || cid}
                                   </span>
                                 );
                               }) : <span className="text-gray-400">No courses</span>}
@@ -442,7 +550,7 @@ export default function Manager() {
                             </span>
                           </td>
                           <td className="px-8 py-6 text-gray-400 text-sm">
-                            {order.createdAt ? new Date(order.createdAt).toLocaleString() : 'N/A'}
+                            {order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : 'N/A'}
                           </td>
                         </tr>
                       ))}
