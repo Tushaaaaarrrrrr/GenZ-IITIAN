@@ -122,14 +122,19 @@ export default async function handler(req: any, res: any) {
           if (referrerProfile && referrerProfile.email.toLowerCase() !== email.toLowerCase()) {
             const { data: orderRow } = await supabase
               .from('website_orders')
-              .select('total_amount')
+              .select('total_amount, original_amount, discount_amount')
               .eq('order_id', razorpay_order_id)
               .single();
 
-            const finalPrice = orderRow?.total_amount || 0;
-            const originalPrice = Math.ceil(finalPrice / 0.95);
-            const buyerDiscount = originalPrice - finalPrice;
-            const referrerReward = Math.floor(finalPrice * 0.05);
+            if (!orderRow) {
+              console.error(`Order not found for referral processing: ${razorpay_order_id}`);
+              return;
+            }
+
+            const finalPrice = orderRow.total_amount || 0;
+            const originalPrice = orderRow.original_amount || finalPrice;
+            const buyerDiscount = orderRow.discount_amount || 0;
+            const referrerReward = Math.floor(finalPrice * 0.05); // 5% of what was paid
 
             const newBalance = (referrerProfile.wallet_balance || 0) + referrerReward;
             const newLifetime = (referrerProfile.lifetime_referrals || 0) + 1;

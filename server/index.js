@@ -294,6 +294,8 @@ app.post('/api/create-order', async (req, res) => {
 
     try {
         let totalAmount = 0;
+        let originalAmount = 0; // The price before any discounts
+        let discountAmountTotal = 0; // Total ₹ value of all discounts (coupon + ref + coins)
         let discountApplied = false;
         let isBundleDiscountUsed = false;
         let orderNotes = null;
@@ -315,6 +317,7 @@ app.post('/api/create-order', async (req, res) => {
                 if (validBundleCourseIds.every(id => courseIds.includes(id))) {
                     isBundleDiscountUsed = true;
                     totalAmount = Number(bundle.bundleDiscountPrice);
+                    originalAmount = bundleSubCourses.filter(bc => courseIds.includes(bc.courseId)).reduce((sum, bc) => sum + Number(bc.price), 0);
                     discountApplied = true;
                 } else {
                     return res.status(400).json({ error: 'Bundle discount requires all courses to be selected' });
@@ -323,6 +326,7 @@ app.post('/api/create-order', async (req, res) => {
 
             if (!isBundleDiscountUsed) {
                 totalAmount = bundleSubCourses.filter(bc => courseIds.includes(bc.courseId)).reduce((sum, bc) => sum + Number(bc.price), 0);
+                originalAmount = totalAmount;
             }
         } else {
             // --- SINGLE COURSE FLOW ---
@@ -330,6 +334,7 @@ app.post('/api/create-order', async (req, res) => {
             if (!courses || courses.length === 0) return res.status(400).json({ error: 'Invalid course IDs' });
 
             totalAmount = courses.reduce((sum, c) => sum + Number((c.discountPrice && c.discountPrice > 0) ? c.discountPrice : c.price), 0);
+            originalAmount = courses.reduce((sum, c) => sum + Number(c.price), 0);
             
             // Get course names for notes
             const courseNames = courses.map(c => c.name).join(', ');
@@ -423,6 +428,8 @@ app.post('/api/create-order', async (req, res) => {
             order_id: order.id,
             user_email: email,
             course_ids: courseIds,
+            original_amount: originalAmount,
+            discount_amount: Math.max(originalAmount - totalAmount, 0),
             total_amount: totalAmount,
             status: 'CREATED',
             discount_code: discountCode || null,
@@ -603,12 +610,23 @@ async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_p
                             .from('website_orders')
                             .select('total_amount')
                             .eq('order_id', razorpay_order_id)
-                            .single();
+                            .maybeSingle();
 
                         const finalPrice = orderRow?.total_amount || 0;
+                        
+                        if (!orderRow || finalPrice <= 0) {
+                            console.error('[CRITICAL] Could not find order amount for referral reward:', razorpay_order_id);
+                            // We don't want to give 0 coins if it's a server/db lag issue
+                            throw new Error('Order amount not found for reward calculation');
+                        }
+
+                        const referrerReward = Math.floor(finalPrice * 0.05);
+                        
+                        // Metadata for record
                         const originalPrice = Math.ceil(finalPrice / 0.95); // reverse the 5% buyer discount
                         const buyerDiscount = originalPrice - finalPrice;
-                        const referrerReward = Math.floor(finalPrice * 0.05);
+                        
+                        // Milestones config...
 
                         // Credit referrer wallet
                         const newBalance = (referrerProfile.wallet_balance || 0) + referrerReward;
@@ -767,6 +785,25 @@ app.post('/api/verify-payment', async (req, res) => {
         }
     } catch (err) {
         console.error('Verification error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/get-orders', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not initialized' });
+    const { email } = req.query;
+    if (!email) return res.status(400).json({ error: 'Email is required' });
+
+    try {
+        const { data, error } = await supabase
+            .from('website_orders')
+            .select('*')
+            .eq('user_email', email)
+            .order('created_at', { ascending: false });
+            
+        if (error) throw error;
+        res.json(data || []);
+    } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });

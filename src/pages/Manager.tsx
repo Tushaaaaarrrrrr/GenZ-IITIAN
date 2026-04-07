@@ -32,6 +32,7 @@ export default function Manager() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'today' | 'yesterday' | 'lastweek' | '7days' | 'month' | 'all'>('all');
   const [paymentSearch, setPaymentSearch] = useState('');
+  const [userSearch, setUserSearch] = useState('');
   const [editingCourse, setEditingCourse] = useState<any>(null);
   const [showAddCourse, setShowAddCourse] = useState(false);
   const [isBundle, setIsBundle] = useState(false);
@@ -92,7 +93,7 @@ export default function Manager() {
 
   useEffect(() => {
     if (isManager) fetchData();
-  }, [effectiveTab, isManager, filter, paymentSearch]);
+  }, [effectiveTab, isManager, filter, paymentSearch, userSearch]);
 
   useEffect(() => {
     if ((showAddDiscount || editingDiscount) && discountOptions.length === 0) {
@@ -132,7 +133,7 @@ export default function Manager() {
         ]);
         setData(paymentsData || []);
       } else {
-        const result = await apiService.managerFetch(effectiveTab, filter, paymentSearch);
+        const result = await apiService.managerFetch(effectiveTab, filter, effectiveTab === 'users' ? userSearch : paymentSearch);
         setData(result || []);
       }
     } catch (err: any) {
@@ -519,8 +520,21 @@ export default function Manager() {
 
 
               {effectiveTab === 'users' && (
-                <div className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] overflow-hidden shadow-[12px_12px_0px_#0b1120]">
-                  <table className="w-full text-left">
+                <div className="space-y-8">
+                  {/* Search Bar for Users */}
+                  <div className="bg-white border-[4px] border-[#0b1120] rounded-[2rem] p-4 flex gap-4 items-center shadow-[6px_6px_0px_#0b1120]">
+                    <Search className="w-6 h-6 text-gray-400 shrink-0 ml-2" />
+                    <input
+                      type="text"
+                      placeholder="Search by name, email, or Referral Code..."
+                      value={userSearch}
+                      onChange={(e) => setUserSearch(e.target.value)}
+                      className="w-full font-black outline-none text-lg text-[#0b1120] placeholder:text-gray-300"
+                    />
+                  </div>
+
+                  <div className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] overflow-hidden shadow-[12px_12px_0px_#0b1120]">
+                    <table className="w-full text-left">
                     <thead className="bg-gray-50 border-b-[3px] border-gray-100 font-black text-sm uppercase text-gray-400">
                       <tr>
                         <th className="px-8 py-6">Name</th>
@@ -558,7 +572,8 @@ export default function Manager() {
                     </tbody>
                   </table>
                 </div>
-              )}
+              </div>
+            )}
 
               {effectiveTab === 'payments' && (
                 <div className="space-y-6">
@@ -1194,6 +1209,11 @@ export default function Manager() {
                   <p className="text-gray-500 font-bold mt-2 flex items-center gap-4">
                     <span>{selectedUser.email}</span>
                     {selectedUser.phone && <span>• {selectedUser.phone}</span>}
+                    {selectedUser.created_at && (
+                      <span className="text-gray-4" style={{ opacity: 0.7 }}>
+                         • Joined: {new Date(selectedUser.created_at).toLocaleDateString()}
+                      </span>
+                    )}
                   </p>
                 </div>
                 <button onClick={() => setSelectedUser(null)} className="w-12 h-12 rounded-full border-[3px] border-[#0b1120] flex items-center justify-center hover:bg-gray-100 transition-colors shadow-[4px_4px_0px_#0b1120]">

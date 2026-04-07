@@ -38,6 +38,7 @@ export default async function handler(req: any, res: any) {
     }
 
     let totalAmount = 0;
+    let totalOriginalPrice = 0;
     let discountApplied = false;
     let isBundleDiscountUsed = false;
 
@@ -84,6 +85,10 @@ export default async function handler(req: any, res: any) {
           .filter((bc: any) => courseIds.includes(bc.courseId))
           .reduce((sum: number, bc: any) => sum + Number(bc.price || 0), 0);
       }
+
+      totalOriginalPrice = bundleSubCourses
+        .filter((bc: any) => courseIds.includes(bc.courseId))
+        .reduce((sum: number, bc: any) => sum + Number(bc.price || 0), 0);
     } else {
       const { data: courses, error: coursesError } = await supabase
         .from('courses')
@@ -101,6 +106,8 @@ export default async function handler(req: any, res: any) {
             : Number(course.price || 0);
         return sum + effectivePrice;
       }, 0);
+
+      totalOriginalPrice = courses.reduce((sum: number, course: any) => sum + Number(course.price || 0), 0);
     }
 
     if (discountCode && !isBundleDiscountUsed) {
@@ -203,6 +210,8 @@ export default async function handler(req: any, res: any) {
       user_email: email,
       course_ids: courseIds,
       total_amount: totalAmount,
+      original_amount: totalOriginalPrice,
+      discount_amount: totalOriginalPrice - totalAmount,
       status: 'CREATED',
       discount_code: discountCode || null,
       referral_code: referralCode || null,
