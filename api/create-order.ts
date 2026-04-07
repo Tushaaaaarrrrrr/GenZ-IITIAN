@@ -31,7 +31,7 @@ export default async function handler(req: any, res: any) {
   try {
     const supabase = getSupabaseAdmin();
     const razorpay = getRazorpay();
-    const { email, courseIds, bundleId, discountCode } = req.body || {};
+    const { email, courseIds, bundleId, discountCode, referralCode, coinsToApply } = req.body || {};
 
     if (!email || !Array.isArray(courseIds) || courseIds.length === 0) {
       return res.status(400).json({ error: 'Email and at least one course ID are required' });
@@ -144,8 +144,52 @@ export default async function handler(req: any, res: any) {
       discountApplied = true;
     }
 
-    if (totalAmount <= 0) {
-      return res.status(400).json({ error: 'Total amount must be greater than zero' });
+    // --- REFERRAL CODE DISCOUNT (5% off) ---
+    let referralDiscount = 0;
+    let referrerEmail = null;
+    if (referralCode && !isBundleDiscountUsed) {
+      const codeToCheck = String(referralCode).trim().toUpperCase();
+      const { data: referrerProfile } = await supabase
+        .from('referral_profiles')
+        .select('email')
+        .eq('referral_code', codeToCheck)
+        .maybeSingle();
+
+      if (referrerProfile) {
+        if (referrerProfile.email.toLowerCase() === email.toLowerCase()) {
+          return res.status(400).json({ error: 'You cannot use your own referral code' });
+        }
+        referralDiscount = Math.floor(totalAmount * 0.05);
+        totalAmount = totalAmount - referralDiscount;
+        referrerEmail = referrerProfile.email;
+      } else {
+        return res.status(400).json({ error: 'Invalid referral code' });
+      }
+    }
+
+    // --- COIN WALLET DEDUCTION ---
+    let coinsApplied = 0;
+    const MAX_COINS_PER_ORDER = 50;
+    if (coinsToApply && coinsToApply > 0) {
+      const { data: buyerReferral } = await supabase
+        .from('referral_profiles')
+        .select('wallet_balance')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (buyerReferral) {
+        // Server-side enforcement: cap at 50 coins, actual balance, and keep cart ≥ ₹1
+        const maxCoins = Math.min(MAX_COINS_PER_ORDER, buyerReferral.wallet_balance, totalAmount - 1);
+        coinsApplied = Math.min(coinsToApply, Math.max(maxCoins, 0));
+        if (coinsApplied > 0) {
+          totalAmount = totalAmount - coinsApplied;
+        }
+      }
+    }
+
+    if (totalAmount <= 0) totalAmount = 1;
+    if (totalAmount < 1) {
+      return res.status(400).json({ error: 'Total amount must be at least ₹1' });
     }
 
     const order = await razorpay.orders.create({
@@ -160,6 +204,9 @@ export default async function handler(req: any, res: any) {
       course_ids: courseIds,
       total_amount: totalAmount,
       status: 'CREATED',
+      discount_code: discountCode || null,
+      referral_code: referralCode || null,
+      coins_applied: coinsApplied || 0,
     });
 
     if (insertError) {
@@ -170,6 +217,9 @@ export default async function handler(req: any, res: any) {
       ...order,
       _serverTotal: totalAmount,
       _discountApplied: discountApplied,
+      _referralDiscount: referralDiscount,
+      _coinsApplied: coinsApplied,
+      _referrerEmail: referrerEmail,
     });
   } catch (error: any) {
     console.error('create-order error:', error);

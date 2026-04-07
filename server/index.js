@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import db from './db.js';
 import pseoRouter from './pseo-routes.js';
 import dotenv from 'dotenv';
+import rateLimit from 'express-rate-limit';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -46,6 +47,18 @@ app.use((req, res, next) => {
 
 app.use(express.static(path.join(__dirname, '..', 'dist')));
 app.use('/admin', express.static(path.join(__dirname, '..', 'admin')));
+
+// ========== RATE LIMITING ==========
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: { error: 'Too many requests from this IP, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Apply rate limiting to all /api routes
+app.use('/api/', apiLimiter);
 
 // ========== AUTH ==========
 
@@ -274,7 +287,7 @@ app.post('/api/create-order', async (req, res) => {
         return res.status(500).json({ error: 'Server configuration error (missing Razorpay/Supabase keys)' });
     }
 
-    const { email, courseIds, bundleId, discountCode } = req.body;
+    const { email, courseIds, bundleId, discountCode, referralCode, coinsToApply } = req.body;
     if (!courseIds || !Array.isArray(courseIds) || courseIds.length === 0 || !email) {
         return res.status(400).json({ error: 'Email and at least one course ID are required' });
     }
@@ -352,7 +365,52 @@ app.post('/api/create-order', async (req, res) => {
             }
         }
 
-        if (totalAmount <= 0) return res.status(400).json({ error: 'Total amount must be greater than zero' });
+        // --- REFERRAL CODE DISCOUNT (5% off) ---
+        let referralDiscount = 0;
+        let referrerEmail = null;
+        if (referralCode && !isBundleDiscountUsed) {
+            const codeToCheck = referralCode.trim().toUpperCase();
+            const { data: referrerProfile } = await supabase
+                .from('referral_profiles')
+                .select('email')
+                .eq('referral_code', codeToCheck)
+                .maybeSingle();
+
+            if (referrerProfile) {
+                // Self-referral check
+                if (referrerProfile.email.toLowerCase() === email.toLowerCase()) {
+                    return res.status(400).json({ error: 'You cannot use your own referral code' });
+                }
+                referralDiscount = Math.floor(totalAmount * 0.05);
+                totalAmount = totalAmount - referralDiscount;
+                referrerEmail = referrerProfile.email;
+            } else {
+                return res.status(400).json({ error: 'Invalid referral code' });
+            }
+        }
+
+        // --- COIN WALLET DEDUCTION ---
+        let coinsApplied = 0;
+        const MAX_COINS_PER_ORDER = 50;
+        if (coinsToApply && coinsToApply > 0) {
+            const { data: buyerReferral } = await supabase
+                .from('referral_profiles')
+                .select('wallet_balance')
+                .eq('email', email)
+                .maybeSingle();
+
+            if (buyerReferral) {
+                // Server-side enforcement: cap at 50 coins, actual balance, and keep cart ≥ ₹1
+                const maxCoins = Math.min(MAX_COINS_PER_ORDER, buyerReferral.wallet_balance, totalAmount - 1);
+                coinsApplied = Math.min(coinsToApply, Math.max(maxCoins, 0));
+                if (coinsApplied > 0) {
+                    totalAmount = totalAmount - coinsApplied;
+                }
+            }
+        }
+
+        if (totalAmount <= 0) totalAmount = 1; // Razorpay minimum
+        if (totalAmount < 1) return res.status(400).json({ error: 'Total amount must be at least ₹1' });
 
         const order = await razorpay.orders.create({
             amount: Math.round(totalAmount * 100),
@@ -367,21 +425,23 @@ app.post('/api/create-order', async (req, res) => {
             course_ids: courseIds,
             total_amount: totalAmount,
             status: 'CREATED',
-            discount_code: discountCode || null
+            discount_code: discountCode || null,
+            referral_code: referralCode || null,
+            coins_applied: coinsApplied || 0
         });
         
         if (insertError) {
           console.error('[CRITICAL] Failed to insert into website_orders:', insertError);
         }
 
-        res.json({ ...order, _serverTotal: totalAmount, _discountApplied: discountApplied });
+        res.json({ ...order, _serverTotal: totalAmount, _discountApplied: discountApplied, _referralDiscount: referralDiscount, _coinsApplied: coinsApplied, _referrerEmail: referrerEmail });
     } catch (err) {
         console.error('Order creation error:', err);
         res.status(500).json({ error: err.message || 'Internal server error' });
     }
 });
 
-// Helper to send data to Google Sheets with timeout
+// Helper to send data to Google Sheets with 60s timeout (background fire & forget)
 async function sendToGoogleSheet(payload) {
     const url = process.env.GOOGLE_SHEET_WEBHOOK_URL;
     console.log('[DEBUG] GOOGLE_SHEET_WEBHOOK_URL:', url);
@@ -393,7 +453,7 @@ async function sendToGoogleSheet(payload) {
     }
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3000); // 3-second timeout
+    const timeout = setTimeout(() => controller.abort(), 60000); // 60-second timeout
 
     try {
         console.log('[DEBUG] Sending request to Google Apps Script...');
@@ -413,7 +473,7 @@ async function sendToGoogleSheet(payload) {
         }
     } catch (err) {
         if (err.name === 'AbortError') {
-            console.error('[DEBUG] Google Sheet Log Timeout (3s)');
+            console.error('[DEBUG] Google Sheet Log Timeout (60s)');
         } else {
             console.error('[DEBUG] Google Sheet Log Error:', err.message);
         }
@@ -424,7 +484,7 @@ async function sendToGoogleSheet(payload) {
 
 // ========== PAYMENTS (Razorpay) ==========
 // Helper function for LMS enrollment and logging
-async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_payment_id, discountCode }) {
+async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_payment_id, discountCode, referralCode, coinsApplied }) {
     if (!supabase) return { success: false, error: 'Supabase not initialized' };
     
     // 1. Check if already processed (Idempotency)
@@ -463,11 +523,19 @@ async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_p
             // --- GOOGLE SHEETS LOGGING (SUCCESS) ---
             try {
                 let orderAmount = 0;
+                let refCode = "N/A";
+                let discCode = "N/A";
+                let coinsUsed = 0;
                 let courseNames = "Unknown Course";
                 
                 if (razorpay_order_id) {
-                    const { data: order } = await supabase.from('website_orders').select('total_amount').eq('order_id', razorpay_order_id).single();
-                    if (order) orderAmount = order.total_amount;
+                    const { data: order } = await supabase.from('website_orders').select('*').eq('order_id', razorpay_order_id).single();
+                    if (order) {
+                        orderAmount = order.total_amount;
+                        refCode = order.referral_code || "N/A";
+                        discCode = order.discount_code || "N/A";
+                        coinsUsed = order.coins_applied || 0;
+                    }
                 }
                 
                 if (courseIds && Array.isArray(courseIds) && courseIds.length > 0) {
@@ -484,7 +552,7 @@ async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_p
                 }
 
                 console.log('[DEBUG] Calling sendToGoogleSheet for successful enrollment...');
-                await sendToGoogleSheet({
+                sendToGoogleSheet({
                     name: profile?.name || "Student",
                     email,
                     phone: profile?.phone || "N/A",
@@ -492,8 +560,11 @@ async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_p
                     price: orderAmount,
                     status: 'SUCCESS',
                     payment_id: razorpay_payment_id,
-                    order_id: razorpay_order_id
-                });
+                    order_id: razorpay_order_id,
+                    referral_code: refCode,
+                    discount_code: discCode,
+                    coins_applied: coinsUsed
+                }).catch(err => console.error("Background Sheet Log Error:", err));
             } catch (sheetErr) {
                 console.error('Sheet Logging Error:', sheetErr);
             }
@@ -515,6 +586,98 @@ async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_p
                     order_id: razorpay_order_id 
                 }, { onConflict: 'code,user_email' });
             }
+
+            // --- REFERRAL REWARD PROCESSING ---
+            if (referralCode) {
+                try {
+                    const codeToCheck = referralCode.trim().toUpperCase();
+                    const { data: referrerProfile } = await supabase
+                        .from('referral_profiles')
+                        .select('*')
+                        .eq('referral_code', codeToCheck)
+                        .maybeSingle();
+
+                    if (referrerProfile && referrerProfile.email.toLowerCase() !== email.toLowerCase()) {
+                        // Get order amount for calculation
+                        const { data: orderRow } = await supabase
+                            .from('website_orders')
+                            .select('total_amount')
+                            .eq('order_id', razorpay_order_id)
+                            .single();
+
+                        const finalPrice = orderRow?.total_amount || 0;
+                        const originalPrice = Math.ceil(finalPrice / 0.95); // reverse the 5% buyer discount
+                        const buyerDiscount = originalPrice - finalPrice;
+                        const referrerReward = Math.floor(finalPrice * 0.05);
+
+                        // Credit referrer wallet
+                        const newBalance = (referrerProfile.wallet_balance || 0) + referrerReward;
+                        const newLifetime = (referrerProfile.lifetime_referrals || 0) + 1;
+                        const newQuarterly = (referrerProfile.quarterly_referrals || 0) + 1;
+
+                        // Check milestone bonuses
+                        const { data: milestones } = await supabase
+                            .from('referral_milestones')
+                            .select('*')
+                            .order('referrals_required', { ascending: true });
+
+                        let milestoneBonus = 0;
+                        if (milestones) {
+                            for (const ms of milestones) {
+                                if (newQuarterly >= ms.referrals_required && (referrerProfile.quarterly_referrals || 0) < ms.referrals_required) {
+                                    milestoneBonus += ms.bonus_coins;
+                                }
+                            }
+                        }
+
+                        await supabase
+                            .from('referral_profiles')
+                            .update({
+                                wallet_balance: newBalance + milestoneBonus,
+                                lifetime_referrals: newLifetime,
+                                quarterly_referrals: newQuarterly,
+                            })
+                            .eq('id', referrerProfile.id);
+
+                        // Insert referral transaction
+                        await supabase.from('referral_transactions').insert({
+                            referrer_email: referrerProfile.email,
+                            buyer_email: email,
+                            referral_code: codeToCheck,
+                            order_id: razorpay_order_id,
+                            original_price: originalPrice,
+                            buyer_discount: buyerDiscount,
+                            final_price: finalPrice,
+                            referrer_reward: referrerReward + milestoneBonus,
+                            coins_used: coinsApplied || 0,
+                        });
+                    }
+                } catch (referralErr) {
+                    console.error('Referral processing error (non-fatal):', referralErr);
+                }
+            }
+
+            // --- DEDUCT BUYER COINS ---
+            if (coinsApplied && coinsApplied > 0) {
+                try {
+                    const { data: buyerRef } = await supabase
+                        .from('referral_profiles')
+                        .select('wallet_balance')
+                        .eq('email', email)
+                        .maybeSingle();
+
+                    if (buyerRef) {
+                        const newBal = Math.max((buyerRef.wallet_balance || 0) - coinsApplied, 0);
+                        await supabase
+                            .from('referral_profiles')
+                            .update({ wallet_balance: newBal })
+                            .eq('email', email);
+                    }
+                } catch (coinErr) {
+                    console.error('Coin deduction error (non-fatal):', coinErr);
+                }
+            }
+
             return { success: true };
         } else {
             const errorText = await lmsRes.text();
@@ -539,7 +702,7 @@ async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_p
 app.post('/api/verify-payment', async (req, res) => {
     if (!razorpay || !supabase) return res.status(500).json({ error: 'Server configuration error' });
 
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, email, courseIds, discountCode } = req.body;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, email, courseIds, discountCode, referralCode, coinsApplied } = req.body;
 
     const body = razorpay_order_id + "|" + razorpay_payment_id;
     const expectedSignature = crypto.createHmac('sha256', razorpaySecret).update(body.toString()).digest('hex');
@@ -570,7 +733,7 @@ app.post('/api/verify-payment', async (req, res) => {
             }
 
             console.log('[DEBUG] Calling sendToGoogleSheet for signature mismatch failure...');
-            await sendToGoogleSheet({
+            sendToGoogleSheet({
                 name: profile?.name || "Student",
                 email,
                 phone: profile?.phone || "N/A",
@@ -580,7 +743,7 @@ app.post('/api/verify-payment', async (req, res) => {
                 payment_id: null,
                 order_id: razorpay_order_id,
                 failure_source: 'BACKEND_VERIFICATION'
-            });
+            }).catch(err => console.error("Background Sheet Log Error:", err));
         } catch (sheetErr) { }
 
         return res.status(400).json({ error: 'Signature mismatch' });
@@ -592,7 +755,9 @@ app.post('/api/verify-payment', async (req, res) => {
             courseIds,
             razorpay_order_id,
             razorpay_payment_id,
-            discountCode
+            discountCode,
+            referralCode,
+            coinsApplied
         });
         
         if (result.success) {
@@ -633,17 +798,20 @@ app.post('/api/log-payment-failure', async (req, res) => {
         }
 
         console.log('[DEBUG] Calling sendToGoogleSheet for logged payment failure...');
-        await sendToGoogleSheet({
+        sendToGoogleSheet({
             name: profile?.name || "Student",
             email,
             phone: profile?.phone || "N/A",
             course_name: courseNames,
             price: orderAmount,
             status: 'FAILED',
-            payment_id: null,
+            payment_id: "failed_manual",
             order_id: order_id,
-            failure_source: failure_source || 'FRONTEND_RAZORPAY'
-        });
+            failure_source: failure_source || 'FRONTEND_RAZORPAY',
+            referral_code: "N/A",
+            discount_code: "N/A",
+            coins_applied: 0
+        }).catch(err => console.error("Background Sheet Log Error:", err));
         res.json({ ok: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -667,6 +835,11 @@ app.get('/api/manager-fetch', authMiddleware, async (req, res) => {
         }
         if (tab === 'payments') {
             const { data, error } = await supabase.from('website_orders').select('*').order('created_at', { ascending: false });
+            if (error) throw error;
+            return res.json(data);
+        }
+        if (tab === 'referrals') {
+            const { data, error } = await supabase.from('referral_transactions').select('*').order('created_at', { ascending: false });
             if (error) throw error;
             return res.json(data);
         }
@@ -720,6 +893,68 @@ app.post('/api/razorpay-webhook', async (req, res) => {
     }
 
     res.json({ status: 'ok' });
+});
+
+// ========== REFERRAL API ==========
+app.get('/api/referral', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not initialized' });
+    const { email } = req.query;
+    if (!email) return res.status(400).json({ error: 'Email is required' });
+
+    try {
+        const { data: profile } = await supabase
+            .from('referral_profiles')
+            .select('*')
+            .eq('email', email)
+            .maybeSingle();
+
+        if (profile) {
+            // Lazy quarterly reset
+            const quarterStart = new Date(profile.quarter_start_date);
+            const now = new Date();
+            const diffDays = (now.getTime() - quarterStart.getTime()) / (1000 * 60 * 60 * 24);
+
+            if (diffDays >= 90) {
+                const { data: updated } = await supabase
+                    .from('referral_profiles')
+                    .update({ quarterly_referrals: 0, quarter_start_date: now.toISOString() })
+                    .eq('id', profile.id)
+                    .select()
+                    .single();
+                return res.json(updated);
+            }
+
+            return res.json(profile);
+        }
+
+        // Profile doesn't exist yet — return null (Profile page will create it via frontend)
+        return res.json(null);
+    } catch (err) {
+        console.error('Referral API error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Validate referral code
+app.get('/api/referral/validate', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not initialized' });
+    const { code } = req.query;
+    if (!code) return res.status(400).json({ valid: false });
+
+    try {
+        const { data } = await supabase
+            .from('referral_profiles')
+            .select('email')
+            .eq('referral_code', String(code).trim().toUpperCase())
+            .maybeSingle();
+
+        if (data) {
+            return res.json({ valid: true, referrerEmail: data.email });
+        }
+        return res.json({ valid: false });
+    } catch (err) {
+        res.status(500).json({ valid: false });
+    }
 });
 
 // --- CATCH-ALL FOR FRONTEND ---

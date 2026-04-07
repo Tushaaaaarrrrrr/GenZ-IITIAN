@@ -51,9 +51,22 @@ export const apiService = {
         }
 
         if (tab === 'users') {
+          let emailsFromCode: string[] = [];
+          if (search) {
+            const { data: refMatches } = await supabase.from('referral_profiles').select('email').ilike('referral_code', `%${search}%`);
+            if (refMatches && refMatches.length > 0) {
+              emailsFromCode = refMatches.map((r: any) => r.email);
+            }
+          }
+
           let query = supabase.from('profiles').select('*').order('created_at', { ascending: false });
           if (search) {
-            query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%`);
+            if (emailsFromCode.length > 0) {
+              const emailsStr = emailsFromCode.map(e => `"${e}"`).join(',');
+              query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%,email.in.(${emailsStr})`);
+            } else {
+              query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%`);
+            }
           }
           const { data, error } = await query;
           if (error) throw error;
@@ -103,6 +116,16 @@ export const apiService = {
           return data || [];
         }
         
+        if (tab === 'referrals') {
+          let query = supabase.from('referral_transactions').select('*').order('created_at', { ascending: false });
+          if (search) {
+            query = query.or(`buyer_email.ilike.%${search}%,referrer_email.ilike.%${search}%,referral_code.ilike.%${search}%`);
+          }
+          const { data, error } = await query;
+          if (error) throw error;
+          return data || [];
+        }
+
         throw new Error('Invalid tab for managerFetch');
 
       } catch (err: any) {
@@ -154,7 +177,7 @@ export const apiService = {
   },
 
   // 4. Create Razorpay Order
-  createOrder: async (payload: { amount: number, email: string, courseIds: string[], discountCode?: string, bundleId?: string }) => {
+  createOrder: async (payload: { amount: number, email: string, courseIds: string[], discountCode?: string, bundleId?: string, referralCode?: string, coinsToApply?: number }) => {
     if (!isProduction) {
       const res = await fetch('/api/create-order', {
         method: 'POST',

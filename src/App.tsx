@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useSearchParams } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
+import { saveReferralCookie } from './lib/referral';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './pages/Home';
@@ -30,6 +31,18 @@ import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentFailed from './pages/PaymentFailed';
 import LoginModal from './components/LoginModal';
 
+// Captures ?ref=CODE from the URL and saves it to localStorage with 24h expiry
+function ReferralCapture() {
+  const [searchParams] = useSearchParams();
+  useEffect(() => {
+    const refCode = searchParams.get('ref');
+    if (refCode) {
+      saveReferralCookie(refCode);
+    }
+  }, [searchParams]);
+  return null;
+}
+
 export default function App() {
   useEffect(() => {
     // Fetch Global Settings for SEO
@@ -55,6 +68,7 @@ export default function App() {
       <CartProvider>
         <LoginModal />
         <Router>
+          <ReferralCapture />
           <div className="min-h-screen bg-white text-[#0b1120] font-sans selection:bg-blue-100 flex flex-col">
             <Navbar />
             <main className="flex-grow">

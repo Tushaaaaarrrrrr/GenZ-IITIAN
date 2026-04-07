@@ -112,6 +112,16 @@ export default async function handler(req: any, res: any) {
 
 
 
+    if (tab === 'referrals') {
+      let query = supabase.from('referral_transactions').select('*').order('created_at', { ascending: false });
+      if (search) {
+        query = query.or(`buyer_email.ilike.%${search}%,referrer_email.ilike.%${search}%,referral_code.ilike.%${search}%`);
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+      return res.status(200).json(data || []);
+    }
+
     return res.status(400).json({ error: 'Invalid tab' });
   } catch (err: any) {
     console.error(`Manager query catch error:`, err);

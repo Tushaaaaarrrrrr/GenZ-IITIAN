@@ -1,12 +1,12 @@
 import { useAuth } from '../context/AuthContext';
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { LayoutDashboard, ShoppingBag, ScrollText, BookOpen, Plus, Search, Trash2, Edit, Save, X, Loader2, AlertCircle, User, Download, TrendingUp, TrendingDown, Users, ShieldCheck, CreditCard, RefreshCw } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, ScrollText, BookOpen, Plus, Search, Trash2, Edit, Save, X, Loader2, AlertCircle, User, Download, TrendingUp, TrendingDown, Users, ShieldCheck, CreditCard, RefreshCw, Gift, ArrowRight, Copy, Coins, Eye } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate, useLocation, NavLink } from 'react-router-dom';
 import { apiService } from '../lib/api';
 
-type Tab = 'users' | 'courses' | 'discounts' | 'payments' | 'catalog';
+type Tab = 'users' | 'courses' | 'discounts' | 'payments' | 'catalog' | 'referrals';
 
 function sanitizeCourseId(value: string) {
   return value
@@ -26,7 +26,7 @@ export default function Manager() {
   const activeTab = (location.pathname.split('/').pop() || 'users') as Tab;
   
   // Validate tab - if path is just /manager, it's users. If invalid, could redirect.
-  const validTabs: Tab[] = ['users', 'courses', 'discounts', 'payments'];
+  const validTabs: Tab[] = ['users', 'courses', 'discounts', 'payments', 'referrals'];
   const effectiveTab = validTabs.includes(activeTab) ? activeTab : 'users';
   const [data, setData] = useState<any>([]);
   const [loading, setLoading] = useState(true);
@@ -47,6 +47,13 @@ export default function Manager() {
   const [catalogSearch, setCatalogSearch] = useState('');
   const [editingDiscount, setEditingDiscount] = useState<any>(null);
   const discountOptionMap = new Map(discountOptions.map(option => [option.id, option]));
+
+  // User Detail View state
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [selectedUserOrders, setSelectedUserOrders] = useState<any[]>([]);
+  const [selectedUserReferrals, setSelectedUserReferrals] = useState<any[]>([]);
+  const [selectedUserWallet, setSelectedUserWallet] = useState<any>(null);
+  const [isLoadingUserDetails, setIsLoadingUserDetails] = useState(false);
 
   useEffect(() => {
     if (editingCourse) {
@@ -183,6 +190,54 @@ export default function Manager() {
     link.href = URL.createObjectURL(blob);
     link.download = `payments_export_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
+  };
+
+  const exportReferrals = () => {
+    if (effectiveTab !== 'referrals' || !Array.isArray(data)) return;
+    
+    const headers = ['Order ID', 'Buyer Email', 'Referrer Code', 'Original Price', 'Buyer Discount', 'Final Paid', 'Referrer Reward', 'Date'];
+    const rows = data.map((tx: any) => [
+      tx.order_id || '',
+      tx.buyer_email || '',
+      tx.referral_code || '',
+      tx.original_price || 0,
+      tx.buyer_discount || 0,
+      tx.final_price || 0,
+      tx.referrer_reward || 0,
+      tx.created_at ? new Date(tx.created_at).toISOString() : ''
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(r => r.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `referrals_export_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
+
+  const fetchUserDetails = async (user: any) => {
+    setSelectedUser(user);
+    setIsLoadingUserDetails(true);
+    try {
+      const email = user.email;
+      const [ordersRes, referralsRes, walletRes] = await Promise.all([
+        supabase.from('website_orders').select('*').eq('user_email', email).order('created_at', { ascending: false }),
+        supabase.from('referral_transactions').select('*').eq('referrer_email', email).order('created_at', { ascending: false }),
+        supabase.from('referral_profiles').select('*').eq('email', email).maybeSingle()
+      ]);
+      
+      setSelectedUserOrders(ordersRes.data || []);
+      setSelectedUserReferrals(referralsRes.data || []);
+      setSelectedUserWallet(walletRes.data || null);
+    } catch (err) {
+      console.error("Failed to load user details", err);
+    } finally {
+      setIsLoadingUserDetails(false);
+    }
   };
 
   const exportCatalog = () => {
@@ -377,7 +432,8 @@ export default function Manager() {
             { id: 'users', icon: User, path: '/manager/users' },
             { id: 'courses', icon: BookOpen, path: '/manager/courses' },
             { id: 'discounts', icon: ShoppingBag, path: '/manager/discounts' },
-            { id: 'payments', icon: CreditCard, path: '/manager/payments' }
+            { id: 'payments', icon: CreditCard, path: '/manager/payments' },
+            { id: 'referrals', icon: Gift, path: '/manager/referrals' }
           ].map((tab) => (
             <NavLink
               key={tab.id}
@@ -476,9 +532,16 @@ export default function Manager() {
                     </thead>
                     <tbody className="divide-y-[3px] divide-gray-50 font-bold">
                       {data.map((user: any) => (
-                        <tr key={user.id} className="hover:bg-blue-50/50 transition-colors">
+                        <tr 
+                          key={user.id} 
+                          onClick={() => fetchUserDetails(user)}
+                          className="hover:bg-blue-50/50 transition-colors cursor-pointer group"
+                        >
                           <td className="px-8 py-6">
-                            <div className="text-lg font-black text-[#0b1120]">{user.name || 'N/A'}</div>
+                            <div className="flex items-center gap-3">
+                              <div className="text-lg font-black text-[#0b1120] group-hover:text-blue-600 transition-colors">{user.name || 'N/A'}</div>
+                              <ArrowRight className="w-4 h-4 text-transparent group-hover:text-blue-600 transition-colors" />
+                            </div>
                           </td>
                           <td className="px-8 py-6 text-gray-500">{user.email}</td>
                           <td className="px-8 py-6 text-gray-500 font-mono">{user.phone || 'N/A'}</td>
@@ -693,6 +756,60 @@ export default function Manager() {
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+
+              {effectiveTab === 'referrals' && (
+                <div className="space-y-6">
+                  <div className="flex justify-end">
+                    <button onClick={exportReferrals} className="flex items-center gap-2 px-6 py-3 bg-[#0b1120] text-white rounded-xl font-black text-sm hover:bg-gray-800 transition-colors shadow-[4px_4px_0px_#0b1120]">
+                      <Download className="w-4 h-4" /> Export CSV
+                    </button>
+                  </div>
+                  <div className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] overflow-hidden shadow-[12px_12px_0px_#0b1120]">
+                    <table className="w-full text-left">
+                      <thead className="bg-gray-50 border-b-[3px] border-gray-100 font-black text-sm uppercase text-gray-400">
+                        <tr>
+                          <th className="px-6 py-6">Buyer</th>
+                          <th className="px-6 py-6">Referrer Code</th>
+                          <th className="px-6 py-6">Original</th>
+                          <th className="px-6 py-6">Discount</th>
+                          <th className="px-6 py-6">Final Paid</th>
+                          <th className="px-6 py-6">Reward</th>
+                          <th className="px-6 py-6">Date</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y-[3px] divide-gray-50 font-bold">
+                        {data.map((tx: any) => (
+                          <tr key={tx.id} className="hover:bg-purple-50/50 transition-colors">
+                            <td className="px-6 py-5">
+                              <div className="text-sm font-black text-[#0b1120]">{tx.buyer_email}</div>
+                              <div className="text-[10px] text-gray-400 font-mono">{tx.order_id}</div>
+                            </td>
+                            <td className="px-6 py-5">
+                              <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-black border border-purple-200 tracking-widest">
+                                {tx.referral_code}
+                              </span>
+                            </td>
+                            <td className="px-6 py-5 font-black text-gray-500">₹{tx.original_price}</td>
+                            <td className="px-6 py-5 font-black text-green-600">-₹{tx.buyer_discount}</td>
+                            <td className="px-6 py-5 text-lg font-black text-[#0b1120]">₹{tx.final_price}</td>
+                            <td className="px-6 py-5">
+                              <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-lg text-sm font-black border border-amber-200">
+                                +{tx.referrer_reward} Coins
+                              </span>
+                            </td>
+                            <td className="px-6 py-5 text-sm text-gray-400">
+                              {tx.created_at ? new Date(tx.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}
+                            </td>
+                          </tr>
+                        ))}
+                        {data.length === 0 && (
+                          <tr><td colSpan={7} className="px-8 py-24 text-center text-gray-300 font-black text-2xl uppercase tracking-widest">No referral transactions yet</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
             </div>
@@ -1053,6 +1170,153 @@ export default function Manager() {
                   Abort
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* USER DETAILS MODAL */}
+      <AnimatePresence>
+        {selectedUser && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4 lg:p-8 overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] p-6 lg:p-10 w-full max-w-5xl shadow-[16px_16px_0px_#0b1120] my-auto"
+            >
+              <div className="flex justify-between items-start border-b-[3px] border-gray-100 pb-6 mb-8">
+                <div>
+                  <h3 className="text-3xl font-black text-[#0b1120] flex items-center gap-3">
+                    <User className="w-8 h-8 text-blue-500" />
+                    {selectedUser.name || 'Anonymous User'}
+                  </h3>
+                  <p className="text-gray-500 font-bold mt-2 flex items-center gap-4">
+                    <span>{selectedUser.email}</span>
+                    {selectedUser.phone && <span>• {selectedUser.phone}</span>}
+                  </p>
+                </div>
+                <button onClick={() => setSelectedUser(null)} className="w-12 h-12 rounded-full border-[3px] border-[#0b1120] flex items-center justify-center hover:bg-gray-100 transition-colors shadow-[4px_4px_0px_#0b1120]">
+                  <X className="w-6 h-6 text-[#0b1120]" />
+                </button>
+              </div>
+
+              {isLoadingUserDetails ? (
+                <div className="flex flex-col items-center justify-center py-24 text-gray-300 gap-4">
+                  <Loader2 className="w-12 h-12 animate-spin" />
+                  <span className="font-black text-xl uppercase tracking-widest">Loading User Data...</span>
+                </div>
+              ) : (
+                <div className="space-y-8">
+                  
+                  {/* Stats Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="p-6 bg-blue-50 rounded-[2rem] border-[3px] border-blue-200">
+                      <div className="text-xs font-black text-blue-400 uppercase tracking-widest mb-2">Total Orders</div>
+                      <div className="text-4xl font-black text-blue-600">{selectedUserOrders.length}</div>
+                      <div className="mt-2 text-sm font-bold text-blue-800">
+                        Total Spent: ₹{selectedUserOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0)}
+                      </div>
+                    </div>
+
+                    <div className="p-6 bg-purple-50 rounded-[2rem] border-[3px] border-purple-200">
+                      <div className="text-xs font-black text-purple-400 uppercase tracking-widest mb-2">Referrals Made</div>
+                      <div className="text-4xl font-black text-purple-600">{selectedUserReferrals.length}</div>
+                      {selectedUserWallet && (
+                        <div className="mt-2 text-sm font-bold text-purple-800 font-mono">
+                          Code: {selectedUserWallet.referral_code}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-6 bg-amber-50 rounded-[2rem] border-[3px] border-amber-200">
+                      <div className="text-xs font-black text-amber-400 uppercase tracking-widest mb-2">Coin Wallet</div>
+                      <div className="text-4xl font-black text-amber-600 flex items-center gap-2">
+                        {selectedUserWallet?.wallet_balance || 0} <Coins className="w-6 h-6 text-amber-500" />
+                      </div>
+                      <div className="mt-2 text-sm font-bold text-amber-800">
+                        Total Earned: {selectedUserReferrals.reduce((sum, r) => sum + (r.referrer_reward || 0), 0)}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Tables Grid */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Orders */}
+                    <div className="space-y-4">
+                      <h4 className="font-black text-xl flex items-center gap-2">
+                        <ShoppingBag className="w-5 h-5 text-gray-400" /> Order History
+                      </h4>
+                      <div className="bg-white border-[3px] border-gray-200 rounded-3xl overflow-hidden">
+                        <div className="max-h-80 overflow-y-auto">
+                          <table className="w-full text-left text-sm">
+                            <thead className="bg-gray-50 sticky top-0 font-black text-xs uppercase text-gray-400">
+                              <tr>
+                                <th className="p-4">Date</th>
+                                <th className="p-4">Amount</th>
+                                <th className="p-4">Status</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y-2 divide-gray-100 font-bold">
+                              {selectedUserOrders.length === 0 ? (
+                                <tr><td colSpan={3} className="p-8 text-center text-gray-400">No orders found.</td></tr>
+                              ) : (
+                                selectedUserOrders.map(order => (
+                                  <tr key={order.order_id}>
+                                    <td className="p-4 text-gray-500">{new Date(order.created_at).toLocaleDateString()}</td>
+                                    <td className="p-4 font-black">₹{order.total_amount}</td>
+                                    <td className="p-4">
+                                      <span className={`px-2 py-1 rounded-md text-[10px] uppercase font-black ${order.status === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                        {order.status}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                ))
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Referrals */}
+                    <div className="space-y-4">
+                      <h4 className="font-black text-xl flex items-center gap-2">
+                        <Gift className="w-5 h-5 text-purple-400" /> Referral Activity
+                      </h4>
+                      <div className="bg-white border-[3px] border-purple-200 rounded-3xl overflow-hidden">
+                        <div className="max-h-80 overflow-y-auto">
+                          <table className="w-full text-left text-sm">
+                            <thead className="bg-purple-50 sticky top-0 font-black text-xs uppercase text-purple-400">
+                              <tr>
+                                <th className="p-4">Referred User</th>
+                                <th className="p-4">Date</th>
+                                <th className="p-4">Reward</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y-2 divide-purple-50 font-bold">
+                              {selectedUserReferrals.length === 0 ? (
+                                <tr><td colSpan={3} className="p-8 text-center text-purple-300">No referrals yet.</td></tr>
+                              ) : (
+                                selectedUserReferrals.map(ref => (
+                                  <tr key={ref.id}>
+                                    <td className="p-4 text-gray-600 truncate max-w-[150px]" title={ref.buyer_email}>
+                                      {ref.buyer_email}
+                                    </td>
+                                    <td className="p-4 text-gray-500">{new Date(ref.created_at).toLocaleDateString()}</td>
+                                    <td className="p-4 font-black text-amber-500">+{ref.referrer_reward}</td>
+                                  </tr>
+                                ))
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              )}
             </motion.div>
           </div>
         )}
