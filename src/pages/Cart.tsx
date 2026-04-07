@@ -152,6 +152,9 @@ export default function Cart() {
       // 2. Try as Referral Code
       const result = await validateReferralCode(code);
       if (result.valid) {
+        if (total < 200) {
+          throw new Error('Cart total must be at least ₹200 to use a referral code.');
+        }
         if (result.referrerEmail?.toLowerCase() === user.email?.toLowerCase()) {
           throw new Error('You cannot use your own referral code.');
         }

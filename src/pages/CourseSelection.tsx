@@ -3,8 +3,9 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../lib/supabase';
 import { apiService } from '../lib/api';
+import { validateReferralCode, getReferralProfile } from '../lib/referral';
 import { useAuth } from '../context/AuthContext';
-import { Check, Loader2, ShieldCheck, AlertCircle, User, UserCheck, CreditCard, ArrowRight, BookOpen, Copy, CheckCheck } from 'lucide-react';
+import { Check, Loader2, ShieldCheck, AlertCircle, User, UserCheck, CreditCard, ArrowRight, BookOpen, Copy, CheckCheck, Coins } from 'lucide-react';
 
 const RAZORPAY_SCRIPT_URL = "https://checkout.razorpay.com/v1/checkout.js";
 
@@ -34,9 +35,14 @@ export default function CourseSelection() {
   const [discountCodeInput, setDiscountCodeInput] = useState('');
   const [appliedDiscountCode, setAppliedDiscountCode] = useState<string | null>(null);
   const [discountAmount, setDiscountAmount] = useState(0);
+  const [appliedReferralCode, setAppliedReferralCode] = useState<string | null>(null);
+  const [referralDiscount, setReferralDiscount] = useState(0);
   const [discountError, setDiscountError] = useState('');
   const [isApplyingDiscount, setIsApplyingDiscount] = useState(false);
   const [paymentError, setPaymentError] = useState('');
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [coinsApplied, setCoinsApplied] = useState(0);
+  const [coinsToApply, setCoinsToApply] = useState(0);
 
   // 🔄 Auto-recovery for mobile users:
   // If the page reloads after a mobile redirect payment, check if any order was successfully PAID
@@ -77,6 +83,25 @@ export default function CourseSelection() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const courseLookupId = searchParams.get('courseId') || id;
+
+  // Fetch wallet balance
+  useEffect(() => {
+    if (user) {
+      fetchWalletBalance();
+    }
+  }, [user]);
+
+  const fetchWalletBalance = async () => {
+    if (!user) return;
+    try {
+      const refProfile = await getReferralProfile(user.id, user.email || '');
+      if (refProfile) {
+        setWalletBalance(refProfile.wallet_balance || 0);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   // Profile Form State
   const [profileData, setProfileData] = useState({
@@ -237,52 +262,77 @@ export default function CourseSelection() {
         .from('discount_coupons')
         .select('*')
         .eq('code', codeToApply)
-        .single();
-      
-      if (error || !coupon) throw new Error('Invalid or expired discount code.');
-
-      // 2. Check if user already used it
-      const { data: usage } = await supabase
-        .from('coupon_uses')
-        .select('*')
-        .eq('code', coupon.code)
-        .eq('user_email', user.email)
         .maybeSingle();
       
-      if (usage) throw new Error('You have already used this discount code.');
+      if (coupon) {
+          // 2. Check if user already used it
+          const { data: usage } = await supabase
+            .from('coupon_uses')
+            .select('*')
+            .eq('code', coupon.code)
+            .eq('user_email', user.email)
+            .maybeSingle();
+          
+          if (usage) throw new Error('You have already used this discount code.');
 
-      // 3. Check if applies to these courses
-      if (coupon.applies_to !== 'ALL') {
-        const targetId = coupon.applies_to.trim().toLowerCase();
-        const targetsSelectedCourse = selectedCourses.some(id => id.trim().toLowerCase() === targetId);
-        const targetsCurrentBundle = course?.isBundle && (course.id || "").trim().toLowerCase() === targetId;
+          // 3. Check if applies to these courses
+          if (coupon.applies_to !== 'ALL') {
+            const targetId = coupon.applies_to.trim().toLowerCase();
+            const targetsSelectedCourse = selectedCourses.some(id => id.trim().toLowerCase() === targetId);
+            const targetsCurrentBundle = course?.isBundle && (course.id || "").trim().toLowerCase() === targetId;
 
-        if (!targetsSelectedCourse && !targetsCurrentBundle) {
-          throw new Error(`This code doesn't apply to the selected courses.`);
-        }
+            if (!targetsSelectedCourse && !targetsCurrentBundle) {
+              throw new Error(`This code doesn't apply to the selected courses.`);
+            }
+          }
+
+          const total = calculateTotal();
+
+          // 4. Calculate discount
+          let calculatedDiscount = 0;
+          if (coupon.discount_percentage) {
+            calculatedDiscount = Math.floor(total * (coupon.discount_percentage / 100));
+          } else if (coupon.discount_amount) {
+            calculatedDiscount = coupon.discount_amount;
+          }
+
+          if (calculatedDiscount > total) calculatedDiscount = total;
+
+          setDiscountAmount(calculatedDiscount);
+          setAppliedDiscountCode(coupon.code);
+          setDiscountCodeInput('');
+          setShowSuccessModal(true);
+          setTimeout(() => setShowSuccessModal(false), 3500);
+          return;
       }
 
-      const total = calculateTotal();
+      // Try as Referral Code
+      const result = await validateReferralCode(codeToApply);
+      if (result.valid) {
+          const total = calculateTotal();
+          if (total < 200) {
+              throw new Error('Course total must be at least ₹200 to use a referral code.');
+          }
+          if (result.referrerEmail?.toLowerCase() === user.email?.toLowerCase()) {
+              throw new Error('You cannot use your own referral code.');
+          }
 
-      // 4. Calculate discount
-      let calculatedDiscount = 0;
-      if (coupon.discount_percentage) {
-        calculatedDiscount = Math.floor(total * (coupon.discount_percentage / 100));
-      } else if (coupon.discount_amount) {
-        calculatedDiscount = coupon.discount_amount;
+          const refDisc = Math.floor(total * 0.05); // 5% off
+          setReferralDiscount(refDisc);
+          setAppliedReferralCode(codeToApply);
+          setDiscountCodeInput('');
+          setShowSuccessModal(true);
+          setTimeout(() => setShowSuccessModal(false), 3500);
+          return;
       }
 
-      if (calculatedDiscount > total) calculatedDiscount = total;
-
-      setDiscountAmount(calculatedDiscount);
-      setAppliedDiscountCode(coupon.code);
-      setDiscountCodeInput('');
-      setShowSuccessModal(true);
-      setTimeout(() => setShowSuccessModal(false), 3500);
+      throw new Error('Invalid discount or referral code.');
     } catch (err: any) {
       setDiscountError(err.message);
       setDiscountAmount(0);
       setAppliedDiscountCode(null);
+      setReferralDiscount(0);
+      setAppliedReferralCode(null);
     } finally {
       setIsApplyingDiscount(false);
     }
@@ -291,7 +341,24 @@ export default function CourseSelection() {
   const removeDiscount = () => {
     setAppliedDiscountCode(null);
     setDiscountAmount(0);
+    setAppliedReferralCode(null);
+    setReferralDiscount(0);
     setDiscountError('');
+  };
+
+  // ---- COINS ----
+  const MAX_COINS_PER_ORDER = 50;
+  const handleApplyCoins = () => {
+    const total = calculateTotal();
+    const afterDiscounts = Math.max(total - discountAmount - referralDiscount, 0);
+    const maxCoins = Math.min(MAX_COINS_PER_ORDER, walletBalance, afterDiscounts - 1); // max 50, actual balance, keep cart ≥ ₹1
+    const applied = Math.min(Math.max(coinsToApply, 0), Math.max(maxCoins, 0));
+    setCoinsApplied(applied);
+  };
+
+  const removeCoins = () => {
+    setCoinsApplied(0);
+    setCoinsToApply(0);
   };
 
   // Re-calculate discount if course selection changes
@@ -336,11 +403,13 @@ export default function CourseSelection() {
 
     try {
       const orderData = await apiService.createOrder({
-        amount: Math.max(total - discountAmount, 0),
+        amount: Math.max(total - discountAmount - referralDiscount - coinsApplied, 1),
         email: user?.email || '',
         courseIds: selectedCourses,
         bundleId: course?.isBundle ? course.id : undefined,
         discountCode: appliedDiscountCode || undefined,
+        referralCode: appliedReferralCode || undefined,
+        coinsToApply: coinsApplied,
       });
       if (!orderData.id) throw new Error("Order creation failed");
 
@@ -375,6 +444,8 @@ export default function CourseSelection() {
               email: user?.email,
               courseIds: selectedCourses,
               discountCode: appliedDiscountCode || undefined,
+              referralCode: appliedReferralCode || undefined,
+              coinsToApply: coinsApplied,
             });
 
             const courseTitle = course.isBundle 
@@ -386,7 +457,7 @@ export default function CourseSelection() {
                 courseTitle,
                 orderDetails: {
                   order_id: orderData.id,
-                  total_amount: orderData._serverTotal || Math.max(total - discountAmount, 0),
+                  total_amount: orderData._serverTotal || Math.max(total - discountAmount - referralDiscount - coinsApplied, 1),
                   created_at: new Date().toISOString(),
                   status: 'PAID',
                   course_ids: selectedCourses
@@ -768,12 +839,12 @@ export default function CourseSelection() {
 
                         {/* Discount Applier */}
                         <div className="py-2 border-t border-b border-gray-100 my-4">
-                          {!appliedDiscountCode ? (
+                          {!appliedDiscountCode && !appliedReferralCode ? (
                             <div className="space-y-2">
                               <div className="flex gap-2">
                                 <input 
                                   type="text" 
-                                  placeholder="Discount Code" 
+                                  placeholder="Discount or Referral Code" 
                                   value={discountCodeInput}
                                   onChange={(e) => setDiscountCodeInput(e.target.value.toUpperCase())}
                                   className="flex-grow px-3 py-2 bg-gray-50 border-[2px] border-gray-200 rounded-lg font-black text-sm outline-none focus:border-[#10b981] uppercase placeholder:normal-case"
@@ -792,7 +863,7 @@ export default function CourseSelection() {
                             <div className="p-3 bg-green-50 border-2 border-green-200 rounded-lg flex items-center justify-between">
                               <div>
                                 <div className="text-[10px] font-black text-green-600 uppercase">Discount Applied!</div>
-                                <div className="text-sm font-black text-[#0b1120] font-mono tracking-widest">{appliedDiscountCode}</div>
+                                <div className="text-sm font-black text-[#0b1120] font-mono tracking-widest">{appliedDiscountCode || appliedReferralCode}</div>
                               </div>
                               <button onClick={removeDiscount} className="text-[10px] font-black text-red-500 hover:underline uppercase">Remove</button>
                             </div>
@@ -800,15 +871,63 @@ export default function CourseSelection() {
                         </div>
 
                         {paymentError && (
-                          <div className="p-3 bg-red-50 border-2 border-red-200 rounded-lg">
+                          <div className="p-3 bg-red-50 border-2 border-red-200 rounded-lg my-4">
                             <p className="text-red-600 font-bold text-[10px] uppercase leading-relaxed">{paymentError}</p>
                           </div>
                         )}
 
-                        {appliedDiscountCode && (
+                        {/* ---- WALLET / COINS ---- */}
+                        {user && walletBalance > 0 && (
+                          <div className="py-2 border-b border-gray-100 mb-4">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Coins className="w-4 h-4 text-amber-500" />
+                              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Wallet: {walletBalance} Coins (₹{walletBalance})</span>
+                            </div>
+                            {coinsApplied === 0 ? (
+                              <div className="space-y-1">
+                                <div className="flex gap-2">
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    max={Math.min(MAX_COINS_PER_ORDER, walletBalance, Math.max(calculateTotal() - discountAmount - referralDiscount - 1, 0))}
+                                    placeholder={`Max ${Math.min(MAX_COINS_PER_ORDER, walletBalance, Math.max(calculateTotal() - discountAmount - referralDiscount - 1, 0))}`}
+                                    value={coinsToApply || ''}
+                                    onChange={(e) => setCoinsToApply(parseInt(e.target.value) || 0)}
+                                    className="flex-grow px-3 py-2 bg-amber-50 border-2 border-amber-200 rounded-lg font-black text-sm outline-none focus:border-amber-500"
+                                  />
+                                  <button
+                                    onClick={handleApplyCoins}
+                                    disabled={coinsToApply <= 0}
+                                    className="px-4 py-2 bg-amber-500 text-white rounded-lg font-black text-xs hover:bg-amber-600 transition-colors disabled:opacity-50"
+                                  >
+                                    USE
+                                  </button>
+                                </div>
+                                <p className="text-[10px] font-bold text-gray-400">Max 50 coins per order. 1 Coin = ₹1</p>
+                              </div>
+                            ) : (
+                              <div className="p-3 bg-amber-50 border-2 border-amber-200 rounded-lg flex items-center justify-between">
+                                <div>
+                                  <div className="text-[10px] font-black text-amber-600 uppercase">Coins Applied!</div>
+                                  <div className="text-sm font-black text-[#0b1120]">{coinsApplied} Coins = ₹{coinsApplied} off</div>
+                                </div>
+                                <button onClick={removeCoins} className="text-[10px] font-black text-red-500 hover:underline uppercase">Remove</button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {(appliedDiscountCode || appliedReferralCode) && (
                           <div className="flex justify-between font-black text-[#0b1120] text-sm mb-2">
                             <span className="uppercase tracking-tight text-gray-400 text-[11px]">Applied Discount</span>
-                            <span className="text-green-600">-₹{discountAmount}</span>
+                            <span className="text-green-600">-₹{discountAmount + referralDiscount}</span>
+                          </div>
+                        )}
+                        
+                        {coinsApplied > 0 && (
+                          <div className="flex justify-between font-black text-[#0b1120] text-sm mb-2">
+                            <span className="uppercase tracking-tight text-gray-400 text-[11px]">Coins Used</span>
+                            <span className="text-amber-500">-₹{coinsApplied}</span>
                           </div>
                         )}
 
@@ -816,7 +935,7 @@ export default function CourseSelection() {
                             <div>
                                 <div className="text-[11px] font-black uppercase text-gray-400 mb-0.5 tracking-widest">Grand Total</div>
                                 <div className="flex items-end gap-2">
-                                    <div className="text-2xl font-black text-[#0b1120]">₹{Math.max(calculateTotal() - discountAmount, 0)}</div>
+                                    <div className="text-2xl font-black text-[#0b1120]">₹{Math.max(calculateTotal() - discountAmount - referralDiscount - coinsApplied, 1)}</div>
                                 </div>
                             </div>
                         </div>
