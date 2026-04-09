@@ -65,14 +65,14 @@ export default function Navbar() {
         <div className="flex items-center gap-3">
           {user ? (
             <div className="flex items-center gap-3">
+              <Link 
+                to="/refer"
+                className="hidden sm:flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors border-2 border-transparent shadow-[4px_4px_0px_#0b1120]"
+              >
+                <Gift className="w-4 h-4" />
+                <span>Refer & Earn</span>
+              </Link>
               <div className="relative" ref={userMenuRef}>
-                <Link 
-                  to="/refer"
-                  className="hidden sm:flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors border-2 border-transparent shadow-[4px_4px_0px_#0b1120]"
-                >
-                  <Gift className="w-4 h-4" />
-                  <span>Refer & Earn</span>
-                </Link>
                 <button 
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                   className="flex items-center gap-2 px-4 py-2 bg-[#0b1120] text-white rounded-xl font-bold hover:bg-gray-800 transition-colors border-2 border-transparent"
