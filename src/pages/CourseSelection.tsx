@@ -140,15 +140,15 @@ export default function CourseSelection() {
       if (error) throw error;
       setCourse(data);
       
-      // Auto-select all if single course, or let user pick if bundle
-      if (!data.isBundle && data.bundleCourses?.length > 0) {
-          // Fallback if schema is inconsistent but bundleCourses exist
-          setSelectedCourses(data.bundleCourses.map((bc: any) => bc.courseId));
-      } else if (!data.isBundle) {
+      // Auto-select behavior:
+      if (!data.isBundle) {
           setSelectedCourses([data.id]);
-      } else {
-          // Pre-select all by default for bundles too, users can uncheck
+      } else if (data.isFixedBundle) {
+          // Mandatory selection for fixed bundles
           setSelectedCourses(data.bundleCourses?.map((bc: any) => bc.courseId) || []);
+      } else {
+          // Selectable bundles start empty per user request
+          setSelectedCourses([]);
       }
     } catch (err) {
       console.error(err);
@@ -225,9 +225,16 @@ export default function CourseSelection() {
     if (!course) return 0;
     if (!course.isBundle) return course.discountPrice || course.price;
     
+    // Manual-Only Logic: Always return the raw sum of selected items.
+    // Price only drops if a user enters and applies a coupon code.
     return course.bundleCourses
       .filter((bc: SubCourse) => selectedCourses.includes(bc.courseId))
       .reduce((sum: number, bc: SubCourse) => sum + bc.price, 0);
+  };
+
+  const getSavings = () => {
+     // Manual-Only Logic: Savings are purely from applied discount modifiers
+     return (discountAmount || 0) + (referralDiscount || 0);
   };
 
   const applyDiscount = async () => {
@@ -245,12 +252,21 @@ export default function CourseSelection() {
       if (course?.isBundle && course.bundleDiscountCode && codeToApply === course.bundleDiscountCode.toUpperCase()) {
           if (!isAllBundleSelected) throw new Error('Please select ALL bundle courses to use this code.');
           
-          const total = calculateTotal();
-          const bundlePrice = course.bundleDiscountPrice || total;
-          const calculatedDiscount = Math.max(total - bundlePrice, 0);
+          // Re-calculate raw sum (without any automatic bundle price)
+          const rawTotal = course.bundleCourses
+            .filter((bc: SubCourse) => selectedCourses.includes(bc.courseId))
+            .reduce((sum: number, bc: SubCourse) => sum + bc.price, 0);
+            
+          const bundlePrice = course.bundleDiscountPrice || rawTotal;
+          const calculatedDiscount = Math.max(rawTotal - bundlePrice, 0);
           
           setDiscountAmount(calculatedDiscount);
           setAppliedDiscountCode(codeToApply);
+          
+          // SINGLE DISCOUNT ENFORCEMENT: Clear referral if a manual coupon/bundle code is applied
+          setReferralDiscount(0);
+          setAppliedReferralCode(null);
+
           setDiscountCodeInput('');
           setShowSuccessModal(true);
           setTimeout(() => setShowSuccessModal(false), 3500);
@@ -300,6 +316,11 @@ export default function CourseSelection() {
 
           setDiscountAmount(calculatedDiscount);
           setAppliedDiscountCode(coupon.code);
+
+          // SINGLE DISCOUNT ENFORCEMENT: Clear referral if a manual coupon is applied
+          setReferralDiscount(0);
+          setAppliedReferralCode(null);
+
           setDiscountCodeInput('');
           setShowSuccessModal(true);
           setTimeout(() => setShowSuccessModal(false), 3500);
@@ -320,6 +341,11 @@ export default function CourseSelection() {
           const refDisc = Math.floor(total * 0.05); // 5% off
           setReferralDiscount(refDisc);
           setAppliedReferralCode(codeToApply);
+
+          // SINGLE DISCOUNT ENFORCEMENT: Clear manual coupon/bundle discount if referral is applied
+          setDiscountAmount(0);
+          setAppliedDiscountCode(null);
+
           setDiscountCodeInput('');
           setShowSuccessModal(true);
           setTimeout(() => setShowSuccessModal(false), 3500);
@@ -782,9 +808,9 @@ export default function CourseSelection() {
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
                 <div className="lg:col-span-7 space-y-6">
                   <div className="bg-white border-[3px] border-[#0b1120] rounded-2xl p-5 shadow-[8px_8px_0px_#0b1120]">
-                      <h2 className="text-xl font-black text-[#0b1120] mb-4">{!course.isBundle || !hasBundleDiscount || course.isFixedBundle ? 'Course Package' : 'Select Your Courses'}</h2>
+                      <h2 className="text-xl font-black text-[#0b1120] mb-4">{!course.isBundle || course.isFixedBundle ? 'Course Package' : 'Select Your Courses'}</h2>
                     
-                    {!course.isBundle || !hasBundleDiscount || course.isFixedBundle ? (
+                    {!course.isBundle || course.isFixedBundle ? (
                         <div className="p-3.5 bg-blue-50 border-[2px] border-[#0b1120] rounded-xl flex items-center justify-between">
                             <div className="flex items-center gap-2.5">
                                 <div className="w-9 h-9 bg-[#0b1120] rounded-full flex items-center justify-center text-white">
@@ -813,6 +839,40 @@ export default function CourseSelection() {
                                     <span className="font-black text-base text-[#0b1120]">₹{bc.price}</span>
                                 </button>
                             ))}
+
+                            {/* Bundle Eligibility Feedback */}
+                            {isAllBundleSelected && course.bundleDiscountCode && !appliedDiscountCode && (
+                              <motion.div 
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="p-3 bg-purple-50 border-2 border-purple-200 rounded-xl flex items-center gap-3"
+                              >
+                                <div className="w-8 h-8 bg-purple-500 rounded-lg border-2 border-[#0b1120] flex items-center justify-center text-white font-black text-xs">
+                                  !
+                                </div>
+                                <div>
+                                  <div className="text-[11px] font-black text-[#0b1120] uppercase leading-tight">Bundle Code Ready!</div>
+                                  <div className="text-[9px] font-bold text-purple-600 uppercase">Apply <span className="text-purple-800 underline">{course.bundleDiscountCode}</span> to unlock the bundle price</div>
+                                </div>
+                              </motion.div>
+                            )}
+
+                            {/* Applied Discount Feedback */}
+                            {appliedDiscountCode && (
+                              <motion.div 
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="p-3 bg-green-50 border-2 border-[#10b981] rounded-xl flex items-center gap-3"
+                              >
+                                <div className="w-8 h-8 bg-[#10b981] rounded-lg border-2 border-[#0b1120] flex items-center justify-center text-white">
+                                  <Check className="w-4 h-4" />
+                                </div>
+                                <div>
+                                  <div className="text-[11px] font-black text-[#0b1120] uppercase leading-tight">Discount Applied: {appliedDiscountCode}</div>
+                                  <div className="text-[9px] font-bold text-green-600 uppercase">You saved ₹{discountAmount}</div>
+                                </div>
+                              </motion.div>
+                            )}
                         </div>
                     )}
                 </div>
@@ -935,7 +995,37 @@ export default function CourseSelection() {
                             <div>
                                 <div className="text-[11px] font-black uppercase text-gray-400 mb-0.5 tracking-widest">Grand Total</div>
                                 <div className="flex items-end gap-2">
-                                    <div className="text-2xl font-black text-[#0b1120]">₹{Math.max(calculateTotal() - discountAmount - referralDiscount - coinsApplied, 1)}</div>
+                                    <div className="text-2xl font-black text-[#0b1120]">
+                                      ₹{Math.max(
+                                        (() => {
+                                          const rawTotal = course?.isBundle 
+                                            ? course.bundleCourses
+                                                .filter((bc: SubCourse) => selectedCourses.includes(bc.courseId))
+                                                .reduce((sum: number, bc: SubCourse) => sum + bc.price, 0)
+                                            : (course?.price || 0);
+                                          
+                                          // Bundle Discount (if all selected)
+                                          const bundleSavings = getSavings();
+                                          
+                                          // Manual Coupon Savings
+                                          const couponSavings = discountAmount;
+                                          
+                                          // Referral Savings
+                                          const refSavings = referralDiscount;
+                                          
+                                          // Manual-Only Logic: Grand Total = Raw Sum - Applied Modifiers
+                                          const rawTotal = 
+                                            course?.isBundle 
+                                            ? course.bundleCourses
+                                                .filter((bc: SubCourse) => selectedCourses.includes(bc.courseId))
+                                                .reduce((sum: number, bc: SubCourse) => sum + bc.price, 0)
+                                            : (course?.price || 0);
+                                          
+                                          return rawTotal - (discountAmount || 0) - (referralDiscount || 0) - (coinsApplied || 0);
+                                        })(), 
+                                        1
+                                      )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -944,9 +1034,11 @@ export default function CourseSelection() {
                     <button
                         onClick={handlePayment}
                         disabled={isProcessing || selectedCourses.length === 0}
-                        className="w-full py-3.5 bg-[#10b981] text-[#0b1120] rounded-xl font-black text-lg border-[3px] border-[#0b1120] shadow-[5px_5px_0px_#0b1120] hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center gap-2.5 disabled:opacity-50"
+                        className="w-full py-3.5 bg-[#10b981] text-[#0b1120] rounded-xl font-black text-lg border-[3px] border-[#0b1120] shadow-[5px_5px_0px_#0b1120] hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:grayscale"
                     >
-                        {isProcessing ? <Loader2 className="animate-spin w-5 h-5" /> : <>Enroll Now <ArrowRight className="w-5 h-5" /></>}
+                        {isProcessing ? <Loader2 className="animate-spin w-5 h-5" /> : (
+                          selectedCourses.length === 0 ? "Select a Course" : <>Enroll Now <ArrowRight className="w-5 h-5" /></>
+                        )}
                     </button>
 
                     <p className="mt-6 text-center text-[8px] font-black text-gray-400 uppercase tracking-widest leading-relaxed">

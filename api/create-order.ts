@@ -60,36 +60,82 @@ export default async function handler(req: any, res: any) {
       }
 
       const validBundleCourseIds = bundleSubCourses.map((bc: any) => bc.courseId);
+      
+      // Fixed bundle enforcement
+      if (bundle.isFixedBundle) {
+        const allBundleCoursesSelected = validBundleCourseIds.every((id: string) => courseIds.includes(id));
+        if (!allBundleCoursesSelected || courseIds.length !== validBundleCourseIds.length) {
+            return res.status(400).json({ error: 'This is a fixed bundle. You must purchase all courses.' });
+        }
+      }
+
       const invalidSelections = courseIds.filter((courseId: string) => !validBundleCourseIds.includes(courseId));
       if (invalidSelections.length > 0) {
         return res.status(400).json({ error: 'Some course IDs do not belong to this bundle' });
       }
 
-      if (
-        discountCode &&
-        bundle.bundleDiscountCode &&
-        discountCode.trim().toUpperCase() === String(bundle.bundleDiscountCode).trim().toUpperCase()
-      ) {
-        const allBundleCoursesSelected = validBundleCourseIds.every((courseId: string) => courseIds.includes(courseId));
-        if (!allBundleCoursesSelected) {
-          return res.status(400).json({ error: 'Bundle discount requires all courses to be selected' });
-        }
-
-        isBundleDiscountUsed = true;
-        totalAmount = Number(bundle.bundleDiscountPrice || 0);
-        discountApplied = true;
-      }
-
-      if (!isBundleDiscountUsed) {
-        totalAmount = bundleSubCourses
-          .filter((bc: any) => courseIds.includes(bc.courseId))
-          .reduce((sum: number, bc: any) => sum + Number(bc.price || 0), 0);
-      }
-
+      // 1. Calculate Raw Subtotal
       totalOriginalPrice = bundleSubCourses
         .filter((bc: any) => courseIds.includes(bc.courseId))
         .reduce((sum: number, bc: any) => sum + Number(bc.price || 0), 0);
+
+      totalAmount = totalOriginalPrice;
+
+      // 2. Process Discount Code strictly if provided
+      let couponSavings = 0;
+      let refSavings = 0;
+
+      if (discountCode) {
+        const codeToApply = String(discountCode).trim().toUpperCase();
+        const isAllSelected = validBundleCourseIds.every((id: string) => courseIds.includes(id));
+        
+        // Handle bundle-specific discount code
+        if (bundle.bundleDiscountCode && codeToApply === String(bundle.bundleDiscountCode).trim().toUpperCase()) {
+            if (isAllSelected) {
+               const bPrice = bundle.bundleDiscountPrice || totalOriginalPrice;
+               couponSavings = Math.max(totalOriginalPrice - bPrice, 0);
+            } else {
+               return res.status(400).json({ error: 'This code requires all courses in the bundle to be selected.' });
+            }
+        } else {
+            // Check global coupons
+            const { data: coupon } = await supabase.from('discount_coupons').select('*').eq('code', codeToApply).maybeSingle();
+            if (coupon) {
+                // Usage check
+                const { data: usage } = await supabase.from('coupon_uses').select('*').eq('code', codeToApply).eq('user_email', email).maybeSingle();
+                if (!usage) {
+                    if (coupon.applies_to === 'ALL' || coupon.applies_to.trim().toLowerCase() === bundleId.trim().toLowerCase()) {
+                        couponSavings = coupon.discount_percentage
+                            ? Math.floor(totalAmount * (coupon.discount_percentage / 100))
+                            : (coupon.discount_amount || 0);
+                    }
+                }
+            }
+        }
+      }
+
+      if (referralCode) {
+        const rProfile = await supabase.from('referral_profiles').select('email').eq('referral_code', referralCode.toUpperCase()).maybeSingle();
+        if (rProfile.data && rProfile.data.email.toLowerCase() !== email.toLowerCase()) {
+            refSavings = Math.floor(totalAmount * 0.05);
+            referrerEmail = rProfile.data.email;
+        }
+      }
+
+      // 3. APPLY DISCOUNTS (SINGLE DISCOUNT ENFORCEMENT)
+      // Mirroring frontend: Priority is given to the discountCode if provided.
+      let finalDiscount = 0;
+      if (discountCode) {
+        finalDiscount = couponSavings;
+      } else {
+        finalDiscount = refSavings;
+      }
+
+      totalAmount = Math.max(totalOriginalPrice - finalDiscount, 0);
+      discountApplied = finalDiscount > 0;
+
     } else {
+      // Logic for single course purchases remains mostly same
       const { data: courses, error: coursesError } = await supabase
         .from('courses')
         .select('id, price, discountPrice')
@@ -99,15 +145,33 @@ export default async function handler(req: any, res: any) {
         return res.status(400).json({ error: 'Invalid course IDs' });
       }
 
+      totalOriginalPrice = courses.reduce((sum: number, course: any) => sum + Number(course.price || 0), 0);
       totalAmount = courses.reduce((sum: number, course: any) => {
-        const effectivePrice =
-          course.discountPrice && Number(course.discountPrice) > 0
-            ? Number(course.discountPrice)
-            : Number(course.price || 0);
+        const effectivePrice = course.discountPrice && Number(course.discountPrice) > 0 ? Number(course.discountPrice) : Number(course.price || 0);
         return sum + effectivePrice;
       }, 0);
 
-      totalOriginalPrice = courses.reduce((sum: number, course: any) => sum + Number(course.price || 0), 0);
+      // Handle Coupons/Referrals for standalone courses (SINGLE DISCOUNT ENFORCEMENT)
+      if (discountCode) {
+        const codeToApply = String(discountCode).trim().toUpperCase();
+        const { data: coupon } = await supabase.from('discount_coupons').select('*').eq('code', codeToApply).maybeSingle();
+        if (coupon) {
+             const { data: usage } = await supabase.from('coupon_uses').select('*').eq('code', codeToApply).eq('user_email', email).maybeSingle();
+             if (!usage && (coupon.applies_to === 'ALL' || courseIds.includes(coupon.applies_to))) {
+                 const dVal = coupon.discount_percentage ? Math.floor(totalAmount * (coupon.discount_percentage / 100)) : (coupon.discount_amount || 0);
+                 totalAmount = Math.max(totalAmount - dVal, 0);
+                 discountApplied = true;
+             }
+        }
+      } else if (referralCode) {
+         const res = await supabase.from('referral_profiles').select('email').eq('referral_code', referralCode.toUpperCase()).maybeSingle();
+         if (res.data && res.data.email.toLowerCase() !== email.toLowerCase()) {
+             const rD = Math.floor(totalAmount * 0.05);
+             totalAmount = Math.max(totalAmount - rD, 0);
+             referrerEmail = res.data.email;
+             discountApplied = true;
+         }
+      }
     }
 
     if (discountCode && !isBundleDiscountUsed) {
@@ -186,7 +250,7 @@ export default async function handler(req: any, res: any) {
 
       if (buyerReferral) {
         // Server-side enforcement: cap at 50 coins, actual balance, and keep cart ≥ ₹1
-        const maxCoins = Math.min(MAX_COINS_PER_ORDER, buyerReferral.wallet_balance, totalAmount - 1);
+        const maxCoins = Math.min(MAX_COINS_PER_ORDER, buyerReferral.wallet_balance || 0, totalAmount - 1);
         coinsApplied = Math.min(coinsToApply, Math.max(maxCoins, 0));
         if (coinsApplied > 0) {
           totalAmount = totalAmount - coinsApplied;

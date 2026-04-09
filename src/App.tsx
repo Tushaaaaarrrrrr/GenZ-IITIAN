@@ -22,6 +22,7 @@ import DocsDetail from './pages/DocsDetail';
 import GradedAssignment from './pages/GradedAssignment';
 import Cart from './pages/Cart';
 import Profile from './pages/Profile';
+import Referral from './pages/Referral';
 import CourseSelection from './pages/CourseSelection';
 import Manager from './pages/Manager';
 import TermsAndConditions from './pages/TermsAndConditions';
@@ -90,6 +91,7 @@ export default function App() {
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/checkout/:id" element={<CourseSelection />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/refer" element={<Referral />} />
                 <Route path="/manager/*" element={<Manager />} />
                 <Route path="/terms" element={<TermsAndConditions />} />
                 <Route path="/privacy" element={<PrivacyPolicy />} />

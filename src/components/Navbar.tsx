@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
-import { Package, PenLine, BookOpen, ShoppingCart, User as UserIcon, LogOut, LayoutDashboard } from 'lucide-react';
+import { Package, PenLine, BookOpen, ShoppingCart, User as UserIcon, LogOut, LayoutDashboard, Gift } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 
@@ -65,14 +65,14 @@ export default function Navbar() {
         <div className="flex items-center gap-3">
           {user ? (
             <div className="flex items-center gap-3">
-              <button 
-                onClick={() => window.open('https://class.genziitian.in', '_blank', 'noopener,noreferrer')}
-                className="hidden lg:flex items-center gap-2 px-4 py-2 bg-blue-600 text-white border-2 border-[#0b1120] rounded-xl font-bold hover:-translate-y-0.5 transition-all shadow-[3px_3px_0px_#0b1120] hover:shadow-none"
-              >
-                <LayoutDashboard className="w-4 h-4" />
-                <span>Dashboard</span>
-              </button>
               <div className="relative" ref={userMenuRef}>
+                <Link 
+                  to="/refer"
+                  className="hidden sm:flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors border-2 border-transparent shadow-[4px_4px_0px_#0b1120]"
+                >
+                  <Gift className="w-4 h-4" />
+                  <span>Refer & Earn</span>
+                </Link>
                 <button 
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                   className="flex items-center gap-2 px-4 py-2 bg-[#0b1120] text-white rounded-xl font-bold hover:bg-gray-800 transition-colors border-2 border-transparent"
@@ -87,20 +87,20 @@ export default function Navbar() {
                     <Link to="/profile" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">
                       <UserIcon className="w-4 h-4" /> My Profile
                     </Link>
-                    <button 
-                      onClick={() => {
-                        window.open('https://class.genziitian.in', '_blank', 'noopener,noreferrer');
-                        setUserMenuOpen(false);
-                      }}
-                      className="lg:hidden flex w-full items-center gap-3 px-4 py-2.5 text-sm font-bold text-blue-600 hover:bg-blue-50 transition-colors"
-                    >
-                      <LayoutDashboard className="w-4 h-4" /> Go to Dashboard
-                    </button>
                     {isManager && (
                       <Link to="/manager" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 transition-colors">
                         <LayoutDashboard className="w-4 h-4" /> Manager Panel
                       </Link>
                     )}
+                    <button 
+                      onClick={() => {
+                        window.open('https://class.genziitian.in', '_blank', 'noopener,noreferrer');
+                        setUserMenuOpen(false);
+                      }}
+                      className="flex w-full items-center gap-3 px-4 py-2.5 text-sm font-bold text-blue-600 hover:bg-blue-50 transition-colors"
+                    >
+                      <LayoutDashboard className="w-4 h-4" /> Class Dashboard
+                    </button>
                     <div className="h-0.5 bg-gray-100 my-2 mx-4" />
                     <button onClick={signOut} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-gray-500 hover:bg-gray-50 transition-colors">
                       <LogOut className="w-4 h-4" /> Log out
@@ -134,6 +134,9 @@ export default function Navbar() {
           <Link to="/blog" onClick={() => setMobileOpen(false)} className="py-2">Blog</Link>
           <Link to="/about" onClick={() => setMobileOpen(false)} className="py-2">About Us</Link>
           <Link to="/contact" onClick={() => setMobileOpen(false)} className="py-2">Contact</Link>
+          {user && (
+            <Link to="/refer" onClick={() => setMobileOpen(false)} className="py-2 text-blue-600">Refer & Earn</Link>
+          )}
           <div className="h-0.5 bg-gray-100 my-2" />
           <a href="https://youtube.com/@Gen-ZIITian/" target="_blank" rel="noopener noreferrer" className="py-2 text-red-500 flex items-center gap-2">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33 2.78 2.78 0 0 0 1.94 2c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.33 29 29 0 0 0-.46-5.33z"></path><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon></svg>

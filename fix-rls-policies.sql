@@ -1,27 +1,34 @@
--- ========================================
--- NUCLEAR FIX: Run ONLY this. Nothing else.
+-- ============================================================
+-- THE FIX: Resolve Infinite Recursion & Missing INSERT Policies
 -- Paste into Supabase SQL Editor → Run
--- ========================================
+-- ============================================================
+
+-- 1. Create a SECURITY DEFINER function to check manager role safely
+-- This is CRITICAL to prevent "infinite recursion" errors when 
+-- policies query the same table (profiles).
+CREATE OR REPLACE FUNCTION public.is_manager()
+RETURNS BOOLEAN AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles 
+    WHERE id = auth.uid() AND role = 'MANAGER'
+  );
+$$ LANGUAGE sql SECURITY DEFINER STABLE;
 
 -- ===== PROFILES TABLE =====
--- Profiles should NOT have restrictive RLS (it's used for login sync)
--- If RLS was accidentally enabled, these policies ensure it still works
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
--- Let every authenticated user read/write their own profile
 DROP POLICY IF EXISTS "Users can manage own profile" ON public.profiles;
 CREATE POLICY "Users can manage own profile"
   ON public.profiles FOR ALL
   USING (auth.uid() = id)
   WITH CHECK (auth.uid() = id);
 
--- Managers can see all profiles
+-- Use the new function to avoid infinite recursion
 DROP POLICY IF EXISTS "Managers can view all profiles" ON public.profiles;
 CREATE POLICY "Managers can view all profiles"
   ON public.profiles FOR SELECT
-  USING ((SELECT role FROM public.profiles WHERE id = auth.uid()) = 'MANAGER');
+  USING (public.is_manager());
 
--- Service role (backend) full access on profiles
 DROP POLICY IF EXISTS "Service role full access on profiles" ON public.profiles;
 CREATE POLICY "Service role full access on profiles"
   ON public.profiles FOR ALL
@@ -36,6 +43,12 @@ CREATE POLICY "Users can read own referral profile"
   ON public.referral_profiles FOR SELECT
   USING (auth.uid() = id);
 
+-- [CRITICAL FIX] Enable users to insert their *new* referral profiles
+DROP POLICY IF EXISTS "Users can insert own referral profile" ON public.referral_profiles;
+CREATE POLICY "Users can insert own referral profile"
+  ON public.referral_profiles FOR INSERT
+  WITH CHECK (auth.uid() = id);
+
 DROP POLICY IF EXISTS "Authenticated can read referral profiles" ON public.referral_profiles;
 CREATE POLICY "Authenticated can read referral profiles"
   ON public.referral_profiles FOR SELECT
@@ -48,10 +61,11 @@ CREATE POLICY "Service role full access on referral_profiles"
   USING (true)
   WITH CHECK (true);
 
+-- Use the new function to avoid infinite recursion
 DROP POLICY IF EXISTS "Managers can view all referral profiles" ON public.referral_profiles;
 CREATE POLICY "Managers can view all referral profiles"
   ON public.referral_profiles FOR SELECT
-  USING ((SELECT role FROM public.profiles WHERE id = auth.uid()) = 'MANAGER');
+  USING (public.is_manager());
 
 -- ===== REFERRAL TRANSACTIONS =====
 ALTER TABLE public.referral_transactions ENABLE ROW LEVEL SECURITY;
@@ -70,10 +84,11 @@ CREATE POLICY "Service role full access on referral_transactions"
   USING (true)
   WITH CHECK (true);
 
+-- Use the new function to avoid infinite recursion
 DROP POLICY IF EXISTS "Managers can view all referral transactions" ON public.referral_transactions;
 CREATE POLICY "Managers can view all referral transactions"
   ON public.referral_transactions FOR SELECT
-  USING ((SELECT role FROM public.profiles WHERE id = auth.uid()) = 'MANAGER');
+  USING (public.is_manager());
 
 -- ===== REFERRAL MILESTONES =====
 ALTER TABLE public.referral_milestones ENABLE ROW LEVEL SECURITY;
@@ -97,17 +112,12 @@ CREATE POLICY "Service role full access on website_orders"
   USING (true)
   WITH CHECK (true);
 
+-- Use the new function to avoid infinite recursion
 DROP POLICY IF EXISTS "Managers can view all orders" ON public.website_orders;
 CREATE POLICY "Managers can view all orders"
   ON public.website_orders FOR SELECT
-  USING ((SELECT role FROM public.profiles WHERE id = auth.uid()) = 'MANAGER');
+  USING (public.is_manager());
 
--- ===== ADD COLUMNS (safe to re-run) =====
-ALTER TABLE public.website_orders ADD COLUMN IF NOT EXISTS referral_code TEXT;
-ALTER TABLE public.website_orders ADD COLUMN IF NOT EXISTS coins_applied INTEGER DEFAULT 0;
-ALTER TABLE public.website_orders ADD COLUMN IF NOT EXISTS original_amount INTEGER DEFAULT 0;
-ALTER TABLE public.website_orders ADD COLUMN IF NOT EXISTS discount_amount INTEGER DEFAULT 0;
-
--- ===== VERIFY MANAGER ROLE =====
--- Make sure your account has MANAGER role
-UPDATE public.profiles SET role = 'MANAGER' WHERE email IN ('laxmikant.p@genziitian.com', 'genziitian@gmail.com');
+-- ===== ENSURE MANAGER STATUS =====
+UPDATE public.profiles SET role = 'MANAGER' 
+WHERE email IN ('laxmikant.p@genziitian.com', 'genziitian@gmail.com', 'lkiitmng2428@gmail.com');

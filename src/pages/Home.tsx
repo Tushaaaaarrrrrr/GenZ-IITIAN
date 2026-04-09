@@ -41,7 +41,7 @@ export default function Home() {
       .from('courses')
       .select('*')
       .order('isPinned', { ascending: false })
-      .order('createdAt', { ascending: false });
+      .order('created_at', { ascending: false });
     setCourses(data || []);
     setLoading(false);
   };
