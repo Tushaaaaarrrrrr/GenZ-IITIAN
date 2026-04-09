@@ -74,6 +74,8 @@ export default async function handler(req: any, res: any) {
     const lmsEnrollUrl = process.env.LMS_ENROLL_URL || 'https://class.genziitian.in/api/external-enroll';
     const externalEnrollSecret = process.env.EXTERNAL_ENROLL_SECRET;
 
+    // === STEP 1: LMS ENROLLMENT (isolated — failures here must NOT block referral/coin processing) ===
+    let lmsEnrollmentSucceeded = false;
     try {
       const lmsRes = await fetch(lmsEnrollUrl, {
         method: 'POST',
@@ -90,6 +92,8 @@ export default async function handler(req: any, res: any) {
         throw new Error(await lmsRes.text());
       }
 
+      lmsEnrollmentSucceeded = true;
+
       const successLogs = courseIds.map((courseId: string) => ({
         userId: profile?.id,
         email,
@@ -103,124 +107,6 @@ export default async function handler(req: any, res: any) {
       }));
 
       await supabase.from('activity_logs').insert(successLogs);
-
-      if (discountCode) {
-        await supabase.from('coupon_uses').insert({
-          code: discountCode,
-          user_email: email,
-          order_id: razorpay_order_id,
-        });
-      }
-
-      // --- REFERRAL REWARD PROCESSING ---
-      if (referralCode) {
-        try {
-          console.log(`[Referral] Processing code: ${referralCode} for buyer: ${email}`);
-          const codeToCheck = String(referralCode).trim().toUpperCase();
-          const { data: referrerProfile, error: rpErr } = await supabase
-            .from('referral_profiles')
-            .select('*')
-            .eq('referral_code', codeToCheck)
-            .maybeSingle();
-
-          if (rpErr) throw rpErr;
-
-          if (!referrerProfile) {
-            console.log(`[Referral] Code ${codeToCheck} not found in referral_profiles.`);
-          } else if (referrerProfile.email.toLowerCase() === email.toLowerCase()) {
-            console.log(`[Referral] Buyer ${email} is using their own code. Skipping reward.`);
-          } else {
-            console.log(`[Referral] Match found. Referrer: ${referrerProfile.email}`);
-            const { data: orderRow, error: orderErr } = await supabase
-              .from('website_orders')
-              .select('total_amount, original_amount, discount_amount')
-              .eq('order_id', razorpay_order_id)
-              .single();
-
-            if (orderErr) throw orderErr;
-            if (!orderRow) {
-              throw new Error(`Order not found for referral processing: ${razorpay_order_id}`);
-            }
-
-            const finalPrice = orderRow.total_amount || 0;
-            const originalPrice = orderRow.original_amount || finalPrice;
-            const buyerDiscount = orderRow.discount_amount || 0;
-            const referrerReward = Math.floor(finalPrice * 0.05); // 5% of what was paid
-
-            const newBalance = (referrerProfile.wallet_balance || 0) + referrerReward;
-            const newLifetime = (referrerProfile.lifetime_referrals || 0) + 1;
-            const newQuarterly = (referrerProfile.quarterly_referrals || 0) + 1;
-
-            const { data: milestones, error: msErr } = await supabase
-              .from('referral_milestones')
-              .select('*')
-              .order('referrals_required', { ascending: true });
-
-            if (msErr) throw msErr;
-
-            let milestoneBonus = 0;
-            if (milestones) {
-              for (const ms of milestones) {
-                if (newQuarterly >= ms.referrals_required && (referrerProfile.quarterly_referrals || 0) < ms.referrals_required) {
-                  milestoneBonus += ms.bonus_coins;
-                  console.log(`[Referral] Milestone hit! Bonus: ${ms.bonus_coins}`);
-                }
-              }
-            }
-
-            console.log(`[Referral] Rewarding ${referrerReward + milestoneBonus} coins to ${referrerProfile.email}`);
-
-            const { error: updateErr } = await supabase
-              .from('referral_profiles')
-              .update({
-                wallet_balance: newBalance + milestoneBonus,
-                lifetime_referrals: newLifetime,
-                quarterly_referrals: newQuarterly,
-              })
-              .eq('id', referrerProfile.id);
-
-            if (updateErr) throw updateErr;
-
-            const { error: txnErr } = await supabase.from('referral_transactions').insert({
-              referrer_email: referrerProfile.email,
-              buyer_email: email,
-              referral_code: codeToCheck,
-              order_id: razorpay_order_id,
-              original_price: originalPrice,
-              buyer_discount: buyerDiscount,
-              final_price: finalPrice,
-              referrer_reward: referrerReward + milestoneBonus,
-              coins_used: actualCoinsApplied,
-            });
-
-            if (txnErr) throw txnErr;
-            console.log(`[Referral] Successfully logged transaction.`);
-          }
-        } catch (referralErr) {
-          console.error('Referral processing error (non-fatal):', referralErr);
-        }
-      }
-
-      // --- DEDUCT BUYER COINS ---
-      if (actualCoinsApplied && actualCoinsApplied > 0) {
-        try {
-          const { data: buyerRef } = await supabase
-            .from('referral_profiles')
-            .select('wallet_balance')
-            .eq('email', email)
-            .maybeSingle();
-
-          if (buyerRef) {
-            const newBal = Math.max((buyerRef.wallet_balance || 0) - actualCoinsApplied, 0);
-            await supabase
-              .from('referral_profiles')
-              .update({ wallet_balance: newBal })
-              .eq('email', email);
-          }
-        } catch (coinErr) {
-          console.error('Coin deduction error (non-fatal):', coinErr);
-        }
-      }
     } catch (lmsError) {
       console.error('LMS enrollment error:', lmsError);
 
@@ -234,6 +120,129 @@ export default async function handler(req: any, res: any) {
       }));
 
       await supabase.from('activity_logs').insert(failureLogs);
+    }
+
+    // === STEP 2: RECORD COUPON USAGE (runs regardless of LMS result) ===
+    if (discountCode) {
+      try {
+        await supabase.from('coupon_uses').insert({
+          code: discountCode,
+          user_email: email,
+          order_id: razorpay_order_id,
+        });
+      } catch (couponErr) {
+        console.error('Coupon usage tracking error (non-fatal):', couponErr);
+      }
+    }
+
+    // === STEP 3: REFERRAL REWARD PROCESSING (runs regardless of LMS result) ===
+    if (referralCode) {
+      try {
+        console.log(`[Referral] Processing code: ${referralCode} for buyer: ${email}`);
+        const codeToCheck = String(referralCode).trim().toUpperCase();
+        const { data: referrerProfile, error: rpErr } = await supabase
+          .from('referral_profiles')
+          .select('*')
+          .eq('referral_code', codeToCheck)
+          .maybeSingle();
+
+        if (rpErr) throw rpErr;
+
+        if (!referrerProfile) {
+          console.log(`[Referral] Code ${codeToCheck} not found in referral_profiles.`);
+        } else if (referrerProfile.email.toLowerCase() === email.toLowerCase()) {
+          console.log(`[Referral] Buyer ${email} is using their own code. Skipping reward.`);
+        } else {
+          console.log(`[Referral] Match found. Referrer: ${referrerProfile.email}`);
+          const { data: orderRow, error: orderErr } = await supabase
+            .from('website_orders')
+            .select('total_amount, original_amount, discount_amount')
+            .eq('order_id', razorpay_order_id)
+            .single();
+
+          if (orderErr) throw orderErr;
+          if (!orderRow) {
+            throw new Error(`Order not found for referral processing: ${razorpay_order_id}`);
+          }
+
+          const finalPrice = orderRow.total_amount || 0;
+          const originalPrice = orderRow.original_amount || finalPrice;
+          const buyerDiscount = orderRow.discount_amount || 0;
+          const referrerReward = Math.floor(finalPrice * 0.05); // 5% of what was paid
+
+          const newBalance = (referrerProfile.wallet_balance || 0) + referrerReward;
+          const newLifetime = (referrerProfile.lifetime_referrals || 0) + 1;
+          const newQuarterly = (referrerProfile.quarterly_referrals || 0) + 1;
+
+          const { data: milestones, error: msErr } = await supabase
+            .from('referral_milestones')
+            .select('*')
+            .order('referrals_required', { ascending: true });
+
+          if (msErr) throw msErr;
+
+          let milestoneBonus = 0;
+          if (milestones) {
+            for (const ms of milestones) {
+              if (newQuarterly >= ms.referrals_required && (referrerProfile.quarterly_referrals || 0) < ms.referrals_required) {
+                milestoneBonus += ms.bonus_coins;
+                console.log(`[Referral] Milestone hit! Bonus: ${ms.bonus_coins}`);
+              }
+            }
+          }
+
+          console.log(`[Referral] Rewarding ${referrerReward + milestoneBonus} coins to ${referrerProfile.email}`);
+
+          const { error: updateErr } = await supabase
+            .from('referral_profiles')
+            .update({
+              wallet_balance: newBalance + milestoneBonus,
+              lifetime_referrals: newLifetime,
+              quarterly_referrals: newQuarterly,
+            })
+            .eq('id', referrerProfile.id);
+
+          if (updateErr) throw updateErr;
+
+          const { error: txnErr } = await supabase.from('referral_transactions').insert({
+            referrer_email: referrerProfile.email,
+            buyer_email: email,
+            referral_code: codeToCheck,
+            order_id: razorpay_order_id,
+            original_price: originalPrice,
+            buyer_discount: buyerDiscount,
+            final_price: finalPrice,
+            referrer_reward: referrerReward + milestoneBonus,
+            coins_used: actualCoinsApplied,
+          });
+
+          if (txnErr) throw txnErr;
+          console.log(`[Referral] Successfully logged transaction.`);
+        }
+      } catch (referralErr) {
+        console.error('Referral processing error (non-fatal):', referralErr);
+      }
+    }
+
+    // === STEP 4: DEDUCT BUYER COINS (runs regardless of LMS result) ===
+    if (actualCoinsApplied && actualCoinsApplied > 0) {
+      try {
+        const { data: buyerRef } = await supabase
+          .from('referral_profiles')
+          .select('wallet_balance')
+          .eq('email', email)
+          .maybeSingle();
+
+        if (buyerRef) {
+          const newBal = Math.max((buyerRef.wallet_balance || 0) - actualCoinsApplied, 0);
+          await supabase
+            .from('referral_profiles')
+            .update({ wallet_balance: newBal })
+            .eq('email', email);
+        }
+      } catch (coinErr) {
+        console.error('Coin deduction error (non-fatal):', coinErr);
+      }
     }
 
     return res.status(200).json({ success: true });

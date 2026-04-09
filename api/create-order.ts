@@ -40,7 +40,8 @@ export default async function handler(req: any, res: any) {
     let totalAmount = 0;
     let totalOriginalPrice = 0;
     let discountApplied = false;
-    let isBundleDiscountUsed = false;
+    let referrerEmail: string | null = null;
+    let referralDiscount = 0;
 
     if (bundleId) {
       const { data: bundle, error: bundleError } = await supabase
@@ -114,7 +115,7 @@ export default async function handler(req: any, res: any) {
         }
       }
 
-      if (referralCode) {
+      if (referralCode && !discountCode) {
         const rProfile = await supabase.from('referral_profiles').select('email').eq('referral_code', referralCode.toUpperCase()).maybeSingle();
         if (rProfile.data && rProfile.data.email.toLowerCase() !== email.toLowerCase()) {
             refSavings = Math.floor(totalAmount * 0.05);
@@ -133,6 +134,7 @@ export default async function handler(req: any, res: any) {
 
       totalAmount = Math.max(totalOriginalPrice - finalDiscount, 0);
       discountApplied = finalDiscount > 0;
+      referralDiscount = refSavings;
 
     } else {
       // Logic for single course purchases remains mostly same
@@ -164,77 +166,14 @@ export default async function handler(req: any, res: any) {
              }
         }
       } else if (referralCode) {
-         const res = await supabase.from('referral_profiles').select('email').eq('referral_code', referralCode.toUpperCase()).maybeSingle();
-         if (res.data && res.data.email.toLowerCase() !== email.toLowerCase()) {
-             const rD = Math.floor(totalAmount * 0.05);
-             totalAmount = Math.max(totalAmount - rD, 0);
-             referrerEmail = res.data.email;
-             discountApplied = true;
-         }
-      }
-    }
-
-    if (discountCode && !isBundleDiscountUsed) {
-      const codeToApply = String(discountCode).trim().toUpperCase();
-      const { data: coupon, error: couponError } = await supabase
-        .from('discount_coupons')
-        .select('*')
-        .eq('code', codeToApply)
-        .single();
-
-      if (couponError || !coupon) {
-        return res.status(400).json({ error: 'Invalid discount code' });
-      }
-
-      const { data: usage } = await supabase
-        .from('coupon_uses')
-        .select('*')
-        .eq('code', codeToApply)
-        .eq('user_email', email)
-        .maybeSingle();
-
-      if (usage) {
-        return res.status(400).json({ error: 'Discount code already used' });
-      }
-
-      if (coupon.applies_to !== 'ALL') {
-        const targetId = String(coupon.applies_to || '').trim().toLowerCase();
-        const matchesSelectedCourse = courseIds.some((courseId: string) => courseId.trim().toLowerCase() === targetId);
-        const matchesCurrentBundle = bundleId && String(bundleId).trim().toLowerCase() === targetId;
-
-        if (!matchesSelectedCourse && !matchesCurrentBundle) {
-          return res.status(400).json({ error: 'Discount code does not apply to selection' });
-        }
-      }
-
-      const discountValue = coupon.discount_percentage
-        ? Math.floor(totalAmount * (Number(coupon.discount_percentage) / 100))
-        : Number(coupon.discount_amount || 0);
-
-      totalAmount = Math.max(totalAmount - discountValue, 0);
-      discountApplied = true;
-    }
-
-    // --- REFERRAL CODE DISCOUNT (5% off) ---
-    let referralDiscount = 0;
-    let referrerEmail = null;
-    if (referralCode && !isBundleDiscountUsed) {
-      const codeToCheck = String(referralCode).trim().toUpperCase();
-      const { data: referrerProfile } = await supabase
-        .from('referral_profiles')
-        .select('email')
-        .eq('referral_code', codeToCheck)
-        .maybeSingle();
-
-      if (referrerProfile) {
-        if (referrerProfile.email.toLowerCase() === email.toLowerCase()) {
-          return res.status(400).json({ error: 'You cannot use your own referral code' });
-        }
-        referralDiscount = Math.floor(totalAmount * 0.05);
-        totalAmount = totalAmount - referralDiscount;
-        referrerEmail = referrerProfile.email;
-      } else {
-        return res.status(400).json({ error: 'Invalid referral code' });
+          const refResult = await supabase.from('referral_profiles').select('email').eq('referral_code', referralCode.toUpperCase()).maybeSingle();
+          if (refResult.data && refResult.data.email.toLowerCase() !== email.toLowerCase()) {
+              const rD = Math.floor(totalAmount * 0.05);
+              totalAmount = Math.max(totalAmount - rD, 0);
+              referrerEmail = refResult.data.email;
+              referralDiscount = rD;
+              discountApplied = true;
+          }
       }
     }
 
