@@ -1013,14 +1013,6 @@ export default function CourseSelection() {
                                           // Referral Savings
                                           const refSavings = referralDiscount;
                                           
-                                          // Manual-Only Logic: Grand Total = Raw Sum - Applied Modifiers
-                                          const rawTotal = 
-                                            course?.isBundle 
-                                            ? course.bundleCourses
-                                                .filter((bc: SubCourse) => selectedCourses.includes(bc.courseId))
-                                                .reduce((sum: number, bc: SubCourse) => sum + bc.price, 0)
-                                            : (course?.price || 0);
-                                          
                                           return rawTotal - (discountAmount || 0) - (referralDiscount || 0) - (coinsApplied || 0);
                                         })(), 
                                         1
