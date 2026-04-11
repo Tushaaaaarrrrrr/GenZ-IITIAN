@@ -5,18 +5,16 @@ import {
   GraduationCap, 
   Award, 
   BookOpen, 
-  FileText,
+
   CheckCircle2, 
   ChevronRight, 
-  Video,
+
   Users,
   Star,
   ArrowLeft,
   Loader2,
   Calendar,
-  Layers,
-  BarChart3,
-  Target
+  Layers
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { getCheckoutPath } from '../utils/courseRouting';
@@ -29,55 +27,7 @@ function formatCourseDate(date: string) {
   });
 }
 
-const cohortBenefits: {
-  title: string;
-  description: string;
-  icon: React.ElementType;
-  tintClassName: string;
-}[] = [
-  {
-    title: 'Structured Foundation Mastery',
-    description: 'Build strong fundamentals with a clear, step-by-step approach designed to make difficult topics easier to understand and apply.',
-    icon: BookOpen,
-    tintClassName: 'bg-blue-100'
-  },
-  {
-    title: 'Weekly Assignment Strategy',
-    description: 'Learn how to score above cutoff, avoid common mistakes, manage time efficiently, and crack conceptual questions.',
-    icon: FileText,
-    tintClassName: 'bg-yellow-100'
-  },
-  {
-    title: 'Live Problem-Solving Sessions',
-    description: 'Join live sessions focused on concept clarity, guided practice, and solving important problems with the right exam approach.',
-    icon: Video,
-    tintClassName: 'bg-purple-100'
-  },
-  {
-    title: 'Mock Tests and Practice',
-    description: 'Strengthen your preparation with timed tests, targeted practice, performance insights, and feedback that helps you improve steadily.',
-    icon: BarChart3,
-    tintClassName: 'bg-green-100'
-  },
-  {
-    title: 'Exam-Oriented Prep Plan',
-    description: 'Follow a smart preparation strategy that helps you stay consistent, avoid common mistakes, and perform better in exams.',
-    icon: Target,
-    tintClassName: 'bg-orange-100'
-  },
-  {
-    title: 'IIT-Focused Mentorship',
-    description: 'Get practical guidance from seniors on study strategy, course planning, and the best way to move forward with confidence.',
-    icon: Award,
-    tintClassName: 'bg-cyan-100'
-  },
-  {
-    title: 'Gen-Z IITian Community',
-    description: 'Doubt-solving groups, peer accountability, and a motivated IITM aspirant network for constant updates and strategy.',
-    icon: Users,
-    tintClassName: 'bg-rose-100'
-  }
-];
+
 
 export default function CourseDetail() {
   const { id } = useParams<{ id: string }>();
@@ -272,33 +222,20 @@ export default function CourseDetail() {
             </div>
           )}
 
-          <div>
-            <div className="text-center mb-8">
-              <h2 className="text-3xl lg:text-4xl font-black text-[#0b1120] mb-3">What You Get in the Cohort</h2>
-              <p className="text-base font-bold text-gray-500 max-w-3xl mx-auto">
-                Everything you need to master {course.name} with confidence.
-              </p>
-            </div>
+          {course.cohortContent && (
+            <div>
+              <div className="text-center mb-8">
+                <h2 className="text-3xl lg:text-4xl font-black text-[#0b1120] mb-3">What You Get in the Cohort</h2>
+                <p className="text-base font-bold text-gray-500 max-w-3xl mx-auto">
+                  Everything you need to master {course.name} with confidence.
+                </p>
+              </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {cohortBenefits.map((benefit) => {
-                const Icon = benefit.icon;
-
-                return (
-                  <div key={benefit.title} className="relative">
-                    <div className="absolute inset-0 bg-[#63c695] rounded-[28px] translate-y-2 translate-x-2 border-2 border-[#0b1120]"></div>
-                    <div className="relative bg-white border-[3px] border-[#0b1120] rounded-[28px] p-7 min-h-[240px]">
-                      <div className={`w-14 h-14 ${benefit.tintClassName} rounded-2xl border-2 border-[#0b1120] flex items-center justify-center mb-6`}>
-                        <Icon className="w-6 h-6 text-[#0b1120]" />
-                      </div>
-                      <h3 className="text-2xl font-black text-[#0b1120] mb-4 leading-tight">{benefit.title}</h3>
-                      <p className="text-gray-600 font-bold text-base leading-relaxed">{benefit.description}</p>
-                    </div>
-                  </div>
-                );
-              })}
+              <div className="bg-white border-[3px] border-[#0b1120] rounded-[2rem] p-8 lg:p-10 font-bold text-[#0b1120] leading-relaxed shadow-[8px_8px_0px_#10b981] whitespace-pre-wrap text-lg">
+                {course.cohortContent}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Learning Outcomes */}
           {course.outcomes && (

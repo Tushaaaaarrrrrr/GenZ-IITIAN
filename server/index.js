@@ -498,7 +498,7 @@ async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_p
     // 1. Check if already processed (Idempotency)
     const { data: existingOrder } = await supabase
         .from('website_orders')
-        .select('status')
+        .select('*')
         .eq('order_id', razorpay_order_id)
         .single();
     
@@ -506,6 +506,11 @@ async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_p
     if (existingOrder?.status === 'PAID') {
         return { success: true, alreadyProcessed: true };
     }
+
+    // Default to database values if not explicitly provided
+    referralCode = referralCode || existingOrder?.referral_code;
+    discountCode = discountCode || existingOrder?.discount_code;
+    coinsApplied = (coinsApplied !== undefined && coinsApplied !== null) ? coinsApplied : (existingOrder?.coins_applied || 0);
 
     const lms_enroll_url = process.env.LMS_ENROLL_URL || "https://class.genziitian.in/api/external-enroll";
     
@@ -953,7 +958,9 @@ app.post('/api/razorpay-webhook', async (req, res) => {
                 courseIds: order.course_ids,
                 razorpay_order_id: order_id,
                 razorpay_payment_id: payment.id,
-                discountCode: order.discount_code // Ensure this column exists in your DB or handle accordingly
+                discountCode: order.discount_code, // Ensure this column exists in your DB or handle accordingly
+                referralCode: order.referral_code,
+                coinsApplied: order.coins_applied
             });
         }
     }

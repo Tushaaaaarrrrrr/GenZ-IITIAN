@@ -23,9 +23,17 @@ export default function PaymentFailed() {
         if (lastOrder) {
           setOrderDetails(lastOrder);
           if (Array.isArray(lastOrder.course_ids)) {
-            const { data: courses } = await supabase.from('courses').select('name').in('id', lastOrder.course_ids);
-            if (courses && courses.length > 0) {
-              setCourseTitles(courses.map(c => c.name).join(', '));
+            const [{ data: catalog }, { data: mainCourses }] = await Promise.all([
+              supabase.from('course_catalog').select('id, name').in('id', lastOrder.course_ids),
+              supabase.from('courses').select('id, name').in('id', lastOrder.course_ids)
+            ]);
+
+            const merged = [...(catalog || []), ...(mainCourses || [])];
+            const nameMap = new Map(merged.map(c => [c.id, c.name]));
+            const titles = lastOrder.course_ids.map((id: string) => nameMap.get(id) || id);
+            
+            if (titles.length > 0) {
+              setCourseTitles(titles.join(', '));
             }
           }
         }

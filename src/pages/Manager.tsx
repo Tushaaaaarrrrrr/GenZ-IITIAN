@@ -116,9 +116,20 @@ export default function Manager() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Always fetch catalog for mapping
-      const { data: catalog } = await supabase.from('course_catalog').select('*');
-      setCourseCatalog(catalog || []);
+      // Always fetch catalog for mapping (merge denormalized catalog + main courses)
+      const [{ data: catalog }, { data: courses }] = await Promise.all([
+        supabase.from('course_catalog').select('id, name'),
+        supabase.from('courses').select('id, name')
+      ]);
+      
+      const merged = [
+        ...(catalog || []),
+        ...(courses || [])
+      ];
+      
+      // Remove duplicates by ID (prefer catalog for override names)
+      const unique = Array.from(new Map(merged.map(item => [item.id, item])).values());
+      setCourseCatalog(unique);
 
       if (effectiveTab === 'discounts') {
         const [discountsData] = await Promise.all([
@@ -175,7 +186,9 @@ export default function Manager() {
     const rows = data.map(order => [
       order.order_id || '',
       order.user_email || '',
-      Array.isArray(order.course_ids) ? order.course_ids.join('; ') : '',
+      Array.isArray(order.course_ids) 
+        ? order.course_ids.map(id => courseCatalog.find(c => c.id === id)?.name || id).join('; ') 
+        : '',
       order.total_amount || 0,
       order.status || '',
       order.created_at ? new Date(order.created_at).toISOString() : ''
@@ -281,6 +294,7 @@ export default function Manager() {
         learn: [],
         who: '',
         outcomes: '',
+        cohortContent: course.cohortContent || null,
         discountPrice: course.discountPrice ? parseInt(course.discountPrice) : null,
         isBundle: course.isBundle || false,
         bundleCourses: course.bundleCourses || [],
@@ -873,6 +887,11 @@ export default function Manager() {
                     <label className="block text-sm font-black text-[#0b1120] uppercase mb-1">Subtitle / Brief Description</label>
                     <textarea defaultValue={editingCourse?.description} id="c-subtitle" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none h-32" />
                   </div>
+                  <div>
+                    <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">What You Get in the Cohort</label>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mb-2">This content appears under the "What You Get in the Cohort" section on the course page. Use line breaks for separate points.</p>
+                    <textarea defaultValue={editingCourse?.cohortContent || ''} id="c-cohort" placeholder="e.g.&#10;✅ Live doubt-solving sessions every week&#10;✅ Structured notes + PYQs&#10;✅ Mock tests before every quiz&#10;..." className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none h-48 leading-relaxed" />
+                  </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Display Price / Starts From (₹)</label>
@@ -1059,6 +1078,7 @@ export default function Manager() {
                     const id = sanitizeCourseId(rawId);
                     const name = (document.getElementById('c-name') as HTMLInputElement).value;
                     const subtitle = (document.getElementById('c-subtitle') as HTMLTextAreaElement).value;
+                    const cohortContent = (document.getElementById('c-cohort') as HTMLTextAreaElement).value;
                     const price = (document.getElementById('c-price') as HTMLInputElement).value;
                     const discountPrice = (document.getElementById('c-discount') as HTMLInputElement).value;
                     const isPinned = (document.getElementById('c-pinned') as HTMLSelectElement).value === 'true';
@@ -1081,6 +1101,7 @@ export default function Manager() {
 
                     handleCourseAction({ 
                       id, previousId: editingCourse?.id, name, price, isPinned, subtitle,
+                      cohortContent,
                       category,
                       discountPrice: discountPrice || null,
                       isBundle,
@@ -1273,17 +1294,30 @@ export default function Manager() {
                             <thead className="bg-gray-50 sticky top-0 font-black text-xs uppercase text-gray-400">
                               <tr>
                                 <th className="p-4">Date</th>
+                                <th className="p-4">Courses</th>
                                 <th className="p-4">Amount</th>
                                 <th className="p-4">Status</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y-2 divide-gray-100 font-bold">
                               {selectedUserOrders.length === 0 ? (
-                                <tr><td colSpan={3} className="p-8 text-center text-gray-400">No orders found.</td></tr>
+                                <tr><td colSpan={4} className="p-8 text-center text-gray-400">No orders found.</td></tr>
                               ) : (
                                 selectedUserOrders.map(order => (
                                   <tr key={order.order_id}>
-                                    <td className="p-4 text-gray-500">{new Date(order.created_at).toLocaleDateString()}</td>
+                                    <td className="p-4 text-gray-500 whitespace-nowrap">{new Date(order.created_at).toLocaleDateString()}</td>
+                                    <td className="p-4">
+                                      <div className="flex flex-wrap gap-1">
+                                        {Array.isArray(order.course_ids) ? order.course_ids.map((cid: string) => {
+                                          const course = courseCatalog.find(c => c.id === cid);
+                                          return (
+                                            <span key={cid} className="px-2 py-0.5 bg-gray-50 text-[10px] font-black text-gray-500 border border-gray-100 rounded">
+                                              {course?.name || cid}
+                                            </span>
+                                          );
+                                        }) : <span className="text-gray-400">-</span>}
+                                      </div>
+                                    </td>
                                     <td className="p-4 font-black">₹{order.total_amount}</td>
                                     <td className="p-4">
                                       <span className={`px-2 py-1 rounded-md text-[10px] uppercase font-black ${order.status === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>

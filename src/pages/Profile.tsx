@@ -20,8 +20,21 @@ export default function Profile() {
 
   const fetchCatalog = async () => {
     try {
-      const { data } = await supabase.from('course_catalog').select('*');
-      setCourseCatalog(data || []);
+      // Fetch from both denormalized catalog and main courses table for maximum coverage
+      const [{ data: catalog }, { data: courses }] = await Promise.all([
+        supabase.from('course_catalog').select('id, name'),
+        supabase.from('courses').select('id, name')
+      ]);
+      
+      const merged = [
+        ...(catalog || []),
+        ...(courses || [])
+      ];
+      
+      // Remove duplicates by ID (preferring catalog if both exist)
+      const unique = Array.from(new Map(merged.map(item => [item.id, item])).values());
+      
+      setCourseCatalog(unique);
     } catch (err) {
       console.error('Catalog fetch error:', err);
     }
