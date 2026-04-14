@@ -10,6 +10,7 @@ import Blog from './pages/Blog';
 import BlogDetail from './pages/BlogDetail';
 import Courses from './pages/Courses';
 import CourseDetail from './pages/CourseDetail';
+import Syllabus from './pages/Syllabus';
 import Resources from './pages/Resources';
 import ResourceDetail from './pages/ResourceDetail';
 import Contact from './pages/Contact';
@@ -76,6 +77,7 @@ export default function App() {
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/courses" element={<Courses />} />
+                <Route path="/syllabus" element={<Syllabus />} />
                 <Route path="/courses/:id" element={<CourseDetail />} />
                 <Route path="/resources" element={<Resources />} />
                 <Route path="/resources/:level/:subject" element={<ResourceDetail />} />

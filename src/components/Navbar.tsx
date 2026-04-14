@@ -37,6 +37,7 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-gray-700">
           <Link to="/" className="hover:text-black transition-colors">Home</Link>
           <Link to="/courses" className="hover:text-black transition-colors">Courses</Link>
+          <Link to="/syllabus" className="hover:text-black transition-colors">Syllabus</Link>
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setResourcesOpen(!resourcesOpen)}
@@ -130,6 +131,7 @@ export default function Navbar() {
         <div className="md:hidden bg-white border-t border-gray-200 px-6 py-6 flex flex-col gap-4 text-base font-bold text-gray-700">
           <Link to="/" onClick={() => setMobileOpen(false)} className="py-2">Home</Link>
           <Link to="/courses" onClick={() => setMobileOpen(false)} className="py-2">Courses</Link>
+          <Link to="/syllabus" onClick={() => setMobileOpen(false)} className="py-2">Syllabus</Link>
           <Link to="/resources" onClick={() => setMobileOpen(false)} className="py-2">Resources</Link>
           <Link to="/blog" onClick={() => setMobileOpen(false)} className="py-2">Blog</Link>
           <Link to="/about" onClick={() => setMobileOpen(false)} className="py-2">About Us</Link>
