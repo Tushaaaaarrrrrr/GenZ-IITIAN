@@ -280,6 +280,28 @@ const DIPLOMA_SYLLABUS = [
   }
 ];
 
+const QUIZ_1_MAPPING: Record<string, string> = {
+  "Machine Learning Practice": "No quiz",
+  "Tools in Data Science": "No quiz",
+};
+
+const QUIZ_2_MAPPING: Record<string, string> = {
+  "Computational Thinking": "Week 1–8",
+  "Mathematics for Data Science I": "Week 5–8",
+  "Programming in Python": "No quiz",
+};
+
+const QuizBadge = ({ label, value, type }: { label: string, value: string, type: 'quiz1' | 'quiz2' }) => (
+  <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border-2 ${
+    type === 'quiz1' 
+      ? 'bg-blue-50 border-blue-100 text-blue-700' 
+      : 'bg-indigo-50 border-indigo-100 text-indigo-700'
+  }`}>
+    <span className="text-[10px] font-black uppercase tracking-wider opacity-60">{label}</span>
+    <span className="text-xs font-bold">{value}</span>
+  </div>
+);
+
 export default function Syllabus() {
   const [course, setCourse] = useState('');
   const [level, setLevel] = useState('');
@@ -405,9 +427,28 @@ export default function Syllabus() {
                 >
                   <button
                     onClick={() => toggleSubject(item.subject)}
-                    className="w-full px-8 py-6 md:py-8 flex items-center justify-between text-left focus:outline-none"
+                    className="w-full px-8 py-6 md:py-8 flex flex-col md:flex-row md:items-center justify-between text-left focus:outline-none gap-4"
                   >
-                    <span className="font-black text-xl md:text-2xl text-[#0b1120]">{item.subject}</span>
+                    <div className="space-y-3">
+                      <span className="font-black text-xl md:text-2xl text-[#0b1120] block">{item.subject}</span>
+                      <div className="flex flex-wrap gap-2">
+                        {/* Quiz 1 Coverage (Primary) */}
+                        <QuizBadge 
+                          label="Quiz 1" 
+                          value={QUIZ_1_MAPPING[item.subject] || "Week 1–4"} 
+                          type="quiz1" 
+                        />
+                        
+                        {/* Quiz 2 Coverage */}
+                        {QUIZ_2_MAPPING[item.subject] && (
+                          <QuizBadge 
+                            label="Quiz 2" 
+                            value={QUIZ_2_MAPPING[item.subject]} 
+                            type="quiz2" 
+                          />
+                        )}
+                      </div>
+                    </div>
                     <div className={`transition-transform duration-300 ${openSubject === item.subject ? 'rotate-180 text-blue-600' : 'text-gray-400'}`}>
                       <ChevronDown className="w-7 h-7" />
                     </div>
