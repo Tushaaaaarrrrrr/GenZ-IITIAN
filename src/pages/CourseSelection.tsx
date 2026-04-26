@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../lib/supabase';
 import { apiService } from '../lib/api';
@@ -427,11 +427,17 @@ export default function CourseSelection() {
     setLoadingMessage("Preparing Checkout...");
     const total = calculateTotal();
 
+    const finalCourseIds = course?.isBundle && Array.isArray(course.bundleCourses)
+      ? course.bundleCourses
+          .filter((bc: any) => selectedCourses.includes(bc.courseId))
+          .flatMap((bc: any) => [bc.courseId, bc.courseId2, bc.courseId3].filter(Boolean))
+      : selectedCourses;
+
     try {
       const orderData = await apiService.createOrder({
         amount: Math.max(total - discountAmount - referralDiscount - coinsApplied, 1),
         email: user?.email || '',
-        courseIds: selectedCourses,
+        courseIds: finalCourseIds,
         bundleId: course?.isBundle ? course.id : undefined,
         discountCode: appliedDiscountCode || undefined,
         referralCode: appliedReferralCode || undefined,
@@ -468,7 +474,7 @@ export default function CourseSelection() {
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
               email: user?.email,
-              courseIds: selectedCourses,
+              courseIds: finalCourseIds,
               discountCode: appliedDiscountCode || undefined,
               referralCode: appliedReferralCode || undefined,
               coinsToApply: coinsApplied,
@@ -486,7 +492,7 @@ export default function CourseSelection() {
                   total_amount: orderData._serverTotal || Math.max(total - discountAmount - referralDiscount - coinsApplied, 1),
                   created_at: new Date().toISOString(),
                   status: 'PAID',
-                  course_ids: selectedCourses
+                  course_ids: finalCourseIds
                 }
               } 
             });
@@ -587,13 +593,13 @@ export default function CourseSelection() {
 
       </AnimatePresence>
 
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-6 text-center">
+      <div className="max-w-6xl mx-auto">
+        <div className="mb-4 text-center">
             <h1 className="text-3xl lg:text-4xl font-black mb-2 tracking-tight">Complete <span className="text-blue-600">Enrollment</span></h1>
-            <p className="text-sm lg:text-base text-gray-500 font-bold max-w-2xl mx-auto italic">You're just one step away from joining {course.name}. Follow the steps below.</p>
+            <p className="text-[10px] sm:text-xs lg:text-sm text-gray-500 font-bold mx-auto italic whitespace-nowrap">You're just one step away from joining {course.name}. Follow the steps below.</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
             <button 
               onClick={() => { setStep('profile'); setShowProfilePrompt(false); }}
               className={`flex flex-col items-center gap-2 p-3 lg:p-4 rounded-xl border-[4px] transition-all w-full text-left ${step === 'profile' ? 'bg-blue-600 border-[#0b1120] text-white shadow-[4px_4px_0px_#0b1120]' : 'bg-green-50 border-green-200 text-green-700 cursor-pointer hover:bg-green-100'}`}
@@ -624,7 +630,7 @@ export default function CourseSelection() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="bg-white border-[4px] border-[#0b1120] rounded-2xl p-8 lg:p-12 shadow-[12px_12px_0px_#10b981] text-center"
+              className="max-w-4xl mx-auto bg-white border-[4px] border-[#0b1120] rounded-2xl p-6 lg:p-10 shadow-[12px_12px_0px_#10b981] text-center"
             >
               <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center border-2 border-[#0b1120] mx-auto mb-6">
                 <UserCheck className="w-8 h-8 text-green-600" />
@@ -656,7 +662,7 @@ export default function CourseSelection() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white border-[4px] border-[#0b1120] rounded-2xl p-6 lg:p-8 shadow-[8px_8px_0px_#10b981]"
+              className="max-w-4xl mx-auto bg-white border-[4px] border-[#0b1120] rounded-2xl p-6 lg:p-10 shadow-[8px_8px_0px_#10b981]"
             >
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center border-2 border-[#0b1120]">
@@ -664,36 +670,38 @@ export default function CourseSelection() {
                 </div>
                 <div>
                     <h2 className="text-xl font-black text-[#0b1120]">Complete Your Profile</h2>
-                    <p className="font-bold text-gray-500 text-xs">We need these details for your course certification.</p>
+                    <p className="font-bold text-gray-500 text-xs">We need these details for your Registration</p>
                 </div>
               </div>
 
               <form onSubmit={handleProfileSubmit} className="space-y-6">
-                <div>
-                  <label className="block text-[9px] font-black text-[#0b1120] uppercase mb-1.5">Your Full Name (As on Certificate)</label>
-                  <input 
-                    required
-                    value={profileData.name}
-                    onChange={e => setProfileData({...profileData, name: e.target.value})}
-                    placeholder="Enter your name"
-                    className="w-full px-4 py-2.5 bg-gray-50 border-[3px] border-[#0b1120] rounded-xl font-black text-base focus:bg-white focus:shadow-[4px_4px_0px_#3b82f6] transition-all outline-none"
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                  <div>
+                    <label className="block text-[12px] font-black text-[#0b1120] uppercase mb-1.5">Your Full Name</label>
+                    <input 
+                      required
+                      value={profileData.name}
+                      onChange={e => setProfileData({...profileData, name: e.target.value})}
+                      placeholder="Enter your name"
+                      className="w-full px-4 py-2.5 bg-gray-50 border-[3px] border-[#0b1120] rounded-xl font-black text-base focus:bg-white focus:shadow-[4px_4px_0px_#3b82f6] transition-all outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[12px] font-black text-[#0b1120] uppercase mb-1.5">Phone Number (WhatsApp)</label>
+                    <input 
+                      required
+                      type="tel"
+                      value={profileData.phone}
+                      onChange={e => setProfileData({...profileData, phone: e.target.value})}
+                      placeholder="e.g. +91 9876543210"
+                      className="w-full px-4 py-2.5 bg-gray-50 border-[3px] border-[#0b1120] rounded-xl font-black text-base focus:bg-white focus:shadow-[4px_4px_0px_#3b82f6] transition-all outline-none"
+                    />
+                  </div>
                 </div>
 
                 <div>
-                  <label className="block text-[9px] font-black text-[#0b1120] uppercase mb-1.5">Phone Number (WhatsApp Preferred)</label>
-                  <input 
-                    required
-                    type="tel"
-                    value={profileData.phone}
-                    onChange={e => setProfileData({...profileData, phone: e.target.value})}
-                    placeholder="e.g. +91 9876543210"
-                    className="w-full px-4 py-2.5 bg-gray-50 border-[3px] border-[#0b1120] rounded-xl font-black text-base focus:bg-white focus:shadow-[4px_4px_0px_#3b82f6] transition-all outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[9px] font-black text-[#0b1120] uppercase mb-1.5">Gender</label>
+                  <label className="block text-[12px] font-black text-[#0b1120] uppercase mb-1.5">Gender</label>
                   <div className="grid grid-cols-2 gap-3">
                     {['MALE', 'FEMALE'].map(g => (
                       <button
@@ -722,6 +730,9 @@ export default function CourseSelection() {
                 >
                   {isProcessing ? <Loader2 className="animate-spin w-5 h-5" /> : <>Continue to Payment <ArrowRight className="w-5 h-5" /></>}
                 </button>
+                <p className="mt-4 text-center text-[10px] font-bold text-gray-400 uppercase tracking-tight">
+                  By continuing, you agree to the <Link to="/terms" className="underline hover:text-blue-600 transition-colors">Terms & Conditions</Link> and <Link to="/refund" className="underline hover:text-blue-600 transition-colors">Refund Policy</Link>.
+                </p>
               </form>
             </motion.div>
           ) : (
@@ -732,7 +743,7 @@ export default function CourseSelection() {
               className="space-y-6"
             >
               {course.isBundle && hasBundleDiscount && (
-                  <div className={`p-4 md:p-6 rounded-3xl border-[4px] transition-all duration-500 shadow-[12px_12px_0px_#0b1120] ${isAllBundleSelected ? 'bg-green-50 border-[#10b981]' : 'bg-blue-50 border-[#0b1120]'}`}>
+                  <div className={`p-3 md:p-5 rounded-3xl border-[4px] transition-all duration-500 shadow-[8px_8px_0px_#0b1120] ${isAllBundleSelected ? 'bg-green-50 border-[#10b981]' : 'bg-blue-50 border-[#0b1120]'}`}>
                       <div className="flex flex-col md:flex-row items-center justify-between gap-6">
                           <div className="flex items-center gap-5">
                               <div className={`w-14 h-14 rounded-2xl border-2 border-[#0b1120] flex items-center justify-center shadow-[4px_4px_0px_#0b1120] ${isAllBundleSelected ? 'bg-[#10b981]' : 'bg-white'}`}>
@@ -805,7 +816,7 @@ export default function CourseSelection() {
                   </div>
               )}
 
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 <div className="lg:col-span-7 space-y-6">
                   <div className="bg-white border-[3px] border-[#0b1120] rounded-2xl p-5 shadow-[8px_8px_0px_#0b1120]">
                       <h2 className="text-xl font-black text-[#0b1120] mb-4">{!course.isBundle || course.isFixedBundle ? 'Course Package' : 'Select Your Courses'}</h2>
@@ -826,7 +837,7 @@ export default function CourseSelection() {
                                 <button
                                     key={bc.courseId}
                                     onClick={() => toggleCourse(bc.courseId)}
-                                    className={`w-full p-3.5 text-left border-[2px] rounded-xl flex items-center justify-between transition-all ${selectedCourses.includes(bc.courseId) ? 'bg-blue-50 border-[#0b1120] shadow-[2px_2px_0px_#0b1120]' : 'bg-white border-gray-100 hover:border-gray-300'}`}
+                                    className={`w-full p-3 text-left border-[2px] rounded-xl flex items-center justify-between transition-all ${selectedCourses.includes(bc.courseId) ? 'bg-blue-50 border-[#0b1120] shadow-[2px_2px_0px_#0b1120]' : 'bg-white border-gray-100 hover:border-gray-300'}`}
                                 >
                                     <div className="flex items-center gap-2.5">
                                         <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${selectedCourses.includes(bc.courseId) ? 'bg-[#0b1120] border-[#0b1120] text-white' : 'bg-white border-gray-300'}`}>
@@ -840,39 +851,7 @@ export default function CourseSelection() {
                                 </button>
                             ))}
 
-                            {/* Bundle Eligibility Feedback */}
-                            {isAllBundleSelected && course.bundleDiscountCode && !appliedDiscountCode && (
-                              <motion.div 
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="p-3 bg-purple-50 border-2 border-purple-200 rounded-xl flex items-center gap-3"
-                              >
-                                <div className="w-8 h-8 bg-purple-500 rounded-lg border-2 border-[#0b1120] flex items-center justify-center text-white font-black text-xs">
-                                  !
-                                </div>
-                                <div>
-                                  <div className="text-[11px] font-black text-[#0b1120] uppercase leading-tight">Bundle Code Ready!</div>
-                                  <div className="text-[9px] font-bold text-purple-600 uppercase">Apply <span className="text-purple-800 underline">{course.bundleDiscountCode}</span> to unlock the bundle price</div>
-                                </div>
-                              </motion.div>
-                            )}
 
-                            {/* Applied Discount Feedback */}
-                            {appliedDiscountCode && (
-                              <motion.div 
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="p-3 bg-green-50 border-2 border-[#10b981] rounded-xl flex items-center gap-3"
-                              >
-                                <div className="w-8 h-8 bg-[#10b981] rounded-lg border-2 border-[#0b1120] flex items-center justify-center text-white">
-                                  <Check className="w-4 h-4" />
-                                </div>
-                                <div>
-                                  <div className="text-[11px] font-black text-[#0b1120] uppercase leading-tight">Discount Applied: {appliedDiscountCode}</div>
-                                  <div className="text-[9px] font-bold text-green-600 uppercase">You saved ₹{discountAmount}</div>
-                                </div>
-                              </motion.div>
-                            )}
                         </div>
                     )}
                 </div>
@@ -1044,8 +1023,8 @@ export default function CourseSelection() {
         </AnimatePresence>
 
         {/* Why Gen-Z IITian? Section */}
-        <div className="mt-24 mb-16">
-            <div className="text-center mb-16">
+        <div className="mt-16 mb-12">
+            <div className="text-center mb-10">
                 <h2 className="text-4xl md:text-5xl font-black text-[#0b1120] mb-4 tracking-tight">Why Gen-Z IITian?</h2>
                 <p className="text-lg md:text-xl text-gray-500 font-bold max-w-3xl mx-auto px-4 leading-relaxed">
                     Most students fail the Qualifier not because they lack intelligence — but because they <span className="text-red-500 underline decoration-[3px]">lack structure.</span>

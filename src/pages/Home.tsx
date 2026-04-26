@@ -49,22 +49,22 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white text-[#0b1120] font-sans selection:bg-blue-100 overflow-hidden">
       {/* Hero Section */}
-      <section className="relative pt-8 pb-10 sm:pt-12 sm:pb-16 px-4 sm:px-6 max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 items-center">
+      <section className="relative pt-12 pb-16 sm:pt-16 sm:pb-24 px-4 sm:px-8 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 sm:gap-16 items-center">
           {/* Text Content */}
           <div className="relative z-10 flex flex-col items-start">
             <div className="inline-block px-4 py-1.5 bg-[#eef2ff] text-[#0b1120] font-bold text-xs sm:text-sm rounded-full border-2 border-[#0b1120] mb-5 sm:mb-6">
               India's Best platform for Online/Hybrid Degree students.
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-[1.05] tracking-tight mb-4 sm:mb-6 text-[#0b1120]">
+            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight mb-4 sm:mb-6 text-[#0b1120]">
               Welcome to <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500">
                 Gen-Z IITian
               </span>
             </h1>
 
-            <p className="text-base sm:text-lg lg:text-xl text-gray-600 font-medium mb-6 sm:mb-8 max-w-2xl leading-relaxed">
+            <p className="text-lg sm:text-xl lg:text-2xl text-gray-600 font-medium mb-6 sm:mb-8 max-w-2xl leading-relaxed">
               We help online and hybrid degree students master IIT-level courses with smart notes, quizzes, PYQs, and expert-led lectures.
             </p>
 

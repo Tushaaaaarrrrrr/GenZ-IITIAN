@@ -241,7 +241,7 @@ export default function Cart() {
         email: user.email!,
         courseIds: cart.flatMap((item) =>
           item.isBundle && item.bundleCourses && item.bundleCourses.length > 0
-            ? item.bundleCourses.map(b => b.courseId)
+            ? item.bundleCourses.flatMap(b => [b.courseId, b.courseId2, b.courseId3].filter(Boolean))
             : [item.id as string]
         ),
         discountCode: appliedDiscountCode || undefined,
@@ -274,7 +274,7 @@ export default function Cart() {
               email: user.email,
               courseIds: cart.flatMap((item) =>
                 item.isBundle && item.bundleCourses && item.bundleCourses.length > 0
-                  ? item.bundleCourses.map(b => b.courseId)
+                  ? item.bundleCourses.flatMap(b => [b.courseId, b.courseId2, b.courseId3].filter(Boolean))
                   : [item.id as string]
               ),
               discountCode: appliedDiscountCode || undefined,
@@ -288,7 +288,7 @@ export default function Cart() {
 
             const flatCourseIds = cart.flatMap((item) =>
               item.isBundle && item.bundleCourses && item.bundleCourses.length > 0
-                ? item.bundleCourses.map(b => b.courseId)
+                ? item.bundleCourses.flatMap(b => [b.courseId, b.courseId2, b.courseId3].filter(Boolean))
                 : [item.id as string]
             );
 

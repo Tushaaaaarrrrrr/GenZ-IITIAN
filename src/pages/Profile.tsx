@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { User, Mail, Calendar, ShoppingBag, LogOut, Loader2 } from 'lucide-react';
+import { User, Mail, Calendar, ShoppingBag, LogOut, Loader2, Book } from 'lucide-react';
 import { motion } from 'motion/react';
 import { apiService } from '../lib/api';
+import { Link } from 'react-router-dom';
 
 export default function Profile() {
   const { user, profile, signOut, loading: authLoading } = useAuth();
@@ -20,25 +21,26 @@ export default function Profile() {
 
   const fetchCatalog = async () => {
     try {
-      // Fetch from both denormalized catalog and main courses table for maximum coverage
-      const [{ data: catalog }, { data: courses }] = await Promise.all([
-        supabase.from('course_catalog').select('id, name'),
-        supabase.from('courses').select('id, name')
-      ]);
+      // Fetch full details from courses table to get community and content links
+      const { data: courses, error } = await supabase
+        .from('courses')
+        .select('id, name, community_link, content_link, image')
+        .order('name');
       
-      const merged = [
-        ...(catalog || []),
-        ...(courses || [])
-      ];
-      
-      // Remove duplicates by ID (preferring catalog if both exist)
-      const unique = Array.from(new Map(merged.map(item => [item.id, item])).values());
-      
-      setCourseCatalog(unique);
+      if (error) throw error;
+      setCourseCatalog(courses || []);
     } catch (err) {
       console.error('Catalog fetch error:', err);
     }
   };
+
+  const getEnrolledCourses = () => {
+    const paidOrders = orders.filter(o => o.status === 'PAID');
+    const allCourseIds = Array.from(new Set(paidOrders.flatMap(o => o.course_ids)));
+    return allCourseIds.map(id => courseCatalog.find(c => c.id === id)).filter(Boolean);
+  };
+
+  const enrolledCourses = getEnrolledCourses();
 
   const fetchOrders = async () => {
     try {
@@ -82,6 +84,45 @@ export default function Profile() {
               <LogOut className="w-4 h-4" /> Logout
             </button>
           </div>
+        </section>
+
+        {/* Enrolled Courses */}
+        <section className="space-y-6">
+          <h2 className="text-2xl font-black text-[#0b1120] flex items-center gap-3">
+            <Book className="w-6 h-6 text-[#10b981]" /> My Enrolled Courses
+          </h2>
+
+          {loading ? (
+            <div className="p-12 text-center text-gray-400 font-bold">Loading your courses...</div>
+          ) : enrolledCourses.length === 0 ? (
+            <div className="bg-white border-[4px] border-dashed border-gray-200 rounded-[2.5rem] p-16 text-center">
+              <p className="text-xl font-bold text-gray-400">You haven't enrolled in any courses yet.</p>
+              <Link to="/courses" className="inline-block mt-4 text-[#3b82f6] font-black hover:underline">Browse Courses →</Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {enrolledCourses.map((course: any) => (
+                <motion.div
+                  key={course.id}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="bg-white border-[4px] border-[#0b1120] rounded-[2rem] p-6 shadow-[6px_6px_0px_#0b1120] hover:shadow-[10px_10px_0px_#10b981] transition-all group"
+                >
+                  <div className="flex items-start gap-4 mb-6">
+                    <div className="w-16 h-16 bg-gray-100 rounded-xl border-2 border-[#0b1120] overflow-hidden shrink-0">
+                      <img src={course.image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=200'} className="w-full h-full object-cover" />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-[#0b1120] leading-tight mb-1">{course.name}</h3>
+                      <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">ID: {course.id}</div>
+                    </div>
+                  </div>
+
+
+                </motion.div>
+              ))}
+            </div>
+          )}
         </section>
 
         {/* Order History */}

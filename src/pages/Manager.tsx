@@ -30,13 +30,13 @@ export default function Manager() {
   const effectiveTab = validTabs.includes(activeTab) ? activeTab : 'users';
   const [data, setData] = useState<any>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'today' | 'yesterday' | 'lastweek' | '7days' | 'month' | 'all'>('all');
+  const [filter, setFilter] = useState<'today' | 'yesterday' | 'lastweek' | '7days' | 'month' | 'not-purchased' | 'abandoned' | 'no-number' | 'all'>('all');
   const [paymentSearch, setPaymentSearch] = useState('');
   const [userSearch, setUserSearch] = useState('');
   const [editingCourse, setEditingCourse] = useState<any>(null);
   const [showAddCourse, setShowAddCourse] = useState(false);
   const [isBundle, setIsBundle] = useState(false);
-  const [bundleCourses, setBundleCourses] = useState<{courseId: string, courseName: string, price: number}[]>([]);
+  const [bundleCourses, setBundleCourses] = useState<{courseId: string, courseId2?: string, courseId3?: string, courseName: string, price: number}[]>([]);
   const [bundleDiscountPrice, setBundleDiscountPrice] = useState<number | ''>('');
   const [bundleDiscountCode, setBundleDiscountCode] = useState('');
   const [isFixedBundle, setIsFixedBundle] = useState(false);
@@ -77,7 +77,7 @@ export default function Manager() {
     setBundleCourses([...bundleCourses, { courseId: '', courseName: '', price: 0 }]);
   };
 
-  const updateBundleCourse = (index: number, key: 'courseId' | 'courseName' | 'price', value: string | number) => {
+  const updateBundleCourse = (index: number, key: string, value: string | number) => {
     const updated = [...bundleCourses];
     (updated[index] as any)[key] = value;
     setBundleCourses(updated);
@@ -90,6 +90,13 @@ export default function Manager() {
   useEffect(() => {
     if (!authLoading && !isManager) navigate('/');
   }, [isManager, authLoading]);
+
+  useEffect(() => {
+    // Reset filter when switching tabs so stale filters don't corrupt new tab's query
+    setFilter('all');
+    setPaymentSearch('');
+    setUserSearch('');
+  }, [effectiveTab]);
 
   useEffect(() => {
     if (isManager) fetchData();
@@ -302,6 +309,8 @@ export default function Manager() {
         bundleDiscountCode: course.bundleDiscountCode || null,
         isFixedBundle: course.isFixedBundle || false,
         subject: course.category || null,
+        community_link: course.community_link || null,
+        content_link: course.content_link || null,
         startDate: course.startDate || null,
         endDate: course.endDate || null,
       };
@@ -395,6 +404,12 @@ export default function Manager() {
             if (bc.courseId && bc.courseName) {
               catalogEntries.push({ id: bc.courseId, name: bc.courseName });
             }
+            if (bc.courseId2 && bc.courseName) {
+              catalogEntries.push({ id: bc.courseId2, name: bc.courseName });
+            }
+            if (bc.courseId3 && bc.courseName) {
+              catalogEntries.push({ id: bc.courseId3, name: bc.courseName });
+            }
           });
         }
         
@@ -476,12 +491,24 @@ export default function Manager() {
             </div>
             <div className="flex gap-4">
               {effectiveTab === 'users' && (
-                <button 
-                  onClick={exportUsers}
-                  className="flex items-center gap-3 px-8 py-4 bg-[#3b82f6] text-white rounded-2xl font-black border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#0b1120] hover:translate-y-1 hover:shadow-none transition-all"
-                >
-                  <Download className="w-6 h-6" /> Export CSV
-                </button>
+                <div className="flex gap-4">
+                  <button 
+                    onClick={() => {
+                      setFilter(filter === 'no-number' ? 'all' : 'no-number');
+                    }}
+                    className={`flex items-center gap-3 px-6 py-4 rounded-2xl font-black border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#0b1120] hover:translate-y-1 hover:shadow-none transition-all ${
+                      filter === 'no-number' ? 'bg-[#0b1120] text-white' : 'bg-white text-[#0b1120]'
+                    }`}
+                  >
+                    <Users className="w-6 h-6" /> No Number
+                  </button>
+                  <button 
+                    onClick={exportUsers}
+                    className="flex items-center gap-3 px-8 py-4 bg-[#3b82f6] text-white rounded-2xl font-black border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#0b1120] hover:translate-y-1 hover:shadow-none transition-all"
+                  >
+                    <Download className="w-6 h-6" /> Export CSV
+                  </button>
+                </div>
               )}
               {effectiveTab === 'catalog' && (
                 <button 
@@ -493,6 +520,14 @@ export default function Manager() {
               )}
               {effectiveTab === 'payments' && (
                 <div className="flex gap-4">
+                  <button 
+                    onClick={() => setFilter(filter === 'not-purchased' ? 'all' : 'not-purchased')}
+                    className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#0b1120] hover:translate-y-1 hover:shadow-none transition-all ${
+                      filter === 'not-purchased' ? 'bg-[#0b1120] text-white' : 'bg-white text-[#0b1120]'
+                    }`}
+                  >
+                    <User className="w-6 h-6" /> Just Created
+                  </button>
                   <button 
                     onClick={fetchData}
                     className="flex items-center gap-3 px-8 py-4 bg-white text-[#0b1120] rounded-2xl font-black border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#0b1120] hover:translate-y-1 hover:shadow-none transition-all"
@@ -611,7 +646,9 @@ export default function Manager() {
                         { id: 'all', label: 'All Time' },
                         { id: 'today', label: 'Today' },
                         { id: 'yesterday', label: 'Yesterday' },
-                        { id: 'lastweek', label: 'Last Week' }
+                        { id: 'lastweek', label: 'Last Week' },
+                        { id: 'not-purchased', label: 'Just Created' },
+                        { id: 'abandoned', label: 'Abandoned Checkouts' }
                       ].map((f) => (
                         <button
                           key={f.id}
@@ -665,9 +702,10 @@ export default function Manager() {
                               <span className={`px-4 py-2 rounded-xl text-xs font-black uppercase border-2 shadow-[2px_2px_0px_currentColor] ${
                                 order.status === 'PAID' ? 'bg-green-50 text-green-600 border-green-600' :
                                 order.status === 'FAILED' ? 'bg-red-50 text-red-600 border-red-600' :
+                                order.status === 'NOT_PURCHASED' ? 'bg-gray-50 text-gray-400 border-gray-400' :
                                 'bg-yellow-50 text-yellow-600 border-yellow-600'
                               }`}>
-                                {order.status}
+                                {order.status.replace('_', ' ')}
                               </span>
                             </td>
                             <td className="px-8 py-6">
@@ -853,9 +891,9 @@ export default function Manager() {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { setShowAddCourse(false); setEditingCourse(null); }} className="absolute inset-0 bg-[#0b1120]/60 backdrop-blur-md" />
             <motion.div 
               initial={{ scale: 0.9, y: 30 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 30 }}
-              className="relative bg-white border-[6px] border-[#0b1120] rounded-[3.5rem] p-10 lg:p-16 w-full max-w-4xl shadow-[20px_20px_0px_#0b1120] overflow-y-auto max-h-[90vh]"
+              className="relative bg-white border-[6px] border-[#0b1120] rounded-[3.5rem] p-10 lg:p-16 w-full max-w-7xl shadow-[20px_20px_0px_#0b1120] overflow-y-auto max-h-[90vh]"
             >
-              <h2 className="text-5xl font-black text-[#0b1120] mb-12 flex items-center gap-4">
+              <h2 className="text-3xl font-black text-[#0b1120] mb-8 flex items-center gap-4">
                 {editingCourse ? 'Update Course' : 'Create Course'}
               </h2>
 
@@ -916,6 +954,8 @@ export default function Manager() {
                       </select>
                     </div>
                   </div>
+
+
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -1018,14 +1058,75 @@ export default function Manager() {
                       </div>
                       {bundleCourses.map((bc, idx) => (
                         <div key={idx} className="p-8 bg-white border-[3px] border-[#0b1120] rounded-[2.5rem] shadow-[8px_8px_0px_#0b1120] space-y-6 mb-6">
-                          <div className="space-y-2">
-                            <label className="text-xs font-black text-blue-600 uppercase tracking-widest pl-1">Course ID</label>
-                            <input 
-                              value={bc.courseId} 
-                              onChange={e => updateBundleCourse(idx, 'courseId', e.target.value)} 
-                              placeholder="e.g. PYTHON-CORE-101" 
-                              className="w-full px-6 py-4 bg-blue-50/50 border-2 border-blue-200 rounded-2xl font-bold text-lg outline-none focus:border-blue-400 focus:bg-white transition-all uppercase" 
-                            />
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <label className="text-xs font-black text-blue-600 uppercase tracking-widest pl-1">Course ID</label>
+                              {bc.courseId3 === undefined && (
+                                <button 
+                                  type="button" 
+                                  onClick={() => {
+                                    if (bc.courseId2 === undefined) updateBundleCourse(idx, 'courseId2', '');
+                                    else if (bc.courseId3 === undefined) updateBundleCourse(idx, 'courseId3', '');
+                                  }}
+                                  className="text-[10px] font-black bg-blue-50 text-blue-600 px-3 py-1 rounded-lg border border-blue-100 hover:bg-blue-600 hover:text-white transition-all flex items-center gap-1.5 shadow-[2px_2px_0px_#3b82f6] hover:shadow-none translate-y-[-2px] hover:translate-y-0"
+                                >
+                                  <Plus className="w-3 h-3" /> ADD ID
+                                </button>
+                              )}
+                            </div>
+                            
+                            <div className="space-y-3">
+                              <input 
+                                value={bc.courseId} 
+                                onChange={e => updateBundleCourse(idx, 'courseId', e.target.value)} 
+                                placeholder="Primary Course ID" 
+                                className="w-full px-6 py-4 bg-blue-50/50 border-2 border-blue-200 rounded-2xl font-bold text-base outline-none focus:border-blue-400 focus:bg-white transition-all uppercase" 
+                              />
+
+                              {bc.courseId2 !== undefined && (
+                                <div className="relative">
+                                  <input 
+                                    value={bc.courseId2} 
+                                    onChange={e => updateBundleCourse(idx, 'courseId2', e.target.value)} 
+                                    placeholder="Extra ID 2 (Optional)" 
+                                    className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-200 rounded-2xl font-bold text-base outline-none focus:border-blue-400 focus:bg-white transition-all uppercase" 
+                                  />
+                                  <button 
+                                    onClick={() => {
+                                      const updated = [...bundleCourses];
+                                      const { courseId2: _, ...rest } = updated[idx];
+                                      updated[idx] = rest as any;
+                                      setBundleCourses(updated);
+                                    }}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-red-400 hover:text-red-600 p-2"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              )}
+
+                              {bc.courseId3 !== undefined && (
+                                <div className="relative">
+                                  <input 
+                                    value={bc.courseId3} 
+                                    onChange={e => updateBundleCourse(idx, 'courseId3', e.target.value)} 
+                                    placeholder="Extra ID 3 (Optional)" 
+                                    className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-200 rounded-2xl font-bold text-base outline-none focus:border-blue-400 focus:bg-white transition-all uppercase" 
+                                  />
+                                  <button 
+                                    onClick={() => {
+                                      const updated = [...bundleCourses];
+                                      const { courseId3: _, ...rest } = updated[idx];
+                                      updated[idx] = rest as any;
+                                      setBundleCourses(updated);
+                                    }}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-red-400 hover:text-red-600 p-2"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
                           
                           <div className="space-y-2">
@@ -1034,7 +1135,7 @@ export default function Manager() {
                               value={bc.courseName} 
                               onChange={e => updateBundleCourse(idx, 'courseName', e.target.value)} 
                               placeholder="Enter the full display name..." 
-                              className="w-full px-6 py-4 border-2 border-gray-200 rounded-2xl font-bold text-lg outline-none focus:border-[#0b1120] transition-all" 
+                              className="w-full px-6 py-4 border-2 border-gray-200 rounded-2xl font-bold text-base outline-none focus:border-[#0b1120] transition-all" 
                             />
                           </div>
 
@@ -1047,7 +1148,7 @@ export default function Manager() {
                                   type="number" 
                                   value={bc.price} 
                                   onChange={e => updateBundleCourse(idx, 'price', parseInt(e.target.value) || 0)} 
-                                  className="w-full pl-12 pr-6 py-4 border-2 border-gray-200 rounded-2xl font-black text-xl outline-none focus:border-[#10b981] transition-all" 
+                                  className="w-full pl-12 pr-6 py-4 border-2 border-gray-200 rounded-2xl font-black text-lg outline-none focus:border-[#10b981] transition-all" 
                                 />
                               </div>
                             </div>
@@ -1083,6 +1184,7 @@ export default function Manager() {
                     const discountPrice = (document.getElementById('c-discount') as HTMLInputElement).value;
                     const isPinned = (document.getElementById('c-pinned') as HTMLSelectElement).value === 'true';
                     const category = (document.getElementById('c-category') as HTMLInputElement).value;
+
                     const startDate = (document.getElementById('c-start') as HTMLInputElement).value;
                     const endDate = (document.getElementById('c-end') as HTMLInputElement).value;
 
@@ -1103,6 +1205,7 @@ export default function Manager() {
                       id, previousId: editingCourse?.id, name, price, isPinned, subtitle,
                       cohortContent,
                       category,
+
                       discountPrice: discountPrice || null,
                       isBundle,
                       bundleCourses,
@@ -1113,7 +1216,7 @@ export default function Manager() {
                       endDate: endDate ? new Date(endDate).toISOString() : null,
                     });
                   }}
-                  className="flex-grow py-5 bg-[#10b981] text-[#0b1120] rounded-2xl font-black text-xl border-[4px] border-[#0b1120] flex items-center justify-center gap-3 shadow-[8px_8px_0px_#0b1120] active:translate-y-1 active:shadow-none"
+                  className="flex-grow py-5 bg-[#10b981] text-[#0b1120] rounded-2xl font-black text-lg border-[4px] border-[#0b1120] flex items-center justify-center gap-3 shadow-[8px_8px_0px_#0b1120] active:translate-y-1 active:shadow-none"
                 >
                   <Save className="w-6 h-6" /> Confirm Changes
                 </button>
@@ -1133,9 +1236,9 @@ export default function Manager() {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { setShowAddDiscount(false); setEditingDiscount(null); }} className="absolute inset-0 bg-[#0b1120]/60 backdrop-blur-md" />
             <motion.div 
               initial={{ scale: 0.9, y: 30 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 30 }}
-              className="relative bg-white border-[6px] border-[#0b1120] rounded-[3.5rem] p-10 lg:p-16 w-full max-w-2xl shadow-[20px_20px_0px_#0b1120]"
+              className="relative bg-white border-[6px] border-[#0b1120] rounded-[3.5rem] p-10 lg:p-16 w-full max-w-4xl shadow-[20px_20px_0px_#0b1120]"
             >
-              <h2 className="text-4xl font-black text-[#0b1120] mb-8 flex items-center gap-4">
+              <h2 className="text-2xl font-black text-[#0b1120] mb-8 flex items-center gap-4">
                 {editingDiscount ? 'Update Coupon' : 'Create Coupon'}
               </h2>
 
@@ -1198,7 +1301,7 @@ export default function Manager() {
                       applies_to
                     });
                   }}
-                  className="flex-grow py-5 bg-purple-500 text-white rounded-2xl font-black text-xl border-[4px] border-[#0b1120] flex items-center justify-center gap-3 shadow-[8px_8px_0px_#0b1120] active:translate-y-1 active:shadow-none hover:bg-purple-600 transition-colors"
+                  className="flex-grow py-5 bg-purple-500 text-white rounded-2xl font-black text-lg border-[4px] border-[#0b1120] flex items-center justify-center gap-3 shadow-[8px_8px_0px_#0b1120] active:translate-y-1 active:shadow-none hover:bg-purple-600 transition-colors"
                 >
                   <Save className="w-6 h-6" /> Confirm Changes
                 </button>
@@ -1219,11 +1322,11 @@ export default function Manager() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] p-6 lg:p-10 w-full max-w-5xl shadow-[16px_16px_0px_#0b1120] my-auto"
+              className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] p-6 lg:p-10 w-full max-w-7xl shadow-[16px_16px_0px_#0b1120] my-auto"
             >
               <div className="flex justify-between items-start border-b-[3px] border-gray-100 pb-6 mb-8">
                 <div>
-                  <h3 className="text-3xl font-black text-[#0b1120] flex items-center gap-3">
+                  <h3 className="text-xl font-black text-[#0b1120] flex items-center gap-3">
                     <User className="w-8 h-8 text-blue-500" />
                     {selectedUser.name || 'Anonymous User'}
                   </h3>

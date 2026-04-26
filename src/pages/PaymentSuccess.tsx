@@ -144,7 +144,7 @@ export default function PaymentSuccess() {
               onClick={() => window.location.href = LMS_URL}
               className="flex-grow py-4 bg-[#10b981] text-[#0b1120] rounded-2xl font-black text-lg border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#0b1120] hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center gap-3 group"
             >
-              Go to Class Dashboard <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
+              Go to Dashboard <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
             </button>
             
             <Link

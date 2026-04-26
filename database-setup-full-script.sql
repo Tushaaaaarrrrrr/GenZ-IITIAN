@@ -42,6 +42,8 @@ CREATE TABLE IF NOT EXISTS public.courses (
   "startDate" TIMESTAMP WITH TIME ZONE,
   "endDate" TIMESTAMP WITH TIME ZONE,
   image TEXT,
+  "community_link" TEXT,
+  "content_link" TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 

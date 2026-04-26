@@ -7,7 +7,7 @@ type Course = {
   lms_course_id: string;
   image?: string;
   isBundle?: boolean;
-  bundleCourses?: { courseId: string; courseName: string }[];
+  bundleCourses?: { courseId: string; courseId2?: string | null; courseId3?: string | null; courseName: string }[];
 };
 
 type CartContextType = {

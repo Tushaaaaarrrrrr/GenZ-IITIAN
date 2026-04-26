@@ -70,7 +70,12 @@ export const apiService = {
           }
           const { data, error } = await query;
           if (error) throw error;
-          return data || [];
+          
+          let result = data || [];
+          if (filter === 'no-number') {
+            result = result.filter(u => !u.phone || u.phone.trim() === '');
+          }
+          return result;
         }
 
         if (tab === 'discounts') {
@@ -84,6 +89,38 @@ export const apiService = {
         }
 
         if (tab === 'payments') {
+          if (filter === 'not-purchased') {
+            // Fetch all profiles
+            let profileQuery = supabase.from('profiles').select('*').order('created_at', { ascending: false });
+            if (search) {
+              profileQuery = profileQuery.or(`name.ilike.%${search}%,email.ilike.%${search}%`);
+            }
+            const { data: profiles, error: pError } = await profileQuery;
+            if (pError) throw pError;
+
+            // Fetch all emails that have at least one PAID order
+            const { data: paidOrders, error: oError } = await supabase
+              .from('website_orders')
+              .select('user_email')
+              .eq('status', 'PAID');
+            if (oError) throw oError;
+
+            const paidEmails = new Set(paidOrders?.map(o => o.user_email?.toLowerCase()) || []);
+
+            // Filter users who haven't paid for any course
+            const leads = profiles?.filter(p => !paidEmails.has(p.email?.toLowerCase())) || [];
+
+            // Map to "order" format so the UI remains consistent
+            return leads.map(p => ({
+              order_id: `LEAD_${p.id.toString().slice(0, 8)}`,
+              user_email: p.email,
+              course_ids: [],
+              total_amount: 0,
+              status: 'NOT_PURCHASED',
+              created_at: p.created_at
+            }));
+          }
+
           let query = supabase.from('website_orders').select('*').order('created_at', { ascending: false });
           
           if (search) {
@@ -91,23 +128,27 @@ export const apiService = {
           }
 
           if (filter !== 'all') {
-            const now = new Date();
-            const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            
-            if (filter === 'today') {
-              query = query.gte('created_at', startOfToday.toISOString());
-            } else if (filter === 'yesterday') {
-              const startOfYesterday = new Date(startOfToday);
-              startOfYesterday.setDate(startOfYesterday.getDate() - 1);
-              query = query.gte('created_at', startOfYesterday.toISOString()).lt('created_at', startOfToday.toISOString());
-            } else if (filter === 'lastweek') {
-              const sevenDaysAgo = new Date(startOfToday);
-              sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-              query = query.gte('created_at', sevenDaysAgo.toISOString());
-            } else if (filter === 'month') {
-              const thirtyDaysAgo = new Date(startOfToday);
-              thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-              query = query.gte('created_at', thirtyDaysAgo.toISOString());
+            if (filter === 'abandoned') {
+              query = query.eq('status', 'CREATED');
+            } else {
+              const now = new Date();
+              const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+              
+              if (filter === 'today') {
+                query = query.gte('created_at', startOfToday.toISOString());
+              } else if (filter === 'yesterday') {
+                const startOfYesterday = new Date(startOfToday);
+                startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+                query = query.gte('created_at', startOfYesterday.toISOString()).lt('created_at', startOfToday.toISOString());
+              } else if (filter === 'lastweek') {
+                const sevenDaysAgo = new Date(startOfToday);
+                sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+                query = query.gte('created_at', sevenDaysAgo.toISOString());
+              } else if (filter === 'month') {
+                const thirtyDaysAgo = new Date(startOfToday);
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                query = query.gte('created_at', thirtyDaysAgo.toISOString());
+              }
             }
           }
 

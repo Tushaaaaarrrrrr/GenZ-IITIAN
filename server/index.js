@@ -905,7 +905,64 @@ app.get('/api/manager-fetch', authMiddleware, async (req, res) => {
             return res.json(data);
         }
         if (tab === 'payments') {
-            const { data, error } = await supabase.from('website_orders').select('*').order('created_at', { ascending: false });
+            if (filter === 'not-purchased') {
+                const { search } = req.query;
+                // Fetch all profiles
+                let profileQuery = supabase.from('profiles').select('*').order('created_at', { ascending: false });
+                if (search) {
+                    profileQuery = profileQuery.or(`name.ilike.%${search}%,email.ilike.%${search}%`);
+                }
+                const { data: profiles, error: pError } = await profileQuery;
+                if (pError) throw pError;
+
+                // Fetch all emails that have at least one PAID order
+                const { data: paidOrders, error: oError } = await supabase
+                    .from('website_orders')
+                    .select('user_email')
+                    .eq('status', 'PAID');
+                if (oError) throw oError;
+
+                const paidEmails = new Set(paidOrders?.map(o => o.user_email?.toLowerCase()) || []);
+
+                // Filter users who haven't paid for any course
+                const leads = profiles?.filter(p => !paidEmails.has(p.email?.toLowerCase())) || [];
+
+                // Map to "order" format so the UI remains consistent
+                return res.json(leads.map(p => ({
+                    order_id: `LEAD_${p.id.toString().slice(0, 8)}`,
+                    user_email: p.email,
+                    course_ids: [],
+                    total_amount: 0,
+                    status: 'NOT_PURCHASED',
+                    created_at: p.created_at
+                })));
+            }
+
+            let query = supabase.from('website_orders').select('*').order('created_at', { ascending: false });
+            const { search } = req.query;
+            if (search) {
+                query = query.or(`user_email.ilike.%${search}%,order_id.ilike.%${search}%`);
+            }
+            if (filter === 'abandoned') {
+                query = query.eq('status', 'CREATED');
+            } else if (filter === 'today') {
+                const now = new Date();
+                const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                query = query.gte('created_at', startOfToday.toISOString());
+            } else if (filter === 'yesterday') {
+                const now = new Date();
+                const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                const startOfYesterday = new Date(startOfToday);
+                startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+                query = query.gte('created_at', startOfYesterday.toISOString()).lt('created_at', startOfToday.toISOString());
+            } else if (filter === 'lastweek') {
+                const now = new Date();
+                const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                const sevenDaysAgo = new Date(startOfToday);
+                sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+                query = query.gte('created_at', sevenDaysAgo.toISOString());
+            }
+            const { data, error } = await query;
             if (error) throw error;
             return res.json(data);
         }
@@ -913,6 +970,34 @@ app.get('/api/manager-fetch', authMiddleware, async (req, res) => {
             const { data, error } = await supabase.from('referral_transactions').select('*').order('created_at', { ascending: false });
             if (error) throw error;
             return res.json(data);
+        }
+        if (tab === 'users') {
+            const { search } = req.query;
+            let emailsFromCode = [];
+            if (search) {
+                const { data: refMatches } = await supabase.from('referral_profiles').select('email').ilike('referral_code', `%${search}%`);
+                if (refMatches && refMatches.length > 0) {
+                    emailsFromCode = refMatches.map(r => r.email);
+                }
+            }
+
+            let query = supabase.from('profiles').select('*').order('created_at', { ascending: false });
+            if (search) {
+                if (emailsFromCode.length > 0) {
+                    const emailsStr = emailsFromCode.map(e => `"${e}"`).join(',');
+                    query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%,email.in.(${emailsStr})`);
+                } else {
+                    query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%`);
+                }
+            }
+            const { data, error } = await query;
+            if (error) throw error;
+            
+            let result = data || [];
+            if (filter === 'no-number') {
+                result = result.filter(u => !u.phone || u.phone.trim() === '');
+            }
+            return res.json(result);
         }
         res.status(400).json({ error: 'Invalid tab' });
     } catch (err) {

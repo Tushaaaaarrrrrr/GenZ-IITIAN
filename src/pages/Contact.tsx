@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, ReactNode } from 'react';
 import { ChevronDown, ChevronUp, HelpCircle, ShieldCheck, Tag, Clock, User, Monitor, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -43,7 +43,7 @@ const FAQ_DATA = [
 function FAQItem({ question, answer, icon, isOpen, onClick }: { 
   question: string; 
   answer: string; 
-  icon: React.ReactNode; 
+  icon: ReactNode; 
   isOpen: boolean; 
   onClick: () => void;
 }) {
