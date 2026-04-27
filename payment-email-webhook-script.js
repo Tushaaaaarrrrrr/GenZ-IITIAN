@@ -7,7 +7,11 @@ function doPost(e) {
       coins_applied, failure_source, timestamp 
     } = data;
 
-    // --- DEDUPLICATION ---
+    // 1. Select the Sheet 
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName("Sheet1") || ss.getSheets()[0];
+
+    // --- FAST DEDUPLICATION (Cache & Lock) ---
     const lock = LockService.getScriptLock();
     lock.waitLock(10000);
     const cache = CacheService.getScriptCache();
@@ -16,18 +20,39 @@ function doPost(e) {
       lock.releaseLock();
       return ContentService.createTextOutput(JSON.stringify({ status: 'duplicate_skipped' })).setMimeType(ContentService.MimeType.JSON);
     }
+
+    // 2. Prevent Duplicates based on Order ID (prevents double logging from sheet history)
+    var existingData = sheet.getDataRange().getValues();
+    for (var i = 1; i < existingData.length; i++) {
+      if (String(existingData[i][8]) === String(order_id)) {
+        lock.releaseLock();
+        return ContentService.createTextOutput("Duplicate");
+      }
+    }
+
+    // Mark as processed in cache
     if (order_id) {
       cache.put(cacheKey, '1', 300); // 5 min window
     }
-    lock.releaseLock();
 
-    // Log to sheet
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    // 3. Append row to sheet WITH price and new fields
+    // NOTE: Make sure your Google Sheet has at least 12 columns
     sheet.appendRow([
-      timestamp, email, name, phone, course_name, price, 
-      status, payment_id, order_id, referral_code, discount_code, 
-      coins_applied, failure_source
+      timestamp || new Date().toLocaleString(),       // Col 1
+      name || "Student",            // Col 2
+      email || "",           // Col 3
+      "'" + (phone || "N/A"),     // Col 4 (Prefix ' prevents scientific notation format)
+      course_name || "Unknown Course",     // Col 5
+      price || 0,           // Col 6
+      status || "UNKNOWN",          // Col 7
+      payment_id || "",      // Col 8
+      order_id || "N/A",        // Col 9
+      referral_code || "N/A",   // Col 10
+      discount_code || "N/A",   // Col 11
+      coins_applied || 0    // Col 12
     ]);
+
+    lock.releaseLock();
 
     const studentName = name || 'Student';
     const courseName = course_name || 'your course';
