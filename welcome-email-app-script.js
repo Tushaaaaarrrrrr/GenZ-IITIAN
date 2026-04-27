@@ -528,6 +528,7 @@ function doPost(e) {
       });
 
     } else if (type === 'missyou' && email) {
+      const studentName = name || 'Student';
       const missYouHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -549,7 +550,7 @@ function doPost(e) {
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
                 <tr>
                   <td style="background:rgba(255,255,255,0.12); border-radius:6px; width:30px; height:30px; text-align:center; vertical-align:middle;">
-                    <span style="display:block; font-size:16px;">🎓</span>
+                    <span style="display:block; font-size:16px;">&#127891;</span>
                   </td>
                   <td style="padding-left:8px; color:#ffffff; font-family:Georgia,serif; font-size:16px; font-weight:700;">
                     GenZ<span style="color:#90c4ff;">IITIAN</span>
@@ -569,6 +570,9 @@ function doPost(e) {
                   </td>
                 </tr>
               </table>
+              <p style="margin:0 0 16px; font-size:17px; color:#1a3a6e; font-weight:700; line-height:1.6;">
+                Hey <strong>${studentName}</strong> — where did you disappear to? We were waiting for you! &#128522;
+              </p>
               <p style="margin:0 0 22px; font-size:16px; color:#444444; line-height:1.8;">
                 Real talk — did you forget about that <strong style="color:#1a3a6e;">good CGPA</strong> you promised yourself? &#128064;<br/><br/>
                 We haven't. Give us one chance — we'll make sure you actually get there.
@@ -617,7 +621,7 @@ function doPost(e) {
                     <p style="margin:0 0 8px; font-size:12px; color:rgba(200,220,255,0.6); line-height:1.4;">Your spot is still open</p>
                     <p style="margin:0 0 16px; font-size:17px; font-weight:700; color:#ffffff; line-height:1.4;">C'mon, let's do this already &#128640;</p>
                     <a href="https://app.genziitian.in/courses" style="display:inline-block; background:#ffffff; color:#1a3a6e; font-size:14px; font-weight:700; text-decoration:none; padding:12px 32px; border-radius:8px; white-space:nowrap;">
-                      I'm In →
+                      join Now →
                     </a>
                   </td>
                 </tr>

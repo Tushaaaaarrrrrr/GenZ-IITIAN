@@ -298,6 +298,7 @@ export default function Manager() {
         description: course.subtitle, // subtitle maps to description in DB for now
         price: parseInt(course.price as string),
         isPinned: course.isPinned || false,
+        class_type: course.class_type || 'recorded',
         learn: [],
         who: '',
         outcomes: '',
@@ -946,13 +947,23 @@ export default function Manager() {
                       <input type="text" defaultValue={editingCourse?.subject} id="c-category" placeholder="e.g. Data Science" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none" />
                     </div>
                     <div>
+                      <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Class Type</label>
+                      <select id="c-class-type" defaultValue={editingCourse?.class_type || 'recorded'} className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-black focus:ring-[6px] ring-blue-100 outline-none bg-white">
+                        <option value="recorded">Recorded</option>
+                        <option value="live">Live</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
                       <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Pinned?</label>
                       <select id="c-pinned" defaultValue={editingCourse?.isPinned ? 'true' : 'false'} className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-black focus:ring-[6px] ring-blue-100 outline-none bg-white">
                         <option value="false">Regular</option>
                         <option value="true">Pinned</option>
                       </select>
                     </div>
-                  </div>
+                    <div>
 
 
 
@@ -1181,8 +1192,9 @@ export default function Manager() {
                     const cohortContent = (document.getElementById('c-cohort') as HTMLTextAreaElement).value;
                     const price = (document.getElementById('c-price') as HTMLInputElement).value;
                     const discountPrice = (document.getElementById('c-discount') as HTMLInputElement).value;
-                    const isPinned = (document.getElementById('c-pinned') as HTMLSelectElement).value === 'true';
+                    const isPinned = (document.getElementById('c-pinned') as HTMLSelectElement)?.value === 'true';
                     const category = (document.getElementById('c-category') as HTMLInputElement).value;
+                    const class_type = (document.getElementById('c-class-type') as HTMLSelectElement)?.value || 'recorded';
 
                     const startDate = (document.getElementById('c-start') as HTMLInputElement).value;
                     const endDate = (document.getElementById('c-end') as HTMLInputElement).value;
@@ -1204,6 +1216,7 @@ export default function Manager() {
                       id, previousId: editingCourse?.id, name, price, isPinned, subtitle,
                       cohortContent,
                       category,
+                      class_type,
 
                       discountPrice: discountPrice || null,
                       isBundle,

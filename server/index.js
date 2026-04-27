@@ -542,6 +542,18 @@ async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_p
     // === STEP 1: LMS ENROLLMENT (isolated — failures must NOT block referral/coin processing) ===
     let lmsEnrollmentSucceeded = false;
     try {
+        // Fetch class types for the selected courses
+        const { data: coursesData } = await supabase.from('courses').select('*').in('id', courseIds);
+        
+        // Construct detailed payload for the new LMS format while keeping courseIds for backward compatibility
+        const courseDetails = courseIds.map(id => {
+            const course = coursesData?.find(c => c.id === id);
+            return {
+                id: id,
+                type: course?.class_type || 'recorded'
+            };
+        });
+
         const lmsRes = await fetch(lms_enroll_url, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -550,7 +562,8 @@ async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_p
                 email,
                 name: profile?.name || "Student",
                 phone: profile?.phone || "N/A",
-                courseIds
+                courseIds, // Kept for backward compatibility during transition
+                courseDetails // New format
             })
         });
 
@@ -567,7 +580,7 @@ async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_p
             action: 'ENROLLMENT_SUCCESS',
             courseId: cid,
             created_at: new Date().toISOString(),
-            metadata: { order_id: razorpay_order_id, payment_id: razorpay_payment_id, source: 'system' }
+            metadata: { order_id: razorpay_order_id, payment_id: razorpay_payment_id, source: 'system', class_type: courseDetails.find(c => c.id === cid)?.type }
         }));
         await supabase.from('activity_logs').insert(successLogs);
     } catch (lmsErr) {
@@ -605,15 +618,19 @@ async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_p
             }
         }
         
+        let classTypesStr = "Unknown";
         if (courseIds && Array.isArray(courseIds) && courseIds.length > 0) {
             const { data: courses, error: coursesError } = await supabase.from('course_catalog').select('name').in('id', courseIds);
+            const { data: fullCourses } = await supabase.from('courses').select('id, name, class_type').in('id', courseIds);
+            
             if (courses && courses.length > 0) {
-                courseNames = courses.map(c => c.name).join(', ');
-            } else {
-                const { data: coursesFallback } = await supabase.from('courses').select('name').in('id', courseIds);
-                if (coursesFallback && coursesFallback.length > 0) {
-                    courseNames = coursesFallback.map(c => c.name).join(', ');
-                }
+                courseNames = Array.from(new Set(courses.map(c => c.name))).join(', ');
+            } else if (fullCourses && fullCourses.length > 0) {
+                courseNames = Array.from(new Set(fullCourses.map(c => c.name))).join(', ');
+            }
+            
+            if (fullCourses && fullCourses.length > 0) {
+                classTypesStr = Array.from(new Set(fullCourses.map(c => c.class_type || 'recorded'))).join(', ');
             }
         }
 
@@ -629,7 +646,8 @@ async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_p
             order_id: razorpay_order_id,
             referral_code: refCode,
             discount_code: discCode,
-            coins_applied: coinsUsed
+            coins_applied: coinsUsed,
+            class_type: classTypesStr
         }).catch(err => console.error("Background Sheet Log Error:", err));
     } catch (sheetErr) {
         console.error('Sheet Logging Error:', sheetErr);
@@ -791,15 +809,19 @@ app.post('/api/verify-payment', async (req, res) => {
                 if (order) orderAmount = order.total_amount;
             }
                 
+            let classTypesStr = "Unknown";
             if (courseIds && Array.isArray(courseIds) && courseIds.length > 0) {
                 const { data: courses } = await supabase.from('course_catalog').select('name').in('id', courseIds);
+                const { data: fullCourses } = await supabase.from('courses').select('id, name, class_type').in('id', courseIds);
+                
                 if (courses && courses.length > 0) {
-                    courseNames = courses.map(c => c.name).join(', ');
-                } else {
-                    const { data: coursesFallback } = await supabase.from('courses').select('name').in('id', courseIds);
-                    if (coursesFallback && coursesFallback.length > 0) {
-                        courseNames = coursesFallback.map(c => c.name).join(', ');
-                    }
+                    courseNames = Array.from(new Set(courses.map(c => c.name))).join(', ');
+                } else if (fullCourses && fullCourses.length > 0) {
+                    courseNames = Array.from(new Set(fullCourses.map(c => c.name))).join(', ');
+                }
+                
+                if (fullCourses && fullCourses.length > 0) {
+                    classTypesStr = Array.from(new Set(fullCourses.map(c => c.class_type || 'recorded'))).join(', ');
                 }
             }
 
@@ -813,7 +835,8 @@ app.post('/api/verify-payment', async (req, res) => {
                 status: 'FAILED',
                 payment_id: null,
                 order_id: razorpay_order_id,
-                failure_source: 'BACKEND_VERIFICATION'
+                failure_source: 'BACKEND_VERIFICATION',
+                class_type: classTypesStr
             }).catch(err => console.error("Background Sheet Log Error:", err));
         } catch (sheetErr) { }
 
@@ -876,15 +899,19 @@ app.post('/api/log-payment-failure', async (req, res) => {
             if (order) orderAmount = order.total_amount;
         }
                 
+        let classTypesStr = "Unknown";
         if (courseIds && Array.isArray(courseIds) && courseIds.length > 0) {
             const { data: courses } = await supabase.from('course_catalog').select('name').in('id', courseIds);
+            const { data: fullCourses } = await supabase.from('courses').select('id, name, class_type').in('id', courseIds);
+            
             if (courses && courses.length > 0) {
-                courseNames = courses.map(c => c.name).join(', ');
-            } else {
-                const { data: coursesFallback } = await supabase.from('courses').select('name').in('id', courseIds);
-                if (coursesFallback && coursesFallback.length > 0) {
-                    courseNames = coursesFallback.map(c => c.name).join(', ');
-                }
+                courseNames = Array.from(new Set(courses.map(c => c.name))).join(', ');
+            } else if (fullCourses && fullCourses.length > 0) {
+                courseNames = Array.from(new Set(fullCourses.map(c => c.name))).join(', ');
+            }
+            
+            if (fullCourses && fullCourses.length > 0) {
+                classTypesStr = Array.from(new Set(fullCourses.map(c => c.class_type || 'recorded'))).join(', ');
             }
         }
 
@@ -901,7 +928,8 @@ app.post('/api/log-payment-failure', async (req, res) => {
             failure_source: failure_source || 'FRONTEND_RAZORPAY',
             referral_code: "N/A",
             discount_code: "N/A",
-            coins_applied: 0
+            coins_applied: 0,
+            class_type: classTypesStr
         }).catch(err => console.error("Background Sheet Log Error:", err));
         res.json({ ok: true });
     } catch (err) {
@@ -1166,7 +1194,7 @@ setInterval(async () => {
         // 1. Abandoned Checkout Recovery (2 hours old, status = CREATED)
         const { data: abandonedOrders } = await supabase
             .from('website_orders')
-            .select('email, course_names')
+            .select('user_email, course_names')
             .eq('status', 'CREATED')
             .gte('created_at', twoHoursAgoWindowEnd.toISOString())
             .lte('created_at', twoHoursAgo.toISOString());
@@ -1174,14 +1202,15 @@ setInterval(async () => {
         if (abandonedOrders && abandonedOrders.length > 0) {
             console.log(`[Automated Emails] Found ${abandonedOrders.length} abandoned orders. Processing queue...`);
             for (const order of abandonedOrders) {
-                const name = order.email.split('@')[0];
+                if (!order.user_email) continue;
+                const name = order.user_email.split('@')[0];
                 try {
                     await fetch(process.env.WELCOME_WEBHOOK_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email: order.email, name, courseName: order.course_names, type: 'abandoned', timestamp: new Date().toISOString() })
+                        body: JSON.stringify({ email: order.user_email, name, courseName: order.course_names, type: 'abandoned', timestamp: new Date().toISOString() })
                     });
-                    console.log(`[Automated Emails] Sent abandoned email to ${order.email}`);
+                    console.log(`[Automated Emails] Sent abandoned email to ${order.user_email}`);
                 } catch (e) {
                     console.error('Failed to trigger abandoned email:', e);
                 }
@@ -1205,7 +1234,7 @@ setInterval(async () => {
                 const { data: orders } = await supabase
                     .from('website_orders')
                     .select('id')
-                    .eq('email', profile.email)
+                    .eq('user_email', profile.email)
                     .eq('status', 'PAID')
                     .limit(1);
 
@@ -1240,7 +1269,7 @@ setInterval(async () => {
                 const { data: orders } = await supabase
                     .from('website_orders')
                     .select('id')
-                    .eq('email', profile.email)
+                    .eq('user_email', profile.email)
                     .eq('status', 'PAID')
                     .limit(1);
 

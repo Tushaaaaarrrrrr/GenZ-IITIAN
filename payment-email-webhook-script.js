@@ -4,7 +4,7 @@ function doPost(e) {
     const { 
       name, email, phone, course_name, price, status, 
       payment_id, order_id, referral_code, discount_code, 
-      coins_applied, failure_source, timestamp 
+      coins_applied, failure_source, class_type, timestamp 
     } = data;
 
     // 1. Select the Sheet 
@@ -49,7 +49,8 @@ function doPost(e) {
       order_id || "N/A",        // Col 9
       referral_code || "N/A",   // Col 10
       discount_code || "N/A",   // Col 11
-      coins_applied || 0    // Col 12
+      coins_applied || 0,   // Col 12
+      class_type || "N/A"   // Col 13
     ]);
 
     lock.releaseLock();
