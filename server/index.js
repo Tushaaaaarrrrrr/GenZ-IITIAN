@@ -309,7 +309,7 @@ app.post('/api/create-order', async (req, res) => {
             const bundleSubCourses = bundle.bundleCourses || [];
             if (bundleSubCourses.length === 0) return res.status(400).json({ error: 'Bundle has no courses' });
 
-            const validBundleCourseIds = bundleSubCourses.map(bc => bc.courseId);
+            const validBundleCourseIds = bundleSubCourses.flatMap(bc => [bc.courseId, bc.courseId2, bc.courseId3].filter(Boolean));
             if (courseIds.filter(id => !validBundleCourseIds.includes(id)).length > 0) {
                 return res.status(400).json({ error: 'Some course IDs do not belong to this bundle' });
             }

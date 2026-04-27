@@ -60,7 +60,7 @@ export default async function handler(req: any, res: any) {
         return res.status(400).json({ error: 'Bundle has no courses' });
       }
 
-      const validBundleCourseIds = bundleSubCourses.map((bc: any) => bc.courseId);
+      const validBundleCourseIds = bundleSubCourses.flatMap((bc: any) => [bc.courseId, bc.courseId2, bc.courseId3].filter(Boolean));
       
       // Fixed bundle enforcement
       if (bundle.isFixedBundle) {
