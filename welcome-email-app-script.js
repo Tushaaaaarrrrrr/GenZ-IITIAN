@@ -117,7 +117,6 @@ function doPost(e) {
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                       <tr>
                         <td style="background:#e8f0fe; border-radius:10px; padding:18px 8px; text-align:center; min-height:130px; vertical-align:middle;">
-                          <p style="margin:0 0 8px; font-size:28px; line-height:1;">&#128218;</p>
                           <p style="margin:0 0 4px; font-size:13px; font-weight:700; color:#1a3a6e; line-height:1.3;">Expert Courses</p>
                           <p style="margin:0; font-size:12px; color:#4a6fa5; line-height:1.3;">By seniors</p>
                         </td>
@@ -128,7 +127,6 @@ function doPost(e) {
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                       <tr>
                         <td style="background:#e8f0fe; border-radius:10px; padding:18px 8px; text-align:center; min-height:130px; vertical-align:middle;">
-                          <p style="margin:0 0 8px; font-size:28px; line-height:1;">&#129489;</p>
                           <p style="margin:0 0 4px; font-size:13px; font-weight:700; color:#1a3a6e; line-height:1.3;">Live Doubts</p>
                           <p style="margin:0; font-size:12px; color:#4a6fa5; line-height:1.3;">Session</p>
                         </td>
@@ -139,7 +137,6 @@ function doPost(e) {
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                       <tr>
                         <td style="background:#e8f0fe; border-radius:10px; padding:18px 8px; text-align:center; min-height:130px; vertical-align:middle;">
-                          <p style="margin:0 0 8px; font-size:28px; line-height:1;">&#127942;</p>
                           <p style="margin:0 0 4px; font-size:13px; font-weight:700; color:#1a3a6e; line-height:1.3;">Crack IITM BS</p>
                           <p style="margin:0; font-size:12px; color:#4a6fa5; line-height:1.3;">With confidence</p>
                         </td>
