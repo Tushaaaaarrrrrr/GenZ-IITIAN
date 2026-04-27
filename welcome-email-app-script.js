@@ -211,7 +211,7 @@ function doPost(e) {
 </body>
 </html>`;
 
-      GmailApp.sendEmail(email, "Welcome to the Family! 🎓 GenZ IITIAN", "", {
+      GmailApp.sendEmail(email, "Welcome to the Family! \uD83C\uDF93 GenZ IITIAN", "", {
         htmlBody: welcomeHtml,
         name: "GenZ IITIAN"
       });
@@ -383,7 +383,7 @@ function doPost(e) {
 </body>
 </html>`;
 
-      GmailApp.sendEmail(email, "You left something behind 👇 — GenZ IITIAN", "", {
+      GmailApp.sendEmail(email, "You left something behind \uD83D\uDC47 — GenZ IITIAN", "", {
         htmlBody: nudgeHtml,
         name: "GenZ IITIAN"
       });
@@ -525,7 +525,7 @@ function doPost(e) {
 </body>
 </html>`;
 
-      GmailApp.sendEmail(email, "Did something go wrong? Your spot is still open 🤔", "", {
+      GmailApp.sendEmail(email, "Did something go wrong? Your spot is still open \uD83E\uDD14", "", {
         htmlBody: abandonedHtml,
         name: "GenZ IITIAN"
       });
@@ -667,7 +667,7 @@ function doPost(e) {
 </body>
 </html>`;
 
-      GmailApp.sendEmail(email, "We miss you 😭 — GenZ IITIAN", "", {
+      GmailApp.sendEmail(email, "We miss you \uD83D\uDE2D — GenZ IITIAN", "", {
         htmlBody: missYouHtml,
         name: "GenZ IITIAN"
       });
