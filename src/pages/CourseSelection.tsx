@@ -162,6 +162,15 @@ export default function CourseSelection() {
     if (e) e.preventDefault();
     if (!profileData.name || !profileData.gender || !profileData.phone) return;
 
+    if (profileData.phone.length !== 10) {
+      alert("Phone number must be exactly 10 digits.");
+      return;
+    }
+    if (profileData.name.length > 20) {
+      alert("Name must be 20 characters or less.");
+      return;
+    }
+
     setIsProcessing(true);
     setLoadingMessage("Saving Profile...");
     try {
@@ -680,8 +689,12 @@ export default function CourseSelection() {
                     <label className="block text-[12px] font-black text-[#0b1120] uppercase mb-1.5">Your Full Name</label>
                     <input 
                       required
+                      maxLength={20}
                       value={profileData.name}
-                      onChange={e => setProfileData({...profileData, name: e.target.value})}
+                      onChange={e => {
+                        const val = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+                        setProfileData({...profileData, name: val});
+                      }}
                       placeholder="Enter your name"
                       className="w-full px-4 py-2.5 bg-gray-50 border-[3px] border-[#0b1120] rounded-xl font-black text-base focus:bg-white focus:shadow-[4px_4px_0px_#3b82f6] transition-all outline-none"
                     />
@@ -692,9 +705,13 @@ export default function CourseSelection() {
                     <input 
                       required
                       type="tel"
+                      maxLength={10}
                       value={profileData.phone}
-                      onChange={e => setProfileData({...profileData, phone: e.target.value})}
-                      placeholder="e.g. +91 9876543210"
+                      onChange={e => {
+                        const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                        setProfileData({...profileData, phone: val});
+                      }}
+                      placeholder="e.g. 9876543210"
                       className="w-full px-4 py-2.5 bg-gray-50 border-[3px] border-[#0b1120] rounded-xl font-black text-base focus:bg-white focus:shadow-[4px_4px_0px_#3b82f6] transition-all outline-none"
                     />
                   </div>
