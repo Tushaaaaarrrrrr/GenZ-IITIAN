@@ -309,8 +309,7 @@ export default function Manager() {
         bundleDiscountCode: course.bundleDiscountCode || null,
         isFixedBundle: course.isFixedBundle || false,
         subject: course.category || null,
-        community_link: course.community_link || null,
-        content_link: course.content_link || null,
+
         startDate: course.startDate || null,
         endDate: course.endDate || null,
       };

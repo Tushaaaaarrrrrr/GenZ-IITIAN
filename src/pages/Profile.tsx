@@ -24,7 +24,7 @@ export default function Profile() {
       // Fetch full details from courses table to get community and content links
       const { data: courses, error } = await supabase
         .from('courses')
-        .select('id, name, community_link, content_link, image')
+        .select('id, name, image')
         .order('name');
       
       if (error) throw error;
