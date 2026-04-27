@@ -156,33 +156,32 @@ function doPost(e) {
               <!-- Buttons -->
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
                 <tr>
-                  <td align="center" style="padding-right:5px; width:50%;">
-                    <a href="https://class.genziitian.in/login" style="display:block; text-align:center; background:#1a3a6e; color:#ffffff; font-size:12px; font-weight:700; padding:13px 10px; border-radius:9px; text-decoration:none;">
-                      &#128218; Access Classes &rarr;
+                  <td align="center" style="padding-right:6px; width:50%;">
+                    <a href="https://class.genziitian.in/login" style="display:block; text-align:center; background:#1a3a6e; color:#ffffff; font-size:12px; font-weight:700; padding:12px 10px; border-radius:10px; text-decoration:none; border:2px solid #1a3a6e;">
+                      📚 Access Classes
                     </a>
                   </td>
-                  <td align="center" style="padding-left:5px; width:50%;">
-                    <a href="https://app.genziitian.in" style="display:block; text-align:center; background:#f5f8ff; color:#1a3a6e; font-size:12px; font-weight:600; padding:12px 10px; border-radius:9px; text-decoration:none; border:1px solid #dde9ff;">
-                      &#127760; Explore Courses
+                  <td align="center" style="padding-left:6px; width:50%;">
+                    <a href="https://app.genziitian.in" style="display:block; text-align:center; background:#ffffff; color:#1a3a6e; font-size:12px; font-weight:700; padding:12px 10px; border-radius:10px; text-decoration:none; border:2px solid #1a3a6e;">
+                      🌐 Explore More
                     </a>
                   </td>
                 </tr>
               </table>
 
               <!-- Coin Block -->
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#fffbea; background:linear-gradient(135deg,#fffbea,#fff5cc); border:1px solid #e8cc50; border-radius:12px; margin-bottom:20px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#fffbea; border:1px solid #e8cc50; border-radius:12px; margin-bottom:20px;">
                 <tr>
-                  <td style="padding:14px 16px;">
+                  <td style="padding:12px 16px;">
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                       <tr>
-                        <td width="60" align="center" valign="top" style="padding-right:14px;">
-                          <span style="font-size:28px; display:block; line-height:1; margin-bottom:4px;">&#129353;</span>
-                          <span style="font-size:10px; font-weight:700; color:#a07800; background:#fde97a; border-radius:20px; padding:2px 7px; display:inline-block; white-space:nowrap;">Upto &#8377;150/refer</span>
+                        <td width="50" align="center" valign="top" style="padding-right:12px;">
+                          <span style="font-size:24px; display:block; line-height:1; margin-bottom:4px;">🎖️</span>
                         </td>
                         <td valign="top">
-                          <p style="margin:0 0 3px; font-size:13px; font-weight:700; color:#7a5c00;">Earn while your friends learn</p>
-                          <p style="margin:0 0 10px; font-size:12px; color:#6b5200; line-height:1.5;">Your friend gets a discount, you get <strong>up to &#8377;150 cashback</strong> &mdash; share your link and start earning.</p>
-                          <a href="https://app.genziitian.in/refer" style="display:inline-block; background:#f5c518; color:#1a1a00; font-size:11px; font-weight:700; padding:7px 14px; border-radius:7px; text-decoration:none;">&#128279; Get Referral Link</a>
+                          <p style="margin:0 0 2px; font-size:13px; font-weight:700; color:#7a5c00;">Up to ₹150 per referral</p>
+                          <p style="margin:0 0 10px; font-size:12px; color:#6b5200; line-height:1.4;">Get cashback when your friend buys a course.</p>
+                          <a href="https://app.genziitian.in/refer" style="display:inline-block; background:#f5c518; color:#1a1a00; font-size:11px; font-weight:700; padding:6px 12px; border-radius:8px; text-decoration:none;">🔗 Get Referral Link</a>
                         </td>
                       </tr>
                     </table>
@@ -193,24 +192,24 @@ function doPost(e) {
               <div style="border-top:1px dashed #cdd9f0; margin:20px 0;"></div>
 
               <!-- Contact -->
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f8ff; border:1px solid #d0ddf5; border-radius:10px; margin-bottom:16px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f8ff; border:1px solid #d0ddf5; border-radius:12px; margin-bottom:16px;">
                 <tr>
-                  <td style="padding:13px 15px;">
+                  <td style="padding:15px;">
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                       <tr>
-                        <td width="40" valign="top">
+                        <td width="42" valign="top">
                           <div style="width:34px; height:34px; background:#1a3a6e; border-radius:50%; color:#ffffff; font-weight:700; text-align:center; line-height:34px; font-size:14px;">S</div>
                         </td>
                         <td valign="top">
                           <p style="margin:0 0 2px; font-size:12px; font-weight:700; color:#1a3a6e;">Sriram &mdash; Founder, GenZ IITIAN</p>
-                          <p style="margin:0 0 7px; font-size:11px; color:#6a89bf;">any questions? I'm always here</p>
+                          <p style="margin:0 0 10px; font-size:11px; color:#6a89bf;">Questions? Feel free to reach out</p>
                           <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                             <tr>
-                              <td style="padding-right:8px; padding-bottom:4px;">
-                                <a href="https://wa.me/917970495447" style="display:inline-block; background:#dde9ff; color:#1a3a6e; font-size:11px; font-weight:600; padding:5px 10px; border-radius:20px; text-decoration:none;">&#128241; +91 79704 95447</a>
+                              <td style="padding-right:10px;">
+                                <a href="https://wa.me/917970495447" style="display:inline-block; background:#1a3a6e; color:#ffffff; font-size:11px; font-weight:700; padding:7px 14px; border-radius:8px; text-decoration:none;">📲 WhatsApp Us</a>
                               </td>
-                              <td style="padding-bottom:4px;">
-                                <a href="mailto:admin@genziitian.org" style="display:inline-block; background:#dde9ff; color:#1a3a6e; font-size:11px; font-weight:600; padding:5px 10px; border-radius:20px; text-decoration:none;">&#9993; admin@genziitian.org</a>
+                              <td>
+                                <a href="mailto:admin@genziitian.org" style="display:inline-block; background:#f5f8ff; color:#1a3a6e; font-size:11px; font-weight:700; padding:7px 14px; border-radius:8px; text-decoration:none; border:1px solid #d0ddf5;">✉️ Email Us</a>
                               </td>
                             </tr>
                           </table>
@@ -347,16 +346,16 @@ function doPost(e) {
               <!-- Buttons -->
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
                 <tr>
-                  <td style="padding-bottom:10px;">
-                    <a href="https://class.genziitian.in" style="display:block; text-align:center; background:#c0392b; color:#ffffff; font-size:13px; font-weight:700; padding:13px 24px; border-radius:9px; text-decoration:none;">
-                      &#128257; Retry Payment &rarr;
+                  <td align="center" style="padding-bottom:10px;">
+                    <a href="https://class.genziitian.in" style="display:block; text-align:center; background:#c0392b; color:#ffffff; font-size:13px; font-weight:700; padding:13px 24px; border-radius:10px; text-decoration:none; border:2px solid #c0392b;">
+                      🔄 Retry Payment
                     </a>
                   </td>
                 </tr>
                 <tr>
-                  <td>
-                    <a href="https://app.genziitian.in" style="display:block; text-align:center; background:#f5f8ff; color:#1a3a6e; font-size:13px; font-weight:600; padding:12px 24px; border-radius:9px; text-decoration:none; border:1px solid #dde9ff;">
-                      &#127760; Go to Website
+                  <td align="center">
+                    <a href="https://app.genziitian.in" style="display:block; text-align:center; background:#ffffff; color:#1a3a6e; font-size:13px; font-weight:700; padding:12px 24px; border-radius:10px; text-decoration:none; border:2px solid #dde9ff;">
+                      🌐 Go to Website
                     </a>
                   </td>
                 </tr>
@@ -365,24 +364,24 @@ function doPost(e) {
               <div style="border-top:1px dashed #cdd9f0; margin:20px 0;"></div>
 
               <!-- Contact -->
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f8ff; border:1px solid #d0ddf5; border-radius:10px; margin-bottom:16px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f8ff; border:1px solid #d0ddf5; border-radius:12px; margin-bottom:16px;">
                 <tr>
-                  <td style="padding:13px 15px;">
+                  <td style="padding:15px;">
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                       <tr>
-                        <td width="40" valign="top">
+                        <td width="42" valign="top">
                           <div style="width:34px; height:34px; background:#1a3a6e; border-radius:50%; color:#ffffff; font-weight:700; text-align:center; line-height:34px; font-size:14px;">S</div>
                         </td>
                         <td valign="top">
                           <p style="margin:0 0 2px; font-size:12px; font-weight:700; color:#1a3a6e;">Sriram &mdash; Founder, GenZ IITIAN</p>
-                          <p style="margin:0 0 7px; font-size:11px; color:#6a89bf;">reply here or WhatsApp directly</p>
+                          <p style="margin:0 0 10px; font-size:11px; color:#6a89bf;">Questions? Feel free to reach out</p>
                           <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                             <tr>
-                              <td style="padding-right:8px; padding-bottom:4px;">
-                                <a href="https://wa.me/917970495447" style="display:inline-block; background:#dde9ff; color:#1a3a6e; font-size:11px; font-weight:600; padding:5px 10px; border-radius:20px; text-decoration:none;">&#128241; +91 79704 95447</a>
+                              <td style="padding-right:10px;">
+                                <a href="https://wa.me/917970495447" style="display:inline-block; background:#1a3a6e; color:#ffffff; font-size:11px; font-weight:700; padding:7px 14px; border-radius:8px; text-decoration:none;">📲 WhatsApp Us</a>
                               </td>
-                              <td style="padding-bottom:4px;">
-                                <a href="mailto:admin@genziitian.org" style="display:inline-block; background:#dde9ff; color:#1a3a6e; font-size:11px; font-weight:600; padding:5px 10px; border-radius:20px; text-decoration:none;">&#9993; admin@genziitian.org</a>
+                              <td>
+                                <a href="mailto:admin@genziitian.org" style="display:inline-block; background:#f5f8ff; color:#1a3a6e; font-size:11px; font-weight:700; padding:7px 14px; border-radius:8px; text-decoration:none; border:1px solid #d0ddf5;">✉️ Email Us</a>
                               </td>
                             </tr>
                           </table>
