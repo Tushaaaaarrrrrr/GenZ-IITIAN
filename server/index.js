@@ -490,6 +490,26 @@ async function sendToGoogleSheet(payload) {
     }
 }
 
+app.post('/api/welcome-email', async (req, res) => {
+    try {
+        const { email, name } = req.body;
+        if (!email) return res.status(400).json({ error: 'Email required' });
+
+        const url = process.env.WELCOME_WEBHOOK_URL;
+        if (url) {
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, name, type: 'welcome', timestamp: new Date().toISOString() })
+            }).catch(e => console.error('Failed to trigger welcome webhook:', e));
+        }
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Welcome email error:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // ========== PAYMENTS (Razorpay) ==========
 // Helper function for LMS enrollment and logging
 async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_payment_id, discountCode, referralCode, coinsApplied }) {
@@ -1121,6 +1141,131 @@ app.get('*', (req, res) => {
         res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
     }
 });
+
+// --- AUTOMATED EMAILS (BACKGROUND JOB) ---
+// Helper function to safely send webhooks with a queue-like delay
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Runs every hour to check for nudges, abandoned checkouts, and miss you emails
+setInterval(async () => {
+    if (!supabase || !process.env.WELCOME_WEBHOOK_URL) return;
+    
+    try {
+        console.log('[Automated Emails] Running background check...');
+        
+        const now = new Date();
+        const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+        const fourHoursAgo = new Date(now.getTime() - 4 * 60 * 60 * 1000);
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+        // Define a small time window to avoid duplicate sends (e.g. within the last 1 hour of the target time)
+        const twoHoursAgoWindowEnd = new Date(twoHoursAgo.getTime() - 1 * 60 * 60 * 1000);
+        const fourHoursAgoWindowEnd = new Date(fourHoursAgo.getTime() - 1 * 60 * 60 * 1000);
+        const sevenDaysAgoWindowEnd = new Date(sevenDaysAgo.getTime() - 1 * 60 * 60 * 1000);
+
+        // 1. Abandoned Checkout Recovery (2 hours old, status = CREATED)
+        const { data: abandonedOrders } = await supabase
+            .from('website_orders')
+            .select('email, course_names')
+            .eq('status', 'CREATED')
+            .gte('created_at', twoHoursAgoWindowEnd.toISOString())
+            .lte('created_at', twoHoursAgo.toISOString());
+
+        if (abandonedOrders && abandonedOrders.length > 0) {
+            console.log(`[Automated Emails] Found ${abandonedOrders.length} abandoned orders. Processing queue...`);
+            for (const order of abandonedOrders) {
+                const name = order.email.split('@')[0];
+                try {
+                    await fetch(process.env.WELCOME_WEBHOOK_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: order.email, name, courseName: order.course_names, type: 'abandoned', timestamp: new Date().toISOString() })
+                    });
+                    console.log(`[Automated Emails] Sent abandoned email to ${order.email}`);
+                } catch (e) {
+                    console.error('Failed to trigger abandoned email:', e);
+                }
+                // Wait 2 seconds before sending the next one to avoid Google rate limits
+                await delay(2000); 
+            }
+        }
+
+        // 2. Nudge (4 hours old, no paid orders)
+        // First get users created exactly ~4 hours ago
+        const { data: nudgeProfiles } = await supabase
+            .from('profiles')
+            .select('email, name')
+            .gte('created_at', fourHoursAgoWindowEnd.toISOString())
+            .lte('created_at', fourHoursAgo.toISOString());
+
+        if (nudgeProfiles && nudgeProfiles.length > 0) {
+            console.log(`[Automated Emails] Found ${nudgeProfiles.length} potential nudges. Processing queue...`);
+            for (const profile of nudgeProfiles) {
+                // Check if they have a PAID order
+                const { data: orders } = await supabase
+                    .from('website_orders')
+                    .select('id')
+                    .eq('email', profile.email)
+                    .eq('status', 'PAID')
+                    .limit(1);
+
+                if (!orders || orders.length === 0) {
+                    try {
+                        await fetch(process.env.WELCOME_WEBHOOK_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ email: profile.email, name: profile.name, type: 'nudge', timestamp: new Date().toISOString() })
+                        });
+                        console.log(`[Automated Emails] Sent nudge email to ${profile.email}`);
+                    } catch (e) {
+                        console.error('Failed to trigger nudge email:', e);
+                    }
+                    // Wait 2 seconds before sending the next one to avoid Google rate limits
+                    await delay(2000);
+                }
+            }
+        }
+
+        // 3. Miss You (7 days old, no paid orders)
+        const { data: missYouProfiles } = await supabase
+            .from('profiles')
+            .select('email, name')
+            .gte('created_at', sevenDaysAgoWindowEnd.toISOString())
+            .lte('created_at', sevenDaysAgo.toISOString());
+
+        if (missYouProfiles && missYouProfiles.length > 0) {
+            console.log(`[Automated Emails] Found ${missYouProfiles.length} potential miss you profiles. Processing queue...`);
+            for (const profile of missYouProfiles) {
+                // Check if they have a PAID order
+                const { data: orders } = await supabase
+                    .from('website_orders')
+                    .select('id')
+                    .eq('email', profile.email)
+                    .eq('status', 'PAID')
+                    .limit(1);
+
+                if (!orders || orders.length === 0) {
+                    try {
+                        await fetch(process.env.WELCOME_WEBHOOK_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ email: profile.email, name: profile.name, type: 'missyou', timestamp: new Date().toISOString() })
+                        });
+                        console.log(`[Automated Emails] Sent missyou email to ${profile.email}`);
+                    } catch (e) {
+                        console.error('Failed to trigger miss you email:', e);
+                    }
+                    // Wait 2 seconds before sending the next one to avoid Google rate limits
+                    await delay(2000);
+                }
+            }
+        }
+
+        console.log('[Automated Emails] Background queue processing complete.');
+    } catch (err) {
+        console.error('[Automated Emails] Background check failed:', err);
+    }
+}, 60 * 60 * 1000); // Run every 60 minutes
 
 app.listen(PORT, () => {
     console.log(`\n  🔐 Admin Panel running at: http://localhost:${PORT}/admin`);

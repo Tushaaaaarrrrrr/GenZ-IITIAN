@@ -46,6 +46,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const syncProfile = async (u: User) => {
     try {
+      // Use maybeSingle() so it returns null (instead of throwing an error) if the profile doesn't exist
+      const { data: existingProfile, error: fetchError } = await supabase.from('profiles').select('id').eq('id', u.id).maybeSingle();
+      
+      if (fetchError) {
+        console.error('Error fetching profile:', fetchError);
+      }
+
+      const isNewUser = !existingProfile;
+
       const { data, error } = await supabase
         .from('profiles')
         .upsert({
@@ -56,7 +65,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .select()
         .single();
 
-      if (!error) setProfile(data);
+      if (!error) {
+        setProfile(data);
+        if (isNewUser) {
+          console.log('[AuthContext] Brand new user detected, triggering welcome email...');
+          fetch('/api/welcome-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: u.email, name: u.user_metadata.full_name || u.email?.split('@')[0] })
+          }).catch(err => console.warn('Welcome email trigger failed:', err));
+        }
+      } else {
+        console.error('Error upserting profile:', error);
+      }
     } catch (err) {
       console.warn('Silent Profile Sync Failed:', err);
       // We don't throw here so the user can still browse the site
