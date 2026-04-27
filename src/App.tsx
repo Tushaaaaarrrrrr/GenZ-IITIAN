@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useSearchParams } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useSearchParams, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { saveReferralCookie } from './lib/referral';
@@ -45,6 +45,59 @@ function ReferralCapture() {
   return null;
 }
 
+// Scrolls to top on every route change so new pages always start from the header
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+}
+
+function AppContent() {
+  const location = useLocation();
+  const isCheckoutPage = location.pathname.startsWith('/checkout/');
+
+  return (
+    <div className="min-h-screen bg-white text-[#0b1120] font-sans selection:bg-blue-100 flex flex-col">
+      <ScrollToTop />
+      <Navbar />
+      <main className="flex-grow">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/courses" element={<Courses />} />
+          <Route path="/syllabus" element={<Syllabus />} />
+          <Route path="/courses/:id" element={<CourseDetail />} />
+          <Route path="/resources" element={<Resources />} />
+          <Route path="/resources/:level/:subject" element={<ResourceDetail />} />
+          <Route path="/graded-assignment" element={<GradedAssignment />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/:slug" element={<BlogDetail />} />
+          <Route path="/docs" element={<Docs />} />
+          <Route path="/docs/:slug" element={<DocsDetail />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/newsletter" element={<Newsletter />} />
+          <Route path="/knowledge" element={<SEODirectory />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/checkout/:id" element={<CourseSelection />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/refer" element={<Referral />} />
+          <Route path="/manager/*" element={<Manager />} />
+          <Route path="/terms" element={<TermsAndConditions />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/refund" element={<RefundPolicy />} />
+          <Route path="/payment-success" element={<PaymentSuccess />} />
+          <Route path="/payment-failed" element={<PaymentFailed />} />
+          {/* pSEO catch-all — must be last */}
+          <Route path="/*" element={<SEOPage />} />
+        </Routes>
+      </main>
+      {!isCheckoutPage && <Footer />}
+    </div>
+  );
+}
+
 export default function App() {
   useEffect(() => {
     // Fetch Global Settings for SEO
@@ -71,43 +124,10 @@ export default function App() {
         <LoginModal />
         <Router>
           <ReferralCapture />
-          <div className="min-h-screen bg-white text-[#0b1120] font-sans selection:bg-blue-100 flex flex-col">
-            <Navbar />
-            <main className="flex-grow">
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/courses" element={<Courses />} />
-                <Route path="/syllabus" element={<Syllabus />} />
-                <Route path="/courses/:id" element={<CourseDetail />} />
-                <Route path="/resources" element={<Resources />} />
-                <Route path="/resources/:level/:subject" element={<ResourceDetail />} />
-                <Route path="/graded-assignment" element={<GradedAssignment />} />
-                <Route path="/blog" element={<Blog />} />
-                <Route path="/blog/:slug" element={<BlogDetail />} />
-                <Route path="/docs" element={<Docs />} />
-                <Route path="/docs/:slug" element={<DocsDetail />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/contact" element={<Contact />} />
-                <Route path="/newsletter" element={<Newsletter />} />
-                <Route path="/knowledge" element={<SEODirectory />} />
-                <Route path="/cart" element={<Cart />} />
-                <Route path="/checkout/:id" element={<CourseSelection />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/refer" element={<Referral />} />
-                <Route path="/manager/*" element={<Manager />} />
-                <Route path="/terms" element={<TermsAndConditions />} />
-                <Route path="/privacy" element={<PrivacyPolicy />} />
-                <Route path="/refund" element={<RefundPolicy />} />
-                <Route path="/payment-success" element={<PaymentSuccess />} />
-                <Route path="/payment-failed" element={<PaymentFailed />} />
-                {/* pSEO catch-all — must be last */}
-                <Route path="/*" element={<SEOPage />} />
-              </Routes>
-            </main>
-            <Footer />
-          </div>
+          <AppContent />
         </Router>
       </CartProvider>
     </AuthProvider>
   );
 }
+
