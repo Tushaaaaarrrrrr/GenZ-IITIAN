@@ -241,7 +241,9 @@ function doPost(e) {
 </body>
 </html>`;
 
-      GmailApp.sendEmail(email, "Payment Successful - GenZ IITIAN", "", {
+      MailApp.sendEmail({
+        to: email,
+        subject: "Payment Successful - GenZ IITIAN",
         htmlBody: successHtml,
         name: "GenZ IITIAN"
       });
@@ -411,7 +413,9 @@ function doPost(e) {
 </body>
 </html>`;
 
-      GmailApp.sendEmail(email, "Payment Failed - GenZ IITIAN", "", {
+      MailApp.sendEmail({
+        to: email,
+        subject: "Payment Failed - GenZ IITIAN",
         htmlBody: failHtml,
         name: "GenZ IITIAN"
       });
