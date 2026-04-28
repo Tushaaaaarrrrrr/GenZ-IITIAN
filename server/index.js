@@ -548,9 +548,10 @@ async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_p
         // Construct detailed payload for the new LMS format while keeping courseIds for backward compatibility
         const courseDetails = courseIds.map(id => {
             const course = coursesData?.find(c => c.id === id);
+            const rawType = course?.class_type || 'recorded';
             return {
                 id: id,
-                type: course?.class_type || 'recorded'
+                type: rawType.toUpperCase() // LMS expects 'LIVE' or 'RECORDED' (uppercase enum)
             };
         });
 
