@@ -1067,24 +1067,7 @@ export default function CourseSelection() {
                                 <div className="flex items-end gap-2">
                                     <div className="text-2xl font-black text-[#0b1120]">
                                       ₹{Math.max(
-                                        (() => {
-                                          const rawTotal = course?.isBundle 
-                                            ? course.bundleCourses
-                                                .filter((bc: SubCourse) => selectedCourses.includes(bc.courseId))
-                                                .reduce((sum: number, bc: SubCourse) => sum + bc.price, 0)
-                                            : (course?.price || 0);
-                                          
-                                          // Bundle Discount (if all selected)
-                                          const bundleSavings = getSavings();
-                                          
-                                          // Manual Coupon Savings
-                                          const couponSavings = discountAmount;
-                                          
-                                          // Referral Savings
-                                          const refSavings = referralDiscount;
-                                          
-                                          return rawTotal - (discountAmount || 0) - (referralDiscount || 0) - (coinsApplied || 0);
-                                        })(), 
+                                        calculateTotal() - (discountAmount || 0) - (referralDiscount || 0) - (coinsApplied || 0),
                                         1
                                       )}
                                     </div>
