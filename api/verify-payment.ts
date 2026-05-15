@@ -75,14 +75,16 @@ export default async function handler(req: any, res: any) {
     const externalEnrollSecret = process.env.EXTERNAL_ENROLL_SECRET;
 
     // === STEP 1: LMS ENROLLMENT (isolated — failures here must NOT block referral/coin processing) ===
+    // Fetch order details (including selected class type for fixed bundles)
+    const { data: orderData } = await supabase.from('website_orders').select('total_amount, created_at, selected_class_type').eq('order_id', razorpay_order_id).single();
+
     // Fetch course details for class types
     const { data: coursesData } = await supabase.from('courses').select('id, class_type').in('id', courseIds);
+    
+    // Use selected_class_type from order if available (for fixed bundles with pricing options), otherwise fall back to course class_type
     const courseDetails = courseIds.map(id => ({
-      type: (coursesData?.find(c => c.id === id)?.class_type || 'recorded').toUpperCase()
+      type: (orderData?.selected_class_type || coursesData?.find(c => c.id === id)?.class_type || 'recorded').toUpperCase()
     }));
-
-    // Fetch order details for pricing
-    const { data: orderData } = await supabase.from('website_orders').select('total_amount, created_at').eq('order_id', razorpay_order_id).single();
 
     let lmsEnrollmentSucceeded = false;
     try {

@@ -233,6 +233,7 @@ export default async function handler(req: any, res: any) {
       discount_code: discountCode || null,
       referral_code: referralCode || null,
       coins_applied: coinsApplied || 0,
+      selected_class_type: selectedClassType || null,
     });
 
     if (insertError) {
