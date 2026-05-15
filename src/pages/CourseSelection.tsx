@@ -443,7 +443,13 @@ export default function CourseSelection() {
     setPaymentError('');
     setIsProcessing(true);
     setLoadingMessage("Preparing Checkout...");
-    const total = calculateTotal();
+    let total = calculateTotal();
+
+    // CRITICAL: For fixed bundles with pricing options, FORCE use of the selected pricing tier
+    // This prevents fallback to individual course prices (which are 0)
+    if (course?.isFixedBundle && course?.pricing_options && course.pricing_options.length > 0 && selectedPricingTier !== null) {
+      total = course.pricing_options[selectedPricingTier].price;
+    }
 
     const finalCourseIds = course?.isBundle && Array.isArray(course.bundleCourses)
       ? course.bundleCourses
