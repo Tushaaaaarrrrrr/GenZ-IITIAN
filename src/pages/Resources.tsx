@@ -49,12 +49,15 @@ export default function Resources() {
 
   // Check localStorage for access on mount
   useEffect(() => {
-    const access = localStorage.getItem('resource_access');
-    if (access) {
-      setHasAccess(true);
-    } else {
-      setShowGate(true);
-    }
+    // Temporarily disabled for now based on user request
+    // const access = localStorage.getItem('resource_access');
+    // if (access) {
+    //   setHasAccess(true);
+    // } else {
+    //   setShowGate(true);
+    // }
+    setHasAccess(true);
+    setShowGate(false);
   }, []);
 
   const handleShare = () => {

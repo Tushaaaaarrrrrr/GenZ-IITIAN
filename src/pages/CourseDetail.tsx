@@ -14,7 +14,8 @@ import {
   ArrowLeft,
   Loader2,
   Calendar,
-  Layers
+  Layers,
+  Languages
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { getCheckoutPath } from '../utils/courseRouting';
@@ -125,8 +126,14 @@ export default function CourseDetail() {
             animate={{ opacity: 1, scale: 1 }}
             className="relative lg:block"
           >
-            <div className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] p-6 shadow-[8px_8px_0px_#10b981] text-[#0b1120]">
-              <div className="text-xs font-black uppercase tracking-widest text-gray-400 mb-2">Course Starts From</div>
+            <div className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] p-6 shadow-[8px_8px_0px_#10b981] text-[#0b1120] relative">
+              <div className="absolute -top-4 right-4 bg-red-500 text-white font-black px-4 py-1.5 rounded-xl border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] text-sm tracking-widest uppercase rotate-6 animate-pulse z-10">
+                SALE IS LIVE!
+              </div>
+              <div className="text-xs font-black uppercase tracking-widest text-red-500 mb-2 flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></div>
+                Special Offer Price
+              </div>
               <div className="flex items-baseline gap-4 mb-6">
                 <div className="text-4xl font-black">₹{course.discountPrice || course.price}</div>
                 {course.discountPrice && (
@@ -139,6 +146,22 @@ export default function CourseDetail() {
                 <div className="flex items-center gap-3 font-bold text-gray-600 text-sm">
                   <CheckCircle2 className="w-5 h-5 text-green-500" /> Access till End Term
                 </div>
+                <div className="flex items-center gap-3 font-bold text-gray-600 text-sm">
+                  <Languages className="w-5 h-5 text-purple-500" /> Language: Hinglish
+                </div>
+                {course.courseCategory && course.courseCategory !== 'NONE' && (
+                  <div className="flex items-center gap-3 font-bold text-gray-600 text-sm">
+                    <span className={`text-lg ${
+                      course.courseCategory === 'QUALIFIER' ? 'text-blue-600' :
+                      course.courseCategory === 'LIVE' ? 'text-purple-600' :
+                      course.courseCategory === 'RECORDED' ? 'text-orange-600' :
+                      'text-gray-600'
+                    }`}>
+                      {course.courseCategory === 'QUALIFIER' && '🎯'} {course.courseCategory === 'LIVE' && '📺'} {course.courseCategory === 'RECORDED' && '📹'}
+                    </span>
+                    <span className="font-black">{course.courseCategory}</span>
+                  </div>
+                )}
                 {course.startDate && (
                   <div className="flex items-center gap-3 font-bold text-gray-600 text-sm">
                     <Calendar className="w-5 h-5 text-blue-500" /> Class starting from: {formatCourseDate(course.startDate)}
@@ -255,19 +278,100 @@ export default function CourseDetail() {
 
         {/* Sidebar instructor info */}
         <div className="lg:col-span-1">
-          <div className="sticky top-24 space-y-8">
-            <div className="bg-white border-[3px] border-[#0b1120] rounded-3xl p-8 shadow-[8px_8px_0px_#0b1120]">
-              <h3 className="text-xl font-black text-[#0b1120] mb-6 border-b-2 border-gray-100 pb-4">GENz IITian</h3>
-              <div className="mb-6">
-                <div>
-                  <div className="font-black text-[#0b1120]">Learn from IITM BS Seniors</div>
-                  <div className="text-xs font-bold text-blue-600 uppercase">Real Guidance</div>
+          <div className="sticky top-24 space-y-6">
+            {/* Dynamic Content Cards Based on Course Category */}
+            {course.courseCategory === 'QUALIFIER' && (
+              <>
+                <div className="bg-white border-[3px] border-[#0b1120] rounded-3xl p-8 shadow-[8px_8px_0px_#0b1120]">
+                  <div className="flex items-center gap-3 mb-6">
+                    <span className="text-3xl">🎯</span>
+                    <h3 className="text-xl font-black text-[#0b1120]">Qualifier Prep</h3>
+                  </div>
+                  <p className="text-sm font-bold text-gray-600 leading-relaxed">
+                    Master the fundamentals with intensive qualifier-focused coaching. Comprehensive coverage of all major topics with practice tests and doubt resolution.
+                  </p>
                 </div>
+                <div className="bg-white border-[3px] border-[#0b1120] rounded-3xl p-8 shadow-[8px_8px_0px_#10b981]">
+                  <div className="flex items-center gap-3 mb-6">
+                    <span className="text-3xl">✅</span>
+                    <h3 className="text-xl font-black text-[#0b1120]">What You Get</h3>
+                  </div>
+                  <ul className="text-sm font-bold text-gray-600 space-y-2">
+                    <li>✓ Complete syllabus coverage</li>
+                    <li>✓ Topic-wise mock tests</li>
+                    <li>✓ 1-on-1 doubt clearing</li>
+                    <li>✓ Success strategies</li>
+                  </ul>
+                </div>
+              </>
+            )}
+            
+            {course.courseCategory === 'LIVE' && (
+              <>
+                <div className="bg-white border-[3px] border-[#0b1120] rounded-3xl p-8 shadow-[8px_8px_0px_#0b1120]">
+                  <div className="flex items-center gap-3 mb-6">
+                    <span className="text-3xl">📺</span>
+                    <h3 className="text-xl font-black text-[#0b1120]">Live Sessions</h3>
+                  </div>
+                  <p className="text-sm font-bold text-gray-600 leading-relaxed">
+                    Interactive live classes with real-time Q&A. Connect directly with instructors and peers. Ask doubts instantly and get clarifications on the spot.
+                  </p>
+                </div>
+                <div className="bg-white border-[3px] border-[#0b1120] rounded-3xl p-8 shadow-[8px_8px_0px_#10b981]">
+                  <div className="flex items-center gap-3 mb-6">
+                    <span className="text-3xl">⚡</span>
+                    <h3 className="text-xl font-black text-[#0b1120]">Live Features</h3>
+                  </div>
+                  <ul className="text-sm font-bold text-gray-600 space-y-2">
+                    <li>✓ Weekly live classes</li>
+                    <li>✓ Real-time interaction</li>
+                    <li>✓ Instant doubt solving</li>
+                    <li>✓ Session recordings available</li>
+                  </ul>
+                </div>
+              </>
+            )}
+            
+            {course.courseCategory === 'RECORDED' && (
+              <>
+                <div className="bg-white border-[3px] border-[#0b1120] rounded-3xl p-8 shadow-[8px_8px_0px_#0b1120]">
+                  <div className="flex items-center gap-3 mb-6">
+                    <span className="text-3xl">📹</span>
+                    <h3 className="text-xl font-black text-[#0b1120]">Self-Paced Learning</h3>
+                  </div>
+                  <p className="text-sm font-bold text-gray-600 leading-relaxed">
+                    Learn at your own pace with professionally recorded video lessons. Rewatch, pause, and master every concept without time pressure.
+                  </p>
+                </div>
+                <div className="bg-white border-[3px] border-[#0b1120] rounded-3xl p-8 shadow-[8px_8px_0px_#10b981]">
+                  <div className="flex items-center gap-3 mb-6">
+                    <span className="text-3xl">🎓</span>
+                    <h3 className="text-xl font-black text-[#0b1120]">Recorded Benefits</h3>
+                  </div>
+                  <ul className="text-sm font-bold text-gray-600 space-y-2">
+                    <li>✓ Lifetime access</li>
+                    <li>✓ Watch anytime, anywhere</li>
+                    <li>✓ HD quality videos</li>
+                    <li>✓ Downloadable resources</li>
+                  </ul>
+                </div>
+              </>
+            )}
+
+            {!course.courseCategory || course.courseCategory === 'NONE' && (
+              <div className="bg-white border-[3px] border-[#0b1120] rounded-3xl p-8 shadow-[8px_8px_0px_#0b1120]">
+                <h3 className="text-xl font-black text-[#0b1120] mb-6 border-b-2 border-gray-100 pb-4">GENz IITian</h3>
+                <div className="mb-6">
+                  <div>
+                    <div className="font-black text-[#0b1120]">Learn from IITM BS Seniors</div>
+                    <div className="text-xs font-bold text-blue-600 uppercase">Real Guidance</div>
+                  </div>
+                </div>
+                <p className="text-sm font-bold text-gray-500 leading-relaxed">
+                  No boring lectures - just real guidance from seniors who&apos;ve been through it. Understand concepts deeply, avoid common mistakes, and level up your prep the right way.
+                </p>
               </div>
-              <p className="text-sm font-bold text-gray-500 leading-relaxed">
-                No boring lectures - just real guidance from seniors who&apos;ve been through it. Understand concepts deeply, avoid common mistakes, and level up your prep the right way.
-              </p>
-            </div>
+            )}
           </div>
         </div>
       </section>

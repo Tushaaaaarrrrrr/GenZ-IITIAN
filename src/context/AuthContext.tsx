@@ -10,6 +10,8 @@ type AuthContextType = {
   isLoginModalOpen: boolean;
   openLoginModal: () => void;
   closeLoginModal: () => void;
+  isWelcomeModalOpen: boolean;
+  closeWelcomeModal: () => void;
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
 };
@@ -26,6 +28,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -68,12 +71,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!error) {
         setProfile(data);
         if (isNewUser) {
-          console.log('[AuthContext] Brand new user detected, triggering welcome email...');
+          console.log('[AuthContext] Brand new user detected, triggering welcome email and auto-enrollment...');
+          
+          // Trigger welcome email
           fetch('/api/welcome-email', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: u.email, name: u.user_metadata.full_name || u.email?.split('@')[0] })
           }).catch(err => console.warn('Welcome email trigger failed:', err));
+
+          // Trigger auto-enrollment in default course
+          fetch('/api/auto-enroll', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: u.email, name: u.user_metadata.full_name || u.email?.split('@')[0] })
+          })
+          .then(res => res.json())
+          .then(data => {
+            if (data.success) {
+              setIsWelcomeModalOpen(true);
+            }
+          })
+          .catch(err => console.warn('Auto-enrollment trigger failed:', err));
         }
       } else {
         console.error('Error upserting profile:', error);
@@ -109,6 +128,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isLoginModalOpen,
     openLoginModal,
     closeLoginModal,
+    isWelcomeModalOpen,
+    closeWelcomeModal: () => setIsWelcomeModalOpen(false),
     signIn,
     signOut,
   };

@@ -34,7 +34,11 @@ const razorpay = (razorpayKeyId && razorpaySecret)
 
 const sessions = new Map();
 
-app.use(express.json());
+app.use(express.json({
+  verify: (req, res, buf) => {
+    req.rawBody = buf;
+  }
+}));
 app.use(express.urlencoded({ extended: true }));
 
 app.use((req, res, next) => {
@@ -288,7 +292,7 @@ app.post('/api/create-order', async (req, res) => {
         return res.status(500).json({ error: 'Server configuration error (missing Razorpay/Supabase keys)' });
     }
 
-    const { email, courseIds, bundleId, discountCode, referralCode, coinsToApply } = req.body;
+    const { email, courseIds, bundleId, discountCode, referralCode, coinsToApply, selectedClassType } = req.body;
     if (!courseIds || !Array.isArray(courseIds) || courseIds.length === 0 || !email) {
         return res.status(400).json({ error: 'Email and at least one course ID are required' });
     }
@@ -339,13 +343,13 @@ app.post('/api/create-order', async (req, res) => {
             
             // Get course names for notes
             const courseNames = courses.map(c => c.name).join(', ');
-            orderNotes = { courses: courseNames, user_email: email };
+            orderNotes = { courses: courseNames, user_email: email, selected_class_type: selectedClassType || 'N/A' };
         }
 
         // Add bundle name to notes if it's a bundle
         if (bundleId && !orderNotes) {
             const { data: bundle } = await supabase.from('courses').select('name').eq('id', bundleId).single();
-            orderNotes = { courses: bundle?.name || 'Bundle', user_email: email };
+            orderNotes = { courses: bundle?.name || 'Bundle', user_email: email, selected_class_type: selectedClassType || 'N/A' };
         }
 
         // --- GLOBAL DISCOUNT ---
@@ -435,7 +439,8 @@ app.post('/api/create-order', async (req, res) => {
             status: 'CREATED',
             discount_code: discountCode || null,
             referral_code: referralCode || null,
-            coins_applied: coinsApplied || 0
+            coins_applied: coinsApplied || 0,
+            selected_class_type: selectedClassType || null
         });
         
         if (insertError) {
@@ -510,9 +515,52 @@ app.post('/api/welcome-email', async (req, res) => {
     }
 });
 
+// AUTO-ENROLL NEW USERS
+app.post('/api/auto-enroll', async (req, res) => {
+    try {
+        const { email, name } = req.body;
+        if (!email) return res.status(400).json({ error: 'Email required' });
+
+        const DEFAULT_COURSE_ID = "cmn2sm2gl000fcqgo540cdrbj";
+        const autoOrderId = `AUTO_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+
+        console.log(`[Auto-Enroll] Enrolling ${email} in ${DEFAULT_COURSE_ID}...`);
+
+        // 1. Create a "PAID" record in website_orders so it shows in Profile
+        const { error: insertError } = await supabase.from('website_orders').insert({
+            order_id: autoOrderId,
+            user_email: email,
+            course_ids: [DEFAULT_COURSE_ID],
+            total_amount: 0,
+            original_amount: 0,
+            discount_amount: 0,
+            status: 'PAID',
+            created_at: new Date().toISOString()
+        });
+
+        if (insertError) {
+            console.error('[Auto-Enroll] Failed to insert website_order:', insertError);
+            return res.status(500).json({ error: 'Failed to record enrollment' });
+        }
+
+        // 2. Trigger actual LMS enrollment
+        const result = await enrollUserInLMS({
+            email,
+            courseIds: [DEFAULT_COURSE_ID],
+            razorpay_order_id: autoOrderId,
+            razorpay_payment_id: 'AUTO_ENROLL_FREE'
+        });
+
+        res.json({ success: true, lmsEnrolled: result.success });
+    } catch (err) {
+        console.error('Auto-enroll error:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // ========== PAYMENTS (Razorpay) ==========
 // Helper function for LMS enrollment and logging
-async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_payment_id, discountCode, referralCode, coinsApplied }) {
+async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_payment_id, discountCode, referralCode, coinsApplied, selectedClassType }) {
     if (!supabase) return { success: false, error: 'Supabase not initialized' };
     
     // 1. Check if already processed (Idempotency)
@@ -548,7 +596,7 @@ async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_p
         // Construct detailed payload for the new LMS format while keeping courseIds for backward compatibility
         const courseDetails = courseIds.map(id => {
             const course = coursesData?.find(c => c.id === id);
-            const rawType = course?.class_type || 'recorded';
+            const rawType = selectedClassType || course?.class_type || 'recorded';
             return {
                 id: id,
                 type: rawType.toUpperCase() // LMS expects 'LIVE' or 'RECORDED' (uppercase enum)
@@ -648,7 +696,7 @@ async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_p
             referral_code: refCode,
             discount_code: discCode,
             coins_applied: coinsUsed,
-            class_type: classTypesStr
+            class_type: selectedClassType || classTypesStr
         }).catch(err => console.error("Background Sheet Log Error:", err));
     } catch (sheetErr) {
         console.error('Sheet Logging Error:', sheetErr);
@@ -792,7 +840,7 @@ async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_p
 app.post('/api/verify-payment', async (req, res) => {
     if (!razorpay || !supabase) return res.status(500).json({ error: 'Server configuration error' });
 
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, email, courseIds, discountCode, referralCode, coinsApplied } = req.body;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, email, courseIds, discountCode, referralCode, coinsApplied, selectedClassType } = req.body;
 
     const body = razorpay_order_id + "|" + razorpay_payment_id;
     const expectedSignature = crypto.createHmac('sha256', razorpaySecret).update(body.toString()).digest('hex');
@@ -852,7 +900,8 @@ app.post('/api/verify-payment', async (req, res) => {
             razorpay_payment_id,
             discountCode,
             referralCode,
-            coinsApplied
+            coinsApplied,
+            selectedClassType
         });
         
         // Always return success to the user — payment IS verified and PAID.
@@ -1065,7 +1114,7 @@ app.post('/api/razorpay-webhook', async (req, res) => {
 
     const expectedSignature = crypto
         .createHmac('sha256', secret)
-        .update(JSON.stringify(req.body))
+        .update(req.rawBody)
         .digest('hex');
 
     if (expectedSignature !== signature) {
@@ -1094,7 +1143,8 @@ app.post('/api/razorpay-webhook', async (req, res) => {
                 razorpay_payment_id: payment.id,
                 discountCode: order.discount_code, // Ensure this column exists in your DB or handle accordingly
                 referralCode: order.referral_code,
-                coinsApplied: order.coins_applied
+                coinsApplied: order.coins_applied,
+                selectedClassType: payment.notes?.selected_class_type === 'N/A' ? undefined : payment.notes?.selected_class_type
             });
         }
     }

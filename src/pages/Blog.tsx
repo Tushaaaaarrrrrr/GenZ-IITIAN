@@ -1,28 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { GraduationCap, BookOpen, Code, Coffee, Zap, Compass, BookText } from 'lucide-react';
+import { GraduationCap, BookOpen, Code, Coffee, Zap, Compass, BookText, BarChart3 } from 'lucide-react';
 import { docsData } from '../data/docsData';
+import { BlogPost, fallbackBlogs } from '../data/blogsData';
 
 const iconMap: Record<string, React.ReactNode> = {
   'graduation-cap': <GraduationCap className="w-7 h-7 text-[#0b1120]" />,
   'book-text': <BookText className="w-7 h-7 text-[#0b1120]" />,
+  'bar-chart': <BarChart3 className="w-7 h-7 text-[#0b1120]" />,
   'code': <Code className="w-7 h-7 text-[#0b1120]" />,
   'coffee': <Coffee className="w-7 h-7 text-[#0b1120]" />,
   'zap': <Zap className="w-7 h-7 text-[#0b1120]" />,
   'compass': <Compass className="w-7 h-7 text-[#0b1120]" />,
 };
-
-interface BlogPost {
-  id: number;
-  title: string;
-  slug: string;
-  category: string;
-  content: string;
-  image: string;
-  date: string;
-  read_time: string;
-  published: number;
-}
 
 interface Widget {
   id: number;
@@ -31,15 +21,6 @@ interface Widget {
   link: string;
   position: number;
 }
-
-const fallbackBlogs: BlogPost[] = [
-  { id: 1, title: "How to Crack IIT Madras Qualifier Exam in First Attempt", slug: "how-to-crack-iit-madras-qualifier", category: "Exam Prep", content: "", image: "https://picsum.photos/seed/blog1/600/400", date: "Oct 12, 2024", read_time: "5 min read", published: 1 },
-  { id: 2, title: "Top 5 Programming Languages to Learn in 2025", slug: "top-5-programming-languages-2025", category: "Career", content: "", image: "https://picsum.photos/seed/blog2/600/400", date: "Oct 15, 2024", read_time: "5 min read", published: 1 },
-  { id: 3, title: "Balancing Online Degree with a Full-Time Job", slug: "balancing-online-degree-full-time-job", category: "Productivity", content: "", image: "https://picsum.photos/seed/blog3/600/400", date: "Oct 18, 2024", read_time: "5 min read", published: 1 },
-  { id: 4, title: "Understanding Data Structures and Algorithms", slug: "understanding-dsa", category: "Computer Science", content: "", image: "https://picsum.photos/seed/blog4/600/400", date: "Oct 20, 2024", read_time: "5 min read", published: 1 },
-  { id: 5, title: "Why Open Source Contributions Matter", slug: "why-open-source-contributions-matter", category: "Career", content: "", image: "https://picsum.photos/seed/blog5/600/400", date: "Oct 22, 2024", read_time: "5 min read", published: 1 },
-  { id: 6, title: "Mastering Python for Data Science", slug: "mastering-python-data-science", category: "Programming", content: "", image: "https://picsum.photos/seed/blog6/600/400", date: "Oct 25, 2024", read_time: "5 min read", published: 1 },
-];
 
 function WidgetCard({ widget }: { widget: Widget }) {
   return (
@@ -69,8 +50,8 @@ function WidgetCard({ widget }: { widget: Widget }) {
 function BlogCard({ post }: { post: BlogPost }) {
   return (
     <Link to={`/blog/${post.slug || post.id}`} className="group cursor-pointer block">
-      <div className="relative aspect-[3/2] rounded-3xl overflow-hidden border-[3px] border-[#0b1120] mb-4 shadow-[6px_6px_0px_#0b1120] group-hover:-translate-y-1 group-hover:-translate-x-1 group-hover:shadow-[10px_10px_0px_#0b1120] transition-all">
-        <img src={post.image} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+      <div className="relative aspect-video rounded-3xl overflow-hidden border-[3px] border-[#0b1120] mb-4 bg-[#0b1120] shadow-[6px_6px_0px_#0b1120] group-hover:-translate-y-1 group-hover:-translate-x-1 group-hover:shadow-[10px_10px_0px_#0b1120] transition-all">
+        <img src={post.image} alt={post.title} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" />
         <div className="absolute top-4 left-4 px-4 py-1.5 bg-white text-[#0b1120] font-bold text-sm rounded-full border-2 border-[#0b1120]">
           {post.category}
         </div>

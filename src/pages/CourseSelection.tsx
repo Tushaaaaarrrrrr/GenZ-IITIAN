@@ -43,6 +43,7 @@ export default function CourseSelection() {
   const [walletBalance, setWalletBalance] = useState(0);
   const [coinsApplied, setCoinsApplied] = useState(0);
   const [coinsToApply, setCoinsToApply] = useState(0);
+  const [selectedPricingTier, setSelectedPricingTier] = useState<number | null>(null);
 
   // 🔄 Auto-recovery for mobile users:
   // If the page reloads after a mobile redirect payment, check if any order was successfully PAID
@@ -146,6 +147,9 @@ export default function CourseSelection() {
       } else if (data.isFixedBundle) {
           // Mandatory selection for fixed bundles
           setSelectedCourses(data.bundleCourses?.map((bc: any) => bc.courseId) || []);
+          if (data.pricing_options && data.pricing_options.length > 0) {
+              setSelectedPricingTier(0); // Default to first tier
+          }
       } else {
           // Selectable bundles start empty per user request
           setSelectedCourses([]);
@@ -234,6 +238,11 @@ export default function CourseSelection() {
     if (!course) return 0;
     if (!course.isBundle) return course.discountPrice || course.price;
     
+    // Multi-pricing logic for fixed bundles
+    if (course.isFixedBundle && course.pricing_options && course.pricing_options.length > 0 && selectedPricingTier !== null) {
+      return course.pricing_options[selectedPricingTier].price;
+    }
+
     // Manual-Only Logic: Always return the raw sum of selected items.
     // Price only drops if a user enters and applies a coupon code.
     return course.bundleCourses
@@ -451,6 +460,9 @@ export default function CourseSelection() {
         discountCode: appliedDiscountCode || undefined,
         referralCode: appliedReferralCode || undefined,
         coinsToApply: coinsApplied,
+        selectedClassType: (course.isFixedBundle && course.pricing_options && selectedPricingTier !== null) 
+          ? course.pricing_options[selectedPricingTier].type 
+          : undefined
       });
       if (!orderData.id) throw new Error("Order creation failed");
 
@@ -487,6 +499,9 @@ export default function CourseSelection() {
               discountCode: appliedDiscountCode || undefined,
               referralCode: appliedReferralCode || undefined,
               coinsToApply: coinsApplied,
+              selectedClassType: (course.isFixedBundle && course.pricing_options && selectedPricingTier !== null) 
+                ? course.pricing_options[selectedPricingTier].type 
+                : undefined
             });
 
             const courseTitle = course.isBundle 
@@ -606,6 +621,18 @@ export default function CourseSelection() {
         <div className="mb-4 text-center">
             <h1 className="text-3xl lg:text-4xl font-black mb-2 tracking-tight">Complete <span className="text-blue-600">Enrollment</span></h1>
             <p className="text-[10px] sm:text-xs lg:text-sm text-gray-500 font-bold mx-auto italic whitespace-nowrap">You're just one step away from joining {course.name}. Follow the steps below.</p>
+            {course.courseCategory && course.courseCategory !== 'NONE' && (
+              <div className="mt-3 flex items-center justify-center gap-2">
+                <span className={`inline-block px-4 py-2 rounded-xl font-black text-sm border-2 ${
+                  course.courseCategory === 'QUALIFIER' ? 'bg-blue-100 text-blue-700 border-blue-300' :
+                  course.courseCategory === 'LIVE' ? 'bg-purple-100 text-purple-700 border-purple-300' :
+                  course.courseCategory === 'RECORDED' ? 'bg-orange-100 text-orange-700 border-orange-300' :
+                  'bg-gray-100 text-gray-700 border-gray-300'
+                }`}>
+                  {course.courseCategory === 'QUALIFIER' && '🎯'} {course.courseCategory === 'LIVE' && '📺'} {course.courseCategory === 'RECORDED' && '📹'} {course.courseCategory}
+                </span>
+              </div>
+            )}
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
@@ -833,6 +860,53 @@ export default function CourseSelection() {
                   </div>
               )}
 
+              {/* Multi-Pricing Tiers for Fixed Bundle */}
+              {course.isFixedBundle && course.pricing_options && course.pricing_options.length > 0 && (
+                <div className="space-y-4 mb-8">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center border-2 border-[#0b1120] shadow-[2px_2px_0px_#0b1120]">
+                      <CreditCard className="w-4 h-4 text-white" />
+                    </div>
+                    <h3 className="text-xl font-black text-[#0b1120] uppercase tracking-tight">Select Your Plan</h3>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {course.pricing_options.map((opt: any, idx: number) => (
+                      <button
+                        key={idx}
+                        onClick={() => setSelectedPricingTier(idx)}
+                        className={`relative p-6 rounded-[2rem] border-[4px] transition-all text-left flex flex-col gap-3 group ${
+                          selectedPricingTier === idx 
+                            ? 'bg-blue-600 border-[#0b1120] text-white shadow-[8px_8px_0px_#0b1120]' 
+                            : 'bg-white border-gray-100 hover:border-blue-200 text-[#0b1120]'
+                        }`}
+                      >
+                        {opt.tag && (
+                          <div className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest w-fit border-2 ${
+                            selectedPricingTier === idx 
+                              ? 'bg-white/20 border-white text-white' 
+                              : 'bg-blue-50 border-blue-100 text-blue-600'
+                          }`}>
+                            {opt.tag}
+                          </div>
+                        )}
+                        <div className="text-xl font-black leading-tight uppercase group-hover:translate-x-1 transition-transform">
+                          {opt.name}
+                        </div>
+                        <div className={`text-2xl font-black mt-2 ${selectedPricingTier === idx ? 'text-white' : 'text-blue-600'}`}>
+                          ₹{opt.price}
+                        </div>
+                        {selectedPricingTier === idx && (
+                          <div className="absolute top-4 right-4 bg-white rounded-full p-1 border-2 border-[#0b1120]">
+                            <Check className="w-4 h-4 text-blue-600" />
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 <div className="lg:col-span-7 space-y-6">
                   <div className="bg-white border-[3px] border-[#0b1120] rounded-2xl p-5 shadow-[8px_8px_0px_#0b1120]">
@@ -886,7 +960,7 @@ export default function CourseSelection() {
                                     {course.bundleCourses.filter((bc: SubCourse) => selectedCourses.includes(bc.courseId)).map((bc: SubCourse) => (
                                         <div key={bc.courseId} className="flex justify-between font-black text-[#0b1120] text-sm uppercase tracking-tight">
                                             <span>{bc.courseName}</span>
-                                            <span>₹{bc.price}</span>
+                                            {!course.isFixedBundle && <span>₹{bc.price}</span>}
                                         </div>
                                     ))}
                                 </div>

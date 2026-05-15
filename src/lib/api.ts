@@ -218,7 +218,7 @@ export const apiService = {
   },
 
   // 4. Create Razorpay Order
-  createOrder: async (payload: { amount: number, email: string, courseIds: string[], discountCode?: string, bundleId?: string, referralCode?: string, coinsToApply?: number }) => {
+  createOrder: async (payload: { amount: number, email: string, courseIds: string[], discountCode?: string, bundleId?: string, referralCode?: string, coinsToApply?: number, selectedClassType?: string }) => {
     if (!isProduction) {
       const res = await fetch('/api/create-order', {
         method: 'POST',

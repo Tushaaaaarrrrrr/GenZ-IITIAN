@@ -8,7 +8,6 @@ export default function Courses() {
   const [courses, setCourses] = useState<CourseCardData[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-
   useEffect(() => {
     fetchCourses();
   }, []);
@@ -34,17 +33,26 @@ export default function Courses() {
       <section className="bg-[#0b1120] py-12 px-6 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 left-0 w-96 h-96 bg-blue-500 rounded-full blur-[100px] -translate-x-1/2 -translate-y-1/2"></div>
-          <div className="absolute bottom-0 right-0 w-96 h-96 bg-red-500 rounded-full blur-[100px] translate-x-1/2 translate-y-1/2"></div>
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-indigo-500 rounded-full blur-[100px] translate-x-1/2 translate-y-1/2"></div>
         </div>
 
-        <div className="max-w-7xl mx-auto relative z-10 text-center">
+        <div className="max-w-7xl mx-auto relative z-10 text-center flex flex-col items-center">
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="inline-block px-6 py-2 bg-yellow-400 text-[#0b1120] font-black text-sm md:text-base rounded-full mb-8 shadow-[0_0_20px_rgba(250,204,21,0.4)] animate-bounce"
+          >
+            ⌛ SALE ENDS ON 25 MAY — DON'T MISS OUT!
+          </motion.div>
+
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-4xl md:text-6xl font-black text-white mb-6 leading-tight tracking-tight"
+            className="text-3xl md:text-4xl lg:text-5xl font-black text-white mb-6 leading-tight tracking-tight"
           >
-            Learn What <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">Actually Matters</span>
+            🚀 MAY TERM EARLY BIRD SALE: <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">Start Strong, Save More!</span>
           </motion.h1>
           
           <div className="max-w-3xl mx-auto mb-10">
@@ -54,18 +62,12 @@ export default function Courses() {
             <p className="text-[10px] md:text-xs text-gray-500 font-black uppercase tracking-[0.2em] opacity-80 italic">
               Note: Access is granted immediately after successful payment verification
             </p>
+            <p className="w-full text-right text-[9px] md:text-[10px] text-gray-500 font-black uppercase tracking-widest opacity-60 mt-8">
+               📅 Class access till end term • 💬 Language: Hinglish
+            </p>
           </div>
 
-          <div className="max-w-2xl mx-auto relative group">
-            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 w-6 h-6 group-focus-within:text-blue-400 transition-colors" />
-            <input
-              type="text"
-              placeholder="Search for your next course..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-16 pr-8 py-5 bg-white/5 border-2 border-white/10 rounded-2xl text-white font-bold text-lg focus:outline-none focus:border-blue-500 focus:bg-white/10 transition-all placeholder:text-gray-500 shadow-2xl"
-            />
-          </div>
+          {/* Search bar removed per user request */}
         </div>
       </section>
 

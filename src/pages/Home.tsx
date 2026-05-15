@@ -5,7 +5,9 @@ import { useInView, animate } from 'motion/react';
 import { Link } from 'react-router-dom';
 import CourseCard, { CourseCardData } from '../components/CourseCard';
 import HeroAnimation from '../components/HeroAnimation';
+import HiringSection from '../components/HiringSection';
 import { supabase } from '../lib/supabase';
+import { BlogPost, fallbackBlogs } from '../data/blogsData';
 
 function AnimatedNumber({ value, decimals = 0, suffix = "" }: { value: number, decimals?: number, suffix?: string }) {
   const [displayValue, setDisplayValue] = useState("0");
@@ -48,13 +50,24 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-white text-[#0b1120] font-sans selection:bg-blue-100 overflow-hidden">
+      {/* Sale Announcement Bar */}
+      <div className="w-full bg-[#0b1120] text-white py-2 px-4 text-center border-b-[2px] border-yellow-400 relative z-50 flex items-center justify-center gap-6">
+        <span className="text-yellow-400 font-black text-xs md:text-sm tracking-[0.1em] animate-pulse">
+          ⚡ MAY TERM EARLY BIRD SALE ENDS ON 15 MAY ⚡
+        </span>
+        <Link to="/courses" className="px-4 py-1 bg-yellow-400 text-[#0b1120] text-[10px] md:text-xs font-black rounded-full hover:bg-yellow-300 transition-all transform hover:scale-105 shadow-[0_0_10px_rgba(250,204,21,0.2)]">
+          Enroll Now
+        </Link>
+      </div>
+
       {/* Hero Section */}
       <section className="relative pt-12 pb-16 sm:pt-16 sm:pb-24 px-4 sm:px-8 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 sm:gap-16 items-center">
           {/* Text Content */}
           <div className="relative z-10 flex flex-col items-start">
-            <div className="inline-block px-4 py-1.5 bg-[#eef2ff] text-[#0b1120] font-bold text-xs sm:text-sm rounded-full border-2 border-[#0b1120] mb-5 sm:mb-6">
-              India's Best platform for Online/Hybrid Degree students.
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-100 text-blue-600 font-black tracking-widest uppercase text-xs sm:text-sm rounded-full border-2 border-blue-500 mb-5 sm:mb-6 shadow-[3px_3px_0px_#2563eb]">
+              <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+              ✨ May Term Batches are LIVE!
             </div>
 
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight mb-4 sm:mb-6 text-[#0b1120]">
@@ -69,12 +82,18 @@ export default function Home() {
             </p>
 
             <div className="flex flex-wrap items-center gap-4 sm:gap-6">
-              <Link to="/courses" className="px-6 py-3 sm:px-8 sm:py-4 lg:text-lg bg-[#10b981] text-white rounded-xl font-bold text-base border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[8px_8px_0px_#10b981] transition-all flex items-center gap-2">
-                Explore Courses <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
-              </Link>
+              <motion.div
+                animate={{ scale: [1, 1.03, 1] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <Link to="/courses" className="px-6 py-3 sm:px-8 sm:py-4 lg:text-lg bg-blue-600 text-white rounded-xl font-black tracking-wide text-base border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[8px_8px_0px_#2563eb] transition-all flex items-center gap-2 relative overflow-hidden group">
+                  <span className="relative z-10 flex items-center gap-2">Enroll for May Term <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 group-hover:translate-x-1 transition-transform" /></span>
+                  <div className="absolute inset-0 bg-white/20 translate-x-[-100%] skew-x-[-15deg] animate-[shine_3s_ease-out_infinite]"></div>
+                </Link>
+              </motion.div>
               <a href="https://chat.whatsapp.com/Gi4D9yAd99p7q1XeVh0J1e" target="_blank" rel="noopener noreferrer" className="px-6 py-3 sm:px-8 sm:py-4 lg:text-lg bg-white text-[#0b1120] rounded-xl font-bold text-base border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[8px_8px_0px_#10b981] transition-all flex items-center gap-2">
                 <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
-                  <span className="text-xs text-white">💬</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="white" className="sm:w-3 sm:h-3"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
                 </div>
                 WhatsApp Community
               </a>
@@ -129,9 +148,9 @@ export default function Home() {
         {/* New Stats Row */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
           {[
-            { value: 13, suffix: "K+", label: "YouTube Subscribers", bgColor: "bg-[#f1f5f9]" },
-            { value: 1000, suffix: "+", label: "Students Learning", bgColor: "bg-[#10b981]", textColor: "text-white" },
-            { value: 50, suffix: "+", label: "IIT-Level Courses", bgColor: "bg-white" }
+            { value: 14.1, suffix: "K+", label: "YouTube Subscribers", bgColor: "bg-[#f1f5f9]" },
+            { value: 1829, suffix: "+", label: "Students Learning", bgColor: "bg-[#10b981]", textColor: "text-white" },
+            { value: 36, suffix: "", label: "IIT-Level Courses", bgColor: "bg-white" }
           ].map((stat, i) => (
             <div key={i} className={`${stat.bgColor} border-[3px] border-[#0b1120] rounded-3xl p-8 shadow-[6px_6px_0px_#0b1120] text-center hover:translate-y-[-4px] transition-transform`}>
               <div className={`text-4xl lg:text-5xl font-black ${stat.textColor || 'text-[#0b1120]'} mb-2`}>
@@ -145,8 +164,14 @@ export default function Home() {
         {/* Ecosystem Triple Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
           {/* Left Card: Ecosystem Features */}
-          <div className="bg-[#10b981] border-[4px] border-[#0b1120] rounded-[2.5rem] p-8 lg:p-12 shadow-[10px_10px_0px_#0b1120] relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-bl-full border-l-4 border-b-4 border-[#0b1120]/20 pointer-events-none"></div>
+          <motion.div 
+            initial={{ opacity: 0, x: -50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            whileHover={{ y: -8, transition: { duration: 0.3 } }}
+            className="bg-[#10b981] border-[4px] border-[#0b1120] rounded-[2.5rem] p-8 lg:p-12 shadow-[10px_10px_0px_#0b1120] relative overflow-hidden group"
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-bl-full border-l-4 border-b-4 border-[#0b1120]/20 pointer-events-none transition-transform group-hover:scale-110"></div>
             <div className="relative z-10">
               <h2 className="text-3xl lg:text-5xl font-black text-white leading-[1.1] mb-6">
                 Experience the Powerful and Best Ecosystem
@@ -161,16 +186,30 @@ export default function Home() {
                   "Live Doubts", "Graded Practice", "Assignments", 
                   "Imp Ques & Blueprint", "Curated"
                 ].map((tag, i) => (
-                  <span key={i} className="px-5 py-2.5 bg-white border-[3px] border-[#0b1120] rounded-full text-sm font-black text-[#0b1120] shadow-[3px_3px_0px_#0b1120] whitespace-nowrap">
+                  <motion.span 
+                    key={i} 
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.1 + (i * 0.05) }}
+                    whileHover={{ scale: 1.1, backgroundColor: "#0b1120", color: "#ffffff" }}
+                    className="px-5 py-2.5 bg-white border-[3px] border-[#0b1120] rounded-full text-sm font-black text-[#0b1120] shadow-[3px_3px_0px_#0b1120] whitespace-nowrap cursor-default"
+                  >
                     {tag}
-                  </span>
+                  </motion.span>
                 ))}
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Right Card: Mentoring */}
-          <div className="bg-[#0b1120] border-[4px] border-[#0b1120] rounded-[2.5rem] p-8 lg:p-12 shadow-[10px_10px_0px_#10b981] relative overflow-hidden flex flex-col justify-center min-h-[400px]">
+          <motion.div 
+            initial={{ opacity: 0, x: 50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            whileHover={{ y: -8, transition: { duration: 0.3 } }}
+            className="bg-[#0b1120] border-[4px] border-[#0b1120] rounded-[2.5rem] p-8 lg:p-12 shadow-[10px_10px_0px_#10b981] relative overflow-hidden flex flex-col justify-center min-h-[400px]"
+          >
             {/* Grid Pattern Background */}
             <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
             
@@ -182,7 +221,7 @@ export default function Home() {
                 Taking you from basics to advanced through practical learning and real-world problem solving.
               </p>
             </div>
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -248,23 +287,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Video Preview CTA */}
-      <section className="bg-blue-600 py-16 px-6 border-t-[3px] border-b-[3px] border-[#0b1120]">
-        <div className="max-w-4xl mx-auto text-center text-white">
-          <div className="inline-block p-3 bg-white/10 rounded-2xl mb-6 backdrop-blur-md border border-white/20">
-             <Star className="w-8 h-8 text-yellow-300 fill-current" />
-          </div>
-          <h2 className="text-3xl lg:text-5xl font-black mb-8 leading-tight">Start your preparation journey with expert guidance.</h2>
-          <a href="https://youtube.com/@Gen-ZIITian/" target="_blank" rel="noopener noreferrer" className="group relative inline-flex items-center gap-4 bg-white text-[#0b1120] px-10 py-5 rounded-2xl font-black text-xl border-[4px] border-[#0b1120] shadow-[8px_8px_0px_#0b1120] hover:translate-y-[-4px] hover:shadow-[12px_12px_0px_#0b1120] active:translate-y-[2px] active:shadow-[4px_4px_0px_#0b1120] transition-all">
-            Unlock Full Potential
-            <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="white">
-                <path d="M8 5v14l11-7z" />
-              </svg>
-            </div>
-          </a>
-        </div>
-      </section>
+
 
       {/* Testimonials Section */}
       <section className="bg-[#f8fafc] py-16 border-t-[3px] border-[#0b1120]">
@@ -340,6 +363,106 @@ export default function Home() {
         </div>
       </section>
 
+        {/* Left Side: Stats/Callout */}
+      <section className="bg-white py-16 border-t-[3px] border-[#0b1120] relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-8">
+            <div>
+              <h2 className="text-3xl lg:text-4xl font-black text-[#0b1120] mb-2">Explore Blogs</h2>
+              <p className="text-gray-500 font-bold text-lg">Insights, tips, and strategies for your journey.</p>
+            </div>
+            <Link
+              to="/blog"
+              className="inline-flex items-center gap-2 text-sm font-black text-[#0b1120] bg-white border-[3px] border-[#0b1120] rounded-xl px-5 py-3 shadow-[4px_4px_0px_#10b981] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[8px_8px_0px_#10b981] transition-all"
+            >
+              View All Blogs <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          <div className="relative">
+            <div className="flex gap-6 overflow-x-auto pb-8 scrollbar-thin snap-x snap-mandatory" style={{ scrollbarWidth: 'thin' }}>
+              {fallbackBlogs.map(post => (
+                <Link key={post.id} to={`/blog/${post.slug || post.id}`} className="snap-start shrink-0 w-[300px] md:w-[350px] group cursor-pointer block">
+                  <div className="relative aspect-video rounded-3xl overflow-hidden border-[3px] border-[#0b1120] mb-4 bg-[#0b1120] shadow-[6px_6px_0px_#0b1120] group-hover:-translate-y-1 group-hover:-translate-x-1 group-hover:shadow-[10px_10px_0px_#0b1120] transition-all">
+                    <img src={post.image} alt={post.title} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" />
+                    <div className="absolute top-4 left-4 px-4 py-1.5 bg-white text-[#0b1120] font-bold text-sm rounded-full border-2 border-[#0b1120]">
+                      {post.category}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4 text-sm font-bold text-gray-500 mb-2">
+                    <span>{post.date}</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+                    <span>{post.read_time}</span>
+                  </div>
+                  <h3 className="text-lg font-black text-[#0b1120] leading-tight group-hover:text-[#10b981] transition-colors">
+                    {post.title}
+                  </h3>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* YouTube Section */}
+      <section className="max-w-7xl mx-auto px-6 py-12">
+        <div className="bg-[#10b981] border-[3px] border-[#0b1120] rounded-[2rem] p-8 lg:p-12 shadow-[8px_8px_0px_#0b1620] relative overflow-hidden">
+          {/* Grid background pattern mimicking Image 2 */}
+          <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
+          
+          <div className="relative z-10 mb-10">
+            <h2 className="text-3xl lg:text-5xl font-black text-white mb-4 drop-shadow-md">Explore Gen-Z IITian ON Youtube :</h2>
+            <p className="text-white font-bold text-lg max-w-2xl drop-shadow-sm">
+              Unfiltered discussions on engineering, startups, and career growth with industry experts and successful developers.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
+            {/* Video 1 */}
+            <div className="bg-white rounded-2xl p-4 border-[3px] border-[#0b1120] shadow-[8px_8px_0px_#1e1e1e] hover:-translate-y-1 hover:shadow-[12px_12px_0px_#1e1e1e] transition-all">
+              <div className="aspect-video rounded-xl overflow-hidden border-2 border-[#0b1120] mb-4 bg-gray-100 relative">
+                <iframe
+                  className="absolute inset-0 w-full h-full"
+                  src="https://www.youtube.com/embed/yZ2RjBIXkpM"
+                  title="Latest Placement Report"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                ></iframe>
+              </div>
+              <h3 className="font-black text-[#0b1120] text-lg leading-tight">Latest Placement Report</h3>
+            </div>
+
+            {/* Video 2 */}
+            <div className="bg-white rounded-2xl p-4 border-[3px] border-[#0b1120] shadow-[8px_8px_0px_#1e1e1e] hover:-translate-y-1 hover:shadow-[12px_12px_0px_#1e1e1e] transition-all">
+              <div className="aspect-video rounded-xl overflow-hidden border-2 border-[#0b1120] mb-4 bg-gray-100 relative">
+                <iframe
+                  className="absolute inset-0 w-full h-full"
+                  src="https://www.youtube.com/embed/3pTJspN0RYA"
+                  title="Paradox 2026 ULTIMATE Guide"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                ></iframe>
+              </div>
+              <h3 className="font-black text-[#0b1120] text-lg leading-tight">Paradox 2026 ULTIMATE Guide</h3>
+            </div>
+
+            {/* Video 3 */}
+            <div className="bg-white rounded-2xl p-4 border-[3px] border-[#0b1120] shadow-[8px_8px_0px_#1e1e1e] hover:-translate-y-1 hover:shadow-[12px_12px_0px_#1e1e1e] transition-all">
+              <div className="aspect-video rounded-xl overflow-hidden border-2 border-[#0b1120] mb-4 bg-gray-100 relative">
+                <iframe
+                  className="absolute inset-0 w-full h-full"
+                  src="https://www.youtube.com/embed/V9C5mRyygcI"
+                  title="Why Everyone is Doing BS Degree"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                ></iframe>
+              </div>
+              <h3 className="font-black text-[#0b1120] text-lg leading-tight">Why Everyone is Doing BS Degree</h3>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Become Instructor Section */}
       <section className="max-w-7xl mx-auto px-6 py-12">
         <div className="bg-[#eef2ff] border-[3px] border-[#0b1120] rounded-2xl p-5 lg:p-8 shadow-[6px_6px_0px_#0b1120] relative overflow-hidden flex flex-col lg:flex-row gap-10 items-center">
@@ -354,14 +477,12 @@ export default function Home() {
               <p className="text-gray-600 font-bold mb-4 text-sm">
                 Do you know our tutor earns 60% of direct revenue from Batches? Start earning today.
               </p>
-              <a 
-                href="https://docs.google.com/forms/d/e/1FAIpQLSd-56OO4DsZ7Dx6jzq7hNr8mcJ1hL0WTgSEtSocyWCa3ayVCQ/viewform" 
-                target="_blank" 
-                rel="noopener noreferrer"
+              <Link
+                to="/careers"
                 className="w-full py-3 bg-[#0b1120] text-white whitespace-nowrap rounded-xl font-bold text-base border-2 border-[#0b1120] hover:bg-gray-800 transition-colors block text-center"
               >
                 Become Instructor
-              </a>
+              </Link>
             </div>
           </div>
 
@@ -391,7 +512,7 @@ export default function Home() {
             </div>
 
             <a 
-              href="https://docs.google.com/forms/d/e/1FAIpQLSd-56OO4DsZ7Dx6jzq7hNr8mcJ1hL0WTgSEtSocyWCa3ayVCQ/viewform" 
+              href="https://genziitian.in/careers" 
               target="_blank" 
               rel="noopener noreferrer"
               className="px-8 py-4 bg-[#10b981] text-white rounded-xl font-bold text-lg border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] whitespace-nowrap hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[8px_8px_0px_#0b1120] transition-all inline-block"

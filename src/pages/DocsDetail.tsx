@@ -10,6 +10,15 @@ function ContentRenderer({ blocks }: { blocks: ContentBlock[] }) {
           case 'text':
             return <p key={i} className="text-gray-600 leading-relaxed text-[15px]">{block.value}</p>;
 
+          case 'html':
+            return (
+              <div
+                key={i}
+                className="text-gray-600 leading-relaxed text-[15px] [&_a]:text-[#10b981] [&_a]:font-black [&_a]:underline"
+                dangerouslySetInnerHTML={{ __html: block.value || '' }}
+              />
+            );
+
           case 'heading': {
             const hId = (block.value || '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
             if (block.level === 3) return <h3 key={i} id={hId} className="text-xl font-black text-[#0b1120] mt-8 mb-3 flex items-center gap-3"><span className="w-1.5 h-6 bg-[#10b981] rounded-full inline-block"></span>{block.value}</h3>;
@@ -351,6 +360,17 @@ export default function DocsDetail() {
             </div>
           )}
 
+          {widgets.length > 0 && (
+            <div className="xl:hidden mt-12">
+              <h3 className="text-xs font-black uppercase tracking-wider text-gray-400 mb-4">Updates</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                {widgets.map(w => (
+                  <WidgetCard key={w.id} widget={w} />
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Prev / Next navigation */}
           <div className="border-t-2 border-gray-100 pt-8 mt-16 flex items-center justify-between">
             {(() => {
@@ -377,29 +397,11 @@ export default function DocsDetail() {
           </div>
         </main>
 
-        {/* Right Sidebar - On This Page + Widgets */}
+        {/* Right Sidebar - Updates */}
         <aside className="hidden xl:block w-72 shrink-0 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto py-12 pr-4 space-y-8 scrollbar-thin">
-          {/* On This Page TOC */}
-          <div>
-            <h3 className="text-xs font-black uppercase tracking-wider text-gray-400 mb-4">On This Page</h3>
-            <div className="space-y-1 border-l-2 border-gray-100 pl-4">
-              {tocItems.length > 0 ? tocItems.map(h => (
-                <a
-                  key={h.id}
-                  href={`#${h.id}`}
-                  className="block text-sm font-semibold text-gray-500 hover:text-[#10b981] transition-colors py-1"
-                >
-                  {h.label}
-                </a>
-              )) : (
-                <p className="text-xs text-gray-400">No sections</p>
-              )}
-            </div>
-          </div>
-
-          {/* Ad / Widget Banners */}
+          {/* Updates / Widget Banners */}
           <div className="space-y-4">
-            <h3 className="text-xs font-black uppercase tracking-wider text-gray-400">Sponsored</h3>
+            <h3 className="text-xs font-black uppercase tracking-wider text-gray-400">Updates</h3>
             {widgets.length > 0 ? widgets.map(w => (
               <WidgetCard key={w.id} widget={w} />
             )) : (

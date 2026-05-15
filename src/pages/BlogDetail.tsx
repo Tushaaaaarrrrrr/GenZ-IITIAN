@@ -1,20 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ChevronLeft, Share, Clock, Tag } from 'lucide-react';
-
-interface BlogPost {
-    id: number;
-    title: string;
-    slug: string;
-    category: string;
-    content: string;
-    image: string;
-    date: string;
-    read_time: string;
-    seo_title: string;
-    seo_description: string;
-    seo_keywords: string;
-}
+import { fallbackBlogs, BlogPost } from '../data/blogsData';
 
 interface Widget {
     id: number;
@@ -44,6 +31,19 @@ function WidgetCard({ widget }: { widget: Widget }) {
     );
 }
 
+function splitContentForMobile(content: string) {
+    if (content.includes('<') && content.includes('>')) {
+        const chunks = content.trim().split(/(?=<h2\b)/i).filter(Boolean);
+        if (chunks.length <= 1) return [content, ''];
+        const midpoint = Math.ceil(chunks.length / 2);
+        return [chunks.slice(0, midpoint).join(''), chunks.slice(midpoint).join('')];
+    }
+
+    const lines = content.split('\n');
+    const midpoint = Math.ceil(lines.length / 2);
+    return [lines.slice(0, midpoint).join('\n'), lines.slice(midpoint).join('\n')];
+}
+
 export default function BlogDetail() {
     const { slug } = useParams<{ slug: string }>();
     const [blog, setBlog] = useState<BlogPost | null>(null);
@@ -58,7 +58,16 @@ export default function BlogDetail() {
         fetch(`/api/blogs/${slug}`)
             .then(res => { if (!res.ok) throw new Error('Not found'); return res.json(); })
             .then(data => { setBlog(data); setLoading(false); })
-            .catch(() => { setError(true); setLoading(false); });
+            .catch(() => {
+                const fallback = fallbackBlogs.find(post => post.slug === slug || String(post.id) === slug);
+                if (fallback) {
+                    setBlog(fallback);
+                    setError(false);
+                } else {
+                    setError(true);
+                }
+                setLoading(false);
+            });
 
         fetch('/api/widgets')
             .then(res => res.json())
@@ -124,7 +133,8 @@ export default function BlogDetail() {
     };
 
     const widget1 = widgets[0] || null;
-    const widgetsRest = widgets.slice(1);
+    const widget2 = widgets[1] || null;
+    const widget3 = widgets[2] || null;
 
     if (loading) {
         return (
@@ -152,18 +162,26 @@ export default function BlogDetail() {
         );
     }
 
+    const hasThumbnail = Boolean(blog.image?.trim());
+    const [mobileContentStart, mobileContentEnd] = splitContentForMobile(blog.content || '');
+
     return (
         <div className="min-h-screen bg-white text-[#0b1120] font-sans selection:bg-blue-100">
             {/* Hero */}
-            <div className="relative">
-                <div className="w-full h-[300px] md:h-[420px] relative overflow-hidden">
-                    <img src={blog.image} alt={blog.title} className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0b1120] via-[#0b1120]/40 to-transparent"></div>
-                </div>
-                <div className="absolute bottom-0 left-0 right-0 pb-10 px-6">
+            <div className={`relative bg-[#0b1120] ${hasThumbnail ? 'px-0 py-0 md:px-6 md:py-8' : 'px-4 py-16 md:px-6 md:py-20'}`}>
+                {hasThumbnail && (
+                    <div className="relative mx-auto aspect-video w-full max-w-7xl overflow-hidden rounded-none md:rounded-3xl bg-[#0b1120]">
+                        <img src={blog.image} alt={blog.title} className="w-full h-full object-contain" />
+                        <div className="absolute inset-0 hidden bg-gradient-to-t from-[#0b1120] via-[#0b1120]/40 to-transparent md:block"></div>
+                    </div>
+                )}
+                {!hasThumbnail && (
+                    <div className="mx-auto min-h-[260px] w-full max-w-5xl"></div>
+                )}
+                <div className={`${hasThumbnail ? 'hidden md:block' : 'block'} absolute bottom-0 left-0 right-0 pb-8 md:pb-14 px-6`}>
                     <div className="max-w-5xl mx-auto">
                         <span className="inline-block px-4 py-1.5 bg-[#10b981] text-white font-bold text-sm rounded-full border-2 border-white/30 mb-4">{blog.category}</span>
-                        <h1 className="text-3xl md:text-5xl font-black text-white leading-tight mb-4">{blog.title}</h1>
+                        <h1 className="text-2xl md:text-5xl font-black text-white leading-tight mb-4">{blog.title}</h1>
                         <div className="flex flex-wrap items-center gap-4 text-white/80 text-sm font-bold">
                             <span className="flex items-center gap-1.5"><Tag className="w-3.5 h-3.5" />{blog.category}</span>
                             <span className="w-1 h-1 rounded-full bg-white/50"></span>
@@ -192,23 +210,21 @@ export default function BlogDetail() {
                 <div className="flex gap-8 items-start">
                     {/* Main article */}
                     <article className="flex-1 min-w-0">
-                        {/* Mobile: Widget 1 before content */}
-                        {widget1 && (
-                            <div className="lg:hidden mb-10">
-                                <WidgetCard widget={widget1} />
-                            </div>
-                        )}
-
-                        <div className="prose-custom">
+                        <div className="hidden lg:block prose-custom">
                             {renderContent(blog.content)}
                         </div>
 
-                        {/* Mobile: Remaining widgets after content */}
-                        {widgetsRest.length > 0 && (
-                            <div className="lg:hidden mt-10 space-y-6">
-                                {widgetsRest.map(w => <WidgetCard key={w.id} widget={w} />)}
-                            </div>
-                        )}
+                        <div className="lg:hidden space-y-10">
+                            {widget1 && <WidgetCard widget={widget1} />}
+                            <div className="prose-custom">{renderContent(mobileContentStart)}</div>
+                            {widget2 && <WidgetCard widget={widget2} />}
+                            {mobileContentEnd && <div className="prose-custom">{renderContent(mobileContentEnd)}</div>}
+                            {widget3 && (
+                                <div className="pt-2">
+                                    <WidgetCard widget={widget3} />
+                                </div>
+                            )}
+                        </div>
                     </article>
 
                     {/* Desktop sidebar */}

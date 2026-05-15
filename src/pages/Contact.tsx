@@ -1,5 +1,5 @@
 import { useState, ReactNode } from 'react';
-import { ChevronDown, ChevronUp, HelpCircle, ShieldCheck, Tag, Clock, User, Monitor, Info } from 'lucide-react';
+import { ChevronDown, ChevronUp, HelpCircle, ShieldCheck, Tag, Clock, User, Monitor, Info, Mail, UserRound, MessageCircle, Instagram, Linkedin, Youtube } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 const FAQ_DATA = [
@@ -186,8 +186,8 @@ export default function Contact() {
 
           <div className="flex flex-col gap-8">
             <div className="bg-[#fff7ed] border-[3px] border-[#0b1120] rounded-3xl p-8 shadow-[8px_8px_0px_#0b1120]">
-              <div className="w-16 h-16 rounded-full bg-orange-100 border-[3px] border-[#0b1120] flex items-center justify-center text-3xl mb-6">
-                👨‍🏫
+              <div className="w-16 h-16 rounded-full bg-orange-100 border-[3px] border-[#0b1120] flex items-center justify-center text-orange-500 mb-6">
+                <UserRound className="w-8 h-8" />
               </div>
               <h3 className="text-2xl font-black text-[#0b1120] mb-2 tracking-tight">FOUNDER : SRIRAM</h3>
               <p className="text-gray-600 font-bold mb-4">Contact for direct help and support from our founder.</p>
@@ -195,8 +195,8 @@ export default function Contact() {
             </div>
 
             <div className="bg-white border-[3px] border-[#0b1120] rounded-3xl p-8 shadow-[8px_8px_0px_#0b1120]">
-              <div className="w-16 h-16 rounded-full bg-blue-100 border-[3px] border-[#0b1120] flex items-center justify-center text-3xl mb-6">
-                📧
+              <div className="w-16 h-16 rounded-full bg-blue-100 border-[3px] border-[#0b1120] flex items-center justify-center text-blue-500 mb-6">
+                <Mail className="w-8 h-8" />
               </div>
               <h3 className="text-2xl font-black text-[#0b1120] mb-2">Email Us</h3>
               <p className="text-gray-600 font-bold mb-4">Our friendly team is here to help.</p>
@@ -204,8 +204,8 @@ export default function Contact() {
             </div>
 
             <a href="https://chat.whatsapp.com/Gi4D9yAd99p7q1XeVh0J1e" target="_blank" rel="noopener noreferrer" className="bg-white border-[3px] border-[#0b1120] rounded-3xl p-8 shadow-[8px_8px_0px_#0b1120] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[12px_12px_0px_#0b1120] transition-all group">
-              <div className="w-16 h-16 rounded-full bg-green-100 border-[3px] border-[#0b1120] flex items-center justify-center text-3xl mb-6">
-                💬
+              <div className="w-16 h-16 rounded-full bg-green-100 border-[3px] border-[#0b1120] flex items-center justify-center text-green-500 mb-6">
+                <MessageCircle className="w-8 h-8" />
               </div>
               <h3 className="text-2xl font-black text-[#0b1120] mb-2 group-hover:text-green-600 transition-colors">Join WhatsApp Community</h3>
               <p className="text-gray-600 font-bold mb-4">Chat with our community and support team.</p>
@@ -213,8 +213,8 @@ export default function Contact() {
             </a>
 
             <a href="https://www.linkedin.com/company/102554405/" target="_blank" rel="noopener noreferrer" className="bg-white border-[3px] border-[#0b1120] rounded-3xl p-8 shadow-[8px_8px_0px_#0b1120] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[12px_12px_0px_#0b1120] transition-all group">
-              <div className="w-16 h-16 rounded-full bg-blue-100 border-[3px] border-[#0b1120] flex items-center justify-center text-3xl mb-6">
-                💼
+              <div className="w-16 h-16 rounded-full bg-blue-100 border-[3px] border-[#0b1120] flex items-center justify-center text-blue-600 mb-6">
+                <Linkedin className="w-8 h-8" />
               </div>
               <h3 className="text-2xl font-black text-[#0b1120] mb-2 group-hover:text-blue-600 transition-colors">LinkedIn Page</h3>
               <p className="text-gray-600 font-bold mb-4">Follow us for professional updates and news.</p>
@@ -222,8 +222,8 @@ export default function Contact() {
             </a>
 
             <a href="https://www.instagram.com/genz_iitian/" target="_blank" rel="noopener noreferrer" className="bg-white border-[3px] border-[#0b1120] rounded-3xl p-8 shadow-[8px_8px_0px_#0b1120] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[12px_12px_0px_#0b1120] transition-all group">
-              <div className="w-16 h-16 rounded-full bg-pink-100 border-[3px] border-[#0b1120] flex items-center justify-center text-3xl mb-6">
-                📸
+              <div className="w-16 h-16 rounded-full bg-pink-100 border-[3px] border-[#0b1120] flex items-center justify-center text-pink-500 mb-6">
+                <Instagram className="w-8 h-8" />
               </div>
               <h3 className="text-2xl font-black text-[#0b1120] mb-2 group-hover:text-pink-600 transition-colors">Instagram</h3>
               <p className="text-gray-600 font-bold mb-4">Check our latest reels and student life updates.</p>
@@ -231,8 +231,8 @@ export default function Contact() {
             </a>
 
             <a href="https://youtube.com/@Gen-ZIITian/" target="_blank" rel="noopener noreferrer" className="bg-white border-[3px] border-[#0b1120] rounded-3xl p-8 shadow-[8px_8px_0px_#0b1120] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[12px_12px_0px_#0b1120] transition-all group">
-              <div className="w-16 h-16 rounded-full bg-red-100 border-[3px] border-[#0b1120] flex items-center justify-center text-3xl mb-6">
-                ▶️
+              <div className="w-16 h-16 rounded-full bg-red-100 border-[3px] border-[#0b1120] flex items-center justify-center text-red-500 mb-6">
+                <Youtube className="w-8 h-8" />
               </div>
               <h3 className="text-2xl font-black text-[#0b1120] mb-2 group-hover:text-red-600 transition-colors">YouTube Channel</h3>
               <p className="text-gray-600 font-bold mb-4">Watch free lectures and tutorials.</p>

@@ -15,6 +15,7 @@ import Resources from './pages/Resources';
 import ResourceDetail from './pages/ResourceDetail';
 import Contact from './pages/Contact';
 import About from './pages/About';
+import Careers from './pages/Careers';
 import Newsletter from './pages/Newsletter';
 import SEODirectory from './pages/SEODirectory';
 import SEOPage from './pages/SEOPage';
@@ -32,6 +33,7 @@ import RefundPolicy from './pages/RefundPolicy';
 import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentFailed from './pages/PaymentFailed';
 import LoginModal from './components/LoginModal';
+import WelcomeModal from './components/WelcomeModal';
 
 // Captures ?ref=CODE from the URL and saves it to localStorage with 24h expiry
 function ReferralCapture() {
@@ -77,6 +79,7 @@ function AppContent() {
           <Route path="/docs/:slug" element={<DocsDetail />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/careers" element={<Careers />} />
           <Route path="/newsletter" element={<Newsletter />} />
           <Route path="/knowledge" element={<SEODirectory />} />
           <Route path="/cart" element={<Cart />} />
@@ -122,6 +125,7 @@ export default function App() {
     <AuthProvider>
       <CartProvider>
         <LoginModal />
+        <WelcomeModal />
         <Router>
           <ReferralCapture />
           <AppContent />

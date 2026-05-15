@@ -67,14 +67,23 @@ export default async function handler(req: any, res: any) {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('id, name')
+      .select('id, name, phone, gender')
       .eq('email', email)
       .single();
 
-    const lmsEnrollUrl = process.env.LMS_ENROLL_URL || 'https://class.genziitian.in/api/external-enroll';
+    const lmsEnrollUrl = process.env.LMS_ENROLL_URL || 'https://class.genziitian.in/api/external-purchase';
     const externalEnrollSecret = process.env.EXTERNAL_ENROLL_SECRET;
 
     // === STEP 1: LMS ENROLLMENT (isolated — failures here must NOT block referral/coin processing) ===
+    // Fetch course details for class types
+    const { data: coursesData } = await supabase.from('courses').select('id, class_type').in('id', courseIds);
+    const courseDetails = courseIds.map(id => ({
+      type: (coursesData?.find(c => c.id === id)?.class_type || 'recorded').toUpperCase()
+    }));
+
+    // Fetch order details for pricing
+    const { data: orderData } = await supabase.from('website_orders').select('total_amount, created_at').eq('order_id', razorpay_order_id).single();
+
     let lmsEnrollmentSucceeded = false;
     try {
       const lmsRes = await fetch(lmsEnrollUrl, {
@@ -84,7 +93,14 @@ export default async function handler(req: any, res: any) {
           secret: externalEnrollSecret,
           email,
           name: profile?.name || 'Student',
+          phone: profile?.phone || 'N/A',
+          gender: profile?.gender || 'MALE',
+          orderId: razorpay_order_id,
+          paymentId: razorpay_payment_id,
+          purchasedAt: orderData?.created_at || new Date().toISOString(),
+          finalPrice: orderData?.total_amount || 0,
           courseIds,
+          courseDetails
         }),
       });
 

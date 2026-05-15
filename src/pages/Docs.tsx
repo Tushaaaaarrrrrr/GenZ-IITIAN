@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { GraduationCap, BookOpen, Code, Coffee, Zap, Compass, BookText } from 'lucide-react';
+import { GraduationCap, BookOpen, Code, Coffee, Zap, Compass, BookText, BarChart3 } from 'lucide-react';
 import { docsData, DocEntry } from '../data/docsData';
 export type { DocSection, DocEntry, ContentBlock, DocItem } from '../data/docsData';
 export { docsData } from '../data/docsData';
@@ -8,6 +8,7 @@ export { docsData } from '../data/docsData';
 const iconMap: Record<string, React.ReactNode> = {
   'graduation-cap': <GraduationCap className="w-8 h-8 text-[#0b1120]" />,
   'book-text': <BookText className="w-8 h-8 text-[#0b1120]" />,
+  'bar-chart': <BarChart3 className="w-8 h-8 text-[#0b1120]" />,
   'code': <Code className="w-8 h-8 text-[#0b1120]" />,
   'coffee': <Coffee className="w-8 h-8 text-[#0b1120]" />,
   'zap': <Zap className="w-8 h-8 text-[#0b1120]" />,

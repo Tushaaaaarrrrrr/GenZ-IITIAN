@@ -11,6 +11,9 @@ export type CourseCardData = {
   isPinned?: boolean;
   isBundle?: boolean;
   bundleCourses?: { courseId: string; courseName: string }[];
+  tags?: string[];
+  startDate?: string;
+  courseCategory?: 'QUALIFIER' | 'LIVE' | 'RECORDED' | 'NONE';
 };
 
 type CourseCardProps = {
@@ -30,6 +33,33 @@ export default function CourseCard({ course, className = '' }: CourseCardProps) 
         course.isPinned ? 'ring-4 ring-blue-500/20' : ''
       } ${className}`}
     >
+      {/* Dynamic Tags */}
+      {course.tags && course.tags.length > 0 && (
+        <div className="absolute top-6 right-6 z-10 flex flex-row-reverse gap-2 pointer-events-none">
+          {course.tags.slice(0, 2).map((tag, idx) => {
+            let bgColor = 'bg-purple-500'; // Default custom color
+            const upperTag = tag.toUpperCase();
+            if (upperTag === 'SALE') bgColor = 'bg-red-500';
+            if (upperTag === 'NEW') bgColor = 'bg-green-500';
+            if (upperTag === 'BESTSELLER') bgColor = 'bg-amber-500';
+            if (upperTag === 'TRENDING') bgColor = 'bg-blue-600';
+            if (upperTag === 'HOT') bgColor = 'bg-orange-500';
+            if (upperTag === 'LIMITED') bgColor = 'bg-pink-600';
+            
+            return (
+              <div 
+                key={`${tag}-${idx}`} 
+                className="rotate-12 group-hover:rotate-6 transition-transform transform -translate-y-2"
+              >
+                <div className={`${bgColor} text-white font-black px-3 py-1.5 md:px-4 md:py-2 rounded-xl border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] text-[10px] md:text-xs tracking-widest uppercase`}>
+                  {tag}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       <div className="p-6 md:p-8 flex-grow flex flex-col relative bg-white h-full">
         <div className="w-14 h-14 bg-pink-100 border-[3px] border-[#0b1120] rounded-2xl flex items-center justify-center mb-6">
           {course.isBundle ? (
@@ -46,6 +76,19 @@ export default function CourseCard({ course, className = '' }: CourseCardProps) 
         <p className="text-gray-600 font-bold text-sm mb-6 flex-grow">
           {course.description}
         </p>
+
+        {course.courseCategory && course.courseCategory !== 'NONE' && (
+          <div className="mb-4">
+            <span className={`inline-block px-4 py-2 rounded-xl font-black text-xs border-2 ${
+              course.courseCategory === 'QUALIFIER' ? 'bg-blue-100 text-blue-700 border-blue-300' :
+              course.courseCategory === 'LIVE' ? 'bg-purple-100 text-purple-700 border-purple-300' :
+              course.courseCategory === 'RECORDED' ? 'bg-orange-100 text-orange-700 border-orange-300' :
+              'bg-gray-100 text-gray-700 border-gray-300'
+            }`}>
+              {course.courseCategory === 'QUALIFIER' && '🎯'} {course.courseCategory === 'LIVE' && '📺'} {course.courseCategory === 'RECORDED' && '📹'} {course.courseCategory}
+            </span>
+          </div>
+        )}
 
         <div className="flex flex-wrap gap-2 mb-8">
           {course.isBundle && course.bundleCourses?.map((bundleCourse, idx) => (
@@ -67,13 +110,21 @@ export default function CourseCard({ course, className = '' }: CourseCardProps) 
 
         <div className="mt-auto">
           <div className="flex items-end justify-between mb-8">
-            <div className="flex items-center gap-1">
-              <div className="flex text-amber-400">
-                {[...Array(5)].map((_, idx) => (
-                  <Star key={idx} className="w-4 h-4 fill-current" />
-                ))}
+            <div className="flex flex-col gap-1">
+              {course.startDate && (
+                <div className="text-[10px] font-black uppercase tracking-widest text-gray-600 mb-1">
+                  Class Starts: {new Date(course.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </div>
+              )}
+              <div className="text-[10px] font-black uppercase tracking-widest text-blue-600">Language: Hinglish</div>
+              <div className="flex items-center gap-1">
+                <div className="flex text-amber-400">
+                  {[...Array(5)].map((_, idx) => (
+                    <Star key={idx} className="w-4 h-4 fill-current" />
+                  ))}
+                </div>
+                <span className="text-gray-500 font-bold text-sm ml-1">(4.9)</span>
               </div>
-              <span className="text-gray-500 font-bold text-sm ml-1">(4.9)</span>
             </div>
 
             <div className="text-right">

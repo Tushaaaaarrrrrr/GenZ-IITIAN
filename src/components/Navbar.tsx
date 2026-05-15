@@ -1,13 +1,20 @@
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
-import { User as UserIcon, LogOut, LayoutDashboard, Gift } from 'lucide-react';
+import { User as UserIcon, LogOut, LayoutDashboard, Gift, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [resourcesOpen, setResourcesOpen] = useState(false);
+  const [mobileResourcesOpen, setMobileResourcesOpen] = useState(false);
+  const [connectOpen, setConnectOpen] = useState(false);
+  const [mobileConnectOpen, setMobileConnectOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const resourcesMenuRef = useRef<HTMLDivElement>(null);
+  const connectMenuRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
   
   const { user, profile, signIn, signOut, isManager, openLoginModal } = useAuth();
   const { cart } = useCart();
@@ -17,10 +24,25 @@ export default function Navbar() {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
         setUserMenuOpen(false);
       }
+      if (resourcesMenuRef.current && !resourcesMenuRef.current.contains(e.target as Node)) {
+        setResourcesOpen(false);
+      }
+      if (connectMenuRef.current && !connectMenuRef.current.contains(e.target as Node)) {
+        setConnectOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Close menus on route change
+  useEffect(() => {
+    setResourcesOpen(false);
+    setMobileResourcesOpen(false);
+    setConnectOpen(false);
+    setMobileConnectOpen(false);
+    setMobileOpen(false);
+  }, [location.pathname]);
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     `relative font-bold text-[15px] transition-colors pb-1 ${
@@ -33,7 +55,7 @@ export default function Navbar() {
     `py-2 font-bold text-base transition-colors ${isActive ? 'text-blue-600' : 'text-gray-700 hover:text-[#0b1120]'}`;
 
   return (
-    <nav className="border-b border-gray-200 bg-white sticky top-0 z-50">
+    <nav className="border-b border-gray-200 bg-white sticky top-0 z-[100]">
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-1">
           <span className="font-black text-2xl tracking-tight text-[#0b1120]">Gen-Z</span>
@@ -42,9 +64,47 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-8">
           <NavLink to="/" end className={navLinkClass}>Home</NavLink>
           <NavLink to="/courses" className={navLinkClass}>Courses</NavLink>
-          <NavLink to="/syllabus" className={navLinkClass}>Syllabus</NavLink>
-          <NavLink to="/about" className={navLinkClass}>About Us</NavLink>
-          <NavLink to="/contact" className={navLinkClass}>Contact</NavLink>
+          <div className="relative" ref={resourcesMenuRef}>
+            <button 
+              onClick={() => setResourcesOpen(!resourcesOpen)}
+              className={`flex items-center gap-1 relative font-bold text-[15px] transition-colors pb-1 ${
+                location.pathname.includes('/resources') || location.pathname.includes('/docs') || location.pathname.includes('/graded-assignment') || location.pathname.includes('/blog')
+                  ? 'text-[#0b1120] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2.5px] after:bg-blue-600 after:rounded-full'
+                  : 'text-gray-600 hover:text-[#0b1120]'
+              }`}
+            >
+              Resources <ChevronDown className={`w-4 h-4 transition-transform ${resourcesOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {resourcesOpen && (
+              <div className="absolute top-full left-0 mt-3 w-48 bg-white border-[3px] border-[#0b1120] rounded-xl shadow-[6px_6px_0px_#0b1120] py-2 z-50">
+                <Link to="/resources" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">PYQs & Notes</Link>
+                <Link to="/syllabus" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">Syllabus</Link>
+                <Link to="/graded-assignment" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">Graded Assignment</Link>
+                <Link to="/blog" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">Blog</Link>
+              </div>
+            )}
+          </div>
+          <div className="relative" ref={connectMenuRef}>
+            <button 
+              onClick={() => setConnectOpen(!connectOpen)}
+              className={`flex items-center gap-1 relative font-bold text-[15px] transition-colors pb-1 ${
+                location.pathname.includes('/about') || location.pathname.includes('/contact') || location.pathname.includes('/newsletter')
+                  ? 'text-[#0b1120] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2.5px] after:bg-blue-600 after:rounded-full'
+                  : 'text-gray-600 hover:text-[#0b1120]'
+              }`}
+            >
+              Connect <ChevronDown className={`w-4 h-4 transition-transform ${connectOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {connectOpen && (
+              <div className="absolute top-full left-0 mt-3 w-48 bg-white border-[3px] border-[#0b1120] rounded-xl shadow-[6px_6px_0px_#0b1120] py-2 z-50">
+                <Link to="/about" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">About Us</Link>
+                <Link to="/contact" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">Contact Us</Link>
+                <a href="https://chat.whatsapp.com/Gi4D9yAd99p7q1XeVh0J1e" target="_blank" rel="noopener noreferrer" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">Community</a>
+                <Link to="/newsletter" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">Newsletter</Link>
+              </div>
+            )}
+          </div>
+          <NavLink to="/careers" className={navLinkClass}>Careers</NavLink>
         </div>
         <div className="flex items-center gap-3">
           {user ? (
@@ -112,10 +172,39 @@ export default function Navbar() {
         <div className="md:hidden bg-white border-t border-gray-200 px-6 py-6 flex flex-col gap-4">
           <NavLink to="/" end onClick={() => setMobileOpen(false)} className={mobileNavLinkClass}>Home</NavLink>
           <NavLink to="/courses" onClick={() => setMobileOpen(false)} className={mobileNavLinkClass}>Courses</NavLink>
-          <NavLink to="/syllabus" onClick={() => setMobileOpen(false)} className={mobileNavLinkClass}>Syllabus</NavLink>
-          <NavLink to="/blog" onClick={() => setMobileOpen(false)} className={mobileNavLinkClass}>Blog</NavLink>
-          <NavLink to="/about" onClick={() => setMobileOpen(false)} className={mobileNavLinkClass}>About Us</NavLink>
-          <NavLink to="/contact" onClick={() => setMobileOpen(false)} className={mobileNavLinkClass}>Contact</NavLink>
+          <div className="flex flex-col">
+            <button 
+              onClick={() => setMobileResourcesOpen(!mobileResourcesOpen)}
+              className="flex items-center justify-between py-2 font-bold text-base text-gray-700 hover:text-[#0b1120]"
+            >
+              Resources <ChevronDown className={`w-5 h-5 transition-transform ${mobileResourcesOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {mobileResourcesOpen && (
+              <div className="flex flex-col gap-3 pl-4 pt-2 pb-2 border-l-2 border-gray-100 ml-2 mt-1">
+                <Link to="/resources" className="text-sm font-bold text-gray-600 hover:text-blue-600">PYQs & Notes</Link>
+                <Link to="/syllabus" className="text-sm font-bold text-gray-600 hover:text-blue-600">Syllabus</Link>
+                <Link to="/graded-assignment" className="text-sm font-bold text-gray-600 hover:text-blue-600">Graded Assignment</Link>
+                <Link to="/blog" className="text-sm font-bold text-gray-600 hover:text-blue-600">Blog</Link>
+              </div>
+            )}
+          </div>
+          <div className="flex flex-col">
+            <button 
+              onClick={() => setMobileConnectOpen(!mobileConnectOpen)}
+              className="flex items-center justify-between py-2 font-bold text-base text-gray-700 hover:text-[#0b1120]"
+            >
+              Connect <ChevronDown className={`w-5 h-5 transition-transform ${mobileConnectOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {mobileConnectOpen && (
+              <div className="flex flex-col gap-3 pl-4 pt-2 pb-2 border-l-2 border-gray-100 ml-2 mt-1">
+                <Link to="/about" className="text-sm font-bold text-gray-600 hover:text-blue-600">About Us</Link>
+                <Link to="/contact" className="text-sm font-bold text-gray-600 hover:text-blue-600">Contact Us</Link>
+                <a href="https://chat.whatsapp.com/Gi4D9yAd99p7q1XeVh0J1e" target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-gray-600 hover:text-blue-600">Community</a>
+                <Link to="/newsletter" className="text-sm font-bold text-gray-600 hover:text-blue-600">Newsletter</Link>
+              </div>
+            )}
+          </div>
+          <NavLink to="/careers" onClick={() => setMobileOpen(false)} className={mobileNavLinkClass}>Careers</NavLink>
           {user && (
             <NavLink to="/refer" onClick={() => setMobileOpen(false)} className={mobileNavLinkClass}>Refer & Earn</NavLink>
           )}

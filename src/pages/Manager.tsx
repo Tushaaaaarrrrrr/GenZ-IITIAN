@@ -5,6 +5,8 @@ import { LayoutDashboard, ShoppingBag, ScrollText, BookOpen, Plus, Search, Trash
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate, useLocation, NavLink } from 'react-router-dom';
 import { apiService } from '../lib/api';
+import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
+
 
 type Tab = 'users' | 'courses' | 'discounts' | 'payments' | 'catalog' | 'referrals';
 
@@ -40,6 +42,9 @@ export default function Manager() {
   const [bundleDiscountPrice, setBundleDiscountPrice] = useState<number | ''>('');
   const [bundleDiscountCode, setBundleDiscountCode] = useState('');
   const [isFixedBundle, setIsFixedBundle] = useState(false);
+  const [pricingOptions, setPricingOptions] = useState<{name: string, price: number, type: 'live' | 'recorded', tag?: string}[]>([]);
+  const [courseTags, setCourseTags] = useState<string[]>([]);
+  const [courseCategory, setCourseCategory] = useState<'QUALIFIER' | 'LIVE' | 'RECORDED' | 'NONE'>('NONE');
 
   // Discount Coupons state
   const [showAddDiscount, setShowAddDiscount] = useState(false);
@@ -47,6 +52,8 @@ export default function Manager() {
   const [courseCatalog, setCourseCatalog] = useState<any[]>([]); // New state for full course ID -> Name mapping
   const [catalogSearch, setCatalogSearch] = useState('');
   const [editingDiscount, setEditingDiscount] = useState<any>(null);
+  const [discountType, setDiscountType] = useState<'all' | 'specific'>('all');
+  const [discountEmails, setDiscountEmails] = useState<string[]>(['']);
   const discountOptionMap = new Map(discountOptions.map(option => [option.id, option]));
 
   // User Detail View state
@@ -56,6 +63,33 @@ export default function Manager() {
   const [selectedUserWallet, setSelectedUserWallet] = useState<any>(null);
   const [isLoadingUserDetails, setIsLoadingUserDetails] = useState(false);
 
+  // Delete Confirmation State
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    type: 'course' | 'discount' | 'payment';
+    entity: any;
+  }>({
+    isOpen: false,
+    type: 'course',
+    entity: null
+  });
+
+
+  useEffect(() => {
+    if (editingDiscount) {
+      if (editingDiscount.allowed_emails && editingDiscount.allowed_emails.length > 0) {
+        setDiscountType('specific');
+        setDiscountEmails(editingDiscount.allowed_emails);
+      } else {
+        setDiscountType('all');
+        setDiscountEmails(['']);
+      }
+    } else {
+      setDiscountType('all');
+      setDiscountEmails(['']);
+    }
+  }, [editingDiscount, showAddDiscount]);
+
   useEffect(() => {
     if (editingCourse) {
       setIsBundle(editingCourse.isBundle || false);
@@ -63,12 +97,18 @@ export default function Manager() {
       setBundleDiscountPrice(editingCourse.bundleDiscountPrice || '');
       setBundleDiscountCode(editingCourse.bundleDiscountCode || '');
       setIsFixedBundle(editingCourse.isFixedBundle || false);
+      setPricingOptions(editingCourse.pricing_options || []);
+      setCourseTags(editingCourse.tags || []);
+      setCourseCategory(editingCourse.courseCategory || 'NONE');
     } else {
       setIsBundle(false);
       setBundleCourses([{ courseId: '', courseName: '', price: 0 }]);
       setBundleDiscountPrice('');
       setBundleDiscountCode('');
       setIsFixedBundle(false);
+      setPricingOptions([]);
+      setCourseTags([]);
+      setCourseCategory('NONE');
     }
   }, [editingCourse, showAddCourse]);
 
@@ -85,6 +125,41 @@ export default function Manager() {
 
   const removeBundleCourse = (index: number) => {
     setBundleCourses(bundleCourses.filter((_, i) => i !== index));
+  };
+
+  const addPricingOption = () => {
+    if (pricingOptions.length >= 3) return;
+    setPricingOptions([...pricingOptions, { name: '', price: 0, type: 'recorded' }]);
+  };
+
+  const updatePricingOption = (index: number, key: string, value: any) => {
+    const updated = [...pricingOptions];
+    (updated[index] as any)[key] = value;
+    setPricingOptions(updated);
+  };
+
+  const removePricingOption = (index: number) => {
+    setPricingOptions(pricingOptions.filter((_, i) => i !== index));
+  };
+
+  const toggleTag = (tag: string) => {
+    if (courseTags.includes(tag)) {
+      setCourseTags(courseTags.filter(t => t !== tag));
+    } else if (courseTags.length < 2) {
+      setCourseTags([...courseTags, tag]);
+    } else {
+      alert("Maximum 2 tags can be shown.");
+    }
+  };
+
+  const addCustomTag = () => {
+    const tag = prompt("Enter custom tag text (max 10 chars):");
+    if (tag && tag.trim()) {
+      const formattedTag = tag.trim().substring(0, 10).toUpperCase();
+      if (!courseTags.includes(formattedTag)) {
+        toggleTag(formattedTag);
+      }
+    }
   };
 
   useEffect(() => {
@@ -285,9 +360,14 @@ export default function Manager() {
 
   const handleCourseAction = async (course: any, isDelete = false) => {
     if (isDelete) {
-      if (!confirm('Are you sure you want to delete this course?')) return;
-      await supabase.from('courses').delete().eq('id', course.id);
+      setDeleteModal({
+        isOpen: true,
+        type: 'course',
+        entity: course
+      });
+      return;
     } else {
+
       const nextCourseId = course.id || sanitizeCourseId(course.name);
       const previousCourseId = course.previousId || null;
 
@@ -309,8 +389,10 @@ export default function Manager() {
         bundleDiscountPrice: course.bundleDiscountPrice || null,
         bundleDiscountCode: course.bundleDiscountCode || null,
         isFixedBundle: course.isFixedBundle || false,
+        pricing_options: course.pricing_options || [],
         subject: course.category || null,
-
+        tags: course.tags || [],
+        courseCategory: course.courseCategory || 'NONE',
         startDate: course.startDate || null,
         endDate: course.endDate || null,
       };
@@ -428,15 +510,21 @@ export default function Manager() {
 
   const handleDiscountAction = async (discount: any, isDelete = false) => {
     if (isDelete) {
-      if (!confirm('Are you sure you want to delete this discount code?')) return;
-      await supabase.from('discount_coupons').delete().eq('id', discount.id);
+      setDeleteModal({
+        isOpen: true,
+        type: 'discount',
+        entity: discount
+      });
+      return;
     } else {
+
       const cleanedDiscount = {
         ...(discount.id ? { id: discount.id } : {}),
         code: discount.code.toUpperCase(),
         discount_percentage: discount.discount_percentage ? parseInt(discount.discount_percentage) : null,
         discount_amount: discount.discount_amount ? parseInt(discount.discount_amount) : null,
-        applies_to: discount.applies_to || 'ALL'
+        applies_to: discount.applies_to || 'ALL',
+        allowed_emails: discount.discountType === 'specific' ? discount.discountEmails.filter((e: string) => e.trim() !== '') : null
       };
       const { error } = await supabase.from('discount_coupons').upsert(cleanedDiscount, { onConflict: 'code' });
       if (error) alert(error.message);
@@ -445,6 +533,36 @@ export default function Manager() {
     }
     fetchData();
   };
+
+  const handlePaymentDelete = async (orderId: string) => {
+    setDeleteModal({
+      isOpen: true,
+      type: 'payment',
+      entity: { order_id: orderId }
+    });
+  };
+
+  const confirmDelete = async () => {
+    const { type, entity } = deleteModal;
+    if (!entity) return;
+
+    try {
+      if (type === 'course') {
+        await supabase.from('courses').delete().eq('id', entity.id);
+      } else if (type === 'discount') {
+        await supabase.from('discount_coupons').delete().eq('id', entity.id);
+      } else if (type === 'payment') {
+        await supabase.from('website_orders').delete().eq('order_id', entity.order_id);
+      }
+      
+      setDeleteModal({ ...deleteModal, isOpen: false });
+      fetchData();
+    } catch (err) {
+      console.error('Delete failed:', err);
+      alert('Failed to delete. Check console for details.');
+    }
+  };
+
 
   if (authLoading || !isManager) return <div className="min-h-screen flex items-center justify-center font-black">ACCESS DENIED</div>;
 
@@ -675,14 +793,22 @@ export default function Manager() {
                           <th className="px-8 py-6">Amount</th>
                           <th className="px-8 py-6">Status</th>
                           <th className="px-8 py-6">Date</th>
+                          <th className="px-8 py-6 text-right">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y-[3px] divide-gray-50 font-bold">
                         {data.map((order: any) => (
-                          <tr key={order.order_id} className="hover:bg-blue-50/50 transition-colors">
+                          <tr 
+                            key={order.order_id} 
+                            onClick={() => fetchUserDetails({ email: order.user_email, name: order.user_email })}
+                            className="hover:bg-blue-50/50 transition-colors cursor-pointer group"
+                          >
                             <td className="px-8 py-6">
-                              <div className="text-lg font-black text-[#0b1120]">{order.user_email}</div>
-                              <div className="text-xs font-mono text-gray-400">{order.order_id}</div>
+                              <div className="flex items-center gap-3">
+                                <div className="text-lg font-black text-[#0b1120] group-hover:text-blue-600 transition-colors">{order.user_email}</div>
+                                <ArrowRight className="w-4 h-4 text-transparent group-hover:text-blue-600 transition-colors" />
+                              </div>
+                              <div className="text-xs font-mono text-gray-400 mt-1">{order.order_id}</div>
                             </td>
                             <td className="px-8 py-6">
                               <div className="flex flex-wrap gap-2">
@@ -711,10 +837,24 @@ export default function Manager() {
                             <td className="px-8 py-6">
                               {order.created_at ? new Date(order.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : 'N/A'}
                             </td>
+                            <td className="px-8 py-6 text-right">
+                              {!order.order_id.startsWith('LEAD_') && (
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handlePaymentDelete(order.order_id);
+                                  }}
+                                  className="p-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                                  title="Delete Payment Record"
+                                >
+                                  <Trash2 className="w-5 h-5" />
+                                </button>
+                              )}
+                            </td>
                           </tr>
                         ))}
                         {data.length === 0 && (
-                          <tr><td colSpan={5} className="px-8 py-24 text-center text-gray-300 font-black text-2xl uppercase tracking-widest">No payments found</td></tr>
+                          <tr><td colSpan={6} className="px-8 py-24 text-center text-gray-300 font-black text-2xl uppercase tracking-widest">No payments found</td></tr>
                         )}
                       </tbody>
                     </table>
@@ -947,8 +1087,18 @@ export default function Manager() {
                       <input type="text" defaultValue={editingCourse?.subject} id="c-category" placeholder="e.g. Data Science" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none" />
                     </div>
                     <div>
-                      <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Class Type</label>
-                      <select id="c-class-type" defaultValue={editingCourse?.class_type || 'recorded'} className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-black focus:ring-[6px] ring-blue-100 outline-none bg-white">
+                      <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">
+                        Class Type
+                        {pricingOptions.length > 0 && (
+                          <span className="text-[10px] font-bold text-gray-400 block mt-1">(Disabled: Using Pricing Tiers)</span>
+                        )}
+                      </label>
+                      <select 
+                        id="c-class-type" 
+                        defaultValue={editingCourse?.class_type || 'recorded'} 
+                        disabled={pricingOptions.length > 0}
+                        className={`w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-black focus:ring-[6px] ring-blue-100 outline-none bg-white transition-all ${pricingOptions.length > 0 ? 'opacity-50 cursor-not-allowed bg-gray-100' : 'hover:border-blue-500'}`}
+                      >
                         <option value="recorded">Recorded</option>
                         <option value="live">Live</option>
                       </select>
@@ -963,6 +1113,15 @@ export default function Manager() {
                         <option value="true">Pinned</option>
                       </select>
                     </div>
+                    <div>
+                      <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Course Marketing Tag</label>
+                      <select value={courseCategory} onChange={(e) => setCourseCategory(e.target.value as 'QUALIFIER' | 'LIVE' | 'RECORDED' | 'NONE')} className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-black focus:ring-[6px] ring-blue-100 outline-none bg-white">
+                        <option value="NONE">None</option>
+                        <option value="QUALIFIER">🎯 Qualifier</option>
+                        <option value="LIVE">📺 Live</option>
+                        <option value="RECORDED">📹 Recorded</option>
+                      </select>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -974,6 +1133,44 @@ export default function Manager() {
                       <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">End Date</label>
                       <input type="datetime-local" defaultValue={editingCourse?.endDate ? new Date(editingCourse.endDate).toISOString().slice(0, 16) : ''} id="c-end" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none bg-white" />
                     </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <label className="block text-sm font-black text-[#0b1120] uppercase mb-1">Course Tags (Max 2)</label>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mb-3">Choose up to 2 tags to display on the course card corner.</p>
+                    <div className="flex flex-wrap gap-2">
+                      {['SALE', 'NEW', 'BESTSELLER', 'TRENDING', 'HOT', 'LIMITED'].map(tag => (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => toggleTag(tag)}
+                          className={`px-4 py-2 rounded-xl font-black text-xs border-2 transition-all ${
+                            courseTags.includes(tag)
+                              ? 'bg-[#0b1120] text-white border-[#0b1120] shadow-[3px_3px_0px_#3b82f6]'
+                              : 'bg-white text-gray-400 border-gray-200 hover:border-[#0b1120] hover:text-[#0b1120]'
+                          }`}
+                        >
+                          {tag}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={addCustomTag}
+                        className="px-4 py-2 rounded-xl font-black text-xs border-2 border-dashed border-gray-300 text-gray-400 hover:border-blue-500 hover:text-blue-500 transition-all flex items-center gap-2"
+                      >
+                        <Plus className="w-3 h-3" /> CUSTOM
+                      </button>
+                    </div>
+                    {courseTags.length > 0 && (
+                      <div className="flex gap-2 pt-2">
+                        {courseTags.map(tag => (
+                          <span key={tag} className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black border border-blue-200 flex items-center gap-2">
+                            {tag}
+                            <X className="w-3 h-3 cursor-pointer" onClick={() => toggleTag(tag)} />
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {isBundle && (
@@ -1050,6 +1247,101 @@ export default function Manager() {
                         <button type="button" onClick={() => setIsFixedBundle(!isFixedBundle)} className={`w-14 h-8 rounded-full border-2 border-[#0b1120] flex items-center p-1 transition-colors ${isFixedBundle ? 'bg-[#3b82f6]' : 'bg-gray-300'}`}>
                           <div className={`w-5 h-5 bg-white rounded-full border-2 border-[#0b1120] transition-transform ${isFixedBundle ? 'translate-x-6' : ''}`} />
                         </button>
+                      </div>
+                    )}
+
+                    {isBundle && isFixedBundle && (
+                      <div className="pt-6 border-t-2 border-[#0b1120]/10 space-y-4">
+                        <div className="flex justify-between items-center">
+                          <div className="flex flex-col">
+                            <label className="block text-sm font-black text-blue-600 uppercase">Multi-Pricing Tiers</label>
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Add 2 or 3 pricing options for this fixed bundle</span>
+                          </div>
+                          {pricingOptions.length < 3 && (
+                            <button 
+                              type="button" 
+                              onClick={addPricingOption}
+                              className="text-xs font-black bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 shadow-[4px_4px_0px_#0b1120]"
+                            >
+                              + ADD TIER
+                            </button>
+                          )}
+                        </div>
+
+                        {pricingOptions.length === 1 && (
+                          <div className="p-3 bg-amber-50 border-2 border-amber-200 rounded-xl flex items-center gap-2">
+                            <AlertCircle className="w-4 h-4 text-amber-600" />
+                            <p className="text-[10px] font-black text-amber-800 uppercase">Multi-pricing requires at least 2 options. Add another or remove this one to use default pricing.</p>
+                          </div>
+                        )}
+
+                        <div className="space-y-4">
+                          {pricingOptions.map((opt, idx) => (
+                            <div key={idx} className="p-5 bg-white border-[3px] border-[#0b1120] rounded-2xl shadow-[4px_4px_0px_#0b1120] space-y-4">
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                  <label className="text-[10px] font-black text-gray-400 uppercase">Tier Name</label>
+                                  <input 
+                                    value={opt.name} 
+                                    onChange={e => updatePricingOption(idx, 'name', e.target.value)}
+                                    placeholder="e.g. Live Only"
+                                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl font-bold outline-none focus:border-blue-400"
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-[10px] font-black text-gray-400 uppercase">Price (₹)</label>
+                                  <input 
+                                    type="number"
+                                    value={opt.price} 
+                                    onChange={e => updatePricingOption(idx, 'price', parseInt(e.target.value) || 0)}
+                                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl font-bold outline-none focus:border-blue-400"
+                                  />
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <label className="text-[10px] font-black text-gray-400 uppercase block mb-1">Class Type</label>
+                                  <select 
+                                    value={opt.type}
+                                    onChange={e => updatePricingOption(idx, 'type', e.target.value)}
+                                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl font-bold outline-none focus:border-blue-400 bg-white"
+                                  >
+                                    <option value="recorded">Recorded</option>
+                                    <option value="live">Live</option>
+                                  </select>
+                                </div>
+                                <div>
+                                  <label className="text-[10px] font-black text-gray-400 uppercase block mb-1">Tag (Optional)</label>
+                                  <select 
+                                    value={opt.tag || ''}
+                                    onChange={e => updatePricingOption(idx, 'tag', e.target.value || undefined)}
+                                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl font-bold outline-none focus:border-blue-400 bg-white"
+                                  >
+                                    <option value="">None</option>
+                                    <option value="bestseller">Bestseller</option>
+                                    <option value="new">New</option>
+                                    <option value="popular">Popular</option>
+                                    <option value="limited">Limited</option>
+                                  </select>
+                                </div>
+                              </div>
+                              <div className="flex justify-end">
+                                <button 
+                                  type="button" 
+                                  onClick={() => removePricingOption(idx)}
+                                  className="p-2.5 text-red-500 hover:bg-red-50 rounded-xl border-2 border-transparent hover:border-red-100"
+                                >
+                                  <Trash2 className="w-5 h-5" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                          {pricingOptions.length === 0 && (
+                            <div className="text-center py-4 bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl text-gray-400 font-bold text-xs">
+                              No special pricing tiers added. Will use default course price.
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
 
@@ -1210,6 +1502,11 @@ export default function Manager() {
                       return;
                     }
 
+                    if (isBundle && isFixedBundle && pricingOptions.length === 1) {
+                      alert('Multi-pricing requires at least 2 tiers. Please add another tier or remove the current one to use default pricing.');
+                      return;
+                    }
+
                     handleCourseAction({ 
                       id, previousId: editingCourse?.id, name, price, isPinned, subtitle,
                       cohortContent,
@@ -1222,6 +1519,9 @@ export default function Manager() {
                       bundleDiscountPrice: isBundle && bundleDiscountPrice ? Number(bundleDiscountPrice) : null,
                       bundleDiscountCode: isBundle && bundleDiscountCode ? bundleDiscountCode : null,
                       isFixedBundle: isBundle && isFixedBundle,
+                      pricing_options: isBundle && isFixedBundle ? pricingOptions : [],
+                      tags: courseTags,
+                      courseCategory,
                       startDate: startDate ? new Date(startDate).toISOString() : null,
                       endDate: endDate ? new Date(endDate).toISOString() : null,
                     });
@@ -1274,6 +1574,58 @@ export default function Manager() {
                 </div>
 
                 <div>
+                  <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">For Whom:</label>
+                  <select 
+                    value={discountType}
+                    onChange={e => setDiscountType(e.target.value as 'all' | 'specific')}
+                    className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-purple-100 outline-none bg-white mb-4"
+                  >
+                    <option value="all">Everyone</option>
+                    <option value="specific">Specific Emails</option>
+                  </select>
+
+                  {discountType === 'specific' && (
+                    <div className="space-y-3 p-4 bg-gray-50 border-2 border-dashed border-gray-300 rounded-2xl mb-6">
+                      <label className="block text-xs font-black text-gray-500 uppercase tracking-widest">Allowed Email Addresses (Max 6)</label>
+                      {discountEmails.map((email, idx) => (
+                        <div key={idx} className="flex gap-2 relative">
+                          <input 
+                            type="email"
+                            value={email}
+                            onChange={e => {
+                              const newEmails = [...discountEmails];
+                              newEmails[idx] = e.target.value;
+                              setDiscountEmails(newEmails);
+                            }}
+                            placeholder="student@example.com"
+                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl font-bold outline-none focus:border-purple-400"
+                          />
+                          {discountEmails.length > 1 && (
+                            <button 
+                              onClick={() => {
+                                const newEmails = discountEmails.filter((_, i) => i !== idx);
+                                setDiscountEmails(newEmails);
+                              }}
+                              className="px-3 text-red-500 hover:text-red-700 bg-red-50 rounded-xl border border-red-100"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                      {discountEmails.length < 6 && (
+                        <button 
+                          onClick={() => setDiscountEmails([...discountEmails, ''])}
+                          className="text-sm font-black text-purple-600 flex items-center gap-2 hover:text-purple-800 pt-2"
+                        >
+                          <Plus className="w-4 h-4" /> Add Email
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div>
                   <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Applies To:</label>
                   <select id="d-applies" defaultValue={editingDiscount?.applies_to || 'ALL'} className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-purple-100 outline-none bg-white">
                     <option value="ALL">ALL COURSES (Global Discount)</option>
@@ -1308,7 +1660,9 @@ export default function Manager() {
                       code,
                       discount_percentage,
                       discount_amount,
-                      applies_to
+                      applies_to,
+                      discountType,
+                      discountEmails
                     });
                   }}
                   className="flex-grow py-5 bg-purple-500 text-white rounded-2xl font-black text-lg border-[4px] border-[#0b1120] flex items-center justify-center gap-3 shadow-[8px_8px_0px_#0b1120] active:translate-y-1 active:shadow-none hover:bg-purple-600 transition-colors"
@@ -1488,6 +1842,29 @@ export default function Manager() {
           </div>
         )}
       </AnimatePresence>
+
+      <DeleteConfirmationModal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ ...deleteModal, isOpen: false })}
+        onConfirm={confirmDelete}
+        title={`Delete ${deleteModal.type.charAt(0).toUpperCase() + deleteModal.type.slice(1)}`}
+        description={
+          deleteModal.type === 'course' 
+            ? "This will permanently delete the course and all associated enrollment data. This action cannot be reversed."
+            : deleteModal.type === 'discount'
+            ? "This will permanently delete the discount code. Existing orders using this code will not be affected, but new orders will not be able to use it."
+            : "This will permanently delete this payment record from the database. This does NOT refund the user."
+        }
+        entityName={
+          deleteModal.type === 'course' 
+            ? deleteModal.entity?.id 
+            : deleteModal.type === 'discount'
+            ? deleteModal.entity?.code
+            : deleteModal.entity?.order_id
+        }
+        entityType={deleteModal.type}
+      />
     </div>
   );
 }
+

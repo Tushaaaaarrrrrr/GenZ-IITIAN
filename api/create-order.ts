@@ -31,7 +31,7 @@ export default async function handler(req: any, res: any) {
   try {
     const supabase = getSupabaseAdmin();
     const razorpay = getRazorpay();
-    const { email, courseIds, bundleId, discountCode, referralCode, coinsToApply } = req.body || {};
+    const { email, courseIds, bundleId, discountCode, referralCode, coinsToApply, selectedClassType } = req.body || {};
 
     if (!email || !Array.isArray(courseIds) || courseIds.length === 0) {
       return res.status(400).json({ error: 'Email and at least one course ID are required' });
@@ -76,11 +76,25 @@ export default async function handler(req: any, res: any) {
       }
 
       // 1. Calculate Raw Subtotal
-      totalOriginalPrice = bundleSubCourses
-        .filter((bc: any) => courseIds.includes(bc.courseId))
-        .reduce((sum: number, bc: any) => sum + Number(bc.price || 0), 0);
+      // **FIX**: If fixed bundle with pricing_options (tiers), use tier price instead of individual course prices
+      let totalOriginalPrice = 0;
+      
+      if (bundle.isFixedBundle && Array.isArray(bundle.pricing_options) && bundle.pricing_options.length > 0 && selectedClassType) {
+        // Find matching tier by type
+        const selectedTier = bundle.pricing_options.find((opt: any) => opt.type === selectedClassType);
+        if (selectedTier) {
+          totalOriginalPrice = Number(selectedTier.price || 0);
+        } else {
+          return res.status(400).json({ error: 'Invalid pricing tier selected' });
+        }
+      } else {
+        // Fallback: sum individual course prices (for non-fixed bundles)
+        totalOriginalPrice = bundleSubCourses
+          .filter((bc: any) => courseIds.includes(bc.courseId))
+          .reduce((sum: number, bc: any) => sum + Number(bc.price || 0), 0);
+      }
 
-      totalAmount = totalOriginalPrice;
+      let totalAmount = totalOriginalPrice;
 
       // 2. Process Discount Code strictly if provided
       let couponSavings = 0;

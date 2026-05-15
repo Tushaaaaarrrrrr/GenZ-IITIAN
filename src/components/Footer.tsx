@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { GraduationCap, Youtube, MessageCircle, Instagram, Linkedin } from 'lucide-react';
 
 export default function Footer() {
   const [isNewsletterPopupOpen, setIsNewsletterPopupOpen] = useState(false);
@@ -16,7 +17,7 @@ export default function Footer() {
                 Take the First Step<br />Towards Mastery!
               </h3>
               <Link to="/courses" className="w-fit px-6 py-3 bg-[#10b981] text-white rounded-xl font-bold text-lg border-2 border-[#0b1120] flex items-center gap-2 hover:bg-[#059669] transition-colors">
-                🎓 Enroll on Courses
+                <GraduationCap className="w-5 h-5" /> Enroll on Courses
               </Link>
               <div className="mt-4">
                 <div className="flex items-center gap-1 mb-4">
@@ -54,22 +55,22 @@ export default function Footer() {
               <ul className="space-y-4">
                 <li>
                   <a href="https://youtube.com/@Gen-ZIITian/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-gray-400 font-bold hover:text-red-400 transition-colors">
-                    <span className="text-xl">▶️</span> YouTube Channel
+                    <Youtube className="w-5 h-5 text-red-500" /> YouTube Channel
                   </a>
                 </li>
                 <li>
                   <a href="https://chat.whatsapp.com/Gi4D9yAd99p7q1XeVh0J1e" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-gray-400 font-bold hover:text-green-400 transition-colors">
-                    <span className="text-xl">💬</span> WhatsApp Community
+                    <MessageCircle className="w-5 h-5 text-green-500" /> WhatsApp Community
                   </a>
                 </li>
                 <li>
                   <a href="https://www.instagram.com/genz_iitian/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-gray-400 font-bold hover:text-pink-400 transition-colors">
-                    <span className="text-xl">📸</span> Instagram
+                    <Instagram className="w-5 h-5 text-pink-500" /> Instagram
                   </a>
                 </li>
                 <li>
                   <a href="https://www.linkedin.com/company/102554405/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-gray-400 font-bold hover:text-blue-400 transition-colors">
-                    <span className="text-xl">💼</span> LinkedIn
+                    <Linkedin className="w-5 h-5 text-blue-500" /> LinkedIn
                   </a>
                 </li>
               </ul>
