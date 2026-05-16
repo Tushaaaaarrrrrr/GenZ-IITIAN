@@ -51,9 +51,9 @@ export default function WelcomeModal() {
                   Welcome to <br />
                   <span className="text-[#3b82f6]">GenZ IITIAN!</span>
                 </h2>
-                <p className="text-gray-500 font-bold text-sm">
-                  We've automatically enrolled you in your first course for free! 🚀
-                </p>
+	                <p className="text-gray-500 font-bold text-sm">
+	                  Here's a welcome discount for your first purchase.
+	                </p>
               </div>
 
               <div className="bg-blue-50 border-[3px] border-dashed border-[#3b82f6] rounded-2xl p-6 relative group">

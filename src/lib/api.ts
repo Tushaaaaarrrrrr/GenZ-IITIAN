@@ -102,6 +102,8 @@ export const apiService = {
             const { data: paidOrders, error: oError } = await supabase
               .from('website_orders')
               .select('user_email')
+              .not('order_id', 'like', 'AUTO_%')
+              .gt('total_amount', 0)
               .eq('status', 'PAID');
             if (oError) throw oError;
 
@@ -121,7 +123,11 @@ export const apiService = {
             }));
           }
 
-          let query = supabase.from('website_orders').select('*').order('created_at', { ascending: false });
+          let query = supabase
+            .from('website_orders')
+            .select('*')
+            .not('order_id', 'like', 'AUTO_%')
+            .order('created_at', { ascending: false });
           
           if (search) {
             query = query.or(`user_email.ilike.%${search}%,order_id.ilike.%${search}%`);
@@ -218,7 +224,7 @@ export const apiService = {
   },
 
   // 4. Create Razorpay Order
-  createOrder: async (payload: { amount: number, email: string, courseIds: string[], discountCode?: string, bundleId?: string, referralCode?: string, coinsToApply?: number, selectedClassType?: string }) => {
+  createOrder: async (payload: { amount: number, email: string, courseIds: string[], discountCode?: string, bundleId?: string, referralCode?: string, coinsToApply?: number, selectedClassType?: string, selectedPricingTierIndex?: number, selectedPricingTierName?: string, selectedPricingTierPrice?: number }) => {
     if (!isProduction) {
       const res = await fetch('/api/create-order', {
         method: 'POST',

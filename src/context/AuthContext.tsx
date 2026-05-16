@@ -70,7 +70,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (!error) {
         setProfile(data);
-        if (isNewUser) {
+        const authCreatedAt = u.created_at ? new Date(u.created_at).getTime() : 0;
+        const isFreshAuthUser = authCreatedAt > 0 && Date.now() - authCreatedAt < 5 * 60 * 1000;
+
+        if (isNewUser && isFreshAuthUser) {
           console.log('[AuthContext] Brand new user detected, triggering welcome email and auto-enrollment...');
           
           // Trigger welcome email

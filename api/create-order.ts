@@ -23,6 +23,80 @@ const getRazorpay = () => {
   return new Razorpay({ key_id: keyId, key_secret: keySecret });
 };
 
+const resolveSelectedPricingTier = ({
+  pricingOptions,
+  selectedPricingTierIndex,
+  selectedPricingTierName,
+  selectedPricingTierPrice,
+  selectedClassType,
+  requestedAmount,
+  coinsToApply,
+}: {
+  pricingOptions: any[];
+  selectedPricingTierIndex?: number | string;
+  selectedPricingTierName?: string;
+  selectedPricingTierPrice?: number | string;
+  selectedClassType?: string;
+  requestedAmount?: number | string;
+  coinsToApply?: number | string;
+}) => {
+  if (!Array.isArray(pricingOptions) || pricingOptions.length === 0) return null;
+
+  const tierIndex = Number(selectedPricingTierIndex);
+  if (Number.isInteger(tierIndex) && tierIndex >= 0 && tierIndex < pricingOptions.length) {
+    return pricingOptions[tierIndex];
+  }
+
+  const tierName = typeof selectedPricingTierName === 'string' ? selectedPricingTierName.trim().toLowerCase() : '';
+  if (tierName) {
+    const byName = pricingOptions.find((tier: any) => String(tier.name || '').trim().toLowerCase() === tierName);
+    if (byName) return byName;
+  }
+
+  const tierPrice = Number(selectedPricingTierPrice);
+  if (Number.isFinite(tierPrice) && tierPrice > 0) {
+    const priceMatches = pricingOptions.filter((tier: any) => Number(tier.price) === tierPrice);
+    const typeMatches = selectedClassType
+      ? priceMatches.filter((tier: any) => String(tier.type || '').toLowerCase() === String(selectedClassType).toLowerCase())
+      : priceMatches;
+    if (typeMatches.length === 1) return typeMatches[0];
+    if (priceMatches.length === 1) return priceMatches[0];
+  }
+
+  const requestedTierPrice = Number(requestedAmount) + Number(coinsToApply || 0);
+  if (Number.isFinite(requestedTierPrice) && requestedTierPrice > 0) {
+    const amountMatches = pricingOptions.filter((tier: any) => Number(tier.price) === requestedTierPrice);
+    const typeMatches = selectedClassType
+      ? amountMatches.filter((tier: any) => String(tier.type || '').toLowerCase() === String(selectedClassType).toLowerCase())
+      : amountMatches;
+    if (typeMatches.length === 1) return typeMatches[0];
+    if (amountMatches.length === 1) return amountMatches[0];
+  }
+
+  if (selectedClassType) {
+    const classTypeMatches = pricingOptions.filter((tier: any) => (
+      String(tier.type || '').toLowerCase() === String(selectedClassType).toLowerCase()
+    ));
+    if (classTypeMatches.length === 1) return classTypeMatches[0];
+  }
+
+  return null;
+};
+
+const insertWebsiteOrder = async (supabase: any, orderPayload: Record<string, any>) => {
+  const { error } = await supabase.from('website_orders').insert(orderPayload);
+  if (!error) return null;
+
+  if (error.code === 'PGRST204' && error.message?.includes('selected_class_type')) {
+    const { selected_class_type, ...fallbackPayload } = orderPayload;
+    console.warn('[website_orders] selected_class_type column is missing; inserting order without it.');
+    const { error: fallbackError } = await supabase.from('website_orders').insert(fallbackPayload);
+    return fallbackError || null;
+  }
+
+  return error;
+};
+
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -31,7 +105,19 @@ export default async function handler(req: any, res: any) {
   try {
     const supabase = getSupabaseAdmin();
     const razorpay = getRazorpay();
-    const { email, courseIds, bundleId, discountCode, referralCode, coinsToApply, selectedClassType } = req.body || {};
+    const {
+      amount,
+      email,
+      courseIds,
+      bundleId,
+      discountCode,
+      referralCode,
+      coinsToApply,
+      selectedClassType,
+      selectedPricingTierIndex,
+      selectedPricingTierName,
+      selectedPricingTierPrice,
+    } = req.body || {};
 
     if (!email || !Array.isArray(courseIds) || courseIds.length === 0) {
       return res.status(400).json({ error: 'Email and at least one course ID are required' });
@@ -42,6 +128,7 @@ export default async function handler(req: any, res: any) {
     let discountApplied = false;
     let referrerEmail: string | null = null;
     let referralDiscount = 0;
+    let orderClassType: string | null = selectedClassType || null;
 
     if (bundleId) {
       const { data: bundle, error: bundleError } = await supabase
@@ -76,14 +163,24 @@ export default async function handler(req: any, res: any) {
       }
 
       // 1. Calculate Raw Subtotal
-      // **FIX**: If fixed bundle with pricing_options (tiers), use tier price instead of individual course prices
-      let totalOriginalPrice = 0;
-      
-      if (bundle.isFixedBundle && Array.isArray(bundle.pricing_options) && bundle.pricing_options.length > 0 && selectedClassType) {
-        // Find matching tier by type
-        const selectedTier = bundle.pricing_options.find((opt: any) => opt.type === selectedClassType);
+      // Fixed bundles with pricing tiers must be priced from the selected tier.
+      // Their child course prices may intentionally be 0.
+      if (bundle.isFixedBundle && Array.isArray(bundle.pricing_options) && bundle.pricing_options.length > 0) {
+        const selectedTier = resolveSelectedPricingTier({
+          pricingOptions: bundle.pricing_options,
+          selectedPricingTierIndex,
+          selectedPricingTierName,
+          selectedPricingTierPrice,
+          selectedClassType,
+          requestedAmount: amount,
+          coinsToApply,
+        });
         if (selectedTier) {
-          totalOriginalPrice = Number(selectedTier.price || 0);
+          totalOriginalPrice = Number(selectedTier.price);
+          if (!Number.isFinite(totalOriginalPrice) || totalOriginalPrice <= 0) {
+            return res.status(400).json({ error: 'Invalid pricing tier price' });
+          }
+          orderClassType = selectedTier.type || selectedClassType || null;
         } else {
           return res.status(400).json({ error: 'Invalid pricing tier selected' });
         }
@@ -94,7 +191,7 @@ export default async function handler(req: any, res: any) {
           .reduce((sum: number, bc: any) => sum + Number(bc.price || 0), 0);
       }
 
-      let totalAmount = totalOriginalPrice;
+      totalAmount = totalOriginalPrice;
 
       // 2. Process Discount Code strictly if provided
       let couponSavings = 0;
@@ -222,7 +319,7 @@ export default async function handler(req: any, res: any) {
       receipt: `receipt_${Date.now()}`,
     });
 
-    const { error: insertError } = await supabase.from('website_orders').insert({
+    const insertError = await insertWebsiteOrder(supabase, {
       order_id: order.id,
       user_email: email,
       course_ids: courseIds,
@@ -233,7 +330,7 @@ export default async function handler(req: any, res: any) {
       discount_code: discountCode || null,
       referral_code: referralCode || null,
       coins_applied: coinsApplied || 0,
-      selected_class_type: selectedClassType || null,
+      selected_class_type: orderClassType,
     });
 
     if (insertError) {

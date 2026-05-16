@@ -234,13 +234,30 @@ export default function CourseSelection() {
     !!course.bundleDiscountCode
   );
 
+  const isTierSelectionRequired = () => (
+    course?.isFixedBundle && Array.isArray(course.pricing_options) && course.pricing_options.length > 0
+  );
+
+  const getSelectedPricingOption = () => {
+    if (!isTierSelectionRequired()) {
+      return null;
+    }
+
+    if (selectedPricingTier === null) {
+      return null;
+    }
+
+    return course.pricing_options[selectedPricingTier] || null;
+  };
+
   const calculateTotal = () => {
     if (!course) return 0;
     if (!course.isBundle) return course.discountPrice || course.price;
     
     // Multi-pricing logic for fixed bundles
-    if (course.isFixedBundle && course.pricing_options && course.pricing_options.length > 0 && selectedPricingTier !== null) {
-      return course.pricing_options[selectedPricingTier].price;
+    const selectedTier = getSelectedPricingOption();
+    if (selectedTier) {
+      return Number(selectedTier.price || 0);
     }
 
     // Manual-Only Logic: Always return the raw sum of selected items.
@@ -440,6 +457,12 @@ export default function CourseSelection() {
       return;
     }
 
+    const selectedTier = getSelectedPricingOption();
+    if (isTierSelectionRequired() && (!selectedTier || !Number.isFinite(Number(selectedTier.price)) || Number(selectedTier.price) <= 0)) {
+      alert("Please select a valid pricing plan before enrolling.");
+      return;
+    }
+
     setPaymentError('');
     setIsProcessing(true);
     setLoadingMessage("Preparing Checkout...");
@@ -447,8 +470,8 @@ export default function CourseSelection() {
 
     // CRITICAL: For fixed bundles with pricing options, FORCE use of the selected pricing tier
     // This prevents fallback to individual course prices (which are 0)
-    if (course?.isFixedBundle && course?.pricing_options && course.pricing_options.length > 0 && selectedPricingTier !== null) {
-      total = course.pricing_options[selectedPricingTier].price;
+    if (selectedTier) {
+      total = Number(selectedTier.price);
     }
 
     const finalCourseIds = course?.isBundle && Array.isArray(course.bundleCourses)
@@ -466,9 +489,10 @@ export default function CourseSelection() {
         discountCode: appliedDiscountCode || undefined,
         referralCode: appliedReferralCode || undefined,
         coinsToApply: coinsApplied,
-        selectedClassType: (course.isFixedBundle && course.pricing_options && selectedPricingTier !== null) 
-          ? course.pricing_options[selectedPricingTier].type 
-          : undefined
+        selectedClassType: selectedTier?.type || undefined,
+        selectedPricingTierIndex: selectedPricingTier ?? undefined,
+        selectedPricingTierName: selectedTier?.name || undefined,
+        selectedPricingTierPrice: selectedTier ? Number(selectedTier.price) : undefined
       });
       if (!orderData.id) throw new Error("Order creation failed");
 
@@ -505,9 +529,7 @@ export default function CourseSelection() {
               discountCode: appliedDiscountCode || undefined,
               referralCode: appliedReferralCode || undefined,
               coinsToApply: coinsApplied,
-              selectedClassType: (course.isFixedBundle && course.pricing_options && selectedPricingTier !== null) 
-                ? course.pricing_options[selectedPricingTier].type 
-                : undefined
+              selectedClassType: selectedTier?.type || undefined
             });
 
             const courseTitle = course.isBundle 
@@ -910,6 +932,14 @@ export default function CourseSelection() {
                       </button>
                     ))}
                   </div>
+
+                  {course.pricing_options && course.pricing_options[selectedPricingTier]?.description && (
+                    <div className="mt-4 p-4 bg-blue-50 border-2 border-blue-200 rounded-2xl">
+                      <p className="text-sm font-bold text-gray-700 leading-relaxed">
+                        {course.pricing_options[selectedPricingTier].description}
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1084,7 +1114,7 @@ export default function CourseSelection() {
 
                     <button
                         onClick={handlePayment}
-                        disabled={isProcessing || selectedCourses.length === 0}
+                        disabled={isProcessing || selectedCourses.length === 0 || (isTierSelectionRequired() && !getSelectedPricingOption())}
                         className="w-full py-3.5 bg-[#10b981] text-[#0b1120] rounded-xl font-black text-lg border-[3px] border-[#0b1120] shadow-[5px_5px_0px_#0b1120] hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:grayscale"
                     >
                         {isProcessing ? <Loader2 className="animate-spin w-5 h-5" /> : (

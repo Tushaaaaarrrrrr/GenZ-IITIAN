@@ -76,7 +76,12 @@ export default async function handler(req: any, res: any) {
     }
 
     if (tab === 'payments') {
-      let query = supabase.from('website_orders').select('*').order('created_at', { ascending: false });
+      let query = supabase
+        .from('website_orders')
+        .select('*')
+        .not('order_id', 'like', 'AUTO_%')
+        .gt('total_amount', 0)
+        .order('created_at', { ascending: false });
       
       if (search) {
         query = query.or(`user_email.ilike.%${search}%,order_id.ilike.%${search}%`);
@@ -128,4 +133,3 @@ export default async function handler(req: any, res: any) {
     return res.status(500).json({ error: err.message });
   }
 }
-

@@ -287,12 +287,90 @@ app.use('/api/pseo', pseoRouter);
 
 // ========== PAYMENTS (Razorpay) ==========
 
+function resolveSelectedPricingTier({
+    pricingOptions,
+    selectedPricingTierIndex,
+    selectedPricingTierName,
+    selectedPricingTierPrice,
+    selectedClassType,
+    requestedAmount,
+    coinsToApply,
+}) {
+    if (!Array.isArray(pricingOptions) || pricingOptions.length === 0) return null;
+
+    const tierIndex = Number(selectedPricingTierIndex);
+    if (Number.isInteger(tierIndex) && tierIndex >= 0 && tierIndex < pricingOptions.length) {
+        return pricingOptions[tierIndex];
+    }
+
+    const tierName = typeof selectedPricingTierName === 'string' ? selectedPricingTierName.trim().toLowerCase() : '';
+    if (tierName) {
+        const byName = pricingOptions.find(tier => String(tier.name || '').trim().toLowerCase() === tierName);
+        if (byName) return byName;
+    }
+
+    const tierPrice = Number(selectedPricingTierPrice);
+    if (Number.isFinite(tierPrice) && tierPrice > 0) {
+        const priceMatches = pricingOptions.filter(tier => Number(tier.price) === tierPrice);
+        const typeMatches = selectedClassType
+            ? priceMatches.filter(tier => String(tier.type || '').toLowerCase() === String(selectedClassType).toLowerCase())
+            : priceMatches;
+        if (typeMatches.length === 1) return typeMatches[0];
+        if (priceMatches.length === 1) return priceMatches[0];
+    }
+
+    const requestedTierPrice = Number(requestedAmount) + Number(coinsToApply || 0);
+    if (Number.isFinite(requestedTierPrice) && requestedTierPrice > 0) {
+        const amountMatches = pricingOptions.filter(tier => Number(tier.price) === requestedTierPrice);
+        const typeMatches = selectedClassType
+            ? amountMatches.filter(tier => String(tier.type || '').toLowerCase() === String(selectedClassType).toLowerCase())
+            : amountMatches;
+        if (typeMatches.length === 1) return typeMatches[0];
+        if (amountMatches.length === 1) return amountMatches[0];
+    }
+
+    if (selectedClassType) {
+        const classTypeMatches = pricingOptions.filter(tier => (
+            String(tier.type || '').toLowerCase() === String(selectedClassType).toLowerCase()
+        ));
+        if (classTypeMatches.length === 1) return classTypeMatches[0];
+    }
+
+    return null;
+}
+
+async function insertWebsiteOrder(orderPayload) {
+    const { error } = await supabase.from('website_orders').insert(orderPayload);
+    if (!error) return null;
+
+    if (error.code === 'PGRST204' && error.message?.includes('selected_class_type')) {
+        const { selected_class_type, ...fallbackPayload } = orderPayload;
+        console.warn('[website_orders] selected_class_type column is missing; inserting order without it.');
+        const { error: fallbackError } = await supabase.from('website_orders').insert(fallbackPayload);
+        return fallbackError || null;
+    }
+
+    return error;
+}
+
 app.post('/api/create-order', async (req, res) => {
     if (!razorpay || !supabase) {
         return res.status(500).json({ error: 'Server configuration error (missing Razorpay/Supabase keys)' });
     }
 
-    const { email, courseIds, bundleId, discountCode, referralCode, coinsToApply, selectedClassType } = req.body;
+    const {
+        amount,
+        email,
+        courseIds,
+        bundleId,
+        discountCode,
+        referralCode,
+        coinsToApply,
+        selectedClassType,
+        selectedPricingTierIndex,
+        selectedPricingTierName,
+        selectedPricingTierPrice,
+    } = req.body;
     if (!courseIds || !Array.isArray(courseIds) || courseIds.length === 0 || !email) {
         return res.status(400).json({ error: 'Email and at least one course ID are required' });
     }
@@ -304,6 +382,7 @@ app.post('/api/create-order', async (req, res) => {
         let discountApplied = false;
         let isBundleDiscountUsed = false;
         let orderNotes = null;
+        let orderClassType = selectedClassType || null;
 
         // --- BUNDLE FLOW ---
         if (bundleId) {
@@ -318,7 +397,31 @@ app.post('/api/create-order', async (req, res) => {
                 return res.status(400).json({ error: 'Some course IDs do not belong to this bundle' });
             }
 
-            if (discountCode && bundle.bundleDiscountCode && discountCode.trim().toUpperCase() === bundle.bundleDiscountCode.toUpperCase()) {
+            const hasPricingTiers = bundle.isFixedBundle && Array.isArray(bundle.pricing_options) && bundle.pricing_options.length > 0;
+            const selectedTier = hasPricingTiers
+                ? resolveSelectedPricingTier({
+                    pricingOptions: bundle.pricing_options,
+                    selectedPricingTierIndex,
+                    selectedPricingTierName,
+                    selectedPricingTierPrice,
+                    selectedClassType,
+                    requestedAmount: amount,
+                    coinsToApply,
+                })
+                : null;
+
+            if (hasPricingTiers) {
+                if (!selectedTier) {
+                    return res.status(400).json({ error: 'Pricing tier is required for this bundle' });
+                }
+
+                totalAmount = Number(selectedTier.price);
+                if (!Number.isFinite(totalAmount) || totalAmount <= 0) {
+                    return res.status(400).json({ error: 'Invalid pricing tier price' });
+                }
+                originalAmount = totalAmount;
+                orderClassType = selectedTier.type || selectedClassType || null;
+            } else if (discountCode && bundle.bundleDiscountCode && discountCode.trim().toUpperCase() === bundle.bundleDiscountCode.toUpperCase()) {
                 if (validBundleCourseIds.every(id => courseIds.includes(id))) {
                     isBundleDiscountUsed = true;
                     totalAmount = Number(bundle.bundleDiscountPrice);
@@ -329,7 +432,7 @@ app.post('/api/create-order', async (req, res) => {
                 }
             }
 
-            if (!isBundleDiscountUsed) {
+            if (!hasPricingTiers && !isBundleDiscountUsed) {
                 totalAmount = bundleSubCourses.filter(bc => courseIds.includes(bc.courseId)).reduce((sum, bc) => sum + Number(bc.price), 0);
                 originalAmount = totalAmount;
             }
@@ -343,13 +446,21 @@ app.post('/api/create-order', async (req, res) => {
             
             // Get course names for notes
             const courseNames = courses.map(c => c.name).join(', ');
-            orderNotes = { courses: courseNames, user_email: email, selected_class_type: selectedClassType || 'N/A' };
+            orderNotes = {
+                courses: courseNames,
+                user_email: email,
+                ...(orderClassType ? { selected_class_type: orderClassType } : {})
+            };
         }
 
         // Add bundle name to notes if it's a bundle
         if (bundleId && !orderNotes) {
             const { data: bundle } = await supabase.from('courses').select('name').eq('id', bundleId).single();
-            orderNotes = { courses: bundle?.name || 'Bundle', user_email: email, selected_class_type: selectedClassType || 'N/A' };
+            orderNotes = {
+                courses: bundle?.name || 'Bundle',
+                user_email: email,
+                ...(orderClassType ? { selected_class_type: orderClassType } : {})
+            };
         }
 
         // --- GLOBAL DISCOUNT ---
@@ -429,7 +540,7 @@ app.post('/api/create-order', async (req, res) => {
             notes: orderNotes || { user_email: email }
         });
 
-        const { error: insertError } = await supabase.from('website_orders').insert({
+        const insertError = await insertWebsiteOrder({
             order_id: order.id,
             user_email: email,
             course_ids: courseIds,
@@ -440,7 +551,7 @@ app.post('/api/create-order', async (req, res) => {
             discount_code: discountCode || null,
             referral_code: referralCode || null,
             coins_applied: coinsApplied || 0,
-            selected_class_type: selectedClassType || null
+            selected_class_type: orderClassType
         });
         
         if (insertError) {
@@ -522,9 +633,44 @@ app.post('/api/auto-enroll', async (req, res) => {
         if (!email) return res.status(400).json({ error: 'Email required' });
 
         const DEFAULT_COURSE_ID = "cmn2sm2gl000fcqgo540cdrbj";
+
+        const { data: existingDefaultOrders, error: existingOrderError } = await supabase
+            .from('website_orders')
+            .select('order_id, status')
+            .eq('user_email', email)
+            .contains('course_ids', [DEFAULT_COURSE_ID])
+            .eq('status', 'PAID')
+            .limit(1);
+
+        if (existingOrderError) {
+            throw existingOrderError;
+        }
+
+        if (existingDefaultOrders && existingDefaultOrders.length > 0) {
+            console.log(`[Auto-Enroll] Skipping ${email}; default course already recorded.`);
+            return res.json({ success: true, skipped: true, reason: 'already_enrolled' });
+        }
+
+        const { data: existingEnrollmentLogs, error: existingLogError } = await supabase
+            .from('activity_logs')
+            .select('id')
+            .eq('email', email)
+            .eq('courseId', DEFAULT_COURSE_ID)
+            .eq('action', 'ENROLLMENT_SUCCESS')
+            .limit(1);
+
+        if (existingLogError) {
+            throw existingLogError;
+        }
+
+        if (existingEnrollmentLogs && existingEnrollmentLogs.length > 0) {
+            console.log(`[Auto-Enroll] Skipping ${email}; default course enrollment already logged.`);
+            return res.json({ success: true, skipped: true, reason: 'already_enrolled' });
+        }
+
         const autoOrderId = `AUTO_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
 
-        console.log(`[Auto-Enroll] Enrolling ${email} in ${DEFAULT_COURSE_ID}...`);
+        console.log(`[Auto-Enroll] Enrolling first-time website user ${email} in ${DEFAULT_COURSE_ID}...`);
 
         // 1. Create a "PAID" record in website_orders so it shows in Profile
         const { error: insertError } = await supabase.from('website_orders').insert({
@@ -596,10 +742,10 @@ async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_p
         // Construct detailed payload for the new LMS format while keeping courseIds for backward compatibility
         const courseDetails = courseIds.map(id => {
             const course = coursesData?.find(c => c.id === id);
-            const rawType = selectedClassType || course?.class_type || 'recorded';
+            const rawType = selectedClassType || course?.class_type;
             return {
                 id: id,
-                type: rawType.toUpperCase() // LMS expects 'LIVE' or 'RECORDED' (uppercase enum)
+                ...(rawType ? { type: String(rawType).toUpperCase() } : {})
             };
         });
 
@@ -667,7 +813,7 @@ async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_p
             }
         }
         
-        let classTypesStr = "Unknown";
+        let classTypesStr = "";
         if (courseIds && Array.isArray(courseIds) && courseIds.length > 0) {
             const { data: courses, error: coursesError } = await supabase.from('course_catalog').select('name').in('id', courseIds);
             const { data: fullCourses } = await supabase.from('courses').select('id, name, class_type').in('id', courseIds);
@@ -679,7 +825,7 @@ async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_p
             }
             
             if (fullCourses && fullCourses.length > 0) {
-                classTypesStr = Array.from(new Set(fullCourses.map(c => c.class_type || 'recorded'))).join(', ');
+                classTypesStr = Array.from(new Set(fullCourses.map(c => c.class_type).filter(Boolean))).join(', ');
             }
         }
 
@@ -858,7 +1004,7 @@ app.post('/api/verify-payment', async (req, res) => {
                 if (order) orderAmount = order.total_amount;
             }
                 
-            let classTypesStr = "Unknown";
+            let classTypesStr = "";
             if (courseIds && Array.isArray(courseIds) && courseIds.length > 0) {
                 const { data: courses } = await supabase.from('course_catalog').select('name').in('id', courseIds);
                 const { data: fullCourses } = await supabase.from('courses').select('id, name, class_type').in('id', courseIds);
@@ -870,7 +1016,7 @@ app.post('/api/verify-payment', async (req, res) => {
                 }
                 
                 if (fullCourses && fullCourses.length > 0) {
-                    classTypesStr = Array.from(new Set(fullCourses.map(c => c.class_type || 'recorded'))).join(', ');
+                    classTypesStr = Array.from(new Set(fullCourses.map(c => c.class_type).filter(Boolean))).join(', ');
                 }
             }
 
@@ -949,7 +1095,7 @@ app.post('/api/log-payment-failure', async (req, res) => {
             if (order) orderAmount = order.total_amount;
         }
                 
-        let classTypesStr = "Unknown";
+        let classTypesStr = "";
         if (courseIds && Array.isArray(courseIds) && courseIds.length > 0) {
             const { data: courses } = await supabase.from('course_catalog').select('name').in('id', courseIds);
             const { data: fullCourses } = await supabase.from('courses').select('id, name, class_type').in('id', courseIds);
@@ -961,7 +1107,7 @@ app.post('/api/log-payment-failure', async (req, res) => {
             }
             
             if (fullCourses && fullCourses.length > 0) {
-                classTypesStr = Array.from(new Set(fullCourses.map(c => c.class_type || 'recorded'))).join(', ');
+                classTypesStr = Array.from(new Set(fullCourses.map(c => c.class_type).filter(Boolean))).join(', ');
             }
         }
 
@@ -1017,6 +1163,8 @@ app.get('/api/manager-fetch', authMiddleware, async (req, res) => {
                 const { data: paidOrders, error: oError } = await supabase
                     .from('website_orders')
                     .select('user_email')
+                    .not('order_id', 'like', 'AUTO_%')
+                    .gt('total_amount', 0)
                     .eq('status', 'PAID');
                 if (oError) throw oError;
 
@@ -1036,7 +1184,11 @@ app.get('/api/manager-fetch', authMiddleware, async (req, res) => {
                 })));
             }
 
-            let query = supabase.from('website_orders').select('*').order('created_at', { ascending: false });
+            let query = supabase
+                .from('website_orders')
+                .select('*')
+                .not('order_id', 'like', 'AUTO_%')
+                .order('created_at', { ascending: false });
             const { search } = req.query;
             if (search) {
                 query = query.or(`user_email.ilike.%${search}%,order_id.ilike.%${search}%`);
@@ -1144,7 +1296,7 @@ app.post('/api/razorpay-webhook', async (req, res) => {
                 discountCode: order.discount_code, // Ensure this column exists in your DB or handle accordingly
                 referralCode: order.referral_code,
                 coinsApplied: order.coins_applied,
-                selectedClassType: payment.notes?.selected_class_type === 'N/A' ? undefined : payment.notes?.selected_class_type
+                selectedClassType: payment.notes?.selected_class_type
             });
         }
     }
@@ -1224,6 +1376,33 @@ app.get('*', (req, res) => {
 // --- AUTOMATED EMAILS (BACKGROUND JOB) ---
 // Helper function to safely send webhooks with a queue-like delay
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
+
+async function hasRealPaidPurchase(email, sinceIso = null) {
+    const normalizedEmail = normalizeEmail(email);
+    if (!normalizedEmail || !supabase) return false;
+
+    let query = supabase
+        .from('website_orders')
+        .select('id')
+        .ilike('user_email', normalizedEmail)
+        .eq('status', 'PAID')
+        .not('order_id', 'like', 'AUTO_%')
+        .gt('total_amount', 0)
+        .limit(1);
+
+    if (sinceIso) {
+        query = query.gte('created_at', sinceIso);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+        console.error('[Automated Emails] Purchase check failed:', error.message);
+        return true;
+    }
+
+    return Array.isArray(data) && data.length > 0;
+}
 
 // Runs every hour to check for nudges, abandoned checkouts, and miss you emails
 setInterval(async () => {
@@ -1245,7 +1424,7 @@ setInterval(async () => {
         // 1. Abandoned Checkout Recovery (2 hours old, status = CREATED)
         const { data: abandonedOrders } = await supabase
             .from('website_orders')
-            .select('user_email, course_names')
+            .select('user_email, course_names, created_at')
             .eq('status', 'CREATED')
             .gte('created_at', twoHoursAgoWindowEnd.toISOString())
             .lte('created_at', twoHoursAgo.toISOString());
@@ -1254,6 +1433,12 @@ setInterval(async () => {
             console.log(`[Automated Emails] Found ${abandonedOrders.length} abandoned orders. Processing queue...`);
             for (const order of abandonedOrders) {
                 if (!order.user_email) continue;
+                const hasPaid = await hasRealPaidPurchase(order.user_email, order.created_at);
+                if (hasPaid) {
+                    console.log(`[Automated Emails] Skipping abandoned email for ${order.user_email}; real paid purchase found.`);
+                    continue;
+                }
+
                 const name = order.user_email.split('@')[0];
                 try {
                     await fetch(process.env.WELCOME_WEBHOOK_URL, {
@@ -1281,15 +1466,9 @@ setInterval(async () => {
         if (nudgeProfiles && nudgeProfiles.length > 0) {
             console.log(`[Automated Emails] Found ${nudgeProfiles.length} potential nudges. Processing queue...`);
             for (const profile of nudgeProfiles) {
-                // Check if they have a PAID order
-                const { data: orders } = await supabase
-                    .from('website_orders')
-                    .select('id')
-                    .eq('user_email', profile.email)
-                    .eq('status', 'PAID')
-                    .limit(1);
+                const hasPaid = await hasRealPaidPurchase(profile.email);
 
-                if (!orders || orders.length === 0) {
+                if (!hasPaid) {
                     try {
                         await fetch(process.env.WELCOME_WEBHOOK_URL, {
                             method: 'POST',
@@ -1316,15 +1495,9 @@ setInterval(async () => {
         if (missYouProfiles && missYouProfiles.length > 0) {
             console.log(`[Automated Emails] Found ${missYouProfiles.length} potential miss you profiles. Processing queue...`);
             for (const profile of missYouProfiles) {
-                // Check if they have a PAID order
-                const { data: orders } = await supabase
-                    .from('website_orders')
-                    .select('id')
-                    .eq('user_email', profile.email)
-                    .eq('status', 'PAID')
-                    .limit(1);
+                const hasPaid = await hasRealPaidPurchase(profile.email);
 
-                if (!orders || orders.length === 0) {
+                if (!hasPaid) {
                     try {
                         await fetch(process.env.WELCOME_WEBHOOK_URL, {
                             method: 'POST',

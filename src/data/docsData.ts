@@ -10,7 +10,7 @@ export interface CourseRow {
 }
 
 export interface ContentBlock {
-  type: 'text' | 'heading' | 'stats' | 'table' | 'callout' | 'fee-table' | 'image' | 'list' | 'divider';
+  type: 'text' | 'html' | 'heading' | 'stats' | 'table' | 'callout' | 'fee-table' | 'image' | 'list' | 'divider';
   value?: string;
   items?: string[];
   level?: number; // heading level

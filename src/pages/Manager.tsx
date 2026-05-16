@@ -42,7 +42,7 @@ export default function Manager() {
   const [bundleDiscountPrice, setBundleDiscountPrice] = useState<number | ''>('');
   const [bundleDiscountCode, setBundleDiscountCode] = useState('');
   const [isFixedBundle, setIsFixedBundle] = useState(false);
-  const [pricingOptions, setPricingOptions] = useState<{name: string, price: number, type: 'live' | 'recorded', tag?: string}[]>([]);
+  const [pricingOptions, setPricingOptions] = useState<{name: string, price: number, type: 'live' | 'recorded', tag?: string, description?: string}[]>([]);
   const [courseTags, setCourseTags] = useState<string[]>([]);
   const [courseCategory, setCourseCategory] = useState<'QUALIFIER' | 'LIVE' | 'RECORDED' | 'NONE'>('NONE');
 
@@ -1324,6 +1324,15 @@ export default function Manager() {
                                     <option value="limited">Limited</option>
                                   </select>
                                 </div>
+                              </div>
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-black text-gray-400 uppercase">Description (Optional)</label>
+                                <textarea 
+                                  value={opt.description || ''}
+                                  onChange={e => updatePricingOption(idx, 'description', e.target.value)}
+                                  placeholder="e.g. Includes all live sessions with doubt clearing and 1-on-1 mentoring"
+                                  className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl font-bold outline-none focus:border-blue-400 resize-none h-20"
+                                />
                               </div>
                               <div className="flex justify-end">
                                 <button 

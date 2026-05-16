@@ -38,6 +38,7 @@ export default async function handler(req: any, res: any) {
       referralCode,
       coinsToApply,
       coinsApplied, // Keep both for backwards compatibility during deploys
+      selectedClassType,
     } = req.body || {};
 
     const actualCoinsApplied = coinsToApply !== undefined ? coinsToApply : (coinsApplied || 0);
@@ -75,16 +76,41 @@ export default async function handler(req: any, res: any) {
     const externalEnrollSecret = process.env.EXTERNAL_ENROLL_SECRET;
 
     // === STEP 1: LMS ENROLLMENT (isolated — failures here must NOT block referral/coin processing) ===
-    // Fetch order details (including selected class type for fixed bundles)
-    const { data: orderData } = await supabase.from('website_orders').select('total_amount, created_at, selected_class_type').eq('order_id', razorpay_order_id).single();
+    // Fetch order details. Some deployed databases do not have selected_class_type yet.
+    let orderData: any = null;
+    const orderWithClassType = await supabase
+      .from('website_orders')
+      .select('total_amount, created_at, selected_class_type')
+      .eq('order_id', razorpay_order_id)
+      .single();
+
+    if (orderWithClassType.error?.code === 'PGRST204' && orderWithClassType.error.message?.includes('selected_class_type')) {
+      const orderWithoutClassType = await supabase
+        .from('website_orders')
+        .select('total_amount, created_at')
+        .eq('order_id', razorpay_order_id)
+        .single();
+
+      if (orderWithoutClassType.error) {
+        throw orderWithoutClassType.error;
+      }
+      orderData = orderWithoutClassType.data;
+    } else if (orderWithClassType.error) {
+      throw orderWithClassType.error;
+    } else {
+      orderData = orderWithClassType.data;
+    }
 
     // Fetch course details for class types
     const { data: coursesData } = await supabase.from('courses').select('id, class_type').in('id', courseIds);
     
-    // Use selected_class_type from order if available (for fixed bundles with pricing options), otherwise fall back to course class_type
-    const courseDetails = courseIds.map(id => ({
-      type: (orderData?.selected_class_type || coursesData?.find(c => c.id === id)?.class_type || 'recorded').toUpperCase()
-    }));
+    // Use only class types provided by the website/order data. Do not invent a default type.
+    const courseDetails = courseIds.map(id => {
+      const rawType = orderData?.selected_class_type || selectedClassType || coursesData?.find(c => c.id === id)?.class_type;
+      return {
+        ...(rawType ? { type: String(rawType).toUpperCase() } : {})
+      };
+    });
 
     let lmsEnrollmentSucceeded = false;
     try {
