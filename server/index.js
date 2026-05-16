@@ -4,7 +4,7 @@ import express from 'express';
 import path from 'path';
 import crypto from 'crypto';
 import { fileURLToPath } from 'url';
-import db from './db.js';
+import { supabase } from './supabase.js';
 import pseoRouter from './pseo-routes.js';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
@@ -12,18 +12,9 @@ import rateLimit from 'express-rate-limit';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-dotenv.config({ path: path.join(__dirname, '..', '.env') });
-
 const app = express();
 app.set('trust proxy', 1); // Trust first proxy (Hostinger reverse proxy)
 const PORT = process.env.PORT || 3001;
-
-// Initialize Supabase Admin
-const supabaseUrl = process.env.VITE_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const supabase = (supabaseUrl && supabaseServiceKey) 
-  ? createClient(supabaseUrl, supabaseServiceKey)
-  : null;
 
 // Initialize Razorpay
 const razorpayKeyId = process.env.VITE_RAZORPAY_KEY_ID;
