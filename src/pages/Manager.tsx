@@ -43,6 +43,7 @@ export default function Manager() {
   const [bundleDiscountCode, setBundleDiscountCode] = useState('');
   const [isFixedBundle, setIsFixedBundle] = useState(false);
   const [pricingOptions, setPricingOptions] = useState<{name: string, price: number, type: 'live' | 'recorded', tag?: string, description?: string}[]>([]);
+  const [pricingBannerText, setPricingBannerText] = useState<string>('');
   const [courseTags, setCourseTags] = useState<string[]>([]);
   const [courseCategory, setCourseCategory] = useState<'QUALIFIER' | 'LIVE' | 'RECORDED' | 'NONE'>('NONE');
 
@@ -98,6 +99,7 @@ export default function Manager() {
       setBundleDiscountCode(editingCourse.bundleDiscountCode || '');
       setIsFixedBundle(editingCourse.isFixedBundle || false);
       setPricingOptions(editingCourse.pricing_options || []);
+      setPricingBannerText(editingCourse.pricing_banner_text || '');
       setCourseTags(editingCourse.tags || []);
       setCourseCategory(editingCourse.courseCategory || 'NONE');
     } else {
@@ -107,6 +109,7 @@ export default function Manager() {
       setBundleDiscountCode('');
       setIsFixedBundle(false);
       setPricingOptions([]);
+      setPricingBannerText('');
       setCourseTags([]);
       setCourseCategory('NONE');
     }
@@ -390,6 +393,7 @@ export default function Manager() {
         bundleDiscountCode: course.bundleDiscountCode || null,
         isFixedBundle: course.isFixedBundle || false,
         pricing_options: course.pricing_options || [],
+        pricing_banner_text: course.pricing_banner_text || null,
         subject: course.category || null,
         tags: course.tags || [],
         courseCategory: course.courseCategory || 'NONE',
@@ -1351,6 +1355,21 @@ export default function Manager() {
                             </div>
                           )}
                         </div>
+
+                        {/* Pricing Tiers Banner Context */}
+                        <div className="pt-4 border-t-2 border-[#0b1120]/10 space-y-2">
+                          <div className="flex flex-col">
+                            <label className="block text-sm font-black text-blue-600 uppercase">Pricing Plan Banner Context</label>
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Add optional message/features context to show below plans (Vibrant Yellow Banner)</span>
+                          </div>
+                          <input 
+                            type="text"
+                            value={pricingBannerText}
+                            onChange={e => setPricingBannerText(e.target.value)}
+                            placeholder="e.g. 🌟 GET LIVE DOUBT SOLVING + EXCLUSIVE STUDY NOTES WITH LIVE COHORT!"
+                            className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none bg-white placeholder:text-gray-300"
+                          />
+                        </div>
                       </div>
                     )}
 
@@ -1529,6 +1548,7 @@ export default function Manager() {
                       bundleDiscountCode: isBundle && bundleDiscountCode ? bundleDiscountCode : null,
                       isFixedBundle: isBundle && isFixedBundle,
                       pricing_options: isBundle && isFixedBundle ? pricingOptions : [],
+                      pricing_banner_text: isBundle && isFixedBundle ? pricingBannerText : null,
                       tags: courseTags,
                       courseCategory,
                       startDate: startDate ? new Date(startDate).toISOString() : null,

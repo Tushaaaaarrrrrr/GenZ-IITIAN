@@ -77,18 +77,6 @@ export default function CourseCard({ course, className = '' }: CourseCardProps) 
           {course.description}
         </p>
 
-        {course.courseCategory && course.courseCategory !== 'NONE' && (
-          <div className="mb-4">
-            <span className={`inline-block px-4 py-2 rounded-xl font-black text-xs border-2 ${
-              course.courseCategory === 'QUALIFIER' ? 'bg-blue-100 text-blue-700 border-blue-300' :
-              course.courseCategory === 'LIVE' ? 'bg-purple-100 text-purple-700 border-purple-300' :
-              course.courseCategory === 'RECORDED' ? 'bg-orange-100 text-orange-700 border-orange-300' :
-              'bg-gray-100 text-gray-700 border-gray-300'
-            }`}>
-              {course.courseCategory === 'QUALIFIER' && '🎯'} {course.courseCategory === 'LIVE' && '📺'} {course.courseCategory === 'RECORDED' && '📹'} {course.courseCategory}
-            </span>
-          </div>
-        )}
 
         <div className="flex flex-wrap gap-2 mb-8">
           {course.isBundle && course.bundleCourses?.map((bundleCourse, idx) => (

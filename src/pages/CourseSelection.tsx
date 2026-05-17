@@ -940,6 +940,19 @@ export default function CourseSelection() {
                       </p>
                     </div>
                   )}
+
+                  {course.pricing_banner_text && (
+                    <div className="mt-5 p-4 md:p-5 bg-amber-50 border-[4px] border-[#0b1120] rounded-[1.5rem] shadow-[4px_4px_0px_#0b1120] flex items-center gap-3.5">
+                      <div className="shrink-0 w-10 h-10 bg-amber-100 border-2 border-[#0b1120] rounded-xl flex items-center justify-center shadow-[2px_2px_0px_#0b1120]">
+                        <Star className="w-5 h-5 text-amber-500 fill-amber-500" strokeWidth={2.5} />
+                      </div>
+                      <div>
+                        <p className="text-xs md:text-sm font-black text-[#0b1120] uppercase tracking-tight leading-relaxed">
+                          {course.pricing_banner_text}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

@@ -19,6 +19,10 @@ ADD COLUMN IF NOT EXISTS "courseCategory" TEXT DEFAULT 'NONE';
 -- Create an index for better query performance on courseCategory
 CREATE INDEX IF NOT EXISTS idx_courses_category ON public.courses("courseCategory");
 
+-- 3. Add pricing_banner_text column to courses table for pricing tier context banner
+ALTER TABLE public.courses
+ADD COLUMN IF NOT EXISTS "pricing_banner_text" TEXT DEFAULT NULL;
+
 -- ========================================================================
 -- MIGRATIONS COMPLETE
 -- ========================================================================
