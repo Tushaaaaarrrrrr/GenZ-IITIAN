@@ -263,11 +263,27 @@ export default async function handler(req: any, res: any) {
     // === STEP 2: RECORD COUPON USAGE (runs regardless of LMS result) ===
     if (discountCode) {
       try {
-        await supabase.from('coupon_uses').insert({
-          code: discountCode,
-          user_email: email,
-          order_id: razorpay_order_id,
-        });
+        const codeToApply = String(discountCode).trim().toUpperCase();
+        const { data: coupon } = await supabase
+          .from('discount_coupons')
+          .select('code, used_count, single_use_per_user')
+          .eq('code', codeToApply)
+          .maybeSingle();
+
+        if (coupon) {
+          if (coupon.single_use_per_user !== false) {
+            await supabase.from('coupon_uses').upsert({
+              code: coupon.code,
+              user_email: email,
+              order_id: razorpay_order_id,
+            }, { onConflict: 'code,user_email' });
+          }
+
+          await supabase
+            .from('discount_coupons')
+            .update({ used_count: Number(coupon.used_count || 0) + 1 })
+            .eq('code', coupon.code);
+        }
       } catch (couponErr) {
         console.error('Coupon usage tracking error (non-fatal):', couponErr);
       }

@@ -68,6 +68,110 @@ function authMiddleware(req, res, next) {
     next();
 }
 
+const formatInList = (values) => values.map(value => `"${value}"`).join(',');
+
+async function fetchProfileEmailsForPaymentSearch(search) {
+    if (!search?.trim()) return [];
+
+    const { data, error } = await supabase
+        .from('profiles')
+        .select('email')
+        .or(`name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%`);
+
+    if (error) throw error;
+    return [...new Set((data || []).map(profile => profile.email).filter(Boolean))];
+}
+
+async function attachProfilesToOrders(orders) {
+    const emails = [...new Set(
+        orders
+            .map(order => order.user_email)
+            .filter(Boolean)
+    )];
+
+    if (emails.length === 0) return orders;
+
+    const { data: profiles, error } = await supabase
+        .from('profiles')
+        .select('email, name, phone, created_at')
+        .in('email', emails);
+
+    if (error) throw error;
+
+    const profilesByEmail = new Map(
+        (profiles || []).map(profile => [profile.email?.toLowerCase(), profile])
+    );
+
+    return orders.map(order => {
+        const profile = profilesByEmail.get(order.user_email?.toLowerCase());
+        return {
+            ...order,
+            user_name: profile?.name || null,
+            user_phone: profile?.phone || null,
+            user_joined_at: profile?.created_at || null
+        };
+    });
+}
+
+async function validateCouponForOrder({ coupon, email, totalAmount, courseIds, bundleId }) {
+    const now = new Date();
+    const normalizedEmail = email.toLowerCase();
+
+    if (coupon.active === false) throw new Error('This discount code is inactive.');
+    if (coupon.start_date && new Date(coupon.start_date) > now) throw new Error('This discount code is not active yet.');
+    if (coupon.expires_at && new Date(coupon.expires_at) < now) throw new Error('This discount code has expired.');
+    if (Number(coupon.max_uses || 0) > 0 && Number(coupon.used_count || 0) >= Number(coupon.max_uses)) {
+        throw new Error('This discount code has reached its maximum uses.');
+    }
+    if (Number(coupon.min_order_value || 0) > 0 && totalAmount < Number(coupon.min_order_value)) {
+        throw new Error(`Minimum order value for this code is ₹${coupon.min_order_value}.`);
+    }
+
+    const allowedEmails = Array.isArray(coupon.allowed_emails)
+        ? coupon.allowed_emails.map(allowedEmail => allowedEmail.toLowerCase())
+        : [];
+    if (allowedEmails.length > 0 && !allowedEmails.includes(normalizedEmail)) {
+        throw new Error('This discount code is not available for this email.');
+    }
+
+    if (coupon.single_use_per_user !== false) {
+        const { data: usage } = await supabase
+            .from('coupon_uses')
+            .select('id')
+            .eq('code', coupon.code)
+            .eq('user_email', email)
+            .maybeSingle();
+        if (usage) throw new Error('Discount code already used');
+    }
+
+    if (coupon.first_purchase_only) {
+        const { data: paidOrder } = await supabase
+            .from('website_orders')
+            .select('order_id')
+            .eq('user_email', email)
+            .eq('status', 'PAID')
+            .gt('total_amount', 0)
+            .limit(1)
+            .maybeSingle();
+        if (paidOrder) throw new Error('This discount code is only for first purchases.');
+    }
+
+    if (coupon.applies_to !== 'ALL') {
+        const targetId = String(coupon.applies_to || '').trim().toLowerCase();
+        const targetsSelectedCourse = courseIds.some(id => id.trim().toLowerCase() === targetId);
+        const targetsCurrentBundle = Boolean(bundleId && bundleId.trim().toLowerCase() === targetId);
+        if (!targetsSelectedCourse && !targetsCurrentBundle) {
+            throw new Error('Discount code does not apply to selection');
+        }
+    }
+
+    const discount = coupon.discount_percentage
+        ? Math.floor(totalAmount * (Number(coupon.discount_percentage) / 100))
+        : Number(coupon.discount_amount || 0);
+
+    return Math.min(discount, totalAmount);
+}
+
 app.post('/api/auth/login', (req, res) => {
     const { username, password } = req.body;
     const ADMIN_USER = process.env.ADMIN_USER;
@@ -391,6 +495,10 @@ app.post('/api/create-order', async (req, res) => {
             }
 
             const hasPricingTiers = bundle.isFixedBundle && Array.isArray(bundle.pricing_options) && bundle.pricing_options.length > 0;
+            const selectedBundleRowsCount = bundleSubCourses.filter(bc =>
+                [bc.courseId, bc.courseId2, bc.courseId3].filter(Boolean).some(cid => courseIds.includes(cid))
+            ).length;
+            const isAllSelected = validBundleCourseIds.every(id => courseIds.includes(id));
             const selectedTier = hasPricingTiers
                 ? resolveSelectedPricingTier({
                     pricingOptions: bundle.pricing_options,
@@ -415,13 +523,27 @@ app.post('/api/create-order', async (req, res) => {
                 originalAmount = totalAmount;
                 orderClassType = selectedTier.type || selectedClassType || null;
             } else if (discountCode && bundle.bundleDiscountCode && discountCode.trim().toUpperCase() === bundle.bundleDiscountCode.toUpperCase()) {
-                if (validBundleCourseIds.every(id => courseIds.includes(id))) {
+                const firstBundleCourse = bundleSubCourses[0] || {};
+                const bundleDiscountMode = (bundle.bundleDiscountMode || firstBundleCourse._bundleDiscountMode) === 'any' ? 'any' : 'all';
+                const rawMin = Number(bundle.bundleDiscountMinCourses || firstBundleCourse._bundleDiscountMinCourses || 3);
+                const normalizedMin = [1, 2, 3, 5].includes(rawMin) ? rawMin : 3;
+                const requiredCount = bundleDiscountMode === 'any'
+                    ? Math.max(1, Math.min(normalizedMin, bundleSubCourses.length))
+                    : bundleSubCourses.length;
+                const isEligibleForBundleCode = bundleDiscountMode === 'any'
+                    ? selectedBundleRowsCount >= requiredCount
+                    : isAllSelected;
+
+                if (isEligibleForBundleCode) {
                     isBundleDiscountUsed = true;
                     totalAmount = Number(bundle.bundleDiscountPrice);
                     originalAmount = bundleSubCourses.filter(bc => courseIds.includes(bc.courseId)).reduce((sum, bc) => sum + Number(bc.price), 0);
                     discountApplied = true;
                 } else {
-                    return res.status(400).json({ error: 'Bundle discount requires all courses to be selected' });
+                    const message = bundleDiscountMode === 'any'
+                        ? `Bundle discount requires at least ${requiredCount} selected courses`
+                        : 'Bundle discount requires all courses to be selected';
+                    return res.status(400).json({ error: message });
                 }
             }
 
@@ -468,17 +590,13 @@ app.post('/api/create-order', async (req, res) => {
             const codeToApply = discountCode.trim().toUpperCase();
             const { data: coupon } = await supabase.from('discount_coupons').select('*').eq('code', codeToApply).single();
             if (coupon) {
-                const { data: usage } = await supabase.from('coupon_uses').select('*').eq('code', codeToApply).eq('user_email', email).maybeSingle();
-                if (usage) return res.status(400).json({ error: 'Discount code already used' });
-
-                if (coupon.applies_to !== 'ALL') {
-                    const targetId = (coupon.applies_to || "").trim().toLowerCase();
-                    if (!courseIds.some(id => id.trim().toLowerCase() === targetId) && (!bundleId || bundleId.trim().toLowerCase() !== targetId)) {
-                        return res.status(400).json({ error: 'Discount code does not apply to selection' });
-                    }
-                }
-
-                let disc = coupon.discount_percentage ? Math.floor(totalAmount * (coupon.discount_percentage / 100)) : (coupon.discount_amount || 0);
+                let disc = await validateCouponForOrder({
+                    coupon,
+                    email,
+                    totalAmount,
+                    courseIds,
+                    bundleId
+                });
                 totalAmount = Math.max(totalAmount - disc, 0);
                 discountApplied = true;
             } else {
@@ -905,11 +1023,27 @@ async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_p
     // === STEP 3: RECORD COUPON USAGE (runs regardless of LMS result) ===
     if (discountCode) {
         try {
-            await supabase.from('coupon_uses').upsert({ 
-                code: discountCode, 
-                user_email: email, 
-                order_id: razorpay_order_id 
-            }, { onConflict: 'code,user_email' });
+            const codeToApply = String(discountCode).trim().toUpperCase();
+            const { data: coupon } = await supabase
+                .from('discount_coupons')
+                .select('code, used_count, single_use_per_user')
+                .eq('code', codeToApply)
+                .maybeSingle();
+
+            if (coupon) {
+                if (coupon.single_use_per_user !== false) {
+                    await supabase.from('coupon_uses').upsert({ 
+                        code: coupon.code, 
+                        user_email: email, 
+                        order_id: razorpay_order_id 
+                    }, { onConflict: 'code,user_email' });
+                }
+
+                await supabase
+                    .from('discount_coupons')
+                    .update({ used_count: Number(coupon.used_count || 0) + 1 })
+                    .eq('code', coupon.code);
+            }
         } catch (couponErr) {
             console.error('Coupon usage tracking error (non-fatal):', couponErr);
         }
@@ -1218,7 +1352,7 @@ app.get('/api/manager-fetch', authMiddleware, async (req, res) => {
                 // Fetch all profiles
                 let profileQuery = supabase.from('profiles').select('*').order('created_at', { ascending: false });
                 if (search) {
-                    profileQuery = profileQuery.or(`name.ilike.%${search}%,email.ilike.%${search}%`);
+                    profileQuery = profileQuery.or(`name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%`);
                 }
                 const { data: profiles, error: pError } = await profileQuery;
                 if (pError) throw pError;
@@ -1241,6 +1375,9 @@ app.get('/api/manager-fetch', authMiddleware, async (req, res) => {
                 return res.json(leads.map(p => ({
                     order_id: `LEAD_${p.id.toString().slice(0, 8)}`,
                     user_email: p.email,
+                    user_name: p.name,
+                    user_phone: p.phone,
+                    user_joined_at: p.created_at,
                     course_ids: [],
                     total_amount: 0,
                     status: 'NOT_PURCHASED',
@@ -1255,7 +1392,12 @@ app.get('/api/manager-fetch', authMiddleware, async (req, res) => {
                 .order('created_at', { ascending: false });
             const { search } = req.query;
             if (search) {
-                query = query.or(`user_email.ilike.%${search}%,order_id.ilike.%${search}%`);
+                const profileEmails = await fetchProfileEmailsForPaymentSearch(search);
+                const searchTerms = [`user_email.ilike.%${search}%`, `order_id.ilike.%${search}%`];
+                if (profileEmails.length > 0) {
+                    searchTerms.push(`user_email.in.(${formatInList(profileEmails)})`);
+                }
+                query = query.or(searchTerms.join(','));
             }
             if (filter === 'abandoned') {
                 query = query.eq('status', 'CREATED');
@@ -1278,7 +1420,7 @@ app.get('/api/manager-fetch', authMiddleware, async (req, res) => {
             }
             const { data, error } = await query;
             if (error) throw error;
-            return res.json(data);
+            return res.json(await attachProfilesToOrders(data || []));
         }
         if (tab === 'referrals') {
             const { data, error } = await supabase.from('referral_transactions').select('*').order('created_at', { ascending: false });

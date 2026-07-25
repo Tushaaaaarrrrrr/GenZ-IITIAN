@@ -5,6 +5,15 @@ CREATE TABLE IF NOT EXISTS public.discount_coupons (
   discount_percentage INTEGER,
   discount_amount INTEGER, -- one of these should be set
   applies_to TEXT DEFAULT 'ALL', -- 'ALL' or a specific course id
+  start_date TIMESTAMP WITH TIME ZONE,
+  expires_at TIMESTAMP WITH TIME ZONE,
+  max_uses INTEGER,
+  min_order_value INTEGER DEFAULT 0,
+  first_purchase_only BOOLEAN DEFAULT false,
+  single_use_per_user BOOLEAN DEFAULT true,
+  hidden BOOLEAN DEFAULT false,
+  active BOOLEAN DEFAULT true,
+  allowed_emails TEXT[],
   used_count INTEGER DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );

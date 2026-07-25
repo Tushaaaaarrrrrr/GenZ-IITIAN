@@ -97,6 +97,79 @@ const insertWebsiteOrder = async (supabase: any, orderPayload: Record<string, an
   return error;
 };
 
+const validateCouponForOrder = async ({
+  supabase,
+  coupon,
+  email,
+  totalAmount,
+  courseIds,
+  bundleId,
+}: {
+  supabase: any;
+  coupon: any;
+  email: string;
+  totalAmount: number;
+  courseIds: string[];
+  bundleId?: string | null;
+}) => {
+  const now = new Date();
+  const normalizedEmail = email.toLowerCase();
+
+  if (coupon.active === false) throw new Error('This discount code is inactive.');
+  if (coupon.start_date && new Date(coupon.start_date) > now) throw new Error('This discount code is not active yet.');
+  if (coupon.expires_at && new Date(coupon.expires_at) < now) throw new Error('This discount code has expired.');
+  if (Number(coupon.max_uses || 0) > 0 && Number(coupon.used_count || 0) >= Number(coupon.max_uses)) {
+    throw new Error('This discount code has reached its maximum uses.');
+  }
+  if (Number(coupon.min_order_value || 0) > 0 && totalAmount < Number(coupon.min_order_value)) {
+    throw new Error(`Minimum order value for this code is ₹${coupon.min_order_value}.`);
+  }
+
+  const allowedEmails = Array.isArray(coupon.allowed_emails)
+    ? coupon.allowed_emails.map((allowedEmail: string) => allowedEmail.toLowerCase())
+    : [];
+  if (allowedEmails.length > 0 && !allowedEmails.includes(normalizedEmail)) {
+    throw new Error('This discount code is not available for this email.');
+  }
+
+  if (coupon.single_use_per_user !== false) {
+    const { data: usage } = await supabase
+      .from('coupon_uses')
+      .select('id')
+      .eq('code', coupon.code)
+      .eq('user_email', email)
+      .maybeSingle();
+    if (usage) throw new Error('Discount code already used');
+  }
+
+  if (coupon.first_purchase_only) {
+    const { data: paidOrder } = await supabase
+      .from('website_orders')
+      .select('order_id')
+      .eq('user_email', email)
+      .eq('status', 'PAID')
+      .gt('total_amount', 0)
+      .limit(1)
+      .maybeSingle();
+    if (paidOrder) throw new Error('This discount code is only for first purchases.');
+  }
+
+  if (coupon.applies_to !== 'ALL') {
+    const targetId = String(coupon.applies_to || '').trim().toLowerCase();
+    const targetsSelectedCourse = courseIds.some(id => id.trim().toLowerCase() === targetId);
+    const targetsCurrentBundle = Boolean(bundleId && bundleId.trim().toLowerCase() === targetId);
+    if (!targetsSelectedCourse && !targetsCurrentBundle) {
+      throw new Error('Discount code does not apply to selection');
+    }
+  }
+
+  const discount = coupon.discount_percentage
+    ? Math.floor(totalAmount * (Number(coupon.discount_percentage) / 100))
+    : Number(coupon.discount_amount || 0);
+
+  return Math.min(discount, totalAmount);
+};
+
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -200,28 +273,47 @@ export default async function handler(req: any, res: any) {
       if (discountCode) {
         const codeToApply = String(discountCode).trim().toUpperCase();
         const isAllSelected = validBundleCourseIds.every((id: string) => courseIds.includes(id));
+        const selectedBundleRowsCount = bundleSubCourses.filter((bc: any) =>
+          [bc.courseId, bc.courseId2, bc.courseId3].filter(Boolean).some((cid: string) => courseIds.includes(cid))
+        ).length;
         
         // Handle bundle-specific discount code
         if (bundle.bundleDiscountCode && codeToApply === String(bundle.bundleDiscountCode).trim().toUpperCase()) {
-            if (isAllSelected) {
+            const firstBundleCourse = bundleSubCourses[0] || {};
+            const bundleDiscountMode = (bundle.bundleDiscountMode || firstBundleCourse._bundleDiscountMode) === 'any' ? 'any' : 'all';
+            const rawMin = Number(bundle.bundleDiscountMinCourses || firstBundleCourse._bundleDiscountMinCourses || 3);
+            const normalizedMin = [1, 2, 3, 5].includes(rawMin) ? rawMin : 3;
+            const requiredCount = bundleDiscountMode === 'any'
+              ? Math.max(1, Math.min(normalizedMin, bundleSubCourses.length))
+              : bundleSubCourses.length;
+            const isEligibleForBundleCode = bundleDiscountMode === 'any'
+              ? selectedBundleRowsCount >= requiredCount
+              : isAllSelected;
+
+            if (isEligibleForBundleCode) {
                const bPrice = bundle.bundleDiscountPrice || totalOriginalPrice;
                couponSavings = Math.max(totalOriginalPrice - bPrice, 0);
             } else {
-               return res.status(400).json({ error: 'This code requires all courses in the bundle to be selected.' });
+               return res.status(400).json({
+                 error: bundleDiscountMode === 'any'
+                   ? `This code requires at least ${requiredCount} selected courses.`
+                   : 'This code requires all courses in the bundle to be selected.'
+               });
             }
         } else {
             // Check global coupons
             const { data: coupon } = await supabase.from('discount_coupons').select('*').eq('code', codeToApply).maybeSingle();
             if (coupon) {
-                // Usage check
-                const { data: usage } = await supabase.from('coupon_uses').select('*').eq('code', codeToApply).eq('user_email', email).maybeSingle();
-                if (!usage) {
-                    if (coupon.applies_to === 'ALL' || coupon.applies_to.trim().toLowerCase() === bundleId.trim().toLowerCase()) {
-                        couponSavings = coupon.discount_percentage
-                            ? Math.floor(totalAmount * (coupon.discount_percentage / 100))
-                            : (coupon.discount_amount || 0);
-                    }
-                }
+                couponSavings = await validateCouponForOrder({
+                  supabase,
+                  coupon,
+                  email,
+                  totalAmount,
+                  courseIds,
+                  bundleId,
+                });
+            } else {
+                return res.status(400).json({ error: 'Invalid discount code' });
             }
         }
       }
@@ -269,12 +361,18 @@ export default async function handler(req: any, res: any) {
         const codeToApply = String(discountCode).trim().toUpperCase();
         const { data: coupon } = await supabase.from('discount_coupons').select('*').eq('code', codeToApply).maybeSingle();
         if (coupon) {
-             const { data: usage } = await supabase.from('coupon_uses').select('*').eq('code', codeToApply).eq('user_email', email).maybeSingle();
-             if (!usage && (coupon.applies_to === 'ALL' || courseIds.includes(coupon.applies_to))) {
-                 const dVal = coupon.discount_percentage ? Math.floor(totalAmount * (coupon.discount_percentage / 100)) : (coupon.discount_amount || 0);
-                 totalAmount = Math.max(totalAmount - dVal, 0);
-                 discountApplied = true;
-             }
+             const dVal = await validateCouponForOrder({
+               supabase,
+               coupon,
+               email,
+               totalAmount,
+               courseIds,
+               bundleId: null,
+             });
+             totalAmount = Math.max(totalAmount - dVal, 0);
+             discountApplied = true;
+        } else {
+             return res.status(400).json({ error: 'Invalid discount code' });
         }
       } else if (referralCode) {
           const refResult = await supabase.from('referral_profiles').select('email').eq('referral_code', referralCode.toUpperCase()).maybeSingle();

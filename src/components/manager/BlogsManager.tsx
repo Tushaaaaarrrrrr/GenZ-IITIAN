@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Plus, Edit, Trash2, Save, X, Loader2, Eye, EyeOff, ExternalLink, Search } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import type { BlogPost } from '../../data/blogsData';
-import DeleteConfirmationModal from '../DeleteConfirmationModal';
 
 type BlogRow = Partial<BlogPost> & { id?: number };
 
@@ -47,7 +46,6 @@ export default function BlogsManager() {
   const [slugTouched, setSlugTouched] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<BlogRow | null>(null);
 
   const fetchBlogs = async () => {
     setLoading(true);
@@ -134,13 +132,12 @@ export default function BlogsManager() {
     fetchBlogs();
   };
 
-  const confirmDelete = async () => {
-    if (!deleteTarget?.id) return;
-    const { error: err } = await supabase.from('blogs').delete().eq('id', deleteTarget.id);
+  const handleDelete = async (blog: BlogRow) => {
+    if (!blog.id) return;
+    const { error: err } = await supabase.from('blogs').delete().eq('id', blog.id);
     if (err) {
       alert('Failed to delete blog: ' + err.message);
     }
-    setDeleteTarget(null);
     fetchBlogs();
   };
 
@@ -230,7 +227,7 @@ export default function BlogsManager() {
                     <ExternalLink className="w-4 h-4" />
                   </a>
                   <button
-                    onClick={() => setDeleteTarget(blog)}
+                    onClick={() => handleDelete(blog)}
                     className="flex items-center justify-center w-10 h-10 bg-red-50 text-red-600 rounded-xl border-[2px] border-red-400 hover:bg-red-100 transition-colors"
                     title="Delete post"
                   >
@@ -366,16 +363,6 @@ export default function BlogsManager() {
           </div>
         )}
       </AnimatePresence>
-
-      <DeleteConfirmationModal
-        isOpen={Boolean(deleteTarget)}
-        onClose={() => setDeleteTarget(null)}
-        onConfirm={confirmDelete}
-        title="Delete Blog"
-        description="This will permanently delete this blog post. This action cannot be reversed."
-        entityName={deleteTarget?.title || ''}
-        entityType="blog"
-      />
     </div>
   );
 }

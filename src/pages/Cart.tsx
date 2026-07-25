@@ -7,6 +7,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { apiService } from '../lib/api';
 import { getStoredReferralCode, clearReferralCookie, validateReferralCode, getReferralProfile } from '../lib/referral';
+import { validateCouponForCheckout } from '../utils/coupons';
 
 const RAZORPAY_SCRIPT_URL = "https://checkout.razorpay.com/v1/checkout.js";
 
@@ -122,26 +123,13 @@ export default function Cart() {
         .maybeSingle();
 
       if (coupon) {
-        // It's a discount coupon. Check usage & rules
-        const { data: usage } = await supabase
-          .from('coupon_uses')
-          .select('*')
-          .eq('code', coupon.code)
-          .eq('user_email', user.email)
-          .maybeSingle();
-
-        if (usage) throw new Error('You have already used this discount code.');
-
-        if (coupon.applies_to !== 'ALL') {
-          const hasValidCourse = cart.some(item => item.id === coupon.applies_to);
-          if (!hasValidCourse) throw new Error(`This code doesn't apply to the selected courses.`);
-        }
-
-        let calculatedDiscount = coupon.discount_percentage 
-          ? Math.floor(total * (coupon.discount_percentage / 100))
-          : (coupon.discount_amount || 0);
-
-        if (calculatedDiscount > total) calculatedDiscount = total;
+        const calculatedDiscount = await validateCouponForCheckout({
+          supabase,
+          coupon,
+          userEmail: user.email!,
+          total,
+          courseIds: cart.map(item => String(item.id)),
+        });
 
         setDiscountAmount(calculatedDiscount);
         setAppliedDiscountCode(coupon.code);

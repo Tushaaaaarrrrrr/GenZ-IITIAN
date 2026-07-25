@@ -24,6 +24,51 @@ const readJsonResponse = async (res: Response) => {
   throw new Error(`API returned ${contentType || 'non-JSON'} instead of JSON`);
 };
 
+const formatInList = (values: string[]) => values.map(value => `"${value}"`).join(',');
+
+const fetchProfileEmailsForPaymentSearch = async (search: string) => {
+  if (!search.trim()) return [];
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('email')
+    .or(`name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%`);
+
+  if (error) throw error;
+  return Array.from(new Set((data || []).map((profile: any) => profile.email).filter(Boolean)));
+};
+
+const attachProfilesToOrders = async (orders: any[]) => {
+  const emails = Array.from(new Set(
+    orders
+      .map(order => order.user_email)
+      .filter(Boolean)
+  ));
+
+  if (emails.length === 0) return orders;
+
+  const { data: profiles, error } = await supabase
+    .from('profiles')
+    .select('email, name, phone, created_at')
+    .in('email', emails);
+
+  if (error) throw error;
+
+  const profilesByEmail = new Map(
+    (profiles || []).map((profile: any) => [profile.email?.toLowerCase(), profile])
+  );
+
+  return orders.map(order => {
+    const profile = profilesByEmail.get(order.user_email?.toLowerCase());
+    return {
+      ...order,
+      user_name: profile?.name || null,
+      user_phone: profile?.phone || null,
+      user_joined_at: profile?.created_at || null
+    };
+  });
+};
+
 export const apiService = {
   // 1. Manager Dashboard Data
   managerFetch: async (tab: string, filter: string = 'all', search: string = '') => {
@@ -103,7 +148,7 @@ export const apiService = {
             // Fetch all profiles
             let profileQuery = supabase.from('profiles').select('*').order('created_at', { ascending: false });
             if (search) {
-              profileQuery = profileQuery.or(`name.ilike.%${search}%,email.ilike.%${search}%`);
+              profileQuery = profileQuery.or(`name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%`);
             }
             const { data: profiles, error: pError } = await profileQuery;
             if (pError) throw pError;
@@ -126,6 +171,9 @@ export const apiService = {
             return leads.map(p => ({
               order_id: `LEAD_${p.id.toString().slice(0, 8)}`,
               user_email: p.email,
+              user_name: p.name,
+              user_phone: p.phone,
+              user_joined_at: p.created_at,
               course_ids: [],
               total_amount: 0,
               status: 'NOT_PURCHASED',
@@ -140,7 +188,12 @@ export const apiService = {
             .order('created_at', { ascending: false });
           
           if (search) {
-            query = query.or(`user_email.ilike.%${search}%,order_id.ilike.%${search}%`);
+            const profileEmails = await fetchProfileEmailsForPaymentSearch(search);
+            const searchTerms = [`user_email.ilike.%${search}%`, `order_id.ilike.%${search}%`];
+            if (profileEmails.length > 0) {
+              searchTerms.push(`user_email.in.(${formatInList(profileEmails)})`);
+            }
+            query = query.or(searchTerms.join(','));
           }
 
           if (filter !== 'all') {
@@ -170,7 +223,7 @@ export const apiService = {
 
           const { data, error } = await query;
           if (error) throw error;
-          return data || [];
+          return attachProfilesToOrders(data || []);
         }
         
         if (tab === 'referrals') {

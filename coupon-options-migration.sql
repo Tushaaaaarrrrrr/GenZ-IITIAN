@@ -1,0 +1,11 @@
+-- Adds advanced coupon controls used by the Manager discount form.
+ALTER TABLE public.discount_coupons
+ADD COLUMN IF NOT EXISTS start_date TIMESTAMP WITH TIME ZONE,
+ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP WITH TIME ZONE,
+ADD COLUMN IF NOT EXISTS max_uses INTEGER,
+ADD COLUMN IF NOT EXISTS min_order_value INTEGER DEFAULT 0,
+ADD COLUMN IF NOT EXISTS first_purchase_only BOOLEAN DEFAULT false,
+ADD COLUMN IF NOT EXISTS single_use_per_user BOOLEAN DEFAULT true,
+ADD COLUMN IF NOT EXISTS hidden BOOLEAN DEFAULT false,
+ADD COLUMN IF NOT EXISTS active BOOLEAN DEFAULT true,
+ADD COLUMN IF NOT EXISTS allowed_emails TEXT[];

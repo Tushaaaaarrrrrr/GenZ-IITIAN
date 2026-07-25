@@ -37,6 +37,8 @@ CREATE TABLE IF NOT EXISTS public.courses (
   "bundleCourses" JSONB DEFAULT '[]'::jsonb,
   "bundleDiscountPrice" INTEGER,
   "bundleDiscountCode" TEXT,
+  "bundleDiscountMode" TEXT DEFAULT 'all',
+  "bundleDiscountMinCourses" INTEGER DEFAULT 3,
   "isFixedBundle" BOOLEAN DEFAULT false,
   subject TEXT,
   "startDate" TIMESTAMP WITH TIME ZONE,
@@ -87,6 +89,15 @@ CREATE TABLE IF NOT EXISTS public.discount_coupons (
   discount_percentage INTEGER,
   discount_amount INTEGER, 
   applies_to TEXT DEFAULT 'ALL',
+  start_date TIMESTAMP WITH TIME ZONE,
+  expires_at TIMESTAMP WITH TIME ZONE,
+  max_uses INTEGER,
+  min_order_value INTEGER DEFAULT 0,
+  first_purchase_only BOOLEAN DEFAULT false,
+  single_use_per_user BOOLEAN DEFAULT true,
+  hidden BOOLEAN DEFAULT false,
+  active BOOLEAN DEFAULT true,
+  allowed_emails TEXT[],
   used_count INTEGER DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -304,4 +315,3 @@ DROP POLICY IF EXISTS "settings_write_manager" ON public.settings;
 CREATE POLICY "settings_write_manager" ON public.settings FOR ALL USING (public.is_manager()) WITH CHECK (public.is_manager());
 
 -- Done!
-

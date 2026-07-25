@@ -5,13 +5,21 @@ import { LayoutDashboard, ShoppingBag, ScrollText, BookOpen, Plus, Search, Trash
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate, useLocation, NavLink } from 'react-router-dom';
 import { apiService } from '../lib/api';
-import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 import BlogsManager from '../components/manager/BlogsManager';
 import EmployeesManager from '../components/manager/EmployeesManager';
 import { getYouTubeId } from '../utils/youtube';
 
 
 type Tab = 'users' | 'courses' | 'discounts' | 'payments' | 'catalog' | 'referrals' | 'blogs' | 'settings' | 'employees' | 'logs';
+
+function getBundleDiscountConfig(course: any): { mode: 'all' | 'any'; minCourses: 1 | 2 | 3 | 5 } {
+  const firstBundleCourse = Array.isArray(course?.bundleCourses) ? course.bundleCourses[0] : null;
+  const storedMode = course?.bundleDiscountMode || firstBundleCourse?._bundleDiscountMode;
+  const mode = storedMode === 'any' ? 'any' : 'all';
+  const rawMin = Number(course?.bundleDiscountMinCourses || firstBundleCourse?._bundleDiscountMinCourses || 3);
+  const minCourses = ([1, 2, 3, 5].includes(rawMin) ? rawMin : 3) as 1 | 2 | 3 | 5;
+  return { mode, minCourses };
+}
 
 function sanitizeCourseId(value: string) {
   return value
@@ -20,6 +28,14 @@ function sanitizeCourseId(value: string) {
     .replace(/[^\w\s-]/g, '')
     .replace(/[\s_-]+/g, '-')
     .replace(/^-+|-+$/g, '');
+}
+
+function toDateTimeLocal(value?: string | null) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const offsetMs = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
 }
 
 export default function Manager() {
@@ -44,6 +60,8 @@ export default function Manager() {
   const [bundleCourses, setBundleCourses] = useState<{courseId: string, courseId2?: string, courseId3?: string, courseName: string, price: number}[]>([]);
   const [bundleDiscountPrice, setBundleDiscountPrice] = useState<number | ''>('');
   const [bundleDiscountCode, setBundleDiscountCode] = useState('');
+  const [bundleDiscountMode, setBundleDiscountMode] = useState<'all' | 'any'>('all');
+  const [bundleDiscountMinCourses, setBundleDiscountMinCourses] = useState<1 | 2 | 3 | 5>(3);
   const [isFixedBundle, setIsFixedBundle] = useState(false);
   const [pricingOptions, setPricingOptions] = useState<{name: string, price: number, type: 'live' | 'recorded', tag?: string, description?: string, banner_text?: string}[]>([]);
   const [courseTags, setCourseTags] = useState<string[]>([]);
@@ -58,6 +76,11 @@ export default function Manager() {
   const [editingDiscount, setEditingDiscount] = useState<any>(null);
   const [discountType, setDiscountType] = useState<'all' | 'specific'>('all');
   const [discountEmails, setDiscountEmails] = useState<string[]>(['']);
+  const [discountValueType, setDiscountValueType] = useState<'percentage' | 'amount'>('percentage');
+  const [couponFirstPurchaseOnly, setCouponFirstPurchaseOnly] = useState(false);
+  const [couponSingleUsePerUser, setCouponSingleUsePerUser] = useState(true);
+  const [couponHidden, setCouponHidden] = useState(false);
+  const [couponActive, setCouponActive] = useState(true);
   const discountOptionMap = new Map(discountOptions.map(option => [option.id, option]));
 
   // User Detail View state
@@ -67,20 +90,13 @@ export default function Manager() {
   const [selectedUserWallet, setSelectedUserWallet] = useState<any>(null);
   const [isLoadingUserDetails, setIsLoadingUserDetails] = useState(false);
 
-  // Delete Confirmation State
-  const [deleteModal, setDeleteModal] = useState<{
-    isOpen: boolean;
-    type: 'course' | 'discount' | 'payment';
-    entity: any;
-  }>({
-    isOpen: false,
-    type: 'course',
-    entity: null
-  });
-
-
   useEffect(() => {
     if (editingDiscount) {
+      setDiscountValueType(editingDiscount.discount_amount ? 'amount' : 'percentage');
+      setCouponFirstPurchaseOnly(Boolean(editingDiscount.first_purchase_only));
+      setCouponSingleUsePerUser(editingDiscount.single_use_per_user !== false);
+      setCouponHidden(Boolean(editingDiscount.hidden));
+      setCouponActive(editingDiscount.active !== false);
       if (editingDiscount.allowed_emails && editingDiscount.allowed_emails.length > 0) {
         setDiscountType('specific');
         setDiscountEmails(editingDiscount.allowed_emails);
@@ -89,6 +105,11 @@ export default function Manager() {
         setDiscountEmails(['']);
       }
     } else {
+      setDiscountValueType('percentage');
+      setCouponFirstPurchaseOnly(false);
+      setCouponSingleUsePerUser(true);
+      setCouponHidden(false);
+      setCouponActive(true);
       setDiscountType('all');
       setDiscountEmails(['']);
     }
@@ -96,10 +117,13 @@ export default function Manager() {
 
   useEffect(() => {
     if (editingCourse) {
+      const discountConfig = getBundleDiscountConfig(editingCourse);
       setIsBundle(editingCourse.isBundle || false);
       setBundleCourses(editingCourse.bundleCourses || []);
       setBundleDiscountPrice(editingCourse.bundleDiscountPrice || '');
       setBundleDiscountCode(editingCourse.bundleDiscountCode || '');
+      setBundleDiscountMode(discountConfig.mode);
+      setBundleDiscountMinCourses(discountConfig.minCourses);
       setIsFixedBundle(editingCourse.isFixedBundle || false);
       setPricingOptions(editingCourse.pricing_options || []);
       setCourseTags(editingCourse.tags || []);
@@ -110,6 +134,8 @@ export default function Manager() {
       setBundleCourses([{ courseId: '', courseName: '', price: 0 }]);
       setBundleDiscountPrice('');
       setBundleDiscountCode('');
+      setBundleDiscountMode('all');
+      setBundleDiscountMinCourses(3);
       setIsFixedBundle(false);
       setPricingOptions([]);
       setCourseTags([]);
@@ -119,7 +145,7 @@ export default function Manager() {
   }, [editingCourse, showAddCourse]);
 
   const addBundleCourse = () => {
-    if (bundleCourses.length >= 6) return;
+    if (bundleCourses.length >= 10) return;
     setBundleCourses([...bundleCourses, { courseId: '', courseName: '', price: 0 }]);
   };
 
@@ -274,10 +300,12 @@ export default function Manager() {
   const exportPayments = () => {
     if (effectiveTab !== 'payments' || !Array.isArray(data)) return;
     
-    const headers = ['Order ID', 'Email', 'Courses', 'Amount', 'Status', 'Date'];
+    const headers = ['Order ID', 'Name', 'Email', 'Phone', 'Courses', 'Amount', 'Status', 'Date'];
     const rows = data.map(order => [
       order.order_id || '',
+      order.user_name || '',
       order.user_email || '',
+      order.user_phone || '',
       Array.isArray(order.course_ids) 
         ? order.course_ids.map(id => courseCatalog.find(c => c.id === id)?.name || id).join('; ') 
         : '',
@@ -370,11 +398,9 @@ export default function Manager() {
 
   const handleCourseAction = async (course: any, isDelete = false) => {
     if (isDelete) {
-      setDeleteModal({
-        isOpen: true,
-        type: 'course',
-        entity: course
-      });
+      const { error } = await supabase.from('courses').delete().eq('id', course.id);
+      if (error) alert(error.message);
+      fetchData();
       return;
     } else {
 
@@ -398,6 +424,8 @@ export default function Manager() {
         bundleCourses: course.bundleCourses || [],
         bundleDiscountPrice: course.bundleDiscountPrice || null,
         bundleDiscountCode: course.bundleDiscountCode || null,
+        bundleDiscountMode: course.isBundle ? course.bundleDiscountMode || 'all' : 'all',
+        bundleDiscountMinCourses: course.isBundle && course.bundleDiscountMode === 'any' ? course.bundleDiscountMinCourses || 3 : 3,
         isFixedBundle: course.isFixedBundle || false,
         pricing_options: course.pricing_options || [],
         subject: course.category || null,
@@ -521,11 +549,9 @@ export default function Manager() {
 
   const handleDiscountAction = async (discount: any, isDelete = false) => {
     if (isDelete) {
-      setDeleteModal({
-        isOpen: true,
-        type: 'discount',
-        entity: discount
-      });
+      const { error } = await supabase.from('discount_coupons').delete().eq('id', discount.id);
+      if (error) alert(error.message);
+      fetchData();
       return;
     } else {
 
@@ -535,7 +561,15 @@ export default function Manager() {
         discount_percentage: discount.discount_percentage ? parseInt(discount.discount_percentage) : null,
         discount_amount: discount.discount_amount ? parseInt(discount.discount_amount) : null,
         applies_to: discount.applies_to || 'ALL',
-        allowed_emails: discount.discountType === 'specific' ? discount.discountEmails.filter((e: string) => e.trim() !== '') : null
+        allowed_emails: discount.discountType === 'specific' ? discount.discountEmails.filter((e: string) => e.trim() !== '').map((e: string) => e.trim().toLowerCase()) : null,
+        start_date: discount.start_date ? new Date(discount.start_date).toISOString() : null,
+        expires_at: discount.expires_at ? new Date(discount.expires_at).toISOString() : null,
+        max_uses: discount.max_uses ? parseInt(discount.max_uses) : null,
+        min_order_value: discount.min_order_value ? parseInt(discount.min_order_value) : 0,
+        first_purchase_only: Boolean(discount.first_purchase_only),
+        single_use_per_user: Boolean(discount.single_use_per_user),
+        hidden: Boolean(discount.hidden),
+        active: Boolean(discount.active)
       };
       const { error } = await supabase.from('discount_coupons').upsert(cleanedDiscount, { onConflict: 'code' });
       if (error) alert(error.message);
@@ -546,34 +580,14 @@ export default function Manager() {
   };
 
   const handlePaymentDelete = async (orderId: string) => {
-    setDeleteModal({
-      isOpen: true,
-      type: 'payment',
-      entity: { order_id: orderId }
-    });
+    const { error } = await supabase.from('website_orders').delete().eq('order_id', orderId);
+    if (error) alert(error.message);
+    fetchData();
   };
 
-  const confirmDelete = async () => {
-    const { type, entity } = deleteModal;
-    if (!entity) return;
 
-    try {
-      if (type === 'course') {
-        await supabase.from('courses').delete().eq('id', entity.id);
-      } else if (type === 'discount') {
-        await supabase.from('discount_coupons').delete().eq('id', entity.id);
-      } else if (type === 'payment') {
-        await supabase.from('website_orders').delete().eq('order_id', entity.order_id);
-      }
-      
-      setDeleteModal({ ...deleteModal, isOpen: false });
-      fetchData();
-    } catch (err) {
-      console.error('Delete failed:', err);
-      alert('Failed to delete. Check console for details.');
-    }
-  };
-
+  const paidSelectedUserOrders = selectedUserOrders.filter((order) => order.status === 'PAID');
+  const selectedUserTotalSpent = paidSelectedUserOrders.reduce((sum, order) => sum + (Number(order.total_amount) || 0), 0);
 
   if (authLoading || !isManager) return <div className="min-h-screen flex items-center justify-center font-black">ACCESS DENIED</div>;
 
@@ -773,7 +787,7 @@ export default function Manager() {
                       <Search className="w-6 h-6 text-gray-400 shrink-0 ml-2" />
                       <input
                         type="text"
-                        placeholder="Search by email or Order ID..."
+                        placeholder="Search by name, email, phone, or Order ID..."
                         value={paymentSearch}
                         onChange={(e) => setPaymentSearch(e.target.value)}
                         className="w-full font-black outline-none text-lg text-[#0b1120] placeholder:text-gray-300"
@@ -822,15 +836,26 @@ export default function Manager() {
                         {data.map((order: any) => (
                           <tr 
                             key={order.order_id} 
-                            onClick={() => fetchUserDetails({ email: order.user_email, name: order.user_email })}
+                            onClick={() => fetchUserDetails({
+                              email: order.user_email,
+                              name: order.user_name || order.user_email,
+                              phone: order.user_phone,
+                              created_at: order.user_joined_at
+                            })}
                             className="hover:bg-blue-50/50 transition-colors cursor-pointer group"
                           >
                             <td className="px-8 py-6">
                               <div className="flex items-center gap-3">
-                                <div className="text-lg font-black text-[#0b1120] group-hover:text-blue-600 transition-colors">{order.user_email}</div>
+                                <div className="text-lg font-black text-[#0b1120] group-hover:text-blue-600 transition-colors break-all">
+                                  {order.user_name || order.user_email || 'Unknown User'}
+                                </div>
                                 <ArrowRight className="w-4 h-4 text-transparent group-hover:text-blue-600 transition-colors" />
                               </div>
-                              <div className="text-xs font-mono text-gray-400 mt-1">{order.order_id}</div>
+                              <div className="mt-1 space-y-0.5 text-xs text-gray-400">
+                                <div className="font-bold break-all">{order.user_email || 'No email'}</div>
+                                <div className="font-mono">{order.user_phone || 'No phone number'}</div>
+                                <div className="font-mono">{order.order_id}</div>
+                              </div>
                             </td>
                             <td className="px-8 py-6">
                               <div className="flex flex-wrap gap-2">
@@ -1244,8 +1269,71 @@ export default function Manager() {
                         🎁 Bundle Discount Settings
                       </h4>
                       <p className="text-[10px] font-bold text-gray-500 uppercase tracking-tighter">
-                        This discount applies only when a student selects ALL courses and enters the code.
+                        One discount mode can be active at a time. Whole bundle is selected by default.
                       </p>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <button
+                          type="button"
+                          onClick={() => setBundleDiscountMode('all')}
+                          className={`p-4 rounded-2xl border-2 text-left transition-all ${bundleDiscountMode === 'all' ? 'border-[#10b981] bg-white shadow-[4px_4px_0px_#10b981]' : 'border-green-200 bg-white/70 hover:border-[#10b981]'}`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="text-xs font-black text-[#0b1120] uppercase">Whole Bundle</div>
+                              <div className="text-[10px] font-bold text-gray-500 uppercase mt-1">Student must select all included courses</div>
+                            </div>
+                            <div className={`w-5 h-5 rounded-full border-2 ${bundleDiscountMode === 'all' ? 'border-[#10b981] bg-[#10b981]' : 'border-gray-300 bg-white'}`} />
+                          </div>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setBundleDiscountMode('any');
+                            if (![1, 2, 3, 5].includes(Number(bundleDiscountMinCourses))) {
+                              setBundleDiscountMinCourses(3);
+                            }
+                          }}
+                          className={`p-4 rounded-2xl border-2 text-left transition-all ${bundleDiscountMode === 'any' ? 'border-[#10b981] bg-white shadow-[4px_4px_0px_#10b981]' : 'border-green-200 bg-white/70 hover:border-[#10b981]'}`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="text-xs font-black text-[#0b1120] uppercase">Choose Any N</div>
+                              <div className="text-[10px] font-bold text-gray-500 uppercase mt-1">Student can unlock discount with minimum selected count</div>
+                            </div>
+                            <div className={`w-5 h-5 rounded-full border-2 ${bundleDiscountMode === 'any' ? 'border-[#10b981] bg-[#10b981]' : 'border-gray-300 bg-white'}`} />
+                          </div>
+                        </button>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className={`text-xs font-black uppercase tracking-widest pl-1 ${bundleDiscountMode === 'any' ? 'text-[#10b981]' : 'text-gray-400'}`}>Choose Any Count</label>
+                        <div className="grid grid-cols-4 gap-2">
+                          {[3, 2, 1, 5].map((count) => {
+                            const isSelected = bundleDiscountMode === 'any' && bundleDiscountMinCourses === count;
+                            const isDisabled = bundleDiscountMode !== 'any';
+                            return (
+                              <button
+                                key={count}
+                                type="button"
+                                disabled={isDisabled}
+                                onClick={() => setBundleDiscountMinCourses(count as 1 | 2 | 3 | 5)}
+                                className={`py-3 rounded-xl border-2 font-black text-xs uppercase transition-all ${
+                                  isSelected
+                                    ? 'bg-[#10b981] text-white border-[#10b981] shadow-[3px_3px_0px_#0b1120]'
+                                    : isDisabled
+                                    ? 'bg-gray-100 text-gray-300 border-gray-200 cursor-not-allowed'
+                                    : 'bg-white text-[#0b1120] border-green-200 hover:border-[#10b981]'
+                                }`}
+                              >
+                                Any {count}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <label className="text-xs font-black text-[#10b981] uppercase tracking-widest pl-1">Bundle Discount Price (₹)</label>
@@ -1273,7 +1361,7 @@ export default function Manager() {
                       </div>
                       {bundleDiscountPrice && bundleCourses.length > 0 && (
                         <div className="p-3 bg-white border-2 border-green-200 rounded-xl text-xs font-bold text-gray-600">
-                          Individual total: ₹{bundleCourses.reduce((s, bc) => s + (bc.price || 0), 0)} → Bundle price: <span className="text-[#10b981] font-black">₹{bundleDiscountPrice}</span> (Save ₹{bundleCourses.reduce((s, bc) => s + (bc.price || 0), 0) - Number(bundleDiscountPrice)})
+                          {bundleDiscountMode === 'all' ? 'Whole bundle mode:' : `Any ${bundleDiscountMinCourses} mode:`} Student pays <span className="text-[#10b981] font-black">₹{bundleDiscountPrice}</span> after entering this code.
                         </div>
                       )}
                     </div>
@@ -1432,9 +1520,9 @@ export default function Manager() {
                     <div className="pt-4 border-t-2 border-[#0b1120]/10 space-y-4">
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">
-                          {isBundle ? `Included Courses (${bundleCourses.length}/6)` : 'Main Enrollment ID'}
+                          {isBundle ? `Included Courses (${bundleCourses.length}/10)` : 'Main Enrollment ID'}
                         </span>
-                        {isBundle && bundleCourses.length < 6 && (
+                        {isBundle && bundleCourses.length < 10 && (
                           <button type="button" onClick={addBundleCourse} className="text-xs font-black bg-[#0b1120] text-white px-3 py-1 rounded-lg hover:bg-gray-800">
                             + ADD COURSE
                           </button>
@@ -1614,6 +1702,28 @@ export default function Manager() {
                       return;
                     }
 
+                    if (isBundle && bundleDiscountMode === 'any' && ![1, 2, 3, 5].includes(Number(bundleDiscountMinCourses))) {
+                      alert('Please choose a valid minimum course count (1, 2, 3, or 5) for Any mode.');
+                      return;
+                    }
+                    if (isBundle && bundleDiscountMode === 'any' && Number(bundleDiscountMinCourses) > bundleCourses.length) {
+                      alert(`This bundle has only ${bundleCourses.length} course rows. Choose a smaller Any count.`);
+                      return;
+                    }
+
+                    const bundleCoursesForSave = bundleCourses.map((bc, idx) => {
+                      if (idx !== 0) {
+                        const { _bundleDiscountMode: _mode, _bundleDiscountMinCourses: _min, ...rest } = bc as any;
+                        return rest;
+                      }
+
+                      return {
+                        ...bc,
+                        _bundleDiscountMode: isBundle ? bundleDiscountMode : undefined,
+                        _bundleDiscountMinCourses: isBundle && bundleDiscountMode === 'any' ? bundleDiscountMinCourses : undefined,
+                      };
+                    });
+
                     handleCourseAction({ 
                       id, previousId: editingCourse?.id, name, price, isPinned, subtitle,
                       cohortContent,
@@ -1622,9 +1732,11 @@ export default function Manager() {
 
                       discountPrice: discountPrice || null,
                       isBundle,
-                      bundleCourses,
+                      bundleCourses: bundleCoursesForSave,
                       bundleDiscountPrice: isBundle && bundleDiscountPrice ? Number(bundleDiscountPrice) : null,
                       bundleDiscountCode: isBundle && bundleDiscountCode ? bundleDiscountCode : null,
+                      bundleDiscountMode: isBundle ? bundleDiscountMode : 'all',
+                      bundleDiscountMinCourses: isBundle && bundleDiscountMode === 'any' ? bundleDiscountMinCourses : 3,
                       isFixedBundle: isBundle && isFixedBundle,
                       pricing_options: isBundle && isFixedBundle ? pricingOptions : [],
                       tags: courseTags,
@@ -1654,7 +1766,7 @@ export default function Manager() {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { setShowAddDiscount(false); setEditingDiscount(null); }} className="absolute inset-0 bg-[#0b1120]/60 backdrop-blur-md" />
             <motion.div 
               initial={{ scale: 0.9, y: 30 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 30 }}
-              className="relative bg-white border-[6px] border-[#0b1120] rounded-[3.5rem] p-10 lg:p-16 w-full max-w-4xl shadow-[20px_20px_0px_#0b1120]"
+              className="relative bg-white border-[6px] border-[#0b1120] rounded-[3rem] p-6 lg:p-10 w-full max-w-4xl max-h-[calc(100vh-3rem)] overflow-y-auto shadow-[20px_20px_0px_#0b1120]"
             >
               <h2 className="text-2xl font-black text-[#0b1120] mb-8 flex items-center gap-4">
                 {editingDiscount ? 'Update Coupon' : 'Create Coupon'}
@@ -1666,19 +1778,29 @@ export default function Manager() {
                   <input type="text" defaultValue={editingDiscount?.code} id="d-code" placeholder="e.g. WELCOME100" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-black text-xl uppercase focus:ring-[6px] ring-purple-100 outline-none" />
                 </div>
                 
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Discount (%)</label>
-                    <input type="number" defaultValue={editingDiscount?.discount_percentage} id="d-percent" placeholder="e.g. 10" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-purple-100 outline-none" />
+                    <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Discount Type</label>
+                    <select
+                      value={discountValueType}
+                      onChange={e => setDiscountValueType(e.target.value as 'percentage' | 'amount')}
+                      className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-purple-100 outline-none bg-white"
+                    >
+                      <option value="percentage">Percentage (%)</option>
+                      <option value="amount">Fixed Amount (₹)</option>
+                    </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">OR Amount (₹)</label>
-                    <input type="number" defaultValue={editingDiscount?.discount_amount} id="d-amount" placeholder="e.g. 500" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-purple-100 outline-none" />
+                    <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Discount Value</label>
+                    <input
+                      key={discountValueType}
+                      type="number"
+                      defaultValue={discountValueType === 'percentage' ? editingDiscount?.discount_percentage : editingDiscount?.discount_amount}
+                      id="d-value"
+                      placeholder={discountValueType === 'percentage' ? '% Off' : '₹ Off'}
+                      className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-purple-100 outline-none"
+                    />
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-black text-[#0b1120] uppercase mb-3 text-gray-500 text-xs">⚠️ Leave ONE of the above blank. If both are filled, Percentage might take priority depending on backend logic.</label>
                 </div>
 
                 <div>
@@ -1744,31 +1866,97 @@ export default function Manager() {
                     ))}
                   </select>
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Start Date (Optional)</label>
+                    <input type="datetime-local" defaultValue={toDateTimeLocal(editingDiscount?.start_date)} id="d-start" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-purple-100 outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Expiry Date (Optional)</label>
+                    <input type="datetime-local" defaultValue={toDateTimeLocal(editingDiscount?.expires_at)} id="d-expires" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-purple-100 outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Max Uses (Optional)</label>
+                    <input type="number" min="1" defaultValue={editingDiscount?.max_uses || ''} id="d-max-uses" placeholder="Unlimited" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-purple-100 outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Min Order Value (Optional)</label>
+                    <input type="number" min="0" defaultValue={editingDiscount?.min_order_value || ''} id="d-min-order" placeholder="₹ No minimum" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-purple-100 outline-none" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[
+                    { label: 'First Purchase Only', description: 'Only users with no prior paid orders', checked: couponFirstPurchaseOnly, set: setCouponFirstPurchaseOnly },
+                    { label: 'Single Use per User', description: 'Each user can use only once', checked: couponSingleUsePerUser, set: setCouponSingleUsePerUser },
+                    { label: 'Hidden/Private', description: 'Stored as private for public listings', checked: couponHidden, set: setCouponHidden },
+                    { label: 'Active', description: 'Coupon is usable', checked: couponActive, set: setCouponActive },
+                  ].map(option => (
+                    <button
+                      type="button"
+                      key={option.label}
+                      onClick={() => option.set(!option.checked)}
+                      className="p-4 rounded-2xl border-2 border-gray-200 text-left flex items-start gap-3 hover:border-purple-300 transition-colors"
+                    >
+                      <span className={`mt-1 w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 ${option.checked ? 'bg-purple-500 border-purple-500 text-white' : 'bg-white border-gray-300'}`}>
+                        {option.checked ? '✓' : ''}
+                      </span>
+                      <span>
+                        <span className="block font-black text-[#0b1120]">{option.label}</span>
+                        <span className="block text-xs font-bold text-gray-400 mt-1">{option.description}</span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="flex gap-6 mt-12">
                 <button 
                   onClick={() => {
                     const code = (document.getElementById('d-code') as HTMLInputElement).value;
-                    const discount_percentage = (document.getElementById('d-percent') as HTMLInputElement).value;
-                    const discount_amount = (document.getElementById('d-amount') as HTMLInputElement).value;
+                    const discount_value = (document.getElementById('d-value') as HTMLInputElement).value;
                     const applies_to = (document.getElementById('d-applies') as HTMLSelectElement).value;
+                    const start_date = (document.getElementById('d-start') as HTMLInputElement).value;
+                    const expires_at = (document.getElementById('d-expires') as HTMLInputElement).value;
+                    const max_uses = (document.getElementById('d-max-uses') as HTMLInputElement).value;
+                    const min_order_value = (document.getElementById('d-min-order') as HTMLInputElement).value;
 
                     if (!code) {
                       alert('Please enter a coupon code.');
                       return;
                     }
-                    if (!discount_percentage && !discount_amount) {
-                      alert('Please specify either a percentage or an amount.');
+                    if (!discount_value) {
+                      alert('Please specify a discount value.');
+                      return;
+                    }
+                    if (discountValueType === 'percentage' && (Number(discount_value) <= 0 || Number(discount_value) > 100)) {
+                      alert('Percentage discount must be between 1 and 100.');
+                      return;
+                    }
+                    if (discountValueType === 'amount' && Number(discount_value) <= 0) {
+                      alert('Fixed amount discount must be greater than 0.');
+                      return;
+                    }
+                    if (start_date && expires_at && new Date(start_date) >= new Date(expires_at)) {
+                      alert('Expiry date must be after the start date.');
                       return;
                     }
 
                     handleDiscountAction({ 
                       id: editingDiscount?.id,
                       code,
-                      discount_percentage,
-                      discount_amount,
+                      discount_percentage: discountValueType === 'percentage' ? discount_value : '',
+                      discount_amount: discountValueType === 'amount' ? discount_value : '',
                       applies_to,
+                      start_date,
+                      expires_at,
+                      max_uses,
+                      min_order_value,
+                      first_purchase_only: couponFirstPurchaseOnly,
+                      single_use_per_user: couponSingleUsePerUser,
+                      hidden: couponHidden,
+                      active: couponActive,
                       discountType,
                       discountEmails
                     });
@@ -1789,30 +1977,30 @@ export default function Manager() {
       {/* USER DETAILS MODAL */}
       <AnimatePresence>
         {selectedUser && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4 lg:p-8 overflow-y-auto">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex items-start justify-center p-3 sm:p-6 overflow-y-auto">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] p-6 lg:p-10 w-full max-w-7xl shadow-[16px_16px_0px_#0b1120] my-auto"
+              className="bg-white border-[4px] border-[#0b1120] rounded-[2rem] lg:rounded-[2.5rem] p-5 sm:p-6 lg:p-8 w-full max-w-7xl max-h-[calc(100vh-1.5rem)] sm:max-h-[calc(100vh-3rem)] overflow-y-auto shadow-[10px_10px_0px_#0b1120] lg:shadow-[16px_16px_0px_#0b1120] my-3"
             >
-              <div className="flex justify-between items-start border-b-[3px] border-gray-100 pb-6 mb-8">
-                <div>
-                  <h3 className="text-xl font-black text-[#0b1120] flex items-center gap-3">
-                    <User className="w-8 h-8 text-blue-500" />
-                    {selectedUser.name || 'Anonymous User'}
+              <div className="flex justify-between items-start gap-4 border-b-[3px] border-gray-100 pb-6 mb-8">
+                <div className="min-w-0">
+                  <h3 className="text-xl font-black text-[#0b1120] flex items-center gap-3 min-w-0">
+                    <User className="w-8 h-8 text-blue-500 shrink-0" />
+                    <span className="break-all">{selectedUser.name || 'Anonymous User'}</span>
                   </h3>
-                  <p className="text-gray-500 font-bold mt-2 flex items-center gap-4">
-                    <span>{selectedUser.email}</span>
-                    {selectedUser.phone && <span>• {selectedUser.phone}</span>}
+                  <p className="text-gray-500 font-bold mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
+                    <span className="break-all">{selectedUser.email}</span>
+                    <span className="font-mono">{selectedUser.phone || 'No phone number'}</span>
                     {selectedUser.created_at && (
                       <span className="text-gray-4" style={{ opacity: 0.7 }}>
-                         • Joined: {new Date(selectedUser.created_at).toLocaleDateString()}
+                         Joined: {new Date(selectedUser.created_at).toLocaleDateString()}
                       </span>
                     )}
                   </p>
                 </div>
-                <button onClick={() => setSelectedUser(null)} className="w-12 h-12 rounded-full border-[3px] border-[#0b1120] flex items-center justify-center hover:bg-gray-100 transition-colors shadow-[4px_4px_0px_#0b1120]">
+                <button onClick={() => setSelectedUser(null)} className="w-12 h-12 shrink-0 rounded-full border-[3px] border-[#0b1120] flex items-center justify-center hover:bg-gray-100 transition-colors shadow-[4px_4px_0px_#0b1120]">
                   <X className="w-6 h-6 text-[#0b1120]" />
                 </button>
               </div>
@@ -1831,7 +2019,7 @@ export default function Manager() {
                       <div className="text-xs font-black text-blue-400 uppercase tracking-widest mb-2">Total Orders</div>
                       <div className="text-4xl font-black text-blue-600">{selectedUserOrders.length}</div>
                       <div className="mt-2 text-sm font-bold text-blue-800">
-                        Total Spent: ₹{selectedUserOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0)}
+                        Total Spent: ₹{selectedUserTotalSpent}
                       </div>
                     </div>
 
@@ -1864,8 +2052,8 @@ export default function Manager() {
                         <ShoppingBag className="w-5 h-5 text-gray-400" /> Order History
                       </h4>
                       <div className="bg-white border-[3px] border-gray-200 rounded-3xl overflow-hidden">
-                        <div className="max-h-80 overflow-y-auto">
-                          <table className="w-full text-left text-sm">
+                        <div className="max-h-80 overflow-auto">
+                          <table className="w-full min-w-[560px] text-left text-sm">
                             <thead className="bg-gray-50 sticky top-0 font-black text-xs uppercase text-gray-400">
                               <tr>
                                 <th className="p-4">Date</th>
@@ -1914,8 +2102,8 @@ export default function Manager() {
                         <Gift className="w-5 h-5 text-purple-400" /> Referral Activity
                       </h4>
                       <div className="bg-white border-[3px] border-purple-200 rounded-3xl overflow-hidden">
-                        <div className="max-h-80 overflow-y-auto">
-                          <table className="w-full text-left text-sm">
+                        <div className="max-h-80 overflow-auto">
+                          <table className="w-full min-w-[520px] text-left text-sm">
                             <thead className="bg-purple-50 sticky top-0 font-black text-xs uppercase text-purple-400">
                               <tr>
                                 <th className="p-4">Referred User</th>
@@ -1951,27 +2139,6 @@ export default function Manager() {
         )}
       </AnimatePresence>
 
-      <DeleteConfirmationModal
-        isOpen={deleteModal.isOpen}
-        onClose={() => setDeleteModal({ ...deleteModal, isOpen: false })}
-        onConfirm={confirmDelete}
-        title={`Delete ${deleteModal.type.charAt(0).toUpperCase() + deleteModal.type.slice(1)}`}
-        description={
-          deleteModal.type === 'course' 
-            ? "This will permanently delete the course and all associated enrollment data. This action cannot be reversed."
-            : deleteModal.type === 'discount'
-            ? "This will permanently delete the discount code. Existing orders using this code will not be affected, but new orders will not be able to use it."
-            : "This will permanently delete this payment record from the database. This does NOT refund the user."
-        }
-        entityName={
-          deleteModal.type === 'course' 
-            ? deleteModal.entity?.id 
-            : deleteModal.type === 'discount'
-            ? deleteModal.entity?.code
-            : deleteModal.entity?.order_id
-        }
-        entityType={deleteModal.type}
-      />
     </div>
   );
 }
@@ -2274,5 +2441,3 @@ function SettingsManager() {
     </div>
   );
 }
-
-

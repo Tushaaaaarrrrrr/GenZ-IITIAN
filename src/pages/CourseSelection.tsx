@@ -6,6 +6,7 @@ import { apiService } from '../lib/api';
 import { validateReferralCode, getReferralProfile } from '../lib/referral';
 import { useAuth } from '../context/AuthContext';
 import { Check, Loader2, ShieldCheck, AlertCircle, User, UserCheck, CreditCard, ArrowRight, BookOpen, Copy, CheckCheck, Coins } from 'lucide-react';
+import { validateCouponForCheckout } from '../utils/coupons';
 
 const RAZORPAY_SCRIPT_URL = "https://checkout.razorpay.com/v1/checkout.js";
 const MIN_PROMO_ORDER_AMOUNT = 300;
@@ -280,9 +281,14 @@ export default function CourseSelection() {
       
       // Auto-revoke bundle discount if criteria broken
       if (course?.isBundle && appliedDiscountCode === course?.bundleDiscountCode) {
-         const allIds = course.bundleCourses.map((bc: any) => bc.courseId);
-         const isStillComplete = allIds.every((id: string) => next.includes(id));
-         if (!isStillComplete) {
+         const firstBundleCourse = Array.isArray(course?.bundleCourses) ? course.bundleCourses[0] : null;
+         const mode = (course?.bundleDiscountMode || firstBundleCourse?._bundleDiscountMode) === 'any' ? 'any' : 'all';
+         const requiredCountRaw = mode === 'any'
+           ? Number(course?.bundleDiscountMinCourses || firstBundleCourse?._bundleDiscountMinCourses || 3)
+           : Number(course?.bundleCourses?.length || 0);
+         const requiredCount = Math.max(1, Math.min(requiredCountRaw, Number(course?.bundleCourses?.length || requiredCountRaw || 1)));
+         const isStillEligible = next.length >= requiredCount;
+         if (!isStillEligible) {
             setAppliedDiscountCode(null);
             setDiscountAmount(0);
          }
@@ -291,11 +297,34 @@ export default function CourseSelection() {
     });
   };
 
-  const isAllBundleSelected = course?.isBundle && 
-    course.bundleCourses?.every((bc: any) => selectedCourses.includes(bc.courseId));
+  const bundleDiscountModeRaw = course?.bundleDiscountMode || course?.bundleCourses?.[0]?._bundleDiscountMode;
+  const bundleDiscountMode = bundleDiscountModeRaw === 'any' ? 'any' : 'all';
+  const bundleDiscountRequiredCountRaw = bundleDiscountMode === 'any'
+    ? Number(course?.bundleDiscountMinCourses || course?.bundleCourses?.[0]?._bundleDiscountMinCourses || 3)
+    : Number(course?.bundleCourses?.length || 0);
+  const bundleDiscountRequiredCount = Math.max(
+    1,
+    Math.min(bundleDiscountRequiredCountRaw, Number(course?.bundleCourses?.length || bundleDiscountRequiredCountRaw || 1))
+  );
+  const isBundleDiscountEligible = !!(course?.isBundle && selectedCourses.length >= bundleDiscountRequiredCount);
 
   const bundleTotalRaw = course?.isBundle 
     ? course.bundleCourses?.reduce((sum: number, bc: any) => sum + bc.price, 0) || 0
+    : 0;
+
+  const bundleSelectedRaw = course?.isBundle
+    ? course.bundleCourses
+        ?.filter((bc: SubCourse) => selectedCourses.includes(bc.courseId))
+        .reduce((sum: number, bc: SubCourse) => sum + bc.price, 0) || 0
+    : 0;
+
+  const bundleDiscountPreviewSavings = Math.max(
+    (bundleDiscountMode === 'any' ? bundleSelectedRaw : bundleTotalRaw) - Number(course?.bundleDiscountPrice || 0),
+    0
+  );
+
+  const bundleSelectionProgress = course?.isBundle && bundleDiscountRequiredCount > 0
+    ? Math.min((selectedCourses.length / bundleDiscountRequiredCount) * 100, 100)
     : 0;
 
   const hasBundleDiscount = course?.isBundle && (
@@ -364,7 +393,13 @@ export default function CourseSelection() {
 
       // 0. Handle Special Course Bundle Code first (stored on the course record)
       if (course?.isBundle && course.bundleDiscountCode && codeToApply === course.bundleDiscountCode.toUpperCase()) {
-          if (!isAllBundleSelected) throw new Error('Please select ALL bundle courses to use this code.');
+          if (!isBundleDiscountEligible) {
+            throw new Error(
+              bundleDiscountMode === 'all'
+                ? 'Please select ALL bundle courses to use this code.'
+                : `Please select at least ${bundleDiscountRequiredCount} courses to use this code.`
+            );
+          }
           
           // Re-calculate raw sum (without any automatic bundle price)
           const rawTotal = course.bundleCourses
@@ -395,36 +430,14 @@ export default function CourseSelection() {
         .maybeSingle();
       
       if (coupon) {
-          // 2. Check if user already used it
-          const { data: usage } = await supabase
-            .from('coupon_uses')
-            .select('*')
-            .eq('code', coupon.code)
-            .eq('user_email', user.email)
-            .maybeSingle();
-          
-          if (usage) throw new Error('You have already used this discount code.');
-
-          // 3. Check if applies to these courses
-          if (coupon.applies_to !== 'ALL') {
-            const targetId = coupon.applies_to.trim().toLowerCase();
-            const targetsSelectedCourse = selectedCourses.some(id => id.trim().toLowerCase() === targetId);
-            const targetsCurrentBundle = course?.isBundle && (course.id || "").trim().toLowerCase() === targetId;
-
-            if (!targetsSelectedCourse && !targetsCurrentBundle) {
-              throw new Error(`This code doesn't apply to the selected courses.`);
-            }
-          }
-
-          // 4. Calculate discount
-          let calculatedDiscount = 0;
-          if (coupon.discount_percentage) {
-            calculatedDiscount = Math.floor(total * (coupon.discount_percentage / 100));
-          } else if (coupon.discount_amount) {
-            calculatedDiscount = coupon.discount_amount;
-          }
-
-          if (calculatedDiscount > total) calculatedDiscount = total;
+          const calculatedDiscount = await validateCouponForCheckout({
+            supabase,
+            coupon,
+            userEmail: user.email!,
+            total,
+            courseIds: selectedCourses,
+            bundleId: course?.isBundle ? course.id : null,
+          });
 
           setDiscountAmount(calculatedDiscount);
           setAppliedDiscountCode(coupon.code);
@@ -912,36 +925,41 @@ export default function CourseSelection() {
               className={`space-y-6 ${isQualifier ? 'pb-24 lg:pb-0' : ''}`}
             >
               {course.isBundle && hasBundleDiscount && (
-                  <div className={`p-3 md:p-5 rounded-3xl border-[4px] transition-all duration-500 shadow-[8px_8px_0px_#0b1120] ${isAllBundleSelected ? 'bg-green-50 border-[#10b981]' : 'bg-blue-50 border-[#0b1120]'}`}>
+                  <div className={`p-3 md:p-5 rounded-3xl border-[4px] transition-all duration-500 shadow-[8px_8px_0px_#0b1120] ${isBundleDiscountEligible ? 'bg-green-50 border-[#10b981]' : 'bg-blue-50 border-[#0b1120]'}`}>
                       <div className="flex flex-col md:flex-row items-center justify-between gap-6">
                           <div className="flex items-center gap-5">
-                              <div className={`w-14 h-14 rounded-2xl border-2 border-[#0b1120] flex items-center justify-center shadow-[4px_4px_0px_#0b1120] ${isAllBundleSelected ? 'bg-[#10b981]' : 'bg-white'}`}>
-                                  <Star className={`w-7 h-7 ${isAllBundleSelected ? 'text-white' : 'text-blue-500'}`} fill={isAllBundleSelected ? 'white' : 'transparent'} strokeWidth={3} />
+                              <div className={`w-14 h-14 rounded-2xl border-2 border-[#0b1120] flex items-center justify-center shadow-[4px_4px_0px_#0b1120] ${isBundleDiscountEligible ? 'bg-[#10b981]' : 'bg-white'}`}>
+                                  <Star className={`w-7 h-7 ${isBundleDiscountEligible ? 'text-white' : 'text-blue-500'}`} fill={isBundleDiscountEligible ? 'white' : 'transparent'} strokeWidth={3} />
                               </div>
                               <div>
                                   <div className="font-black text-xl md:text-2xl text-[#0b1120] uppercase tracking-tight leading-tight">
-                                      {isAllBundleSelected 
+                                      {isBundleDiscountEligible 
                                           ? "🎉 Bundle Price Unlocked!" 
-                                          : `Select All ${course.bundleCourses.length} Courses to Save ₹${course.bundleCourses.reduce((s: any, b: any) => s + b.price, 0) - (course.bundleDiscountPrice || 0)}`
+                                          : (bundleDiscountMode === 'all'
+                                              ? `Select All ${course.bundleCourses.length} Courses to Save ₹${course.bundleCourses.reduce((s: any, b: any) => s + b.price, 0) - (course.bundleDiscountPrice || 0)}`
+                                              : `Select Any ${bundleDiscountRequiredCount} Courses to Unlock Bundle Discount`
+                                            )
                                       }
                                   </div>
                                   <div className="text-[10px] md:text-xs text-gray-500 font-bold uppercase tracking-[0.05em] mt-2 flex flex-wrap items-center gap-2 leading-relaxed">
-                                      {isAllBundleSelected ? (
+                                      {isBundleDiscountEligible ? (
                                         <>
                                           Use code 
                                           <span className="bg-yellow-300 text-[#0b1120] px-2 py-0.5 rounded-lg border-[2px] border-[#0b1120] font-black shadow-[2px_2px_0px_#0b1120] inline-block -rotate-1 transform">
                                             {course.bundleDiscountCode}
                                           </span>
-                                          to get ₹{bundleTotalRaw - (course.bundleDiscountPrice || 0)} off or tap to Apply
+                                          to get ₹{bundleDiscountPreviewSavings} off or tap to Apply
                                         </>
                                       ) : (
-                                        "Select all courses to unlock the bundle price."
+                                        bundleDiscountMode === 'all'
+                                          ? 'Select all courses to unlock the bundle price.'
+                                          : `Select at least ${bundleDiscountRequiredCount} courses to unlock this code.`
                                       )}
                                   </div>
                               </div>
                           </div>
 
-                          {isAllBundleSelected ? (
+                          {isBundleDiscountEligible ? (
                               <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
                                   <button 
                                       onClick={() => {
@@ -976,7 +994,7 @@ export default function CourseSelection() {
                               <div className="w-full md:w-64 bg-white border-[3px] border-[#0b1120] rounded-full h-5 overflow-hidden shadow-[4px_4px_0px_#0b1120]">
                                   <motion.div 
                                       initial={{ width: 0 }}
-                                      animate={{ width: `${(selectedCourses.length / course.bundleCourses.length) * 100}%` }}
+                                  animate={{ width: `${bundleSelectionProgress}%` }}
                                       className="h-full bg-blue-500 transition-all duration-700"
                                   />
                               </div>
