@@ -652,7 +652,7 @@ export default function Home() {
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               transition={{ type: 'spring', damping: 25, stiffness: 350 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white border-[4px] border-[#0b1120] rounded-[2rem] w-full max-w-2xl p-6 md:p-8 relative shadow-[12px_12px_0px_#0b1120] overflow-visible z-10"
+              className="bg-white border-[4px] border-[#0b1120] rounded-[2rem] w-full max-w-3xl p-6 md:p-8 relative shadow-[12px_12px_0px_#0b1120] overflow-visible z-10"
             >
               {/* Close Button overlapping the top right */}
               <button
@@ -667,7 +667,7 @@ export default function Home() {
               {getYouTubeId(videoModalUrl) ? (
                 <div className="w-full aspect-video rounded-2xl border-4 border-[#0b1120] shadow-[6px_6px_0px_#0b1120] overflow-hidden bg-black relative">
                   <iframe
-                    src={`https://www.youtube.com/embed/${getYouTubeId(videoModalUrl)}?autoplay=1`}
+                    src={`https://www.youtube.com/embed/${getYouTubeId(videoModalUrl)}?autoplay=1&mute=1&playsinline=1&rel=0`}
                     title="YouTube Video Player"
                     frameBorder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"

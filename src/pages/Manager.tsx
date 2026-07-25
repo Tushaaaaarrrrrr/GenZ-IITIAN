@@ -1192,11 +1192,11 @@ export default function Manager() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Start Date</label>
-                      <input type="datetime-local" defaultValue={editingCourse?.startDate ? new Date(editingCourse.startDate).toISOString().slice(0, 16) : ''} id="c-start" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none bg-white" />
+                      <input type="date" defaultValue={editingCourse?.startDate ? new Date(editingCourse.startDate).toISOString().slice(0, 10) : ''} id="c-start" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none bg-white" />
                     </div>
                     <div>
                       <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">End Date</label>
-                      <input type="datetime-local" defaultValue={editingCourse?.endDate ? new Date(editingCourse.endDate).toISOString().slice(0, 16) : ''} id="c-end" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none bg-white" />
+                      <input type="date" defaultValue={editingCourse?.endDate ? new Date(editingCourse.endDate).toISOString().slice(0, 10) : ''} id="c-end" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none bg-white" />
                     </div>
                   </div>
 

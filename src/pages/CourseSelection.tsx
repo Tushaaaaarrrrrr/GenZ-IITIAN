@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { Check, Loader2, ShieldCheck, AlertCircle, User, UserCheck, CreditCard, ArrowRight, BookOpen, Copy, CheckCheck, Coins } from 'lucide-react';
 
 const RAZORPAY_SCRIPT_URL = "https://checkout.razorpay.com/v1/checkout.js";
+const MIN_PROMO_ORDER_AMOUNT = 300;
 
 interface SubCourse {
   courseId: string;
@@ -95,6 +96,7 @@ export default function CourseSelection() {
   const [walletBalance, setWalletBalance] = useState(0);
   const [coinsApplied, setCoinsApplied] = useState(0);
   const [coinsToApply, setCoinsToApply] = useState(0);
+  const [coinsError, setCoinsError] = useState('');
   const [selectedPricingTier, setSelectedPricingTier] = useState<number | null>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
 
@@ -339,6 +341,11 @@ export default function CourseSelection() {
      return (discountAmount || 0) + (referralDiscount || 0);
   };
 
+  const getOfferShortfall = (amount: number) => Math.max(Math.ceil((MIN_PROMO_ORDER_AMOUNT + 1) - amount), 0);
+  const getOfferEligibilityMessage = (amount: number) => (
+    `Add ₹${getOfferShortfall(amount)} more to use discount, referral code, or coins (order must be above ₹${MIN_PROMO_ORDER_AMOUNT}).`
+  );
+
   const applyDiscount = async () => {
     if (!discountCodeInput.trim()) return;
     if (!user) {
@@ -348,6 +355,11 @@ export default function CourseSelection() {
     setIsApplyingDiscount(true);
     setDiscountError('');
     try {
+      const total = calculateTotal();
+      if (total <= MIN_PROMO_ORDER_AMOUNT) {
+        throw new Error(getOfferEligibilityMessage(total));
+      }
+
       const codeToApply = discountCodeInput.trim().toUpperCase();
 
       // 0. Handle Special Course Bundle Code first (stored on the course record)
@@ -404,8 +416,6 @@ export default function CourseSelection() {
             }
           }
 
-          const total = calculateTotal();
-
           // 4. Calculate discount
           let calculatedDiscount = 0;
           if (coupon.discount_percentage) {
@@ -432,10 +442,6 @@ export default function CourseSelection() {
       // Try as Referral Code
       const result = await validateReferralCode(codeToApply);
       if (result.valid) {
-          const total = calculateTotal();
-          if (total < 200) {
-              throw new Error('Course total must be at least ₹200 to use a referral code.');
-          }
           if (result.referrerEmail?.toLowerCase() === user.email?.toLowerCase()) {
               throw new Error('You cannot use your own referral code.');
           }
@@ -477,7 +483,14 @@ export default function CourseSelection() {
   // ---- COINS ----
   const MAX_COINS_PER_ORDER = 50;
   const handleApplyCoins = () => {
+    setCoinsError('');
     const total = calculateTotal();
+    if (total <= MIN_PROMO_ORDER_AMOUNT) {
+      setCoinsApplied(0);
+      setCoinsError(getOfferEligibilityMessage(total));
+      return;
+    }
+
     const afterDiscounts = Math.max(total - discountAmount - referralDiscount, 0);
     const maxCoins = Math.min(MAX_COINS_PER_ORDER, walletBalance, afterDiscounts - 1); // max 50, actual balance, keep cart ≥ ₹1
     const applied = Math.min(Math.max(coinsToApply, 0), Math.max(maxCoins, 0));
@@ -487,6 +500,7 @@ export default function CourseSelection() {
   const removeCoins = () => {
     setCoinsApplied(0);
     setCoinsToApply(0);
+    setCoinsError('');
   };
 
   // Re-calculate discount if course selection changes
@@ -495,6 +509,26 @@ export default function CourseSelection() {
        removeDiscount(); // Clear discount if sub-courses change to be safe
     }
   }, [selectedCourses, course]);
+
+  useEffect(() => {
+    const total = calculateTotal();
+    if (total > MIN_PROMO_ORDER_AMOUNT) return;
+
+    const message = getOfferEligibilityMessage(total);
+    if (appliedDiscountCode || appliedReferralCode) {
+      setAppliedDiscountCode(null);
+      setDiscountAmount(0);
+      setAppliedReferralCode(null);
+      setReferralDiscount(0);
+      setDiscountError(message);
+    }
+
+    if (coinsApplied > 0 || coinsToApply > 0) {
+      setCoinsApplied(0);
+      setCoinsToApply(0);
+      setCoinsError(message);
+    }
+  }, [selectedCourses, course, selectedPricingTier]);
 
   const loadScript = (src: string) => {
     return new Promise((resolve) => {
@@ -547,6 +581,8 @@ export default function CourseSelection() {
           .flatMap((bc: any) => [bc.courseId, bc.courseId2, bc.courseId3].filter(Boolean))
       : selectedCourses;
 
+    const checkoutClassType = selectedTier?.type || course?.class_type || undefined;
+
     try {
       const orderData = await apiService.createOrder({
         amount: Math.max(total - discountAmount - referralDiscount - coinsApplied, 1),
@@ -556,7 +592,7 @@ export default function CourseSelection() {
         discountCode: appliedDiscountCode || undefined,
         referralCode: appliedReferralCode || undefined,
         coinsToApply: coinsApplied,
-        selectedClassType: selectedTier?.type || undefined,
+        selectedClassType: checkoutClassType,
         selectedPricingTierIndex: selectedPricingTier ?? undefined,
         selectedPricingTierName: selectedTier?.name || undefined,
         selectedPricingTierPrice: selectedTier ? Number(selectedTier.price) : undefined
@@ -596,7 +632,7 @@ export default function CourseSelection() {
               discountCode: appliedDiscountCode || undefined,
               referralCode: appliedReferralCode || undefined,
               coinsToApply: coinsApplied,
-              selectedClassType: selectedTier?.type || undefined
+              selectedClassType: checkoutClassType
             });
 
             const courseTitle = course.isBundle 
@@ -668,6 +704,9 @@ export default function CourseSelection() {
 
   const isQualifier = course?.courseCategory === 'QUALIFIER';
   const goToSummary = () => summaryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const orderTotalForOffers = calculateTotal();
+  const canUseOffers = orderTotalForOffers > MIN_PROMO_ORDER_AMOUNT;
+  const offerEligibilityMessage = canUseOffers ? '' : getOfferEligibilityMessage(orderTotalForOffers);
 
   return (
     <div className="min-h-screen bg-gray-50 pt-8 sm:pt-16 pb-10 px-4 sm:px-6 text-[#0b1120]">
@@ -1117,12 +1156,13 @@ export default function CourseSelection() {
                                 />
                                 <button 
                                   onClick={applyDiscount}
-                                  disabled={isApplyingDiscount || !discountCodeInput.trim()}
+                                  disabled={isApplyingDiscount || !discountCodeInput.trim() || !canUseOffers}
                                   className="px-4 py-2 bg-[#0b1120] text-white rounded-lg font-black text-xs hover:bg-gray-800 transition-colors disabled:opacity-50"
                                 >
                                   {isApplyingDiscount ? 'WAIT...' : 'APPLY'}
                                 </button>
                               </div>
+                        {!canUseOffers && <p className="text-amber-600 font-bold text-[10px] uppercase">{offerEligibilityMessage}</p>}
                         {discountError && <p className="text-red-500 font-bold text-[10px] uppercase">{discountError}</p>}
                       </div>
                     ) : (
@@ -1155,20 +1195,26 @@ export default function CourseSelection() {
                                   <input
                                     type="number"
                                     min={0}
-                                    max={Math.min(MAX_COINS_PER_ORDER, walletBalance, Math.max(calculateTotal() - discountAmount - referralDiscount - 1, 0))}
-                                    placeholder={`Max ${Math.min(MAX_COINS_PER_ORDER, walletBalance, Math.max(calculateTotal() - discountAmount - referralDiscount - 1, 0))}`}
+                                    max={canUseOffers ? Math.min(MAX_COINS_PER_ORDER, walletBalance, Math.max(calculateTotal() - discountAmount - referralDiscount - 1, 0)) : 0}
+                                    placeholder={canUseOffers ? `Max ${Math.min(MAX_COINS_PER_ORDER, walletBalance, Math.max(calculateTotal() - discountAmount - referralDiscount - 1, 0))}` : 'Unavailable'}
                                     value={coinsToApply || ''}
-                                    onChange={(e) => setCoinsToApply(parseInt(e.target.value) || 0)}
+                                    onChange={(e) => {
+                                      setCoinsToApply(parseInt(e.target.value) || 0);
+                                      setCoinsError('');
+                                    }}
+                                    disabled={!canUseOffers}
                                     className="flex-grow px-3 py-2 bg-amber-50 border-2 border-amber-200 rounded-lg font-black text-sm outline-none focus:border-amber-500"
                                   />
                                   <button
                                     onClick={handleApplyCoins}
-                                    disabled={coinsToApply <= 0}
+                                    disabled={coinsToApply <= 0 || !canUseOffers}
                                     className="px-4 py-2 bg-amber-500 text-white rounded-lg font-black text-xs hover:bg-amber-600 transition-colors disabled:opacity-50"
                                   >
                                     USE
                                   </button>
                                 </div>
+                                {!canUseOffers && <p className="text-amber-600 font-bold text-[10px] uppercase">{offerEligibilityMessage}</p>}
+                                {coinsError && <p className="text-red-500 font-bold text-[10px] uppercase">{coinsError}</p>}
                                 <p className="text-[10px] font-bold text-gray-400">Max 50 coins per order. 1 Coin = ₹1</p>
                               </div>
                             ) : (

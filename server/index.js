@@ -15,6 +15,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 app.set('trust proxy', 1); // Trust first proxy (Hostinger reverse proxy)
 const PORT = process.env.PORT || 3001;
+const MIN_PROMO_ORDER_AMOUNT = 300;
 
 // Initialize Razorpay
 const razorpayKeyId = process.env.VITE_RAZORPAY_KEY_ID;
@@ -368,6 +369,7 @@ app.post('/api/create-order', async (req, res) => {
 
     try {
         let totalAmount = 0;
+        let offerEligibilityAmount = 0;
         let originalAmount = 0; // The price before any discounts
         let discountAmountTotal = 0; // Total ₹ value of all discounts (coupon + ref + coins)
         let discountApplied = false;
@@ -444,6 +446,10 @@ app.post('/api/create-order', async (req, res) => {
             };
         }
 
+        offerEligibilityAmount = totalAmount;
+        const promoShortfall = Math.max(Math.ceil((MIN_PROMO_ORDER_AMOUNT + 1) - offerEligibilityAmount), 0);
+        const promoEligibilityError = `Add ₹${promoShortfall} more to use discount, referral code, or coins (order must be above ₹${MIN_PROMO_ORDER_AMOUNT}).`;
+
         // Add bundle name to notes if it's a bundle
         if (bundleId && !orderNotes) {
             const { data: bundle } = await supabase.from('courses').select('name').eq('id', bundleId).single();
@@ -456,6 +462,9 @@ app.post('/api/create-order', async (req, res) => {
 
         // --- GLOBAL DISCOUNT ---
         if (discountCode && !isBundleDiscountUsed) {
+            if (offerEligibilityAmount <= MIN_PROMO_ORDER_AMOUNT) {
+                return res.status(400).json({ error: promoEligibilityError });
+            }
             const codeToApply = discountCode.trim().toUpperCase();
             const { data: coupon } = await supabase.from('discount_coupons').select('*').eq('code', codeToApply).single();
             if (coupon) {
@@ -481,6 +490,9 @@ app.post('/api/create-order', async (req, res) => {
         let referralDiscount = 0;
         let referrerEmail = null;
         if (referralCode && !isBundleDiscountUsed) {
+            if (offerEligibilityAmount <= MIN_PROMO_ORDER_AMOUNT) {
+                return res.status(400).json({ error: promoEligibilityError });
+            }
             const codeToCheck = referralCode.trim().toUpperCase();
             const { data: referrerProfile } = await supabase
                 .from('referral_profiles')
@@ -505,6 +517,9 @@ app.post('/api/create-order', async (req, res) => {
         let coinsApplied = 0;
         const MAX_COINS_PER_ORDER = 50;
         if (coinsToApply && coinsToApply > 0) {
+            if (offerEligibilityAmount <= MIN_PROMO_ORDER_AMOUNT) {
+                return res.status(400).json({ error: promoEligibilityError });
+            }
             const { data: buyerReferral } = await supabase
                 .from('referral_profiles')
                 .select('wallet_balance')
@@ -716,6 +731,7 @@ async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_p
     referralCode = referralCode || existingOrder?.referral_code;
     discountCode = discountCode || existingOrder?.discount_code;
     coinsApplied = (coinsApplied !== undefined && coinsApplied !== null) ? coinsApplied : (existingOrder?.coins_applied || 0);
+    selectedClassType = selectedClassType || existingOrder?.selected_class_type;
 
     const lms_enroll_url = process.env.LMS_ENROLL_URL || "https://class.genziitian.in/api/external-enroll";
     
