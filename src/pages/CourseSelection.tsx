@@ -717,9 +717,6 @@ export default function CourseSelection() {
 
   const isQualifier = course?.courseCategory === 'QUALIFIER';
   const goToSummary = () => summaryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  const orderTotalForOffers = calculateTotal();
-  const canUseOffers = orderTotalForOffers > MIN_PROMO_ORDER_AMOUNT;
-  const offerEligibilityMessage = canUseOffers ? '' : getOfferEligibilityMessage(orderTotalForOffers);
 
   return (
     <div className="min-h-screen bg-gray-50 pt-8 sm:pt-16 pb-10 px-4 sm:px-6 text-[#0b1120]">
@@ -1174,13 +1171,12 @@ export default function CourseSelection() {
                                 />
                                 <button 
                                   onClick={applyDiscount}
-                                  disabled={isApplyingDiscount || !discountCodeInput.trim() || !canUseOffers}
+                                  disabled={isApplyingDiscount || !discountCodeInput.trim()}
                                   className="px-4 py-2 bg-[#0b1120] text-white rounded-lg font-black text-xs hover:bg-gray-800 transition-colors disabled:opacity-50"
                                 >
                                   {isApplyingDiscount ? 'WAIT...' : 'APPLY'}
                                 </button>
                               </div>
-                        {!canUseOffers && <p className="text-amber-600 font-bold text-[10px] uppercase">{offerEligibilityMessage}</p>}
                         {discountError && <p className="text-red-500 font-bold text-[10px] uppercase">{discountError}</p>}
                       </div>
                     ) : (
@@ -1213,25 +1209,23 @@ export default function CourseSelection() {
                                   <input
                                     type="number"
                                     min={0}
-                                    max={canUseOffers ? Math.min(MAX_COINS_PER_ORDER, walletBalance, Math.max(calculateTotal() - discountAmount - referralDiscount - 1, 0)) : 0}
-                                    placeholder={canUseOffers ? `Max ${Math.min(MAX_COINS_PER_ORDER, walletBalance, Math.max(calculateTotal() - discountAmount - referralDiscount - 1, 0))}` : 'Unavailable'}
+                                    max={Math.min(MAX_COINS_PER_ORDER, walletBalance, Math.max(calculateTotal() - discountAmount - referralDiscount - 1, 0))}
+                                    placeholder={`Max ${Math.min(MAX_COINS_PER_ORDER, walletBalance, Math.max(calculateTotal() - discountAmount - referralDiscount - 1, 0))}`}
                                     value={coinsToApply || ''}
                                     onChange={(e) => {
                                       setCoinsToApply(parseInt(e.target.value) || 0);
                                       setCoinsError('');
                                     }}
-                                    disabled={!canUseOffers}
                                     className="flex-grow px-3 py-2 bg-amber-50 border-2 border-amber-200 rounded-lg font-black text-sm outline-none focus:border-amber-500"
                                   />
                                   <button
                                     onClick={handleApplyCoins}
-                                    disabled={coinsToApply <= 0 || !canUseOffers}
+                                    disabled={coinsToApply <= 0}
                                     className="px-4 py-2 bg-amber-500 text-white rounded-lg font-black text-xs hover:bg-amber-600 transition-colors disabled:opacity-50"
                                   >
                                     USE
                                   </button>
                                 </div>
-                                {!canUseOffers && <p className="text-amber-600 font-bold text-[10px] uppercase">{offerEligibilityMessage}</p>}
                                 {coinsError && <p className="text-red-500 font-bold text-[10px] uppercase">{coinsError}</p>}
                                 <p className="text-[10px] font-bold text-gray-400">Max 50 coins per order. 1 Coin = ₹1</p>
                               </div>
