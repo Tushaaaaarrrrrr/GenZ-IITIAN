@@ -97,9 +97,9 @@ export default function MobileHome() {
         <HeroArt />
 
         <div className="flex gap-2.5 mt-1.5">
-          <StatCard value="14K+" label="YT SUBSCRIBERS" />
-          <StatCard value="1829+" label="STUDENTS" fill />
-          <StatCard value="36" label="IIT COURSES" />
+          <StatCard value="15.4K+" label="YT SUBSCRIBERS" />
+          <StatCard value="3439+" label="STUDENTS" fill />
+          <StatCard value="43" label="IIT COURSES" />
         </div>
       </div>
 

@@ -142,8 +142,8 @@ const PRODUCTS: Product[] = [
   },
   {
     key: 'social', Icon: Share2, tint: '#FBE3EE', glyph: '#EC1E79', tag: 'Community',
-    name: 'Social Platform', desc: 'genziitian.live — plus a 14K+ community across YouTube, Instagram, LinkedIn and WhatsApp. Free content and a support system that never sleeps.',
-    points: ['14K+ YouTube subscribers', 'Daily tips & reels', 'Active WhatsApp community'],
+    name: 'Social Platform', desc: 'genziitian.live — plus a 15.4K+ community across YouTube, Instagram, LinkedIn and WhatsApp. Free content and a support system that never sleeps.',
+    points: ['15.4K+ YouTube subscribers', 'Daily tips & reels', 'Active WhatsApp community'],
     cta: { label: 'Explore genziitian.live', href: 'https://genziitian.live' },
     media: <BrowserMock url="genziitian.live"><Shot src={`${E}/social.png`} alt="Social platform" fallback={SocialSnap} /></BrowserMock>,
   },

@@ -210,9 +210,9 @@ export default function Home() {
         {/* New Stats Row */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
           {[
-            { value: 14.1, suffix: "K+", label: "YouTube Subscribers", bgColor: "bg-[#f1f5f9]" },
-            { value: 1829, suffix: "+", label: "Students Learning", bgColor: "bg-[#10b981]", textColor: "text-white" },
-            { value: 36, suffix: "", label: "IIT-Level Courses", bgColor: "bg-white" }
+            { value: 15.4, suffix: "K+", label: "YouTube Subscribers", bgColor: "bg-[#f1f5f9]" },
+            { value: 3439, suffix: "+", label: "Students Learning", bgColor: "bg-[#10b981]", textColor: "text-white" },
+            { value: 43, suffix: "", label: "IIT-Level Courses", bgColor: "bg-white" }
           ].map((stat, i) => (
             <div key={i} className={`${stat.bgColor} border-[3px] border-[#0b1120] rounded-3xl p-8 shadow-[6px_6px_0px_#0b1120] text-center hover:translate-y-[-4px] transition-transform`}>
               <div className={`text-4xl lg:text-5xl font-black ${stat.textColor || 'text-[#0b1120]'} mb-2`}>
