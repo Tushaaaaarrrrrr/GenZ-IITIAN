@@ -75,7 +75,7 @@ export default function Manager() {
   const [catalogSearch, setCatalogSearch] = useState('');
   const [editingDiscount, setEditingDiscount] = useState<any>(null);
   const [discountType, setDiscountType] = useState<'all' | 'specific'>('all');
-  const [discountEmails, setDiscountEmails] = useState<string[]>(['']);
+  const [discountEmails, setDiscountEmails] = useState('');
   const [discountValueType, setDiscountValueType] = useState<'percentage' | 'amount'>('percentage');
   const [couponFirstPurchaseOnly, setCouponFirstPurchaseOnly] = useState(false);
   const [couponSingleUsePerUser, setCouponSingleUsePerUser] = useState(true);
@@ -99,10 +99,10 @@ export default function Manager() {
       setCouponActive(editingDiscount.active !== false);
       if (editingDiscount.allowed_emails && editingDiscount.allowed_emails.length > 0) {
         setDiscountType('specific');
-        setDiscountEmails(editingDiscount.allowed_emails);
+        setDiscountEmails(editingDiscount.allowed_emails.join(', '));
       } else {
         setDiscountType('all');
-        setDiscountEmails(['']);
+        setDiscountEmails('');
       }
     } else {
       setDiscountValueType('percentage');
@@ -111,7 +111,7 @@ export default function Manager() {
       setCouponHidden(false);
       setCouponActive(true);
       setDiscountType('all');
-      setDiscountEmails(['']);
+      setDiscountEmails('');
     }
   }, [editingDiscount, showAddDiscount]);
 
@@ -559,7 +559,12 @@ export default function Manager() {
         discount_percentage: discount.discount_percentage ? parseInt(discount.discount_percentage) : null,
         discount_amount: discount.discount_amount ? parseInt(discount.discount_amount) : null,
         applies_to: discount.applies_to || 'ALL',
-        allowed_emails: discount.discountType === 'specific' ? discount.discountEmails.filter((e: string) => e.trim() !== '').map((e: string) => e.trim().toLowerCase()) : null,
+        allowed_emails: discount.discountType === 'specific'
+          ? discount.discountEmails
+              .split(',')
+              .map((e: string) => e.trim().toLowerCase())
+              .filter((e: string) => e !== '')
+          : null,
         start_date: discount.start_date ? new Date(discount.start_date).toISOString() : null,
         expires_at: discount.expires_at ? new Date(discount.expires_at).toISOString() : null,
         max_uses: discount.max_uses ? parseInt(discount.max_uses) : null,
@@ -1812,41 +1817,17 @@ export default function Manager() {
 
                   {discountType === 'specific' && (
                     <div className="space-y-3 p-4 bg-gray-50 border-2 border-dashed border-gray-300 rounded-2xl mb-6">
-                      <label className="block text-xs font-black text-gray-500 uppercase tracking-widest">Allowed Email Addresses (Max 6)</label>
-                      {discountEmails.map((email, idx) => (
-                        <div key={idx} className="flex gap-2 relative">
-                          <input 
-                            type="email"
-                            value={email}
-                            onChange={e => {
-                              const newEmails = [...discountEmails];
-                              newEmails[idx] = e.target.value;
-                              setDiscountEmails(newEmails);
-                            }}
-                            placeholder="student@example.com"
-                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl font-bold outline-none focus:border-purple-400"
-                          />
-                          {discountEmails.length > 1 && (
-                            <button 
-                              onClick={() => {
-                                const newEmails = discountEmails.filter((_, i) => i !== idx);
-                                setDiscountEmails(newEmails);
-                              }}
-                              className="px-3 text-red-500 hover:text-red-700 bg-red-50 rounded-xl border border-red-100"
-                            >
-                              <Trash2 className="w-5 h-5" />
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                      {discountEmails.length < 6 && (
-                        <button 
-                          onClick={() => setDiscountEmails([...discountEmails, ''])}
-                          className="text-sm font-black text-purple-600 flex items-center gap-2 hover:text-purple-800 pt-2"
-                        >
-                          <Plus className="w-4 h-4" /> Add Email
-                        </button>
-                      )}
+                      <label className="block text-xs font-black text-gray-500 uppercase tracking-widest">Allowed Email Addresses</label>
+                      <textarea
+                        value={discountEmails}
+                        onChange={e => setDiscountEmails(e.target.value)}
+                        placeholder="student@example.com, parent@example.com, another@email.com"
+                        rows={4}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl font-bold outline-none focus:border-purple-400 resize-y"
+                      />
+                      <p className="text-xs font-bold text-gray-400">
+                        Add any number of emails. Separate each email with a comma.
+                      </p>
                     </div>
                   )}
                 </div>

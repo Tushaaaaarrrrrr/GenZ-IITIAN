@@ -830,7 +830,7 @@ app.post('/api/auto-enroll', async (req, res) => {
 
 // ========== PAYMENTS (Razorpay) ==========
 // Helper function for LMS enrollment and logging
-async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_payment_id, discountCode, referralCode, coinsApplied, selectedClassType }) {
+async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_payment_id, discountCode, referralCode, coinsApplied, selectedClassType, finalPrice }) {
     if (!supabase) return { success: false, error: 'Supabase not initialized' };
     
     // 1. Check if already processed (Idempotency)
@@ -850,6 +850,9 @@ async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_p
     discountCode = discountCode || existingOrder?.discount_code;
     coinsApplied = (coinsApplied !== undefined && coinsApplied !== null) ? coinsApplied : (existingOrder?.coins_applied || 0);
     selectedClassType = selectedClassType || existingOrder?.selected_class_type;
+    
+    // Fallback if finalPrice is not explicitly passed to the function
+    const resolvedPrice = (finalPrice !== undefined && finalPrice !== null) ? finalPrice : (existingOrder?.total_amount || 0);
 
     const lms_enroll_url = process.env.LMS_ENROLL_URL || "https://class.genziitian.in/api/external-enroll";
     
@@ -919,7 +922,7 @@ async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_p
                 orderId: razorpay_order_id,
                 paymentId: razorpay_payment_id,
                 purchasedAt: existingOrder?.created_at || new Date().toISOString(),
-                finalPrice: existingOrder?.total_amount || 0,
+                finalPrice: resolvedPrice,
                 courseIds: lmsCourseIds, 
                 courseDetails: lmsCourseDetails, 
                 courseId: lmsCourseIds[0] || null
@@ -1227,6 +1230,13 @@ app.post('/api/verify-payment', async (req, res) => {
     }
 
     try {
+        // Fetch the order first to ensure we have the verified price
+        const { data: order } = await supabase
+            .from('website_orders')
+            .select('total_amount')
+            .eq('order_id', razorpay_order_id)
+            .single();
+
         const result = await enrollUserInLMS({
             email,
             courseIds,
@@ -1235,7 +1245,8 @@ app.post('/api/verify-payment', async (req, res) => {
             discountCode,
             referralCode,
             coinsApplied,
-            selectedClassType
+            selectedClassType,
+            finalPrice: order?.total_amount
         });
         
         // Always return success to the user — payment IS verified and PAID.
@@ -1502,7 +1513,8 @@ app.post('/api/razorpay-webhook', async (req, res) => {
                 discountCode: order.discount_code, // Ensure this column exists in your DB or handle accordingly
                 referralCode: order.referral_code,
                 coinsApplied: order.coins_applied,
-                selectedClassType: payment.notes?.selected_class_type
+                selectedClassType: payment.notes?.selected_class_type,
+                finalPrice: order.total_amount
             });
         }
     }
