@@ -46,6 +46,16 @@ CREATE TABLE IF NOT EXISTS public.courses (
   image TEXT,
   "community_link" TEXT,
   "content_link" TEXT,
+  "class_type" TEXT DEFAULT 'recorded',
+  "cohortContent" TEXT DEFAULT NULL,
+  "pricing_options" JSONB DEFAULT '[]'::jsonb,
+  "tags" TEXT[] DEFAULT '{}'::TEXT[],
+  "courseCategory" TEXT DEFAULT 'NONE',
+  "term" TEXT DEFAULT NULL,
+  "exam_stages" TEXT[] DEFAULT '{}'::TEXT[],
+  "pricing_banner_text" TEXT DEFAULT NULL,
+  "active" BOOLEAN DEFAULT true,
+  "selected_class_type" TEXT DEFAULT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
