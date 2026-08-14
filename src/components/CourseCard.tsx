@@ -15,6 +15,7 @@ export type CourseCardData = {
   startDate?: string;
   courseCategory?: 'QUALIFIER' | 'LIVE' | 'RECORDED' | 'NONE';
   term?: 'Re-attempt' | 'Foundation' | 'DIPLOMA' | 'Qualifier' | null;
+  exam_stages?: string[];
 };
 
 type CourseCardProps = {

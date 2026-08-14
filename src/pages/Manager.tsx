@@ -67,6 +67,7 @@ export default function Manager() {
   const [courseTags, setCourseTags] = useState<string[]>([]);
   const [courseCategory, setCourseCategory] = useState<'QUALIFIER' | 'LIVE' | 'RECORDED' | 'NONE'>('NONE');
   const [courseTerm, setCourseTerm] = useState<'Re-attempt' | 'Foundation' | 'DIPLOMA' | 'Qualifier' | 'NONE'>('NONE');
+  const [selectedExamStages, setSelectedExamStages] = useState<string[]>([]);
 
   // Discount Coupons state
   const [showAddDiscount, setShowAddDiscount] = useState(false);
@@ -129,6 +130,7 @@ export default function Manager() {
       setCourseTags(editingCourse.tags || []);
       setCourseCategory(editingCourse.courseCategory || 'NONE');
       setCourseTerm(editingCourse.term || 'NONE');
+      setSelectedExamStages(editingCourse.exam_stages || []);
     } else {
       setIsBundle(false);
       setBundleCourses([{ courseId: '', courseName: '', price: 0 }]);
@@ -141,6 +143,7 @@ export default function Manager() {
       setCourseTags([]);
       setCourseCategory('NONE');
       setCourseTerm('NONE');
+      setSelectedExamStages([]);
     }
   }, [editingCourse, showAddCourse]);
 
@@ -432,6 +435,7 @@ export default function Manager() {
         term: course.term === 'NONE' ? null : course.term || null,
         startDate: course.startDate || null,
         endDate: course.endDate || null,
+        exam_stages: course.exam_stages || [],
       };
 
       let error = null;
@@ -1217,6 +1221,32 @@ export default function Manager() {
                     </div>
                   </div>
 
+                  <div className="mt-4 border-t-2 border-dashed border-gray-200 pt-4">
+                    <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Assigned Exam Stages</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {['Qualifier', 'Re-attempt', 'Quiz 1', 'Quiz 2', 'End Term', 'Full Term'].map((stage) => {
+                        const isChecked = selectedExamStages.includes(stage);
+                        return (
+                          <label key={stage} className={`flex items-center gap-3 p-4 border-[3px] rounded-2xl cursor-pointer font-bold select-none transition-all ${isChecked ? 'bg-blue-50 border-blue-500 text-blue-700' : 'bg-white border-[#0b1120] text-[#0b1120]'}`}>
+                            <input 
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedExamStages([...selectedExamStages, stage]);
+                                } else {
+                                  setSelectedExamStages(selectedExamStages.filter(s => s !== stage));
+                                }
+                              }}
+                              className="w-5 h-5 accent-blue-600 rounded border-gray-300"
+                            />
+                            <span>{stage}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Start Date</label>
@@ -1745,6 +1775,7 @@ export default function Manager() {
                       term: courseTerm,
                       startDate: startDate ? new Date(startDate).toISOString() : null,
                       endDate: endDate ? new Date(endDate).toISOString() : null,
+                      exam_stages: selectedExamStages,
                     });
                   }}
                   className="flex-grow py-5 bg-[#10b981] text-[#0b1120] rounded-2xl font-black text-lg border-[4px] border-[#0b1120] flex items-center justify-center gap-3 shadow-[8px_8px_0px_#0b1120] active:translate-y-1 active:shadow-none"
@@ -2279,24 +2310,70 @@ function SettingsManager() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  // Exam Stages and Pricing States
+  const [activeConfigTab, setActiveConfigTab] = useState<'Qualifier' | 'Re-attempt' | 'Foundation' | 'DIPLOMA'>('Foundation');
+  const [examVisibility, setExamVisibility] = useState<Record<string, string[]>>({
+    Qualifier: ['Qualifier'],
+    'Re-attempt': ['Re-attempt'],
+    Foundation: ['Quiz 1', 'Quiz 2', 'End Term', 'Full Term'],
+    DIPLOMA: ['Quiz 1', 'Quiz 2', 'End Term', 'Full Term']
+  });
+  const [stagePricing, setStagePricing] = useState<Record<string, {
+    quiz1: number;
+    quiz2: number;
+    endTerm: number;
+    fullTerm: number;
+    calculationMode: 'sum' | 'fixed';
+    fixedTotal: number;
+  }>>({
+    Qualifier: { quiz1: 0, quiz2: 0, endTerm: 0, fullTerm: 0, calculationMode: 'fixed', fixedTotal: 499 },
+    'Re-attempt': { quiz1: 0, quiz2: 0, endTerm: 0, fullTerm: 0, calculationMode: 'fixed', fixedTotal: 499 },
+    Foundation: { quiz1: 299, quiz2: 399, endTerm: 499, fullTerm: 1199, calculationMode: 'fixed', fixedTotal: 999 },
+    DIPLOMA: { quiz1: 399, quiz2: 499, endTerm: 599, fullTerm: 1499, calculationMode: 'fixed', fixedTotal: 1299 }
+  });
+
   useEffect(() => {
     async function loadSettings() {
       try {
         setLoading(true);
-        // Query Settings from Supabase
-        const { data, error } = await supabase
+        // Query Video URL
+        const { data: videoData, error: videoError } = await supabase
           .from('settings')
           .select('*')
           .eq('key', 'homepage_video_url')
           .maybeSingle();
         
-        if (error) throw error;
-        if (data) {
-          setVideoUrl(data.value);
+        if (videoError) throw videoError;
+        if (videoData) {
+          setVideoUrl(videoData.value);
+        }
+
+        // Query Exam Visibility
+        const { data: visData, error: visError } = await supabase
+          .from('settings')
+          .select('*')
+          .eq('key', 'exam_visibility')
+          .maybeSingle();
+        
+        if (visError) throw visError;
+        if (visData) {
+          setExamVisibility(JSON.parse(visData.value));
+        }
+
+        // Query Stage Pricing
+        const { data: priceData, error: priceError } = await supabase
+          .from('settings')
+          .select('*')
+          .eq('key', 'stage_pricing')
+          .maybeSingle();
+        
+        if (priceError) throw priceError;
+        if (priceData) {
+          setStagePricing(JSON.parse(priceData.value));
         }
       } catch (err: any) {
         console.error('Failed to load settings:', err);
-        setError('Failed to load homepage video settings');
+        setError('Failed to load system settings');
       } finally {
         setLoading(false);
       }
@@ -2310,13 +2387,25 @@ function SettingsManager() {
       setError('');
       setSuccess('');
 
-      // Upsert the setting key to Supabase
-      const { error } = await supabase
+      // 1. Save Video URL
+      const { error: videoError } = await supabase
         .from('settings')
         .upsert({ key: 'homepage_video_url', value: videoUrl.trim() });
+      if (videoError) throw videoError;
 
-      if (error) throw error;
-      setSuccess('Settings updated successfully!');
+      // 2. Save Exam Visibility
+      const { error: visError } = await supabase
+        .from('settings')
+        .upsert({ key: 'exam_visibility', value: JSON.stringify(examVisibility) });
+      if (visError) throw visError;
+
+      // 3. Save Stage Pricing
+      const { error: priceError } = await supabase
+        .from('settings')
+        .upsert({ key: 'stage_pricing', value: JSON.stringify(stagePricing) });
+      if (priceError) throw priceError;
+
+      setSuccess('All configurations saved successfully!');
     } catch (err: any) {
       console.error('Failed to save settings:', err);
       setError(err.message || 'Failed to save settings');
@@ -2328,93 +2417,273 @@ function SettingsManager() {
   const videoId = getYouTubeId(videoUrl);
 
   return (
-    <div className="space-y-8">
-      <div className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] p-8 md:p-12 shadow-[12px_12px_0px_#0b1120] space-y-8">
-        <div className="border-b-4 border-[#0b1120] pb-6">
-          <h2 className="text-3xl font-black text-[#0b1120] mb-2">Homepage Video Modal</h2>
-          <p className="text-gray-500 font-bold text-sm">
-            Configure the YouTube video popup shown to homepage visitors.
-          </p>
+    <div className="space-y-12">
+      {/* 1. Global Success/Error Messages */}
+      {error && (
+        <div className="p-4 bg-red-50 border-[3px] border-red-500 text-red-700 rounded-2xl font-bold flex items-center gap-3">
+          <AlertCircle className="w-6 h-6 shrink-0" />
+          <span>{error}</span>
         </div>
+      )}
+      {success && (
+        <div className="p-4 bg-green-50 border-[3px] border-green-500 text-green-700 rounded-2xl font-bold flex items-center gap-3">
+          <ShieldCheck className="w-6 h-6 shrink-0" />
+          <span>{success}</span>
+        </div>
+      )}
 
-        {loading ? (
-          <div className="flex items-center justify-center p-12 text-gray-300 animate-pulse font-black text-lg uppercase">
-            Loading Settings...
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {error && (
-              <div className="p-4 bg-red-50 border-[3px] border-red-500 text-red-700 rounded-2xl font-bold flex items-center gap-3">
-                <AlertCircle className="w-6 h-6 shrink-0" />
-                <span>{error}</span>
-              </div>
-            )}
-            {success && (
-              <div className="p-4 bg-green-50 border-[3px] border-green-500 text-green-700 rounded-2xl font-bold flex items-center gap-3">
-                <ShieldCheck className="w-6 h-6 shrink-0" />
-                <span>{success}</span>
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">
-                YouTube Video URL
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-                value={videoUrl}
-                onChange={(e) => setVideoUrl(e.target.value)}
-                className="w-full px-6 py-4 bg-gray-50 border-[3px] border-[#0b1120] rounded-2xl font-black text-[#0b1120] outline-none focus:bg-white transition-all placeholder:text-gray-300"
-              />
-              <p className="text-xs text-gray-400 font-bold">
-                Supports normal links, short links, or embed links. Clear the URL to disable the popup entirely.
+      {loading ? (
+        <div className="flex items-center justify-center p-20 text-gray-300 animate-pulse font-black text-lg uppercase bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] shadow-[12px_12px_0px_#0b1120]">
+          Loading System Settings...
+        </div>
+      ) : (
+        <>
+          {/* Exam Configuration and Pricing panel */}
+          <div className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] p-8 md:p-12 shadow-[12px_12px_0px_#0b1120] space-y-8">
+            <div className="border-b-4 border-[#0b1120] pb-6">
+              <h2 className="text-3xl font-black text-[#0b1120] mb-2">Exam Stages & Pricing Controls</h2>
+              <p className="text-gray-500 font-bold text-sm">
+                Control which exams are visible to students and configure stage-based pricing packages.
               </p>
             </div>
 
-            {/* Video Preview */}
-            {videoId ? (
-              <div className="space-y-2">
-                <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">
-                  Player Preview
-                </label>
-                <div className="max-w-md aspect-video border-[3px] border-[#0b1120] rounded-2xl overflow-hidden bg-black shadow-[6px_6px_0px_#0b1120]">
-                  <iframe
-                    src={`https://www.youtube.com/embed/${videoId}`}
-                    title="YouTube video player preview"
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
-                    className="w-full h-full"
-                  ></iframe>
+            {/* Tab Buttons for Academic Levels */}
+            <div className="flex flex-wrap gap-3 border-b-2 border-gray-100 pb-6">
+              {(['Qualifier', 'Re-attempt', 'Foundation', 'DIPLOMA'] as const).map((level) => (
+                <button
+                  key={level}
+                  type="button"
+                  onClick={() => {
+                    setError('');
+                    setSuccess('');
+                    setActiveConfigTab(level);
+                  }}
+                  className={`px-6 py-3 rounded-2xl font-black text-sm border-[3px] border-[#0b1120] transition-all cursor-pointer ${
+                    activeConfigTab === level
+                      ? 'bg-[#0b1120] text-white shadow-[4px_4px_0px_#2563eb]'
+                      : 'bg-white text-[#0b1120] hover:bg-gray-50'
+                  }`}
+                >
+                  {level}
+                </button>
+              ))}
+            </div>
+
+            {/* Controls for Selected Academic Level */}
+            <div className="space-y-8">
+              {/* Visibility Checkboxes */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-black text-[#0b1120] uppercase tracking-wide">Visible Exam Stages</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {['Qualifier', 'Re-attempt', 'Quiz 1', 'Quiz 2', 'End Term', 'Full Term'].map((stage) => {
+                    const currentList = examVisibility[activeConfigTab] || [];
+                    const isChecked = currentList.includes(stage);
+                    return (
+                      <label
+                        key={stage}
+                        className={`flex items-center gap-3 p-4 border-[3px] rounded-2xl cursor-pointer font-bold select-none transition-all ${
+                          isChecked
+                            ? 'bg-blue-50 border-blue-500 text-blue-700 shadow-[4px_4px_0px_#2563eb]'
+                            : 'bg-white border-[#0b1120] text-[#0b1120]'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => {
+                            const updatedList = e.target.checked
+                              ? [...currentList, stage]
+                              : currentList.filter((s) => s !== stage);
+                            setExamVisibility({
+                              ...examVisibility,
+                              [activeConfigTab]: updatedList
+                            });
+                          }}
+                          className="w-5 h-5 accent-blue-600 rounded border-gray-300"
+                        />
+                        <span>{stage}</span>
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
-            ) : videoUrl.trim() ? (
-              <div className="p-4 bg-yellow-50 border-[3px] border-yellow-500 text-yellow-700 rounded-2xl font-bold text-sm">
-                ⚠️ Invalid YouTube URL. Preview not available. Please make sure the link is a valid YouTube video.
-              </div>
-            ) : null}
 
-            <div className="pt-4 border-t-2 border-gray-100 flex justify-end">
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="flex items-center gap-3 px-8 py-4 bg-blue-600 text-white rounded-2xl font-black border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#0b1120] hover:translate-y-0.5 hover:shadow-[4px_4px_0px_#0b1120] active:translate-y-1 active:shadow-none transition-all cursor-pointer disabled:opacity-50"
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" /> Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-5 h-5" /> Save Settings
-                  </>
-                )}
-              </button>
+              {/* Stage Pricing Inputs */}
+              <div className="space-y-6 pt-6 border-t-2 border-dashed border-gray-100">
+                <h3 className="text-lg font-black text-[#0b1120] uppercase tracking-wide">Stage Final Prices (₹)</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {(['quiz1', 'quiz2', 'endTerm', 'fullTerm'] as const).map((key) => {
+                    const label = key === 'quiz1' ? 'Quiz 1' : key === 'quiz2' ? 'Quiz 2' : key === 'endTerm' ? 'End Term' : 'Full Term';
+                    const currentPrices = stagePricing[activeConfigTab] || { quiz1: 0, quiz2: 0, endTerm: 0, fullTerm: 0, calculationMode: 'fixed', fixedTotal: 0 };
+                    return (
+                      <div key={key} className="space-y-2">
+                        <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">{label} Price</label>
+                        <input
+                          type="number"
+                          value={currentPrices[key] || ''}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value) || 0;
+                            setStagePricing({
+                              ...stagePricing,
+                              [activeConfigTab]: {
+                                ...currentPrices,
+                                [key]: val
+                              }
+                            });
+                          }}
+                          className="w-full px-4 py-3 bg-gray-50 border-[3px] border-[#0b1120] rounded-xl font-black text-[#0b1120] outline-none focus:bg-white"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Pricing Mode Selection */}
+              <div className="space-y-6 pt-6 border-t-2 border-dashed border-gray-100">
+                <h3 className="text-lg font-black text-[#0b1120] uppercase tracking-wide">End Term Total Calculation</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Calculation Mode Select */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">Calculation Method</label>
+                    <select
+                      value={stagePricing[activeConfigTab]?.calculationMode || 'fixed'}
+                      onChange={(e) => {
+                        const currentPrices = stagePricing[activeConfigTab] || { quiz1: 0, quiz2: 0, endTerm: 0, fullTerm: 0, calculationMode: 'fixed', fixedTotal: 0 };
+                        setStagePricing({
+                          ...stagePricing,
+                          [activeConfigTab]: {
+                            ...currentPrices,
+                            calculationMode: e.target.value as 'sum' | 'fixed'
+                          }
+                        });
+                      }}
+                      className="w-full px-4 py-3 bg-white border-[3px] border-[#0b1120] rounded-xl font-black text-[#0b1120] outline-none bg-white"
+                    >
+                      <option value="fixed">Use Fixed Final Price</option>
+                      <option value="sum">Sum Stage Prices (Quiz 1 + Quiz 2 + End Term)</option>
+                    </select>
+                  </div>
+
+                  {/* Fixed Price Field */}
+                  {stagePricing[activeConfigTab]?.calculationMode === 'fixed' && (
+                    <div className="space-y-2">
+                      <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">Fixed End Term Total Price (₹)</label>
+                      <input
+                        type="number"
+                        value={stagePricing[activeConfigTab]?.fixedTotal || ''}
+                        onChange={(e) => {
+                          const currentPrices = stagePricing[activeConfigTab] || { quiz1: 0, quiz2: 0, endTerm: 0, fullTerm: 0, calculationMode: 'fixed', fixedTotal: 0 };
+                          const val = parseInt(e.target.value) || 0;
+                          setStagePricing({
+                            ...stagePricing,
+                            [activeConfigTab]: {
+                              ...currentPrices,
+                              fixedTotal: val
+                            }
+                          });
+                        }}
+                        className="w-full px-4 py-3 bg-gray-50 border-[3px] border-[#0b1120] rounded-xl font-black text-[#0b1120] outline-none focus:bg-white"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Save Button for Config */}
+              <div className="pt-6 border-t-2 border-gray-100 flex justify-end">
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="flex items-center gap-3 px-8 py-4 bg-[#10b981] text-[#0b1120] rounded-2xl font-black border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#0b1120] hover:translate-y-0.5 hover:shadow-[4px_4px_0px_#0b1120] active:translate-y-1 active:shadow-none transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" /> Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-5 h-5" /> Save Configuration
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
-        )}
-      </div>
+
+          {/* 2. Global Video Settings Modal Card */}
+          <div className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] p-8 md:p-12 shadow-[12px_12px_0px_#0b1120] space-y-8">
+            <div className="border-b-4 border-[#0b1120] pb-6">
+              <h2 className="text-3xl font-black text-[#0b1120] mb-2">Homepage Video Modal</h2>
+              <p className="text-gray-500 font-bold text-sm">
+                Configure the YouTube video popup shown to homepage visitors.
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">
+                  YouTube Video URL
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+                  value={videoUrl}
+                  onChange={(e) => setVideoUrl(e.target.value)}
+                  className="w-full px-6 py-4 bg-gray-50 border-[3px] border-[#0b1120] rounded-2xl font-black text-[#0b1120] outline-none focus:bg-white transition-all placeholder:text-gray-300"
+                />
+                <p className="text-xs text-gray-400 font-bold">
+                  Supports normal links, short links, or embed links. Clear the URL to disable the popup entirely.
+                </p>
+              </div>
+
+              {/* Video Preview */}
+              {videoId ? (
+                <div className="space-y-2">
+                  <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">
+                    Player Preview
+                  </label>
+                  <div className="max-w-md aspect-video border-[3px] border-[#0b1120] rounded-2xl overflow-hidden bg-black shadow-[6px_6px_0px_#0b1120]">
+                    <iframe
+                      src={`https://www.youtube.com/embed/${videoId}`}
+                      title="YouTube video player preview"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                      className="w-full h-full"
+                    ></iframe>
+                  </div>
+                </div>
+              ) : videoUrl.trim() ? (
+                <div className="p-4 bg-yellow-50 border-[3px] border-yellow-500 text-yellow-700 rounded-2xl font-bold text-sm">
+                  ⚠️ Invalid YouTube URL. Preview not available. Please make sure the link is a valid YouTube video.
+                </div>
+              ) : null}
+
+              <div className="pt-4 border-t-2 border-gray-100 flex justify-end">
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="flex items-center gap-3 px-8 py-4 bg-blue-600 text-white rounded-2xl font-black border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#0b1120] hover:translate-y-0.5 hover:shadow-[4px_4px_0px_#0b1120] active:translate-y-1 active:shadow-none transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" /> Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-5 h-5" /> Save Video Link
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

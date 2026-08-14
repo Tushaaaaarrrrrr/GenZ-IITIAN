@@ -99,6 +99,7 @@ export default function CourseSelection() {
   const [coinsToApply, setCoinsToApply] = useState(0);
   const [coinsError, setCoinsError] = useState('');
   const [selectedPricingTier, setSelectedPricingTier] = useState<number | null>(null);
+  const [overriddenPrice, setOverriddenPrice] = useState<number | null>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
 
   // 🔄 Auto-recovery for mobile users:
@@ -210,6 +211,27 @@ export default function CourseSelection() {
       const { data, error } = await supabase.from('courses').select('*').eq('id', courseLookupId).single();
       if (error) throw error;
       setCourse(data);
+
+      // Check if course belongs to End Term stage
+      if (Array.isArray(data.exam_stages) && data.exam_stages.includes('End Term')) {
+        try {
+          const { data: priceData } = await supabase.from('settings').select('*').eq('key', 'stage_pricing').maybeSingle();
+          if (priceData) {
+            const pricingConfig = JSON.parse(priceData.value || '{}');
+            const termKey = data.term || 'Foundation';
+            const config = pricingConfig[termKey];
+            if (config) {
+              if (config.calculationMode === 'sum') {
+                setOverriddenPrice(Number(config.quiz1 || 0) + Number(config.quiz2 || 0) + Number(config.endTerm || 0));
+              } else {
+                setOverriddenPrice(Number(config.fixedTotal || 0));
+              }
+            }
+          }
+        } catch (priceErr) {
+          console.error('Failed to load stage pricing config:', priceErr);
+        }
+      }
       
       // Auto-select behavior:
       if (!data.isBundle) {
@@ -350,6 +372,7 @@ export default function CourseSelection() {
 
   const calculateTotal = () => {
     if (!course) return 0;
+    if (overriddenPrice !== null) return overriddenPrice;
     if (!course.isBundle) return course.discountPrice || course.price;
     
     // Multi-pricing logic for fixed bundles

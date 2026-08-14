@@ -4,11 +4,18 @@ import { Search, Loader2, RefreshCcw, BookOpen, GraduationCap } from 'lucide-rea
 import { supabase } from '../lib/supabase';
 import CourseCard, { CourseCardData } from '../components/CourseCard';
 import MobileCourses from '../components/mobile/MobileCourses';
+import { Link } from 'react-router-dom';
 
 export default function Courses() {
   const [courses, setCourses] = useState<CourseCardData[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Custom states for manager configurations
+  const [examVisibility, setExamVisibility] = useState<Record<string, string[]>>({});
+  const [stagePricing, setStagePricing] = useState<Record<string, any>>({});
+  const [selectedExamStage, setSelectedExamStage] = useState<string | null>(null);
+
   const [selectedTerm, setSelectedTerm] = useState<string | null>(() => {
     return localStorage.getItem('selected_term');
   });
@@ -17,14 +24,49 @@ export default function Courses() {
     fetchCourses();
   }, []);
 
+  // Update selected stage when term changes
+  useEffect(() => {
+    if (selectedTerm) {
+      const visibleStages = examVisibility[selectedTerm] || [];
+      if (visibleStages.length > 0) {
+        if (!selectedExamStage || !visibleStages.includes(selectedExamStage)) {
+          setSelectedExamStage(visibleStages[0]);
+        }
+      } else {
+        setSelectedExamStage(null);
+      }
+    } else {
+      setSelectedExamStage(null);
+    }
+  }, [selectedTerm, examVisibility]);
+
   const fetchCourses = async () => {
-    const { data } = await supabase
-      .from('courses')
-      .select('*')
-      .order('isPinned', { ascending: false })
-      .order('created_at', { ascending: false });
-    setCourses(data || []);
-    setLoading(false);
+    try {
+      setLoading(true);
+      // Fetch courses
+      const { data: coursesData } = await supabase
+        .from('courses')
+        .select('*')
+        .order('isPinned', { ascending: false })
+        .order('created_at', { ascending: false });
+      setCourses(coursesData || []);
+
+      // Fetch visibility configs
+      const { data: visData } = await supabase.from('settings').select('*').eq('key', 'exam_visibility').maybeSingle();
+      if (visData) {
+        setExamVisibility(JSON.parse(visData.value));
+      }
+
+      // Fetch stage pricing configs
+      const { data: priceData } = await supabase.from('settings').select('*').eq('key', 'stage_pricing').maybeSingle();
+      if (priceData) {
+        setStagePricing(JSON.parse(priceData.value));
+      }
+    } catch (err) {
+      console.error('Failed to load courses & settings:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSelectTerm = (term: string) => {
@@ -35,15 +77,21 @@ export default function Courses() {
   const handleClearTerm = () => {
     setSelectedTerm(null);
     localStorage.removeItem('selected_term');
+    setSelectedExamStage(null);
   };
 
-  // Filter courses by term:
-  // Show course if course has no term OR course matches selected term.
+  // Filter courses by selected academic term and selected exam stage:
   const filteredCourses = courses.filter(course => {
-    const matchesTerm = !selectedTerm || !course.term || course.term === selectedTerm;
+    const matchesTerm = !selectedTerm || course.term === selectedTerm;
+    
+    // Only filter by stage if a stage is selected
+    const matchesStage = !selectedExamStage || 
+      (Array.isArray(course.exam_stages) && course.exam_stages.includes(selectedExamStage));
+
     const matchesSearch = course.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       course.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesTerm && matchesSearch;
+      
+    return matchesTerm && matchesStage && matchesSearch;
   });
 
   if (loading) {
@@ -211,6 +259,25 @@ export default function Courses() {
         </button>
       </div>
 
+      {/* Stage Selector Tabs */}
+      {selectedTerm && !loading && (
+        <div className="max-w-7xl mx-auto px-6 mt-8 flex flex-wrap justify-center gap-3">
+          {(examVisibility[selectedTerm] || ['Qualifier', 'Re-attempt', 'Quiz 1', 'Quiz 2', 'End Term', 'Full Term']).map((stage) => (
+            <button
+              key={stage}
+              onClick={() => setSelectedExamStage(stage)}
+              className={`px-6 py-3 rounded-2xl font-black text-sm border-[3px] border-[#0b1120] transition-all cursor-pointer ${
+                selectedExamStage === stage
+                  ? 'bg-[#0b1120] text-white shadow-[4px_4px_0px_#2563eb]'
+                  : 'bg-white text-[#0b1120] hover:bg-gray-50'
+              }`}
+            >
+              {stage}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Courses Grid */}
       <section className="py-16 px-6 max-w-7xl mx-auto">
         {loading ? (
@@ -218,24 +285,86 @@ export default function Courses() {
             <Loader2 className="w-12 h-12 animate-spin text-[#0b1120]" />
             <span className="font-black text-gray-400">Loading courses...</span>
           </div>
-        ) : filteredCourses.length === 0 ? (
-          <div className="text-center py-20">
-            <h3 className="text-2xl font-black text-gray-400">No courses found for the selected term.</h3>
-          </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
-            {filteredCourses.map((course) => (
-              <motion.div
-                key={course.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                className="flex"
-              >
-                <CourseCard course={course} className="w-full" />
-              </motion.div>
-            ))}
-          </div>
+          <>
+            {/* End Term Pricing Section */}
+            {selectedTerm && selectedExamStage === 'End Term' && (() => {
+              const pricingConfig = stagePricing[selectedTerm] || { quiz1: 0, quiz2: 0, endTerm: 0, fullTerm: 0, calculationMode: 'fixed', fixedTotal: 0 };
+              const quiz1Price = pricingConfig.quiz1 || 0;
+              const quiz2Price = pricingConfig.quiz2 || 0;
+              const endTermPrice = pricingConfig.endTerm || 0;
+              const isFixedMode = pricingConfig.calculationMode === 'fixed';
+              const finalPrice = isFixedMode ? (pricingConfig.fixedTotal || 0) : (quiz1Price + quiz2Price + endTermPrice);
+              
+              const endTermCourse = courses.find(c => c.term === selectedTerm && Array.isArray(c.exam_stages) && c.exam_stages.includes('End Term'));
+
+              return (
+                <div className="max-w-2xl mx-auto mb-16 bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] p-8 md:p-12 shadow-[12px_12px_0px_#0b1120] space-y-6">
+                  <div className="text-center border-b-4 border-[#0b1120] pb-6">
+                    <span className="px-3.5 py-1.5 bg-blue-100 text-blue-700 text-xs font-black rounded-xl border-2 border-blue-200 uppercase tracking-widest">
+                      End Term Package
+                    </span>
+                    <h2 className="text-3xl font-black text-[#0b1120] mt-3">Syllabus Package Breakdown</h2>
+                    <p className="text-gray-500 font-bold text-sm mt-1">Get complete syllabus coverage with all classes and final mocks</p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center text-sm font-bold text-gray-500">
+                      <span>Quiz 1 Prep Syllabus</span>
+                      <span className="font-black text-[#0b1120]">₹{quiz1Price}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm font-bold text-gray-500">
+                      <span>Quiz 2 Prep Syllabus</span>
+                      <span className="font-black text-[#0b1120]">₹{quiz2Price}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm font-bold text-gray-500 border-b-2 border-dashed border-gray-100 pb-4">
+                      <span>End Term Final Mock Papers</span>
+                      <span className="font-black text-[#0b1120]">₹{endTermPrice}</span>
+                    </div>
+                    <div className="flex justify-between items-center pt-2">
+                      <span className="text-base font-black text-[#0b1120] uppercase tracking-wide">Final Package Price</span>
+                      <span className="text-3xl font-black text-[#0b1120]">₹{finalPrice}</span>
+                    </div>
+                  </div>
+
+                  {endTermCourse ? (
+                    <div className="pt-4 flex justify-center">
+                      <Link
+                        to={`/checkout/${endTermCourse.id}`}
+                        className="w-full text-center py-5 bg-[#10b981] text-[#0b1120] rounded-2xl font-black text-lg border-[4px] border-[#0b1120] shadow-[8px_8px_0px_#0b1120] hover:translate-y-0.5 hover:shadow-[6px_6px_0px_#0b1120] active:translate-y-1 active:shadow-none transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        Unlock End Term Package
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-gray-50 border-2 border-gray-200 rounded-xl text-center text-xs font-bold text-gray-400">
+                      End Term package checkout is currently offline. Please contact the administrator.
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {filteredCourses.length === 0 ? (
+              <div className="text-center py-20">
+                <h3 className="text-2xl font-black text-gray-400">No courses found for the selected stage.</h3>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
+                {filteredCourses.map((course) => (
+                  <motion.div
+                    key={course.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    className="flex"
+                  >
+                    <CourseCard course={course} className="w-full" />
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </section>
     </div>

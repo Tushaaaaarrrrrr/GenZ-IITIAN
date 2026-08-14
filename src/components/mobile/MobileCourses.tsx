@@ -105,6 +105,11 @@ export default function MobileCourses({ selectedTerm, onClearTerm }: MobileCours
   const [courses, setCourses] = useState<CourseCardData[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // States for manager configurations
+  const [examVisibility, setExamVisibility] = useState<Record<string, string[]>>({});
+  const [stagePricing, setStagePricing] = useState<Record<string, any>>({});
+  const [selectedExamStage, setSelectedExamStage] = useState<string | null>(null);
+
   useEffect(() => {
     supabase
       .from('courses')
@@ -115,17 +120,57 @@ export default function MobileCourses({ selectedTerm, onClearTerm }: MobileCours
         setCourses(data || []);
         setLoading(false);
       });
+
+    supabase
+      .from('settings')
+      .select('*')
+      .eq('key', 'exam_visibility')
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) setExamVisibility(JSON.parse(data.value));
+      });
+
+    supabase
+      .from('settings')
+      .select('*')
+      .eq('key', 'stage_pricing')
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) setStagePricing(JSON.parse(data.value));
+      });
   }, []);
 
-  const filteredCourses = courses.filter(
-    (course) => !selectedTerm || !course.term || course.term === selectedTerm
-  );
+  // Update selected stage when term changes
+  useEffect(() => {
+    if (selectedTerm) {
+      const visibleStages = examVisibility[selectedTerm] || [];
+      if (visibleStages.length > 0) {
+        if (!selectedExamStage || !visibleStages.includes(selectedExamStage)) {
+          setSelectedExamStage(visibleStages[0]);
+        }
+      } else {
+        setSelectedExamStage(null);
+      }
+    } else {
+      setSelectedExamStage(null);
+    }
+  }, [selectedTerm, examVisibility]);
+
+  const filteredCourses = courses.filter((course) => {
+    const matchesTerm = !selectedTerm || course.term === selectedTerm;
+    
+    // Filter by stage if stage is selected
+    const matchesStage = !selectedExamStage || 
+      (Array.isArray(course.exam_stages) && course.exam_stages.includes(selectedExamStage));
+
+    return matchesTerm && matchesStage;
+  });
 
   return (
     <div className="md:hidden bg-[#0b1120] min-h-screen">
       <div className="px-4 py-5">
         {selectedTerm && (
-          <div className="flex items-center justify-between bg-[#111827] border-[2px] border-white/10 rounded-xl px-4 py-3 mb-6 shadow-lg">
+          <div className="flex items-center justify-between bg-[#111827] border-[2px] border-white/10 rounded-xl px-4 py-3 mb-4 shadow-lg">
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Active Term:</span>
               <span className="text-xs font-black text-white uppercase tracking-wide bg-blue-600/50 px-2.5 py-0.5 rounded-md border border-blue-500/70 shadow-[2px_2px_0px_rgba(37,99,235,0.4)]">
@@ -141,6 +186,25 @@ export default function MobileCourses({ selectedTerm, onClearTerm }: MobileCours
           </div>
         )}
 
+        {/* Mobile Stage Selector (Horizontal Scroll) */}
+        {selectedTerm && !loading && (
+          <div className="flex gap-2 overflow-x-auto pb-4 mb-4 scrollbar-none">
+            {(examVisibility[selectedTerm] || ['Qualifier', 'Re-attempt', 'Quiz 1', 'Quiz 2', 'End Term', 'Full Term']).map((stage) => (
+              <button
+                key={stage}
+                onClick={() => setSelectedExamStage(stage)}
+                className={`px-4 py-2 shrink-0 rounded-xl font-black text-xs border-[2.5px] transition-all cursor-pointer ${
+                  selectedExamStage === stage
+                    ? 'bg-blue-600 text-white border-blue-500 shadow-[3px_3px_0px_#ffffff]'
+                    : 'bg-[#111827] text-gray-300 hover:text-white border-white/10'
+                }`}
+              >
+                {stage}
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className="flex items-end justify-between gap-3 mb-4">
           <h2 className="font-black text-[25px] leading-tight text-white">Featured Cohorts</h2>
           <Link to="/courses" className="shrink-0 inline-flex items-center gap-1 bg-white text-[#0b1120] border-[2.5px] border-[#0b1120] rounded-[10px] px-3 py-2 text-xs font-black shadow-[2px_2px_0px_#0b1120]">
@@ -153,13 +217,75 @@ export default function MobileCourses({ selectedTerm, onClearTerm }: MobileCours
             <Loader2 className="w-9 h-9 animate-spin text-white" />
             <span className="font-black text-white/60 text-sm">Loading courses...</span>
           </div>
-        ) : filteredCourses.length === 0 ? (
-          <div className="bg-white border-[2.5px] border-[#0b1120] rounded-2xl p-6 text-center shadow-[4px_4px_0px_#FF2424]">
-            <h3 className="text-lg font-black text-[#0b1120] mb-1">No courses found</h3>
-            <p className="text-xs font-bold text-gray-500">No cohorts found matching your selected term.</p>
-          </div>
         ) : (
-          filteredCourses.map((course, i) => <CohortCard key={course.id} course={course} accent={i === 0} />)
+          <>
+            {/* Mobile End Term Pricing Section */}
+            {selectedTerm && selectedExamStage === 'End Term' && (() => {
+              const pricingConfig = stagePricing[selectedTerm] || { quiz1: 0, quiz2: 0, endTerm: 0, fullTerm: 0, calculationMode: 'fixed', fixedTotal: 0 };
+              const quiz1Price = pricingConfig.quiz1 || 0;
+              const quiz2Price = pricingConfig.quiz2 || 0;
+              const endTermPrice = pricingConfig.endTerm || 0;
+              const isFixedMode = pricingConfig.calculationMode === 'fixed';
+              const finalPrice = isFixedMode ? (pricingConfig.fixedTotal || 0) : (quiz1Price + quiz2Price + endTermPrice);
+              
+              const endTermCourse = courses.find(c => c.term === selectedTerm && Array.isArray(c.exam_stages) && c.exam_stages.includes('End Term'));
+
+              return (
+                <div className="bg-white border-[2.5px] border-[#0b1120] rounded-[20px] p-6 mb-6 shadow-[4px_4px_0px_#0b1120] space-y-4">
+                  <div className="text-center border-b-2 border-gray-100 pb-4">
+                    <span className="px-2.5 py-1 bg-blue-100 text-blue-700 text-[10px] font-black rounded-lg border border-blue-200 uppercase tracking-widest">
+                      End Term Package
+                    </span>
+                    <h3 className="text-xl font-black text-[#0b1120] mt-2">Syllabus Package</h3>
+                    <p className="text-gray-400 font-bold text-xs mt-0.5">Complete syllabus coverage + mocks</p>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    <div className="flex justify-between items-center text-xs font-bold text-gray-500">
+                      <span>Quiz 1 Prep Syllabus</span>
+                      <span className="font-black text-[#0b1120]">₹{quiz1Price}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs font-bold text-gray-500">
+                      <span>Quiz 2 Prep Syllabus</span>
+                      <span className="font-black text-[#0b1120]">₹{quiz2Price}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs font-bold text-gray-500 border-b border-dashed border-gray-100 pb-3">
+                      <span>End Term Final Mock Papers</span>
+                      <span className="font-black text-[#0b1120]">₹{endTermPrice}</span>
+                    </div>
+                    <div className="flex justify-between items-center pt-1.5">
+                      <span className="text-xs font-black text-[#0b1120] uppercase tracking-wide">Final Package Price</span>
+                      <span className="text-xl font-black text-[#0b1120]">₹{finalPrice}</span>
+                    </div>
+                  </div>
+
+                  {endTermCourse ? (
+                    <div className="pt-2">
+                      <Link
+                        to={`/checkout/${endTermCourse.id}`}
+                        className="w-full block text-center py-4 bg-[#15B981] text-[#0b1120] rounded-xl font-black text-sm border-[2.5px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
+                      >
+                        Unlock End Term Package
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-center text-[10px] font-bold text-gray-400">
+                      End Term package checkout is currently offline.
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {filteredCourses.length === 0 ? (
+              <div className="bg-white border-[2.5px] border-[#0b1120] rounded-2xl p-6 text-center shadow-[4px_4px_0px_#FF2424]">
+                <h3 className="text-lg font-black text-[#0b1120] mb-1">No courses found</h3>
+                <p className="text-xs font-bold text-gray-500">No cohorts found matching your selected stage.</p>
+              </div>
+            ) : (
+              filteredCourses.map((course, i) => <CohortCard key={course.id} course={course} accent={i === 0} />)
+            )}
+          </>
         )}
       </div>
     </div>
