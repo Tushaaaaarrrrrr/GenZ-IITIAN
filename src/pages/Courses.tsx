@@ -6,15 +6,25 @@ import CourseCard, { CourseCardData } from '../components/CourseCard';
 import MobileCourses from '../components/mobile/MobileCourses';
 import { Link } from 'react-router-dom';
 
+const DEFAULT_BOX_CONFIG: Record<string, string[]> = {
+  Qualifier: ['Qualifier'],
+  'Re-attempt': ['Re-attempt'],
+  Foundation: ['Quiz 1', 'Quiz 2', 'End Term', 'Full Term'],
+  DIPLOMA: ['Quiz 1', 'Quiz 2', 'End Term', 'Full Term']
+};
+
 export default function Courses() {
   const [courses, setCourses] = useState<CourseCardData[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   
   // Custom states for manager configurations
-  const [examVisibility, setExamVisibility] = useState<Record<string, string[]>>({});
+  const [examVisibility, setExamVisibility] = useState<Record<string, string[]>>(DEFAULT_BOX_CONFIG);
+  const [boxesLoaded, setBoxesLoaded] = useState(false);
   const [stagePricing, setStagePricing] = useState<Record<string, any>>({});
-  const [selectedExamStage, setSelectedExamStage] = useState<string | null>(null);
+  const [selectedExamStage, setSelectedExamStage] = useState<string | null>(() => {
+    return localStorage.getItem('selected_exam_stage');
+  });
 
   const [selectedTerm, setSelectedTerm] = useState<string | null>(() => {
     return localStorage.getItem('selected_term');
@@ -24,21 +34,22 @@ export default function Courses() {
     fetchCourses();
   }, []);
 
-  // Update selected stage when term changes
+  // Clear the selected exam if it does not belong to the selected term anymore.
   useEffect(() => {
-    if (selectedTerm) {
-      const visibleStages = examVisibility[selectedTerm] || [];
-      if (visibleStages.length > 0) {
-        if (!selectedExamStage || !visibleStages.includes(selectedExamStage)) {
-          setSelectedExamStage(visibleStages[0]);
-        }
-      } else {
-        setSelectedExamStage(null);
-      }
-    } else {
+    if (!selectedTerm) {
       setSelectedExamStage(null);
+      localStorage.removeItem('selected_exam_stage');
+      return;
     }
-  }, [selectedTerm, examVisibility]);
+
+    if (!boxesLoaded) return;
+
+    const visibleStages = examVisibility[selectedTerm] || DEFAULT_BOX_CONFIG[selectedTerm] || [];
+    if (selectedExamStage && !visibleStages.includes(selectedExamStage)) {
+      setSelectedExamStage(null);
+      localStorage.removeItem('selected_exam_stage');
+    }
+  }, [selectedTerm, selectedExamStage, examVisibility, boxesLoaded]);
 
   const fetchCourses = async () => {
     try {
@@ -54,8 +65,12 @@ export default function Courses() {
       // Fetch visibility configs
       const { data: visData } = await supabase.from('settings').select('*').eq('key', 'exam_visibility').maybeSingle();
       if (visData) {
-        setExamVisibility(JSON.parse(visData.value));
+        setExamVisibility({
+          ...DEFAULT_BOX_CONFIG,
+          ...JSON.parse(visData.value)
+        });
       }
+      setBoxesLoaded(true);
 
       // Fetch stage pricing configs
       const { data: priceData } = await supabase.from('settings').select('*').eq('key', 'stage_pricing').maybeSingle();
@@ -71,13 +86,26 @@ export default function Courses() {
 
   const handleSelectTerm = (term: string) => {
     setSelectedTerm(term);
+    setSelectedExamStage(null);
     localStorage.setItem('selected_term', term);
+    localStorage.removeItem('selected_exam_stage');
+  };
+
+  const handleSelectExamStage = (stage: string) => {
+    setSelectedExamStage(stage);
+    localStorage.setItem('selected_exam_stage', stage);
   };
 
   const handleClearTerm = () => {
     setSelectedTerm(null);
     localStorage.removeItem('selected_term');
+    localStorage.removeItem('selected_exam_stage');
     setSelectedExamStage(null);
+  };
+
+  const handleClearExam = () => {
+    setSelectedExamStage(null);
+    localStorage.removeItem('selected_exam_stage');
   };
 
   // Filter courses by selected academic term and selected exam stage:
@@ -209,10 +237,80 @@ export default function Courses() {
     );
   }
 
+  const activeBoxes = examVisibility[selectedTerm] || DEFAULT_BOX_CONFIG[selectedTerm] || [];
+
+  if (!selectedExamStage) {
+    return (
+      <>
+        <MobileCourses selectedTerm={selectedTerm} selectedExamStage={selectedExamStage} onClearTerm={handleClearTerm} onSelectExamStage={handleSelectExamStage} />
+
+        <div className="hidden md:flex min-h-screen bg-gray-50 flex-col justify-center items-center py-20 px-6">
+          <div className="max-w-5xl w-full text-center relative z-10">
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="mb-10"
+            >
+              <div className="mb-5 flex justify-center">
+                <span className="px-4 py-1.5 bg-[#0b1120] text-white border-2 border-[#0b1120] shadow-[3px_3px_0px_#2563eb] rounded-xl text-xs font-black uppercase tracking-wider">
+                  {selectedTerm}
+                </span>
+              </div>
+              <h1 className="text-4xl md:text-5xl font-black text-[#0b1120] mb-4 leading-tight tracking-tight">
+                Choose <span className="text-blue-600">Exam</span>
+              </h1>
+              <p className="text-gray-500 font-bold max-w-xl mx-auto text-sm md:text-base">
+                Pick the exam box you want to prepare for.
+              </p>
+            </motion.div>
+
+            {activeBoxes.length === 0 ? (
+              <div className="bg-white border-[4px] border-[#0b1120] rounded-[2rem] p-10 shadow-[8px_8px_0px_#0b1120]">
+                <h3 className="text-2xl font-black text-gray-400 mb-6">No exams are available for this term yet.</h3>
+                <button
+                  onClick={handleClearTerm}
+                  className="px-6 py-3 border-[3px] border-[#0b1120] rounded-xl font-black text-sm bg-white hover:bg-gray-50 text-[#0b1120] shadow-[4px_4px_0px_#0b1120] active:translate-y-1 active:shadow-none transition-all"
+                >
+                  Change Term
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-wrap justify-center gap-6">
+                {activeBoxes.map((box, index) => (
+                  <motion.button
+                    key={box}
+                    type="button"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.06, duration: 0.35 }}
+                    whileHover={{ scale: 1.04, y: -3 }}
+                    onClick={() => handleSelectExamStage(box)}
+                    className="min-w-[180px] px-8 py-6 bg-white border-[4px] border-[#0b1120] rounded-[1.5rem] text-[#0b1120] font-black text-xl shadow-[6px_6px_0px_#0b1120] hover:shadow-[6px_6px_0px_#2563eb] transition-all"
+                  >
+                    {box}
+                  </motion.button>
+                ))}
+              </div>
+            )}
+
+            <button
+              onClick={handleClearTerm}
+              className="mt-10 inline-flex items-center gap-2 px-5 py-3 border-[2.5px] border-[#0b1120] rounded-xl font-black text-xs bg-white hover:bg-gray-50 text-[#0b1120] shadow-[3px_3px_0px_#0b1120] active:translate-y-0.5 active:shadow-none transition-all"
+            >
+              <RefreshCcw className="w-4 h-4" />
+              Change Term
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
     {/* Mobile cohorts screen (md:hidden) — matches the Gen-Z IITian mobile design */}
-    <MobileCourses selectedTerm={selectedTerm} onClearTerm={handleClearTerm} />
+    <MobileCourses selectedTerm={selectedTerm} selectedExamStage={selectedExamStage} onClearTerm={handleClearTerm} onClearExam={handleClearExam} onSelectExamStage={handleSelectExamStage} />
 
     <div className="hidden md:block min-h-screen bg-white">
       {/* Hero Section */}
@@ -242,30 +340,42 @@ export default function Courses() {
         </div>
       </section>
 
-      {/* Active Term Selector and Change Button */}
+      {/* Active Term and Exam Selector */}
       <div className="max-w-7xl mx-auto px-6 mt-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b-2 border-gray-100 pb-6">
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-black text-gray-400 uppercase tracking-widest">Active Term:</span>
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-sm font-black text-gray-400 uppercase tracking-widest">Active:</span>
           <span className="px-4 py-1.5 bg-[#0b1120] text-white border-2 border-[#0b1120] shadow-[3px_3px_0px_#2563eb] rounded-xl text-xs font-black uppercase tracking-wider">
             {selectedTerm}
           </span>
+          <span className="px-4 py-1.5 bg-white text-[#0b1120] border-2 border-[#0b1120] shadow-[3px_3px_0px_#10b981] rounded-xl text-xs font-black uppercase tracking-wider">
+            {selectedExamStage}
+          </span>
         </div>
-        <button 
-          onClick={handleClearTerm}
-          className="sm:self-center px-4 py-2 border-[2.5px] border-[#0b1120] rounded-xl font-black text-xs bg-white hover:bg-gray-50 text-[#0b1120] shadow-[3px_3px_0px_#0b1120] active:translate-y-0.5 active:shadow-none transition-all flex items-center gap-1.5 justify-center cursor-pointer"
-        >
-          <RefreshCcw className="w-3.5 h-3.5" />
-          Change Term
-        </button>
+        <div className="flex flex-wrap gap-3">
+          <button 
+            onClick={handleClearExam}
+            className="sm:self-center px-4 py-2 border-[2.5px] border-[#0b1120] rounded-xl font-black text-xs bg-white hover:bg-gray-50 text-[#0b1120] shadow-[3px_3px_0px_#0b1120] active:translate-y-0.5 active:shadow-none transition-all flex items-center gap-1.5 justify-center cursor-pointer"
+          >
+            <RefreshCcw className="w-3.5 h-3.5" />
+            Change Exam
+          </button>
+          <button 
+            onClick={handleClearTerm}
+            className="sm:self-center px-4 py-2 border-[2.5px] border-[#0b1120] rounded-xl font-black text-xs bg-white hover:bg-gray-50 text-[#0b1120] shadow-[3px_3px_0px_#0b1120] active:translate-y-0.5 active:shadow-none transition-all flex items-center gap-1.5 justify-center cursor-pointer"
+          >
+            <RefreshCcw className="w-3.5 h-3.5" />
+            Change Term
+          </button>
+        </div>
       </div>
 
-      {/* Stage Selector Tabs */}
+      {/* Exam Selector Tabs */}
       {selectedTerm && !loading && (
         <div className="max-w-7xl mx-auto px-6 mt-8 flex flex-wrap justify-center gap-3">
-          {(examVisibility[selectedTerm] || ['Qualifier', 'Re-attempt', 'Quiz 1', 'Quiz 2', 'End Term', 'Full Term']).map((stage) => (
+          {activeBoxes.map((stage) => (
             <button
               key={stage}
-              onClick={() => setSelectedExamStage(stage)}
+              onClick={() => handleSelectExamStage(stage)}
               className={`px-6 py-3 rounded-2xl font-black text-sm border-[3px] border-[#0b1120] transition-all cursor-pointer ${
                 selectedExamStage === stage
                   ? 'bg-[#0b1120] text-white shadow-[4px_4px_0px_#2563eb]'

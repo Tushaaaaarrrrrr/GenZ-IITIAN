@@ -4,6 +4,13 @@ import { RefreshCcw, GraduationCap, Star, Loader2, ChevronRight } from 'lucide-r
 import { supabase } from '../../lib/supabase';
 import { CourseCardData } from '../CourseCard';
 
+const DEFAULT_BOX_CONFIG: Record<string, string[]> = {
+  Qualifier: ['Qualifier'],
+  'Re-attempt': ['Re-attempt'],
+  Foundation: ['Quiz 1', 'Quiz 2', 'End Term', 'Full Term'],
+  DIPLOMA: ['Quiz 1', 'Quiz 2', 'End Term', 'Full Term']
+};
+
 const BADGE_COLORS: Record<string, string> = {
   SALE: '#FF2424', NEW: '#15B981', BESTSELLER: '#F6A623', TRENDING: '#2563EB',
   HOT: '#FF7A00', LIMITED: '#EC1E79',
@@ -97,18 +104,20 @@ function CohortCard({ course, accent }: { course: CourseCardData; accent?: boole
 
 interface MobileCoursesProps {
   selectedTerm: string | null;
+  selectedExamStage?: string | null;
   onClearTerm: () => void;
+  onClearExam?: () => void;
+  onSelectExamStage?: (stage: string) => void;
 }
 
 /** Mobile-only Courses screen — featured cohort cards on a navy background. */
-export default function MobileCourses({ selectedTerm, onClearTerm }: MobileCoursesProps) {
+export default function MobileCourses({ selectedTerm, selectedExamStage = null, onClearTerm, onClearExam, onSelectExamStage }: MobileCoursesProps) {
   const [courses, setCourses] = useState<CourseCardData[]>([]);
   const [loading, setLoading] = useState(true);
 
   // States for manager configurations
-  const [examVisibility, setExamVisibility] = useState<Record<string, string[]>>({});
+  const [examVisibility, setExamVisibility] = useState<Record<string, string[]>>(DEFAULT_BOX_CONFIG);
   const [stagePricing, setStagePricing] = useState<Record<string, any>>({});
-  const [selectedExamStage, setSelectedExamStage] = useState<string | null>(null);
 
   useEffect(() => {
     supabase
@@ -127,7 +136,7 @@ export default function MobileCourses({ selectedTerm, onClearTerm }: MobileCours
       .eq('key', 'exam_visibility')
       .maybeSingle()
       .then(({ data }) => {
-        if (data) setExamVisibility(JSON.parse(data.value));
+        if (data) setExamVisibility({ ...DEFAULT_BOX_CONFIG, ...JSON.parse(data.value) });
       });
 
     supabase
@@ -140,22 +149,6 @@ export default function MobileCourses({ selectedTerm, onClearTerm }: MobileCours
       });
   }, []);
 
-  // Update selected stage when term changes
-  useEffect(() => {
-    if (selectedTerm) {
-      const visibleStages = examVisibility[selectedTerm] || [];
-      if (visibleStages.length > 0) {
-        if (!selectedExamStage || !visibleStages.includes(selectedExamStage)) {
-          setSelectedExamStage(visibleStages[0]);
-        }
-      } else {
-        setSelectedExamStage(null);
-      }
-    } else {
-      setSelectedExamStage(null);
-    }
-  }, [selectedTerm, examVisibility]);
-
   const filteredCourses = courses.filter((course) => {
     const matchesTerm = !selectedTerm || course.term === selectedTerm;
     
@@ -166,11 +159,13 @@ export default function MobileCourses({ selectedTerm, onClearTerm }: MobileCours
     return matchesTerm && matchesStage;
   });
 
-  return (
-    <div className="md:hidden bg-[#0b1120] min-h-screen">
-      <div className="px-4 py-5">
-        {selectedTerm && (
-          <div className="flex items-center justify-between bg-[#111827] border-[2px] border-white/10 rounded-xl px-4 py-3 mb-4 shadow-lg">
+  const activeBoxes = selectedTerm ? (examVisibility[selectedTerm] || DEFAULT_BOX_CONFIG[selectedTerm] || []) : [];
+
+  if (selectedTerm && !selectedExamStage) {
+    return (
+      <div className="md:hidden bg-[#0b1120] min-h-screen">
+        <div className="px-4 py-5">
+          <div className="flex items-center justify-between bg-[#111827] border-[2px] border-white/10 rounded-xl px-4 py-3 mb-5 shadow-lg">
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Active Term:</span>
               <span className="text-xs font-black text-white uppercase tracking-wide bg-blue-600/50 px-2.5 py-0.5 rounded-md border border-blue-500/70 shadow-[2px_2px_0px_rgba(37,99,235,0.4)]">
@@ -184,15 +179,82 @@ export default function MobileCourses({ selectedTerm, onClearTerm }: MobileCours
               <RefreshCcw className="w-3 h-3" /> Change
             </button>
           </div>
+
+          <div className="mb-5">
+            <h2 className="font-black text-[28px] leading-tight text-white">Choose Exam</h2>
+            <p className="text-white/50 text-sm font-bold mt-1">Pick the box you want to prepare for.</p>
+          </div>
+
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-16 gap-3">
+              <Loader2 className="w-9 h-9 animate-spin text-white" />
+              <span className="font-black text-white/60 text-sm">Loading exams...</span>
+            </div>
+          ) : activeBoxes.length === 0 ? (
+            <div className="bg-[#111827] border-[2px] border-white/10 rounded-[20px] p-6 text-center">
+              <p className="text-white/50 font-black text-sm">No exams are available for this term yet.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-3">
+              {activeBoxes.map((box) => (
+                <button
+                  key={box}
+                  type="button"
+                  onClick={() => onSelectExamStage?.(box)}
+                  className="w-full text-left bg-white border-[2.5px] border-[#0b1120] rounded-[18px] px-5 py-5 text-[#0b1120] font-black text-lg shadow-[4px_4px_0px_#2563eb]"
+                >
+                  {box}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="md:hidden bg-[#0b1120] min-h-screen">
+      <div className="px-4 py-5">
+        {selectedTerm && (
+          <div className="flex items-center justify-between bg-[#111827] border-[2px] border-white/10 rounded-xl px-4 py-3 mb-4 shadow-lg">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Active:</span>
+              <span className="text-xs font-black text-white uppercase tracking-wide bg-blue-600/50 px-2.5 py-0.5 rounded-md border border-blue-500/70 shadow-[2px_2px_0px_rgba(37,99,235,0.4)]">
+                {selectedTerm}
+              </span>
+              {selectedExamStage && (
+                <span className="text-xs font-black text-white uppercase tracking-wide bg-emerald-600/50 px-2.5 py-0.5 rounded-md border border-emerald-500/70 shadow-[2px_2px_0px_rgba(16,185,129,0.4)]">
+                  {selectedExamStage}
+                </span>
+              )}
+            </div>
+            <div className="flex gap-3">
+              {onClearExam && (
+                <button 
+                  onClick={onClearExam}
+                  className="flex items-center gap-1.5 text-[11px] font-black text-gray-400 hover:text-white uppercase transition-colors"
+                >
+                  <RefreshCcw className="w-3 h-3" /> Exam
+                </button>
+              )}
+              <button 
+                onClick={onClearTerm}
+                className="flex items-center gap-1.5 text-[11px] font-black text-gray-400 hover:text-white uppercase transition-colors"
+              >
+                <RefreshCcw className="w-3 h-3" /> Term
+              </button>
+            </div>
+          </div>
         )}
 
         {/* Mobile Stage Selector (Horizontal Scroll) */}
         {selectedTerm && !loading && (
           <div className="flex gap-2 overflow-x-auto pb-4 mb-4 scrollbar-none">
-            {(examVisibility[selectedTerm] || ['Qualifier', 'Re-attempt', 'Quiz 1', 'Quiz 2', 'End Term', 'Full Term']).map((stage) => (
+            {activeBoxes.map((stage) => (
               <button
                 key={stage}
-                onClick={() => setSelectedExamStage(stage)}
+                onClick={() => onSelectExamStage?.(stage)}
                 className={`px-4 py-2 shrink-0 rounded-xl font-black text-xs border-[2.5px] transition-all cursor-pointer ${
                   selectedExamStage === stage
                     ? 'bg-blue-600 text-white border-blue-500 shadow-[3px_3px_0px_#ffffff]'

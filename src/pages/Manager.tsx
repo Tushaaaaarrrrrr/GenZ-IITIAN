@@ -1,7 +1,7 @@
 import { useAuth } from '../context/AuthContext';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import { supabase } from '../lib/supabase';
-import { LayoutDashboard, ShoppingBag, ScrollText, BookOpen, Plus, Search, Trash2, Edit, Save, X, Loader2, AlertCircle, User, Download, TrendingUp, TrendingDown, Users, ShieldCheck, CreditCard, RefreshCw, Gift, ArrowRight, Copy, Coins, Eye, Settings, ClipboardList } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, ScrollText, BookOpen, Plus, Search, Trash2, Edit, Save, X, Loader2, AlertCircle, User, Download, TrendingUp, TrendingDown, Users, ShieldCheck, CreditCard, RefreshCw, Gift, ArrowRight, Copy, Coins, Eye, Settings, ClipboardList, Boxes } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate, useLocation, NavLink } from 'react-router-dom';
 import { apiService } from '../lib/api';
@@ -10,7 +10,16 @@ import EmployeesManager from '../components/manager/EmployeesManager';
 import { getYouTubeId } from '../utils/youtube';
 
 
-type Tab = 'users' | 'courses' | 'discounts' | 'payments' | 'catalog' | 'referrals' | 'blogs' | 'settings' | 'employees' | 'logs';
+type Tab = 'users' | 'courses' | 'boxes' | 'discounts' | 'payments' | 'catalog' | 'referrals' | 'blogs' | 'settings' | 'employees' | 'logs';
+type CourseTerm = 'Re-attempt' | 'Foundation' | 'DIPLOMA' | 'Qualifier';
+
+const TERM_OPTIONS: CourseTerm[] = ['Qualifier', 'Re-attempt', 'Foundation', 'DIPLOMA'];
+const DEFAULT_BOX_CONFIG: Record<CourseTerm, string[]> = {
+  Qualifier: ['Qualifier'],
+  'Re-attempt': ['Re-attempt'],
+  Foundation: ['Quiz 1', 'Quiz 2', 'End Term', 'Full Term'],
+  DIPLOMA: ['Quiz 1', 'Quiz 2', 'End Term', 'Full Term']
+};
 
 function getBundleDiscountConfig(course: any): { mode: 'all' | 'any'; minCourses: 1 | 2 | 3 | 5 } {
   const firstBundleCourse = Array.isArray(course?.bundleCourses) ? course.bundleCourses[0] : null;
@@ -47,7 +56,7 @@ export default function Manager() {
   const activeTab = (location.pathname.split('/').pop() || 'users') as Tab;
   
   // Validate tab - if path is just /manager, it's users. If invalid, could redirect.
-  const validTabs: Tab[] = ['users', 'courses', 'discounts', 'payments', 'referrals', 'blogs', 'settings', 'employees', 'logs'];
+  const validTabs: Tab[] = ['users', 'courses', 'boxes', 'discounts', 'payments', 'referrals', 'blogs', 'settings', 'employees', 'logs'];
   const effectiveTab = validTabs.includes(activeTab) ? activeTab : 'users';
   const [data, setData] = useState<any>([]);
   const [loading, setLoading] = useState(true);
@@ -66,8 +75,9 @@ export default function Manager() {
   const [pricingOptions, setPricingOptions] = useState<{name: string, price: number, type: 'live' | 'recorded', tag?: string, description?: string, banner_text?: string}[]>([]);
   const [courseTags, setCourseTags] = useState<string[]>([]);
   const [courseCategory, setCourseCategory] = useState<'QUALIFIER' | 'LIVE' | 'RECORDED' | 'NONE'>('NONE');
-  const [courseTerm, setCourseTerm] = useState<'Re-attempt' | 'Foundation' | 'DIPLOMA' | 'Qualifier' | 'NONE'>('NONE');
+  const [courseTerm, setCourseTerm] = useState<CourseTerm | 'NONE'>('NONE');
   const [selectedExamStages, setSelectedExamStages] = useState<string[]>([]);
+  const [boxConfig, setBoxConfig] = useState<Record<CourseTerm, string[]>>(DEFAULT_BOX_CONFIG);
 
   // Discount Coupons state
   const [showAddDiscount, setShowAddDiscount] = useState(false);
@@ -197,9 +207,50 @@ export default function Manager() {
     }
   };
 
+  const handleCourseTermChange = (term: CourseTerm | 'NONE') => {
+    setCourseTerm(term);
+    if (term === 'NONE') {
+      setSelectedExamStages([]);
+      return;
+    }
+
+    const availableBoxes = boxConfig[term] || [];
+    setSelectedExamStages((current) => current.filter((stage) => availableBoxes.includes(stage)));
+  };
+
   useEffect(() => {
     if (!authLoading && !isManager) navigate('/');
   }, [isManager, authLoading]);
+
+  useEffect(() => {
+    if (!isManager) return;
+
+    const loadBoxes = async () => {
+      const { data: boxesData, error } = await supabase
+        .from('settings')
+        .select('*')
+        .eq('key', 'exam_visibility')
+        .maybeSingle();
+
+      if (error) {
+        console.error('Failed to load boxes:', error);
+        return;
+      }
+
+      if (boxesData?.value) {
+        try {
+          setBoxConfig({
+            ...DEFAULT_BOX_CONFIG,
+            ...JSON.parse(boxesData.value)
+          });
+        } catch (parseError) {
+          console.error('Failed to parse boxes config:', parseError);
+        }
+      }
+    };
+
+    loadBoxes();
+  }, [isManager]);
 
   useEffect(() => {
     // Reset filter when switching tabs so stale filters don't corrupt new tab's query
@@ -231,7 +282,7 @@ export default function Manager() {
   };
 
   const fetchData = async () => {
-    if (effectiveTab === 'blogs' || effectiveTab === 'settings' || effectiveTab === 'logs') {
+    if (effectiveTab === 'blogs' || effectiveTab === 'settings' || effectiveTab === 'logs' || effectiveTab === 'boxes') {
       setLoading(false);
       return;
     }
@@ -598,6 +649,8 @@ export default function Manager() {
 
   if (authLoading || !isManager) return <div className="min-h-screen flex items-center justify-center font-black">ACCESS DENIED</div>;
 
+  const availableBoxesForSelectedTerm = courseTerm === 'NONE' ? [] : (boxConfig[courseTerm] || []);
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
@@ -613,6 +666,7 @@ export default function Manager() {
             { id: 'employees', icon: ShieldCheck, path: '/manager/employees' },
             { id: 'logs', icon: ClipboardList, path: '/manager/logs' },
             { id: 'courses', icon: BookOpen, path: '/manager/courses' },
+            { id: 'boxes', icon: Boxes, path: '/manager/boxes' },
             { id: 'discounts', icon: ShoppingBag, path: '/manager/discounts' },
             { id: 'payments', icon: CreditCard, path: '/manager/payments' },
             { id: 'referrals', icon: Gift, path: '/manager/referrals' },
@@ -726,6 +780,8 @@ export default function Manager() {
               {effectiveTab === 'employees' && <EmployeesManager />}
 
               {effectiveTab === 'logs' && <LogsManager />}
+
+              {effectiveTab === 'boxes' && <BoxesManager boxConfig={boxConfig} setBoxConfig={setBoxConfig} />}
 
               {effectiveTab === 'settings' && <SettingsManager />}
 
@@ -942,6 +998,21 @@ export default function Manager() {
                       <div className="space-y-2 mb-8">
                         <div className="text-xs font-black uppercase tracking-widest text-gray-400">Database ID (Text)</div>
                         <div className="text-sm font-bold p-2 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">{course.id}</div>
+                        <div className="text-xs font-black uppercase tracking-widest text-gray-400 pt-2">Term / Boxes</div>
+                        <div className="flex flex-wrap gap-2">
+                          <span className="px-3 py-1 bg-blue-50 border-2 border-blue-100 rounded-lg text-[10px] font-black text-blue-700 uppercase">
+                            {course.term || 'No Term'}
+                          </span>
+                          {Array.isArray(course.exam_stages) && course.exam_stages.length > 0 ? course.exam_stages.map((box: string) => (
+                            <span key={box} className="px-3 py-1 bg-emerald-50 border-2 border-emerald-100 rounded-lg text-[10px] font-black text-emerald-700 uppercase">
+                              {box}
+                            </span>
+                          )) : (
+                            <span className="px-3 py-1 bg-gray-50 border-2 border-gray-100 rounded-lg text-[10px] font-black text-gray-400 uppercase">
+                              No Boxes
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       <div className="flex gap-4 mt-auto">
@@ -1211,40 +1282,49 @@ export default function Manager() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Select Term</label>
-                      <select value={courseTerm} onChange={(e) => setCourseTerm(e.target.value as any)} className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-black focus:ring-[6px] ring-blue-100 outline-none bg-white">
+                      <select value={courseTerm} onChange={(e) => handleCourseTermChange(e.target.value as CourseTerm | 'NONE')} className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-black focus:ring-[6px] ring-blue-100 outline-none bg-white">
                         <option value="NONE">None</option>
-                        <option value="Re-attempt">Re-attempt</option>
-                        <option value="Foundation">Foundation</option>
-                        <option value="DIPLOMA">DIPLOMA</option>
-                        <option value="Qualifier">Qualifier</option>
+                        {TERM_OPTIONS.map((term) => (
+                          <option key={term} value={term}>{term}</option>
+                        ))}
                       </select>
                     </div>
                   </div>
 
                   <div className="mt-4 border-t-2 border-dashed border-gray-200 pt-4">
-                    <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Assigned Exam Stages</label>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      {['Qualifier', 'Re-attempt', 'Quiz 1', 'Quiz 2', 'End Term', 'Full Term'].map((stage) => {
-                        const isChecked = selectedExamStages.includes(stage);
-                        return (
-                          <label key={stage} className={`flex items-center gap-3 p-4 border-[3px] rounded-2xl cursor-pointer font-bold select-none transition-all ${isChecked ? 'bg-blue-50 border-blue-500 text-blue-700' : 'bg-white border-[#0b1120] text-[#0b1120]'}`}>
-                            <input 
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setSelectedExamStages([...selectedExamStages, stage]);
-                                } else {
-                                  setSelectedExamStages(selectedExamStages.filter(s => s !== stage));
-                                }
-                              }}
-                              className="w-5 h-5 accent-blue-600 rounded border-gray-300"
-                            />
-                            <span>{stage}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
+                    <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Choose Boxes</label>
+                    {courseTerm === 'NONE' ? (
+                      <div className="p-4 bg-gray-50 border-[3px] border-dashed border-gray-200 rounded-2xl text-sm font-bold text-gray-400">
+                        Select a term first to assign this course to boxes.
+                      </div>
+                    ) : availableBoxesForSelectedTerm.length === 0 ? (
+                      <div className="p-4 bg-yellow-50 border-[3px] border-yellow-300 rounded-2xl text-sm font-bold text-yellow-700">
+                        No boxes have been added for {courseTerm}. Add boxes in Manager &gt; Boxes first.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        {availableBoxesForSelectedTerm.map((stage) => {
+                          const isChecked = selectedExamStages.includes(stage);
+                          return (
+                            <label key={stage} className={`flex items-center gap-3 p-4 border-[3px] rounded-2xl cursor-pointer font-bold select-none transition-all ${isChecked ? 'bg-blue-50 border-blue-500 text-blue-700' : 'bg-white border-[#0b1120] text-[#0b1120]'}`}>
+                              <input 
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedExamStages([...selectedExamStages, stage]);
+                                  } else {
+                                    setSelectedExamStages(selectedExamStages.filter(s => s !== stage));
+                                  }
+                                }}
+                                className="w-5 h-5 accent-blue-600 rounded border-gray-300"
+                              />
+                              <span>{stage}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -1741,6 +1821,10 @@ export default function Manager() {
                     }
                     if (isBundle && bundleDiscountMode === 'any' && Number(bundleDiscountMinCourses) > bundleCourses.length) {
                       alert(`This bundle has only ${bundleCourses.length} course rows. Choose a smaller Any count.`);
+                      return;
+                    }
+                    if (courseTerm !== 'NONE' && availableBoxesForSelectedTerm.length > 0 && selectedExamStages.length === 0) {
+                      alert('Please choose at least one box for this course.');
                       return;
                     }
 
@@ -2303,6 +2387,215 @@ function LogsManager() {
   );
 }
 
+function BoxesManager({
+  boxConfig,
+  setBoxConfig
+}: {
+  boxConfig: Record<CourseTerm, string[]>;
+  setBoxConfig: Dispatch<SetStateAction<Record<CourseTerm, string[]>>>;
+}) {
+  const [activeTerm, setActiveTerm] = useState<CourseTerm>('Foundation');
+  const [draftConfig, setDraftConfig] = useState<Record<CourseTerm, string[]>>(boxConfig);
+  const [newBoxName, setNewBoxName] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  useEffect(() => {
+    setDraftConfig(boxConfig);
+  }, [boxConfig]);
+
+  const boxesForActiveTerm = draftConfig[activeTerm] || [];
+
+  const addBox = () => {
+    const boxName = newBoxName.trim();
+    if (!boxName) return;
+
+    const alreadyExists = boxesForActiveTerm.some((box) => box.toLowerCase() === boxName.toLowerCase());
+    if (alreadyExists) {
+      setError('That box already exists for this term.');
+      setSuccess('');
+      return;
+    }
+
+    setDraftConfig({
+      ...draftConfig,
+      [activeTerm]: [...boxesForActiveTerm, boxName]
+    });
+    setNewBoxName('');
+    setError('');
+    setSuccess('');
+  };
+
+  const updateBox = (index: number, value: string) => {
+    const updatedBoxes = [...boxesForActiveTerm];
+    updatedBoxes[index] = value;
+    setDraftConfig({
+      ...draftConfig,
+      [activeTerm]: updatedBoxes
+    });
+  };
+
+  const removeBox = (boxName: string) => {
+    setDraftConfig({
+      ...draftConfig,
+      [activeTerm]: boxesForActiveTerm.filter((box) => box !== boxName)
+    });
+    setError('');
+    setSuccess('');
+  };
+
+  const handleSaveBoxes = async () => {
+    const cleanedConfig = TERM_OPTIONS.reduce((acc, term) => {
+      const uniqueBoxes = Array.from(new Set(
+        (draftConfig[term] || [])
+          .map((box) => box.trim())
+          .filter(Boolean)
+      ));
+      acc[term] = uniqueBoxes;
+      return acc;
+    }, {} as Record<CourseTerm, string[]>);
+
+    try {
+      setSaving(true);
+      setError('');
+      setSuccess('');
+
+      const { error: saveError } = await supabase
+        .from('settings')
+        .upsert({ key: 'exam_visibility', value: JSON.stringify(cleanedConfig) });
+
+      if (saveError) throw saveError;
+
+      setDraftConfig(cleanedConfig);
+      setBoxConfig(cleanedConfig);
+      setSuccess('Boxes saved successfully.');
+    } catch (err: any) {
+      console.error('Failed to save boxes:', err);
+      setError(err.message || 'Failed to save boxes');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] p-8 md:p-12 shadow-[12px_12px_0px_#0b1120] space-y-8">
+      <div className="border-b-4 border-[#0b1120] pb-6">
+        <h2 className="text-3xl font-black text-[#0b1120] mb-2">Boxes</h2>
+        <p className="text-gray-500 font-bold text-sm">
+          Add the exam boxes students choose after selecting a term, then assign courses into those boxes from course edit.
+        </p>
+      </div>
+
+      {error && (
+        <div className="p-4 bg-red-50 border-[3px] border-red-500 text-red-700 rounded-2xl font-bold flex items-center gap-3">
+          <AlertCircle className="w-6 h-6 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+      {success && (
+        <div className="p-4 bg-green-50 border-[3px] border-green-500 text-green-700 rounded-2xl font-bold flex items-center gap-3">
+          <ShieldCheck className="w-6 h-6 shrink-0" />
+          <span>{success}</span>
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-3 border-b-2 border-gray-100 pb-6">
+        {TERM_OPTIONS.map((term) => (
+          <button
+            key={term}
+            type="button"
+            onClick={() => {
+              setActiveTerm(term);
+              setError('');
+              setSuccess('');
+            }}
+            className={`px-6 py-3 rounded-2xl font-black text-sm border-[3px] border-[#0b1120] transition-all cursor-pointer ${
+              activeTerm === term
+                ? 'bg-[#0b1120] text-white shadow-[4px_4px_0px_#2563eb]'
+                : 'bg-white text-[#0b1120] hover:bg-gray-50'
+            }`}
+          >
+            {term}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8">
+        <div className="space-y-4">
+          <h3 className="text-lg font-black text-[#0b1120] uppercase tracking-wide">{activeTerm} Boxes</h3>
+          {boxesForActiveTerm.length === 0 ? (
+            <div className="p-8 bg-gray-50 border-[3px] border-dashed border-gray-200 rounded-2xl text-center font-black text-gray-300 uppercase tracking-widest">
+              No boxes added
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {boxesForActiveTerm.map((box, index) => (
+                <div key={`${box}-${index}`} className="flex items-center gap-3">
+                  <input
+                    type="text"
+                    value={box}
+                    onChange={(e) => updateBox(index, e.target.value)}
+                    className="flex-grow px-5 py-4 bg-gray-50 border-[3px] border-[#0b1120] rounded-2xl font-black text-[#0b1120] outline-none focus:bg-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeBox(box)}
+                    className="p-4 text-red-500 bg-red-50 border-[3px] border-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-colors"
+                    title="Remove box"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="bg-gray-50 border-[3px] border-[#0b1120] rounded-2xl p-6 h-fit space-y-4">
+          <h3 className="text-sm font-black text-[#0b1120] uppercase tracking-widest">Add Box</h3>
+          <input
+            type="text"
+            value={newBoxName}
+            onChange={(e) => setNewBoxName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') addBox();
+            }}
+            placeholder="e.g. Q1, Quiz 2, Full Term"
+            className="w-full px-4 py-3 bg-white border-[3px] border-[#0b1120] rounded-xl font-black text-[#0b1120] outline-none"
+          />
+          <button
+            type="button"
+            onClick={addBox}
+            className="w-full flex items-center justify-center gap-2 px-5 py-4 bg-blue-600 text-white rounded-xl font-black border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] active:translate-y-1 active:shadow-none transition-all"
+          >
+            <Plus className="w-5 h-5" /> Add to {activeTerm}
+          </button>
+        </div>
+      </div>
+
+      <div className="pt-6 border-t-2 border-gray-100 flex justify-end">
+        <button
+          type="button"
+          onClick={handleSaveBoxes}
+          disabled={saving}
+          className="flex items-center gap-3 px-8 py-4 bg-[#10b981] text-[#0b1120] rounded-2xl font-black border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#0b1120] hover:translate-y-0.5 hover:shadow-[4px_4px_0px_#0b1120] active:translate-y-1 active:shadow-none transition-all cursor-pointer disabled:opacity-50"
+        >
+          {saving ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" /> Saving...
+            </>
+          ) : (
+            <>
+              <Save className="w-5 h-5" /> Save Boxes
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function SettingsManager() {
   const [videoUrl, setVideoUrl] = useState('');
   const [loading, setLoading] = useState(true);
@@ -2310,14 +2603,8 @@ function SettingsManager() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Exam Stages and Pricing States
+  // Pricing state
   const [activeConfigTab, setActiveConfigTab] = useState<'Qualifier' | 'Re-attempt' | 'Foundation' | 'DIPLOMA'>('Foundation');
-  const [examVisibility, setExamVisibility] = useState<Record<string, string[]>>({
-    Qualifier: ['Qualifier'],
-    'Re-attempt': ['Re-attempt'],
-    Foundation: ['Quiz 1', 'Quiz 2', 'End Term', 'Full Term'],
-    DIPLOMA: ['Quiz 1', 'Quiz 2', 'End Term', 'Full Term']
-  });
   const [stagePricing, setStagePricing] = useState<Record<string, {
     quiz1: number;
     quiz2: number;
@@ -2346,18 +2633,6 @@ function SettingsManager() {
         if (videoError) throw videoError;
         if (videoData) {
           setVideoUrl(videoData.value);
-        }
-
-        // Query Exam Visibility
-        const { data: visData, error: visError } = await supabase
-          .from('settings')
-          .select('*')
-          .eq('key', 'exam_visibility')
-          .maybeSingle();
-        
-        if (visError) throw visError;
-        if (visData) {
-          setExamVisibility(JSON.parse(visData.value));
         }
 
         // Query Stage Pricing
@@ -2393,13 +2668,7 @@ function SettingsManager() {
         .upsert({ key: 'homepage_video_url', value: videoUrl.trim() });
       if (videoError) throw videoError;
 
-      // 2. Save Exam Visibility
-      const { error: visError } = await supabase
-        .from('settings')
-        .upsert({ key: 'exam_visibility', value: JSON.stringify(examVisibility) });
-      if (visError) throw visError;
-
-      // 3. Save Stage Pricing
+      // 2. Save Stage Pricing
       const { error: priceError } = await supabase
         .from('settings')
         .upsert({ key: 'stage_pricing', value: JSON.stringify(stagePricing) });
@@ -2441,9 +2710,9 @@ function SettingsManager() {
           {/* Exam Configuration and Pricing panel */}
           <div className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] p-8 md:p-12 shadow-[12px_12px_0px_#0b1120] space-y-8">
             <div className="border-b-4 border-[#0b1120] pb-6">
-              <h2 className="text-3xl font-black text-[#0b1120] mb-2">Exam Stages & Pricing Controls</h2>
+              <h2 className="text-3xl font-black text-[#0b1120] mb-2">Exam Pricing Controls</h2>
               <p className="text-gray-500 font-bold text-sm">
-                Control which exams are visible to students and configure stage-based pricing packages.
+                Configure stage-based pricing packages. Box visibility is controlled from the Boxes tab.
               </p>
             </div>
 
@@ -2471,45 +2740,8 @@ function SettingsManager() {
 
             {/* Controls for Selected Academic Level */}
             <div className="space-y-8">
-              {/* Visibility Checkboxes */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-black text-[#0b1120] uppercase tracking-wide">Visible Exam Stages</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {['Qualifier', 'Re-attempt', 'Quiz 1', 'Quiz 2', 'End Term', 'Full Term'].map((stage) => {
-                    const currentList = examVisibility[activeConfigTab] || [];
-                    const isChecked = currentList.includes(stage);
-                    return (
-                      <label
-                        key={stage}
-                        className={`flex items-center gap-3 p-4 border-[3px] rounded-2xl cursor-pointer font-bold select-none transition-all ${
-                          isChecked
-                            ? 'bg-blue-50 border-blue-500 text-blue-700 shadow-[4px_4px_0px_#2563eb]'
-                            : 'bg-white border-[#0b1120] text-[#0b1120]'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={(e) => {
-                            const updatedList = e.target.checked
-                              ? [...currentList, stage]
-                              : currentList.filter((s) => s !== stage);
-                            setExamVisibility({
-                              ...examVisibility,
-                              [activeConfigTab]: updatedList
-                            });
-                          }}
-                          className="w-5 h-5 accent-blue-600 rounded border-gray-300"
-                        />
-                        <span>{stage}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-
               {/* Stage Pricing Inputs */}
-              <div className="space-y-6 pt-6 border-t-2 border-dashed border-gray-100">
+              <div className="space-y-6">
                 <h3 className="text-lg font-black text-[#0b1120] uppercase tracking-wide">Stage Final Prices (₹)</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {(['quiz1', 'quiz2', 'endTerm', 'fullTerm'] as const).map((key) => {
