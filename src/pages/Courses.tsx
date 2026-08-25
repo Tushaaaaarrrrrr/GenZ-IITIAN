@@ -443,12 +443,9 @@ export default function Courses() {
                   {selectedTerm} Level
                 </span>
               </div>
-              <h1 className="text-4xl md:text-5xl font-black text-[#0b1120] mb-4 leading-tight tracking-tight">
+              <h1 className="text-4xl md:text-5xl font-black text-[#0b1120] leading-tight tracking-tight">
                 Select Your <span className="text-blue-600">Foundation Term</span>
               </h1>
-              <p className="text-gray-500 font-bold max-w-xl mx-auto text-sm md:text-base">
-                Choose your specific Foundation term to explore relevant subjects and exams.
-              </p>
             </motion.div>
 
             <div className={`grid grid-cols-1 ${displaySubTerms.length === 1 ? 'max-w-md' : 'md:grid-cols-2 max-w-4xl'} gap-8 text-left mx-auto`}>
@@ -470,12 +467,9 @@ export default function Courses() {
                       <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
                     </div>
 
-                    <h3 className="text-3xl font-black text-[#0b1120] tracking-tight mb-2">
+                    <h3 className="text-3xl font-black text-[#0b1120] tracking-tight mb-4">
                       {sub.name}
                     </h3>
-                    <p className="text-gray-500 font-bold text-xs mb-6">
-                      {sub.desc}
-                    </p>
 
                     {/* Subjects list underneath */}
                     <div className="mb-6">

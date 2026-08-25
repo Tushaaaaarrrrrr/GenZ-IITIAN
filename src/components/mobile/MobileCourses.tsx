@@ -222,7 +222,6 @@ export default function MobileCourses({
 
           <div className="mb-5">
             <h2 className="font-black text-2xl leading-tight text-white">Select Foundation Term</h2>
-            <p className="text-white/50 text-xs font-bold mt-1">Pick your term to see subjects and exams.</p>
           </div>
 
           <div className="grid grid-cols-2 gap-3.5">
