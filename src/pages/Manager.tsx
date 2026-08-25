@@ -309,7 +309,7 @@ export default function Manager() {
       // Always fetch catalog for mapping (merge denormalized catalog + main courses)
       const [{ data: catalog }, { data: courses }] = await Promise.all([
         supabase.from('course_catalog').select('id, name'),
-        supabase.from('courses').select('id, name')
+        supabase.from('courses').select('id, name, bundleCourses, courseIds')
       ]);
       
       const merged = [
@@ -369,6 +369,35 @@ export default function Manager() {
     link.click();
   };
   
+  const resolveCourseTitle = (cid: string): string => {
+    if (!cid) return '';
+    for (const course of courseCatalog) {
+      if (Array.isArray(course.bundleCourses)) {
+        const matchedBc = course.bundleCourses.find((bc: any) => 
+          bc.courseId === cid || bc.courseId2 === cid || bc.courseId3 === cid || bc.id === cid
+        );
+        if (matchedBc && matchedBc.courseName) return matchedBc.courseName;
+      }
+    }
+    const directCourse = courseCatalog.find(c => c.id === cid);
+    if (directCourse) {
+      if (Array.isArray(directCourse.bundleCourses) && directCourse.bundleCourses.length > 0 && directCourse.bundleCourses[0].courseName) {
+        return directCourse.bundleCourses[0].courseName;
+      }
+      return directCourse.name;
+    }
+    for (const course of courseCatalog) {
+      if (Array.isArray(course.courseIds) && course.courseIds.includes(cid)) return course.name;
+    }
+    const inDiscount = discountOptions.find(c => c.id === cid);
+    if (inDiscount) return inDiscount.name;
+
+    if (cid.includes('-') || cid.includes('_')) {
+      return cid.replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    }
+    return cid;
+  };
+
   const exportPayments = () => {
     if (effectiveTab !== 'payments' || !Array.isArray(data)) return;
     
@@ -379,7 +408,7 @@ export default function Manager() {
       order.user_email || '',
       order.user_phone || '',
       Array.isArray(order.course_ids) 
-        ? order.course_ids.map(id => courseCatalog.find(c => c.id === id)?.name || id).join('; ') 
+        ? order.course_ids.map(id => resolveCourseTitle(id)).join('; ') 
         : '',
       order.total_amount || 0,
       order.status || '',
@@ -941,11 +970,9 @@ export default function Manager() {
                             <td className="px-8 py-6">
                               <div className="flex flex-wrap gap-2">
                                 {Array.isArray(order.course_ids) ? order.course_ids.map((cid: string) => {
-                                  const courseInCatalog = courseCatalog.find(c => c.id === cid);
-                                  const courseInOptions = discountOptions.find(c => c.id === cid);
                                   return (
                                     <span key={cid} className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-xs font-black border border-blue-100">
-                                      {courseInCatalog?.name || courseInOptions?.name || cid}
+                                      {resolveCourseTitle(cid)}
                                     </span>
                                   );
                                 }) : <span className="text-gray-400">No courses</span>}
@@ -2206,10 +2233,9 @@ export default function Manager() {
                                     <td className="p-4">
                                       <div className="flex flex-wrap gap-1">
                                         {Array.isArray(order.course_ids) ? order.course_ids.map((cid: string) => {
-                                          const course = courseCatalog.find(c => c.id === cid);
                                           return (
                                             <span key={cid} className="px-2 py-0.5 bg-gray-50 text-[10px] font-black text-gray-500 border border-gray-100 rounded">
-                                              {course?.name || cid}
+                                              {resolveCourseTitle(cid)}
                                             </span>
                                           );
                                         }) : <span className="text-gray-400">-</span>}

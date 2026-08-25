@@ -21,10 +21,10 @@ export default function Profile() {
 
   const fetchCatalog = async () => {
     try {
-      // Fetch full details from courses table to get community and content links
+      // Fetch full details including bundleCourses and courseIds for title mapping
       const { data: courses, error } = await supabase
         .from('courses')
-        .select('id, name, image')
+        .select('*')
         .order('name');
       
       if (error) throw error;
@@ -34,10 +34,87 @@ export default function Profile() {
     }
   };
 
+  const getCourseDisplayName = (cid: string): string => {
+    if (!cid) return '';
+    
+    // 1. Search inside bundleCourses for matched courseId / courseId2 / courseId3
+    for (const course of courseCatalog) {
+      if (Array.isArray(course.bundleCourses)) {
+        const matchedBc = course.bundleCourses.find((bc: any) => 
+          bc.courseId === cid || 
+          bc.courseId2 === cid || 
+          bc.courseId3 === cid ||
+          bc.id === cid
+        );
+        if (matchedBc && matchedBc.courseName) {
+          return matchedBc.courseName;
+        }
+      }
+    }
+
+    // 2. Search direct course by ID
+    const directCourse = courseCatalog.find(c => c.id === cid);
+    if (directCourse) {
+      if (Array.isArray(directCourse.bundleCourses) && directCourse.bundleCourses.length > 0 && directCourse.bundleCourses[0].courseName) {
+        return directCourse.bundleCourses[0].courseName;
+      }
+      return directCourse.name;
+    }
+
+    // 3. Search in courseIds array
+    for (const course of courseCatalog) {
+      if (Array.isArray(course.courseIds) && course.courseIds.includes(cid)) {
+        return course.name;
+      }
+    }
+
+    // 4. Format hyphenated/underscored IDs cleanly (e.g. QUALIFIER-CRASH-COURSE -> Qualifier Crash Course)
+    if (cid.includes('-') || cid.includes('_')) {
+      return cid.replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    }
+
+    return cid;
+  };
+
   const getEnrolledCourses = () => {
     const paidOrders = orders.filter(o => o.status === 'PAID');
-    const allCourseIds = Array.from(new Set(paidOrders.flatMap(o => o.course_ids)));
-    return allCourseIds.map(id => courseCatalog.find(c => c.id === id)).filter(Boolean);
+    const allCourseIds = Array.from(new Set(paidOrders.flatMap(o => o.course_ids || [])));
+    
+    const matchedCourses: any[] = [];
+    const addedIds = new Set<string>();
+
+    allCourseIds.forEach((cid: string) => {
+      // 1. Direct course
+      const directCourse = courseCatalog.find(c => c.id === cid);
+      if (directCourse && !addedIds.has(directCourse.id)) {
+        matchedCourses.push(directCourse);
+        addedIds.add(directCourse.id);
+        return;
+      }
+
+      // 2. Course by bundleCourses or courseIds
+      for (const course of courseCatalog) {
+        const hasBc = Array.isArray(course.bundleCourses) && course.bundleCourses.some((bc: any) => 
+          bc.courseId === cid || bc.courseId2 === cid || bc.courseId3 === cid || bc.id === cid
+        );
+        const hasCid = Array.isArray(course.courseIds) && course.courseIds.includes(cid);
+
+        if ((hasBc || hasCid) && !addedIds.has(course.id)) {
+          const matchedBc = Array.isArray(course.bundleCourses) ? course.bundleCourses.find((bc: any) => 
+            bc.courseId === cid || bc.courseId2 === cid || bc.courseId3 === cid || bc.id === cid
+          ) : null;
+
+          matchedCourses.push({
+            ...course,
+            name: matchedBc?.courseName || course.name
+          });
+          addedIds.add(course.id);
+          return;
+        }
+      }
+    });
+
+    return matchedCourses;
   };
 
   const enrolledCourses = getEnrolledCourses();
@@ -198,13 +275,13 @@ export default function Profile() {
 
                     <div className="flex flex-wrap gap-1.5 sm:gap-2">
                       {order.course_ids.map((cid: string) => {
-                        const course = courseCatalog.find(c => c.id === cid);
+                        const courseTitle = getCourseDisplayName(cid);
                         return (
                           <div 
                             key={cid} 
                             className="px-2.5 py-1 bg-gray-50 border-2 border-[#0b1120] rounded-lg text-[11px] sm:text-xs font-black uppercase text-gray-700 max-w-full break-all"
                           >
-                            {course?.name || cid}
+                            {courseTitle}
                           </div>
                         );
                       })}
