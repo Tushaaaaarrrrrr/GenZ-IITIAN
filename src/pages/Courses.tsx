@@ -605,35 +605,8 @@ export default function Courses() {
     />
 
     <div className="hidden md:block min-h-screen bg-white">
-      {/* Hero Section */}
-      <section className="bg-[#0b1120] py-12 px-6 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 left-0 w-96 h-96 bg-blue-500 rounded-full blur-[100px] -translate-x-1/2 -translate-y-1/2"></div>
-          <div className="absolute bottom-0 right-0 w-96 h-96 bg-indigo-500 rounded-full blur-[100px] translate-x-1/2 translate-y-1/2"></div>
-        </div>
-
-        <div className="max-w-7xl mx-auto relative z-10 text-center flex flex-col items-center">
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-3xl md:text-4xl lg:text-5xl font-black text-white mb-6 leading-tight tracking-tight"
-          >
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">Start Early, Stay Strong</span>
-          </motion.h1>
-          
-          <div className="max-w-3xl mx-auto mb-10">
-            <p className="text-lg md:text-xl text-gray-300 font-bold mb-3 leading-relaxed">
-              Learn from <span className="text-white">IITM BS seniors</span> with a practical-first approach, clear concepts, real strategies, and zero unnecessary theory.
-            </p>
-            <p className="text-[10px] md:text-xs text-gray-500 font-black uppercase tracking-[0.2em] opacity-80 italic">
-              Note: Access is granted immediately after successful payment verification
-            </p>
-          </div>
-        </div>
-      </section>
-
       {/* Active Term and Exam Selector */}
-      <div className="max-w-7xl mx-auto px-6 mt-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b-2 border-gray-100 pb-6">
+      <div className="max-w-7xl mx-auto px-6 pt-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b-2 border-gray-100 pb-6">
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-sm font-black text-gray-400 uppercase tracking-widest">Active:</span>
           <span className="px-4 py-1.5 bg-[#0b1120] text-white border-2 border-[#0b1120] shadow-[3px_3px_0px_#2563eb] rounded-xl text-xs font-black uppercase tracking-wider">
@@ -787,6 +760,34 @@ export default function Courses() {
             )}
           </>
         )}
+      </section>
+
+      {/* Start Early, Stay Strong Footer Banner */}
+      <section className="bg-[#0b1120] py-14 px-6 relative overflow-hidden mt-12 border-t-[3px] border-[#0b1120]">
+        <div className="absolute inset-0 opacity-10 pointer-events-none">
+          <div className="absolute top-0 left-0 w-96 h-96 bg-blue-500 rounded-full blur-[100px] -translate-x-1/2 -translate-y-1/2"></div>
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-indigo-500 rounded-full blur-[100px] translate-x-1/2 translate-y-1/2"></div>
+        </div>
+
+        <div className="max-w-7xl mx-auto relative z-10 text-center flex flex-col items-center">
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-3xl md:text-4xl lg:text-5xl font-black text-white mb-5 leading-tight tracking-tight"
+          >
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">Start Early, Stay Strong</span>
+          </motion.h2>
+          
+          <div className="max-w-3xl mx-auto">
+            <p className="text-base md:text-lg text-gray-300 font-bold mb-3 leading-relaxed">
+              Learn from <span className="text-white">IITM BS seniors</span> with a practical-first approach, clear concepts, real strategies, and zero unnecessary theory.
+            </p>
+            <p className="text-[10px] md:text-xs text-gray-500 font-black uppercase tracking-[0.2em] opacity-80 italic">
+              Note: Access is granted immediately after successful payment verification
+            </p>
+          </div>
+        </div>
       </section>
     </div>
     </>
