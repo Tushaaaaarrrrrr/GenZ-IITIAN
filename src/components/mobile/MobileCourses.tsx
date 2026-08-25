@@ -196,6 +196,10 @@ export default function MobileCourses({
     return rawBoxes.some(box => getStagePrice(box, subPricing) > 0);
   });
 
+  const displaySubTerms = activeFoundationSubTerms.length > 0 
+    ? activeFoundationSubTerms 
+    : FOUNDATION_SUB_TERMS.filter(sub => courses.some(c => c.term === 'Foundation' && isCourseInSubTerm(c, sub.id)));
+
   // Step 2: Foundation Term Selection (TERM 1 / TERM 2) on Mobile
   if (selectedTerm === 'Foundation' && !selectedSubTerm) {
     return (
@@ -222,7 +226,7 @@ export default function MobileCourses({
           </div>
 
           <div className="grid grid-cols-2 gap-3.5">
-            {activeFoundationSubTerms.map((sub) => (
+            {displaySubTerms.map((sub) => (
               <button
                 key={sub.id}
                 type="button"

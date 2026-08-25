@@ -175,7 +175,7 @@ export default function Courses() {
   }, []);
 
   // Dynamic filter: only show a term if there is at least one course configured for it AND at least one active exam with price > 0
-  const activeTerms = termOptions.filter(option => {
+  const activeTerms = TERM_OPTIONS.filter(option => {
     // 1. Must have at least one course for this term
     const hasCourse = courses.some(course => course.term === option.id);
     if (!hasCourse) return false;
@@ -198,6 +198,8 @@ export default function Courses() {
     return rawBoxes.some(box => getStagePrice(box, currentPricing) > 0);
   });
 
+  const displayTerms = activeTerms.length > 0 ? activeTerms : TERM_OPTIONS.filter(option => courses.some(c => c.term === option.id));
+
   const activeFoundationSubTerms = FOUNDATION_SUB_TERMS.filter(sub => {
     // 1. Must have at least one course matching this sub-term
     const hasCourse = courses.some(c => c.term === 'Foundation' && isCourseInSubTerm(c, sub.id));
@@ -208,6 +210,10 @@ export default function Courses() {
     const rawBoxes = examVisibility['Foundation'] || DEFAULT_BOX_CONFIG['Foundation'] || [];
     return rawBoxes.some(box => getStagePrice(box, subPricing) > 0);
   });
+
+  const displaySubTerms = activeFoundationSubTerms.length > 0 
+    ? activeFoundationSubTerms 
+    : FOUNDATION_SUB_TERMS.filter(sub => courses.some(c => c.term === 'Foundation' && isCourseInSubTerm(c, sub.id)));
 
   const rawBoxes = selectedTerm ? (examVisibility[selectedTerm] || DEFAULT_BOX_CONFIG[selectedTerm] || []) : [];
   const currentPricingKey = (selectedTerm === 'Foundation' && selectedSubTerm)
@@ -373,8 +379,8 @@ export default function Courses() {
           </motion.div>
 
           {/* At least 2 boxes per row on mobile (grid-cols-2), responsive on desktop */}
-          <div className={`grid grid-cols-2 ${activeTerms.length === 4 ? 'md:grid-cols-4' : activeTerms.length === 3 ? 'md:grid-cols-3' : activeTerms.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-1'} gap-3.5 md:gap-8 text-center md:text-left max-w-5xl mx-auto`}>
-            {activeTerms.map((term, index) => {
+          <div className={`grid grid-cols-2 ${displayTerms.length === 4 ? 'md:grid-cols-4' : displayTerms.length === 3 ? 'md:grid-cols-3' : displayTerms.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-1'} gap-3.5 md:gap-8 text-center md:text-left max-w-5xl mx-auto`}>
+            {displayTerms.map((term, index) => {
               const IconComponent = term.icon;
               return (
                 <motion.div
@@ -445,8 +451,8 @@ export default function Courses() {
               </p>
             </motion.div>
 
-            <div className={`grid grid-cols-1 ${activeFoundationSubTerms.length === 1 ? 'max-w-md' : 'md:grid-cols-2 max-w-4xl'} gap-8 text-left mx-auto`}>
-              {activeFoundationSubTerms.map((sub, index) => (
+            <div className={`grid grid-cols-1 ${displaySubTerms.length === 1 ? 'max-w-md' : 'md:grid-cols-2 max-w-4xl'} gap-8 text-left mx-auto`}>
+              {displaySubTerms.map((sub, index) => (
                 <motion.div
                   key={sub.id}
                   initial={{ opacity: 0, y: 30 }}
