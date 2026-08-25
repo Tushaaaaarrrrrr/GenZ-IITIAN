@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { RefreshCcw, GraduationCap, Star, Loader2, ChevronRight, BookOpen, Minus } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { CourseCardData } from '../CourseCard';
-import { isCourseInSubTerm, getStagePrice } from '../../pages/Courses';
+import { FOUNDATION_SUB_TERMS, isCourseInSubTerm, getStagePrice } from '../../pages/Courses';
 
 const DEFAULT_BOX_CONFIG: Record<string, string[]> = {
   Qualifier: ['Qualifier'],
@@ -102,8 +102,6 @@ function CohortCard({ course, accent }: { course: CourseCardData; accent?: boole
     </div>
   );
 }
-
-import { FOUNDATION_SUB_TERMS, isCourseInSubTerm, getStagePrice } from '../../pages/Courses';
 
 interface MobileCoursesProps {
   selectedTerm: string | null;

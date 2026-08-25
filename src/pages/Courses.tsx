@@ -4,7 +4,7 @@ import { Search, Loader2, RefreshCcw, BookOpen, GraduationCap } from 'lucide-rea
 import { supabase } from '../lib/supabase';
 import CourseCard, { CourseCardData } from '../components/CourseCard';
 import MobileCourses from '../components/mobile/MobileCourses';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 const DEFAULT_BOX_CONFIG: Record<string, string[]> = {
   Qualifier: ['Qualifier'],
