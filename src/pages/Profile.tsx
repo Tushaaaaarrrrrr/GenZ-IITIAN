@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { User, Mail, Calendar, ShoppingBag, LogOut, Loader2, Book } from 'lucide-react';
+import { User, Mail, Calendar, ShoppingBag, LogOut, Loader2, Book, ExternalLink } from 'lucide-react';
 import { motion } from 'motion/react';
 import { apiService } from '../lib/api';
 import { Link } from 'react-router-dom';
@@ -88,16 +88,44 @@ export default function Profile() {
 
         {/* Enrolled Courses */}
         <section className="space-y-6">
-          <h2 className="text-2xl font-black text-[#0b1120] flex items-center gap-3">
-            <Book className="w-6 h-6 text-[#10b981]" /> My Enrolled Courses
-          </h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <h2 className="text-2xl font-black text-[#0b1120] flex items-center gap-3">
+              <Book className="w-6 h-6 text-[#10b981]" /> My Enrolled Courses
+            </h2>
+            <a
+              href="https://class.genziitian.in"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-[#10b981] text-[#0b1120] rounded-2xl font-black text-sm border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] hover:translate-y-0.5 hover:shadow-[2px_2px_0px_#0b1120] active:translate-y-1 active:shadow-none transition-all"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Visit Dashboard to Access Your Purchased Batch
+            </a>
+          </div>
 
           {loading ? (
             <div className="p-12 text-center text-gray-400 font-bold">Loading your courses...</div>
           ) : enrolledCourses.length === 0 ? (
-            <div className="bg-white border-[4px] border-dashed border-gray-200 rounded-[2.5rem] p-16 text-center">
+            <div className="bg-white border-[4px] border-dashed border-gray-200 rounded-[2.5rem] p-12 md:p-16 text-center space-y-5">
               <p className="text-xl font-bold text-gray-400">You haven't enrolled in any courses yet.</p>
-              <Link to="/courses" className="inline-block mt-4 text-[#3b82f6] font-black hover:underline">Browse Courses →</Link>
+              
+              <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
+                <Link 
+                  to="/courses" 
+                  className="px-6 py-3.5 bg-blue-600 text-white rounded-xl font-black text-sm border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] hover:translate-y-0.5 hover:shadow-[2px_2px_0px_#0b1120] active:translate-y-1 active:shadow-none transition-all"
+                >
+                  Browse Courses →
+                </Link>
+                <a
+                  href="https://class.genziitian.in"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-6 py-3.5 bg-[#10b981] text-[#0b1120] rounded-xl font-black text-sm border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] hover:translate-y-0.5 hover:shadow-[2px_2px_0px_#0b1120] active:translate-y-1 active:shadow-none transition-all"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Visit Dashboard (class.genziitian.in)
+                </a>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -106,9 +134,9 @@ export default function Profile() {
                   key={course.id}
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="bg-white border-[4px] border-[#0b1120] rounded-[2rem] p-6 shadow-[6px_6px_0px_#0b1120] hover:shadow-[10px_10px_0px_#10b981] transition-all group"
+                  className="bg-white border-[4px] border-[#0b1120] rounded-[2rem] p-6 shadow-[6px_6px_0px_#0b1120] hover:shadow-[10px_10px_0px_#10b981] transition-all group flex flex-col justify-between"
                 >
-                  <div className="flex items-start gap-4 mb-6">
+                  <div className="flex items-start gap-4 mb-4">
                     <div className="w-16 h-16 bg-gray-100 rounded-xl border-2 border-[#0b1120] overflow-hidden shrink-0">
                       <img src={course.image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=200'} className="w-full h-full object-cover" />
                     </div>
@@ -118,7 +146,17 @@ export default function Profile() {
                     </div>
                   </div>
 
-
+                  <div className="pt-4 border-t-2 border-dashed border-gray-100 flex justify-end">
+                    <a
+                      href="https://class.genziitian.in"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#0b1120] text-white rounded-xl font-black text-xs border-2 border-[#0b1120] shadow-[3px_3px_0px_#10b981] hover:bg-gray-800 transition-all"
+                    >
+                      <span>Access Batch on Dashboard</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
                 </motion.div>
               ))}
             </div>
