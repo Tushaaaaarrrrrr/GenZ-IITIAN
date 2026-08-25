@@ -121,19 +121,18 @@ export default function Courses() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   
+  // URL search params manage filter state for step-by-step browser back history and course navigation memory
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedTerm = searchParams.get('level') || null;
+  const selectedSubTerm = searchParams.get('term') || null;
+  const selectedExamStage = searchParams.get('exam') || null;
+
   // Custom states for manager configurations
   const [examVisibility, setExamVisibility] = useState<Record<string, string[]>>(DEFAULT_BOX_CONFIG);
   const [boxesLoaded, setBoxesLoaded] = useState(false);
   const [stagePricing, setStagePricing] = useState<Record<string, any>>({});
-  const [selectedExamStage, setSelectedExamStage] = useState<string | null>(null);
-  const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
-  const [selectedSubTerm, setSelectedSubTerm] = useState<string | null>(null);
 
   useEffect(() => {
-    // Clear any previously persisted filter caches from browser memory
-    localStorage.removeItem('selected_term');
-    localStorage.removeItem('selected_sub_term');
-    localStorage.removeItem('selected_exam_stage');
     fetchCourses();
   }, []);
 
@@ -197,9 +196,7 @@ export default function Courses() {
     if (selectedTerm) {
       const isTermValid = activeTerms.some(t => t.id === selectedTerm);
       if (!isTermValid && courses.length > 0) {
-        setSelectedTerm(null);
-        setSelectedSubTerm(null);
-        setSelectedExamStage(null);
+        setSearchParams({});
         return;
       }
     }
@@ -207,16 +204,18 @@ export default function Courses() {
     if (selectedTerm === 'Foundation' && selectedSubTerm) {
       const isSubTermValid = activeFoundationSubTerms.some(s => s.id === selectedSubTerm);
       if (!isSubTermValid && courses.length > 0) {
-        setSelectedSubTerm(null);
-        setSelectedExamStage(null);
+        setSearchParams({ level: 'Foundation' });
         return;
       }
     }
 
     if (selectedExamStage && !activeBoxes.includes(selectedExamStage)) {
-      setSelectedExamStage(null);
+      const next: Record<string, string> = {};
+      if (selectedTerm) next.level = selectedTerm;
+      if (selectedSubTerm) next.term = selectedSubTerm;
+      setSearchParams(next);
     }
-  }, [selectedTerm, selectedSubTerm, selectedExamStage, activeTerms, activeFoundationSubTerms, activeBoxes, boxesLoaded, loading, courses.length]);
+  }, [selectedTerm, selectedSubTerm, selectedExamStage, activeTerms, activeFoundationSubTerms, activeBoxes, boxesLoaded, loading, courses.length, setSearchParams]);
 
   const fetchCourses = async () => {
     try {
@@ -257,14 +256,15 @@ export default function Courses() {
     if (selectedTerm === 'Foundation' && !selectedSubTerm) return;
 
     if (activeBoxes.length === 1 && selectedExamStage !== activeBoxes[0]) {
-      setSelectedExamStage(activeBoxes[0]);
+      const next: Record<string, string> = {};
+      if (selectedTerm) next.level = selectedTerm;
+      if (selectedSubTerm) next.term = selectedSubTerm;
+      next.exam = activeBoxes[0];
+      setSearchParams(next, { replace: true });
     }
-  }, [selectedTerm, selectedSubTerm, activeBoxes, selectedExamStage, boxesLoaded, loading]);
+  }, [selectedTerm, selectedSubTerm, activeBoxes, selectedExamStage, boxesLoaded, loading, setSearchParams]);
 
   const handleSelectTerm = (term: string) => {
-    setSelectedTerm(term);
-    setSelectedSubTerm(null);
-
     if (term !== 'Foundation') {
       const raw = examVisibility[term] || DEFAULT_BOX_CONFIG[term] || [];
       const pricing = stagePricing[term];
@@ -273,17 +273,15 @@ export default function Courses() {
         return getStagePrice(b, pricing) > 0;
       });
       if (boxes.length === 1) {
-        setSelectedExamStage(boxes[0]);
+        setSearchParams({ level: term, exam: boxes[0] });
         return;
       }
     }
 
-    setSelectedExamStage(null);
+    setSearchParams({ level: term });
   };
 
   const handleSelectSubTerm = (subTerm: string) => {
-    setSelectedSubTerm(subTerm);
-
     const raw = examVisibility['Foundation'] || DEFAULT_BOX_CONFIG['Foundation'] || [];
     const pricing = stagePricing[`Foundation_${subTerm}`] || stagePricing['Foundation'];
     const boxes = raw.filter(b => {
@@ -292,30 +290,36 @@ export default function Courses() {
     });
 
     if (boxes.length === 1) {
-      setSelectedExamStage(boxes[0]);
+      setSearchParams({ level: 'Foundation', term: subTerm, exam: boxes[0] });
       return;
     }
 
-    setSelectedExamStage(null);
+    setSearchParams({ level: 'Foundation', term: subTerm });
   };
 
   const handleSelectExamStage = (stage: string) => {
-    setSelectedExamStage(stage);
+    const next: Record<string, string> = {};
+    if (selectedTerm) next.level = selectedTerm;
+    if (selectedSubTerm) next.term = selectedSubTerm;
+    next.exam = stage;
+    setSearchParams(next);
   };
 
   const handleClearTerm = () => {
-    setSelectedTerm(null);
-    setSelectedSubTerm(null);
-    setSelectedExamStage(null);
+    setSearchParams({});
   };
 
   const handleClearSubTerm = () => {
-    setSelectedSubTerm(null);
-    setSelectedExamStage(null);
+    const next: Record<string, string> = {};
+    if (selectedTerm) next.level = selectedTerm;
+    setSearchParams(next);
   };
 
   const handleClearExam = () => {
-    setSelectedExamStage(null);
+    const next: Record<string, string> = {};
+    if (selectedTerm) next.level = selectedTerm;
+    if (selectedSubTerm) next.term = selectedSubTerm;
+    setSearchParams(next);
   };
 
   // Filter courses by selected academic term, sub-term, and selected exam stage:
