@@ -225,19 +225,15 @@ export default function Courses() {
   const [examVisibility, setExamVisibility] = useState<Record<string, string[]>>(DEFAULT_BOX_CONFIG);
   const [boxesLoaded, setBoxesLoaded] = useState(false);
   const [stagePricing, setStagePricing] = useState<Record<string, any>>({});
-  const [selectedExamStage, setSelectedExamStage] = useState<string | null>(() => {
-    return localStorage.getItem('selected_exam_stage');
-  });
-
-  const [selectedTerm, setSelectedTerm] = useState<string | null>(() => {
-    return localStorage.getItem('selected_term');
-  });
-
-  const [selectedSubTerm, setSelectedSubTerm] = useState<string | null>(() => {
-    return localStorage.getItem('selected_sub_term');
-  });
+  const [selectedExamStage, setSelectedExamStage] = useState<string | null>(null);
+  const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
+  const [selectedSubTerm, setSelectedSubTerm] = useState<string | null>(null);
 
   useEffect(() => {
+    // Clear any previously persisted filter caches from browser memory
+    localStorage.removeItem('selected_term');
+    localStorage.removeItem('selected_sub_term');
+    localStorage.removeItem('selected_exam_stage');
     fetchCourses();
   }, []);
 
@@ -287,9 +283,6 @@ export default function Courses() {
         setSelectedTerm(null);
         setSelectedSubTerm(null);
         setSelectedExamStage(null);
-        localStorage.removeItem('selected_term');
-        localStorage.removeItem('selected_sub_term');
-        localStorage.removeItem('selected_exam_stage');
         return;
       }
     }
@@ -299,15 +292,12 @@ export default function Courses() {
       if (!isSubTermValid && courses.length > 0) {
         setSelectedSubTerm(null);
         setSelectedExamStage(null);
-        localStorage.removeItem('selected_sub_term');
-        localStorage.removeItem('selected_exam_stage');
         return;
       }
     }
 
     if (selectedExamStage && !activeBoxes.includes(selectedExamStage)) {
       setSelectedExamStage(null);
-      localStorage.removeItem('selected_exam_stage');
     }
   }, [selectedTerm, selectedSubTerm, selectedExamStage, activeTerms, activeFoundationSubTerms, activeBoxes, boxesLoaded, loading, courses.length]);
 
@@ -351,15 +341,12 @@ export default function Courses() {
 
     if (activeBoxes.length === 1 && selectedExamStage !== activeBoxes[0]) {
       setSelectedExamStage(activeBoxes[0]);
-      localStorage.setItem('selected_exam_stage', activeBoxes[0]);
     }
   }, [selectedTerm, selectedSubTerm, activeBoxes, selectedExamStage, boxesLoaded, loading]);
 
   const handleSelectTerm = (term: string) => {
     setSelectedTerm(term);
     setSelectedSubTerm(null);
-    localStorage.setItem('selected_term', term);
-    localStorage.removeItem('selected_sub_term');
 
     if (term !== 'Foundation') {
       const raw = examVisibility[term] || DEFAULT_BOX_CONFIG[term] || [];
@@ -370,18 +357,15 @@ export default function Courses() {
       });
       if (boxes.length === 1) {
         setSelectedExamStage(boxes[0]);
-        localStorage.setItem('selected_exam_stage', boxes[0]);
         return;
       }
     }
 
     setSelectedExamStage(null);
-    localStorage.removeItem('selected_exam_stage');
   };
 
   const handleSelectSubTerm = (subTerm: string) => {
     setSelectedSubTerm(subTerm);
-    localStorage.setItem('selected_sub_term', subTerm);
 
     const raw = examVisibility['Foundation'] || DEFAULT_BOX_CONFIG['Foundation'] || [];
     const pricing = stagePricing[`Foundation_${subTerm}`] || stagePricing['Foundation'];
@@ -392,38 +376,29 @@ export default function Courses() {
 
     if (boxes.length === 1) {
       setSelectedExamStage(boxes[0]);
-      localStorage.setItem('selected_exam_stage', boxes[0]);
       return;
     }
 
     setSelectedExamStage(null);
-    localStorage.removeItem('selected_exam_stage');
   };
 
   const handleSelectExamStage = (stage: string) => {
     setSelectedExamStage(stage);
-    localStorage.setItem('selected_exam_stage', stage);
   };
 
   const handleClearTerm = () => {
     setSelectedTerm(null);
     setSelectedSubTerm(null);
     setSelectedExamStage(null);
-    localStorage.removeItem('selected_term');
-    localStorage.removeItem('selected_sub_term');
-    localStorage.removeItem('selected_exam_stage');
   };
 
   const handleClearSubTerm = () => {
     setSelectedSubTerm(null);
     setSelectedExamStage(null);
-    localStorage.removeItem('selected_sub_term');
-    localStorage.removeItem('selected_exam_stage');
   };
 
   const handleClearExam = () => {
     setSelectedExamStage(null);
-    localStorage.removeItem('selected_exam_stage');
   };
 
   // Filter courses by selected academic term, sub-term, and selected exam stage:
