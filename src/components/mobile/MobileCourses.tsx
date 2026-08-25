@@ -342,7 +342,7 @@ export default function MobileCourses({
   }
 
   return (
-    <div className="md:hidden bg-[#0b1120] min-h-screen pb-36">
+    <div className="md:hidden bg-[#0b1120] min-h-screen pb-44">
       <div className="px-4 py-5">
         {/* Mobile Stage Selector (Horizontal Scroll with smooth padding) - only if multiple exams exist */}
         {selectedTerm && !loading && activeBoxes.length > 1 && (
@@ -448,57 +448,58 @@ export default function MobileCourses({
         )}
       </div>
 
-      {/* Sticky Active Filters Bar above Bottom Navigation */}
+      {/* Sticky Active Filters Bar above Bottom Navigation and elevated center icon */}
       {selectedTerm && (
         <div 
-          className="fixed bottom-[65px] inset-x-0 z-[80] bg-[#0b1120]/95 backdrop-blur-md border-t-[2.5px] border-white/10 px-4 py-2.5 shadow-[0_-4px_20px_rgba(0,0,0,0.6)]"
+          className="fixed inset-x-0 z-[80] bg-[#0b1120]/95 backdrop-blur-md border-t border-b border-white/10 px-3 py-2 shadow-[0_-4px_20px_rgba(0,0,0,0.6)]"
+          style={{ bottom: 'calc(max(env(safe-area-inset-bottom), 8px) + 68px)' }}
         >
           <div className="flex items-center justify-between gap-2 max-w-md mx-auto">
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest shrink-0">
+            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest shrink-0">
               Active:
             </span>
             
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 flex-nowrap">
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 flex-nowrap shrink min-w-0">
               {/* Level / Term badge with red minus button */}
-              <div className="inline-flex items-center gap-1.5 bg-blue-600 text-white pl-2.5 pr-1 py-1 rounded-xl border border-blue-400 text-xs font-black uppercase shrink-0 shadow-[2px_2px_0px_#0b1120]">
+              <div className="inline-flex items-center gap-1 bg-blue-600 text-white pl-2 pr-1 py-0.5 rounded-lg border border-blue-400 text-[10px] font-black uppercase shrink-0 shadow-[1px_1px_0px_#0b1120]">
                 <span>{selectedTerm}</span>
                 <button
                   type="button"
                   onClick={onClearTerm}
                   title="Remove Level Filter"
-                  className="w-5 h-5 rounded-lg bg-red-500 hover:bg-red-600 active:bg-red-700 text-white flex items-center justify-center border border-red-700 shadow-sm transition-colors cursor-pointer"
+                  className="w-4 h-4 rounded bg-red-500 hover:bg-red-600 active:bg-red-700 text-white flex items-center justify-center border border-red-700 transition-colors cursor-pointer shrink-0"
                 >
-                  <Minus className="w-3 h-3 stroke-[3]" />
+                  <Minus className="w-2.5 h-2.5 stroke-[3]" />
                 </button>
               </div>
 
               {/* Sub-term badge with red minus button */}
               {selectedSubTerm && (
-                <div className="inline-flex items-center gap-1.5 bg-blue-500 text-white pl-2.5 pr-1 py-1 rounded-xl border border-blue-300 text-xs font-black uppercase shrink-0 shadow-[2px_2px_0px_#0b1120]">
+                <div className="inline-flex items-center gap-1 bg-blue-500 text-white pl-2 pr-1 py-0.5 rounded-lg border border-blue-300 text-[10px] font-black uppercase shrink-0 shadow-[1px_1px_0px_#0b1120]">
                   <span>{selectedSubTerm}</span>
                   <button
                     type="button"
                     onClick={onClearSubTerm}
                     title="Remove Term Filter"
-                    className="w-5 h-5 rounded-lg bg-red-500 hover:bg-red-600 active:bg-red-700 text-white flex items-center justify-center border border-red-700 shadow-sm transition-colors cursor-pointer"
+                    className="w-4 h-4 rounded bg-red-500 hover:bg-red-600 active:bg-red-700 text-white flex items-center justify-center border border-red-700 transition-colors cursor-pointer shrink-0"
                   >
-                    <Minus className="w-3 h-3 stroke-[3]" />
+                    <Minus className="w-2.5 h-2.5 stroke-[3]" />
                   </button>
                 </div>
               )}
 
               {/* Exam Stage badge with red minus button */}
               {selectedExamStage && (
-                <div className="inline-flex items-center gap-1.5 bg-emerald-500 text-white pl-2.5 pr-1 py-1 rounded-xl border border-emerald-300 text-xs font-black uppercase shrink-0 shadow-[2px_2px_0px_#0b1120]">
+                <div className="inline-flex items-center gap-1 bg-emerald-500 text-white pl-2 pr-1 py-0.5 rounded-lg border border-emerald-300 text-[10px] font-black uppercase shrink-0 shadow-[1px_1px_0px_#0b1120]">
                   <span>{selectedExamStage}</span>
                   {activeBoxes.length > 1 && onClearExam && (
                     <button
                       type="button"
                       onClick={onClearExam}
                       title="Remove Exam Filter"
-                      className="w-5 h-5 rounded-lg bg-red-500 hover:bg-red-600 active:bg-red-700 text-white flex items-center justify-center border border-red-700 shadow-sm transition-colors cursor-pointer"
+                      className="w-4 h-4 rounded bg-red-500 hover:bg-red-600 active:bg-red-700 text-white flex items-center justify-center border border-red-700 transition-colors cursor-pointer shrink-0"
                     >
-                      <Minus className="w-3 h-3 stroke-[3]" />
+                      <Minus className="w-2.5 h-2.5 stroke-[3]" />
                     </button>
                   )}
                 </div>
