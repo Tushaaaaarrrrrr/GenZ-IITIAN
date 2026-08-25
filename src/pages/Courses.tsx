@@ -605,38 +605,37 @@ export default function Courses() {
     />
 
     <div className="hidden md:block min-h-screen bg-white">
-      {/* Active Term and Exam Selector */}
+      {/* Exam Selector Tabs Header */}
       <div className="max-w-7xl mx-auto px-6 pt-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b-2 border-gray-100 pb-6">
+        {/* Exam Tabs directly on the left */}
         <div className="flex flex-wrap items-center gap-3">
-          <span className="text-sm font-black text-gray-400 uppercase tracking-widest">Active:</span>
-          <span className="px-4 py-1.5 bg-[#0b1120] text-white border-2 border-[#0b1120] shadow-[3px_3px_0px_#2563eb] rounded-xl text-xs font-black uppercase tracking-wider">
-            {selectedTerm}
-          </span>
-          {selectedSubTerm && (
-            <span className="px-4 py-1.5 bg-blue-600 text-white border-2 border-[#0b1120] shadow-[3px_3px_0px_#0b1120] rounded-xl text-xs font-black uppercase tracking-wider">
-              {selectedSubTerm}
-            </span>
-          )}
-          {selectedExamStage && (
-            <span className="px-4 py-1.5 bg-white text-[#0b1120] border-2 border-[#0b1120] shadow-[3px_3px_0px_#10b981] rounded-xl text-xs font-black uppercase tracking-wider">
+          {selectedTerm && !loading && activeBoxes.length > 1 ? (
+            activeBoxes.map((stage) => (
+              <button
+                key={stage}
+                onClick={() => handleSelectExamStage(stage)}
+                className={`px-6 py-2.5 rounded-2xl font-black text-sm border-[3px] border-[#0b1120] transition-all cursor-pointer ${
+                  selectedExamStage === stage
+                    ? 'bg-[#0b1120] text-white shadow-[4px_4px_0px_#2563eb]'
+                    : 'bg-white text-[#0b1120] hover:bg-gray-50 shadow-[2px_2px_0px_#0b1120]'
+                }`}
+              >
+                {stage}
+              </button>
+            ))
+          ) : selectedExamStage ? (
+            <span className="px-6 py-2.5 bg-[#0b1120] text-white border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#2563eb] rounded-2xl text-sm font-black uppercase tracking-wider">
               {selectedExamStage}
             </span>
-          )}
+          ) : null}
         </div>
-        <div className="flex flex-wrap gap-3">
-          {activeBoxes.length > 1 && (
-            <button 
-              onClick={handleClearExam}
-              className="sm:self-center px-4 py-2 border-[2.5px] border-[#0b1120] rounded-xl font-black text-xs bg-white hover:bg-gray-50 text-[#0b1120] shadow-[3px_3px_0px_#0b1120] active:translate-y-0.5 active:shadow-none transition-all flex items-center gap-1.5 justify-center cursor-pointer"
-            >
-              <RefreshCcw className="w-3.5 h-3.5" />
-              Change Exam
-            </button>
-          )}
+
+        {/* Change Level / Term actions on the right */}
+        <div className="flex flex-wrap items-center gap-3">
           {selectedSubTerm && (
             <button 
               onClick={handleClearSubTerm}
-              className="sm:self-center px-4 py-2 border-[2.5px] border-[#0b1120] rounded-xl font-black text-xs bg-white hover:bg-gray-50 text-[#0b1120] shadow-[3px_3px_0px_#0b1120] active:translate-y-0.5 active:shadow-none transition-all flex items-center gap-1.5 justify-center cursor-pointer"
+              className="sm:self-center px-4 py-2.5 border-[2.5px] border-[#0b1120] rounded-xl font-black text-xs bg-white hover:bg-gray-50 text-[#0b1120] shadow-[3px_3px_0px_#0b1120] active:translate-y-0.5 active:shadow-none transition-all flex items-center gap-1.5 justify-center cursor-pointer"
             >
               <RefreshCcw className="w-3.5 h-3.5" />
               Change Term
@@ -644,32 +643,13 @@ export default function Courses() {
           )}
           <button 
             onClick={handleClearTerm}
-            className="sm:self-center px-4 py-2 border-[2.5px] border-[#0b1120] rounded-xl font-black text-xs bg-white hover:bg-gray-50 text-[#0b1120] shadow-[3px_3px_0px_#0b1120] active:translate-y-0.5 active:shadow-none transition-all flex items-center gap-1.5 justify-center cursor-pointer"
+            className="sm:self-center px-4 py-2.5 border-[2.5px] border-[#0b1120] rounded-xl font-black text-xs bg-white hover:bg-gray-50 text-[#0b1120] shadow-[3px_3px_0px_#0b1120] active:translate-y-0.5 active:shadow-none transition-all flex items-center gap-1.5 justify-center cursor-pointer"
           >
             <RefreshCcw className="w-3.5 h-3.5" />
             Change Level
           </button>
         </div>
       </div>
-
-      {/* Exam Selector Tabs (only if multiple exams are available) */}
-      {selectedTerm && !loading && activeBoxes.length > 1 && (
-        <div className="max-w-7xl mx-auto px-6 mt-8 flex flex-wrap justify-center gap-3">
-          {activeBoxes.map((stage) => (
-            <button
-              key={stage}
-              onClick={() => handleSelectExamStage(stage)}
-              className={`px-6 py-3 rounded-2xl font-black text-sm border-[3px] border-[#0b1120] transition-all cursor-pointer ${
-                selectedExamStage === stage
-                  ? 'bg-[#0b1120] text-white shadow-[4px_4px_0px_#2563eb]'
-                  : 'bg-white text-[#0b1120] hover:bg-gray-50'
-              }`}
-            >
-              {stage}
-            </button>
-          ))}
-        </div>
-      )}
 
       {/* Courses Grid */}
       <section className="py-16 px-6 max-w-7xl mx-auto">
