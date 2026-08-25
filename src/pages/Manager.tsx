@@ -698,38 +698,68 @@ export default function Manager() {
 
   const availableBoxesForSelectedTerm = courseTerm === 'NONE' ? [] : (boxConfig[courseTerm] || []);
 
+  const managerTabs = [
+    { id: 'users', icon: User, path: '/manager/users' },
+    { id: 'employees', icon: ShieldCheck, path: '/manager/employees' },
+    { id: 'logs', icon: ClipboardList, path: '/manager/logs' },
+    { id: 'courses', icon: BookOpen, path: '/manager/courses' },
+    { id: 'boxes', icon: Boxes, path: '/manager/boxes' },
+    { id: 'discounts', icon: ShoppingBag, path: '/manager/discounts' },
+    { id: 'payments', icon: CreditCard, path: '/manager/payments' },
+    { id: 'referrals', icon: Gift, path: '/manager/referrals' },
+    { id: 'blogs', icon: ScrollText, path: '/manager/blogs' },
+    { id: 'settings', icon: Settings, path: '/manager/settings' }
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
-      <div className="w-20 lg:w-64 bg-[#0b1120] text-white p-6 flex flex-col gap-8 h-screen sticky top-0 border-r-4 border-[#0b1120]">
+    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
+      {/* Mobile Top Header & Navigation */}
+      <div className="md:hidden bg-[#0b1120] text-white border-b-2 border-white/10 sticky top-0 z-40">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center font-black text-sm text-white border border-white">G</div>
+            <span className="font-black text-base tracking-tight">GenZ Manager</span>
+          </div>
+          <span className="text-[10px] font-black uppercase tracking-wider bg-blue-600/60 px-2.5 py-1 rounded-full border border-blue-400">
+            {effectiveTab}
+          </span>
+        </div>
+        <nav className="flex gap-1.5 overflow-x-auto no-scrollbar py-2 px-3">
+          {managerTabs.map((tab) => (
+            <NavLink
+              key={tab.id}
+              to={tab.path}
+              className={({ isActive }) => `
+                flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-black text-xs whitespace-nowrap transition-all border
+                ${isActive ? 'bg-blue-600 border-white text-white shadow-[2px_2px_0px_#fff]' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'}
+              `}
+            >
+              <tab.icon className="w-3.5 h-3.5" />
+              <span className="capitalize">{tab.id}</span>
+            </NavLink>
+          ))}
+        </nav>
+      </div>
+
+      {/* Desktop Sidebar */}
+      <div className="hidden md:flex md:w-20 lg:w-64 bg-[#0b1120] text-white p-4 lg:p-6 flex-col gap-8 h-screen sticky top-0 border-r-4 border-[#0b1120] shrink-0">
         <div className="flex items-center gap-3 px-2">
           <div className="w-10 h-10 bg-red-500 rounded-xl flex items-center justify-center font-black text-xl text-white border-2 border-white shadow-[2px_2px_0px_#fff]">G</div>
           <span className="hidden lg:block font-black text-xl tracking-tight">GenZ Manager</span>
         </div>
         
-        <nav className="space-y-4 flex-grow">
-          {[
-            { id: 'users', icon: User, path: '/manager/users' },
-            { id: 'employees', icon: ShieldCheck, path: '/manager/employees' },
-            { id: 'logs', icon: ClipboardList, path: '/manager/logs' },
-            { id: 'courses', icon: BookOpen, path: '/manager/courses' },
-            { id: 'boxes', icon: Boxes, path: '/manager/boxes' },
-            { id: 'discounts', icon: ShoppingBag, path: '/manager/discounts' },
-            { id: 'payments', icon: CreditCard, path: '/manager/payments' },
-            { id: 'referrals', icon: Gift, path: '/manager/referrals' },
-            { id: 'blogs', icon: ScrollText, path: '/manager/blogs' },
-            { id: 'settings', icon: Settings, path: '/manager/settings' }
-          ].map((tab) => (
+        <nav className="space-y-3 flex-grow overflow-y-auto no-scrollbar">
+          {managerTabs.map((tab) => (
             <NavLink
               key={tab.id}
               to={tab.path}
               end={tab.id === 'dashboard'}
               className={({ isActive }) => `
-                w-full flex items-center gap-4 px-4 py-4 rounded-2xl font-black transition-all border-2
+                w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl font-black transition-all border-2 text-sm
                 ${isActive ? 'bg-blue-600 border-white text-white shadow-[4px_4px_0px_#fff]' : 'hover:bg-white/5 border-transparent text-gray-400'}
               `}
             >
-              <tab.icon className="w-6 h-6" />
+              <tab.icon className="w-5 h-5 shrink-0" />
               <span className="hidden lg:block capitalize">{tab.id}</span>
             </NavLink>
           ))}
@@ -737,81 +767,81 @@ export default function Manager() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-grow p-8 lg:p-16 overflow-y-auto">
-        <div className="max-w-6xl mx-auto space-y-12">
-          <div className="flex justify-between items-end border-b-[6px] border-[#0b1120] pb-8">
+      <div className="flex-grow p-3.5 sm:p-6 md:p-8 lg:p-12 overflow-y-auto min-w-0 w-full">
+        <div className="max-w-6xl mx-auto space-y-6 sm:space-y-8 md:space-y-12">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3.5 border-b-4 md:border-b-[6px] border-[#0b1120] pb-4 sm:pb-8">
             <div>
-              <h1 className="text-5xl font-black text-[#0b1120] capitalize mb-2">{effectiveTab}</h1>
-              <p className="text-xl text-gray-500 font-bold tracking-tight">Platform administration panel.</p>
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-[#0b1120] capitalize mb-1">{effectiveTab}</h1>
+              <p className="text-sm sm:text-base md:text-xl text-gray-500 font-bold tracking-tight">Platform administration panel.</p>
             </div>
-            <div className="flex gap-4">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-4 w-full sm:w-auto">
               {effectiveTab === 'users' && (
-                <div className="flex gap-4">
+                <div className="flex flex-wrap gap-2 sm:gap-4 w-full sm:w-auto">
                   <button 
                     onClick={() => {
                       setFilter(filter === 'no-number' ? 'all' : 'no-number');
                     }}
-                    className={`flex items-center gap-3 px-6 py-4 rounded-2xl font-black border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#0b1120] hover:translate-y-1 hover:shadow-none transition-all ${
+                    className={`flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2.5 sm:py-4 rounded-xl sm:rounded-2xl font-black text-xs sm:text-base border-2 sm:border-[3px] border-[#0b1120] shadow-[3px_3px_0px_#0b1120] sm:shadow-[6px_6px_0px_#0b1120] hover:translate-y-0.5 active:translate-y-1 transition-all ${
                       filter === 'no-number' ? 'bg-[#0b1120] text-white' : 'bg-white text-[#0b1120]'
                     }`}
                   >
-                    <Users className="w-6 h-6" /> No Number
+                    <Users className="w-4 h-4 sm:w-6 sm:h-6" /> No Number
                   </button>
                   <button 
                     onClick={exportUsers}
-                    className="flex items-center gap-3 px-8 py-4 bg-[#3b82f6] text-white rounded-2xl font-black border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#0b1120] hover:translate-y-1 hover:shadow-none transition-all"
+                    className="flex items-center gap-2 sm:gap-3 px-4 sm:px-8 py-2.5 sm:py-4 bg-[#3b82f6] text-white rounded-xl sm:rounded-2xl font-black text-xs sm:text-base border-2 sm:border-[3px] border-[#0b1120] shadow-[3px_3px_0px_#0b1120] sm:shadow-[6px_6px_0px_#0b1120] hover:translate-y-0.5 active:translate-y-1 transition-all"
                   >
-                    <Download className="w-6 h-6" /> Export CSV
+                    <Download className="w-4 h-4 sm:w-6 sm:h-6" /> Export CSV
                   </button>
                 </div>
               )}
               {effectiveTab === 'catalog' && (
                 <button 
                   onClick={exportCatalog}
-                  className="flex items-center gap-3 px-8 py-4 bg-[#3b82f6] text-white rounded-2xl font-black border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#0b1120] hover:translate-y-1 hover:shadow-none transition-all"
+                  className="flex items-center gap-2 sm:gap-3 px-4 sm:px-8 py-2.5 sm:py-4 bg-[#3b82f6] text-white rounded-xl sm:rounded-2xl font-black text-xs sm:text-base border-2 sm:border-[3px] border-[#0b1120] shadow-[3px_3px_0px_#0b1120] sm:shadow-[6px_6px_0px_#0b1120] hover:translate-y-0.5 active:translate-y-1 transition-all"
                 >
-                  <Download className="w-6 h-6" /> Export CSV
+                  <Download className="w-4 h-4 sm:w-6 sm:h-6" /> Export CSV
                 </button>
               )}
               {effectiveTab === 'payments' && (
-                <div className="flex gap-4">
+                <div className="flex flex-wrap gap-2 sm:gap-4 w-full sm:w-auto">
                   <button 
                     onClick={() => setFilter(filter === 'not-purchased' ? 'all' : 'not-purchased')}
-                    className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#0b1120] hover:translate-y-1 hover:shadow-none transition-all ${
+                    className={`flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2.5 sm:py-4 rounded-xl sm:rounded-2xl font-black text-xs sm:text-base border-2 sm:border-[3px] border-[#0b1120] shadow-[3px_3px_0px_#0b1120] sm:shadow-[6px_6px_0px_#0b1120] hover:translate-y-0.5 active:translate-y-1 transition-all ${
                       filter === 'not-purchased' ? 'bg-[#0b1120] text-white' : 'bg-white text-[#0b1120]'
                     }`}
                   >
-                    <User className="w-6 h-6" /> Just Created
+                    <User className="w-4 h-4 sm:w-6 sm:h-6" /> Just Created
                   </button>
                   <button 
                     onClick={fetchData}
-                    className="flex items-center gap-3 px-8 py-4 bg-white text-[#0b1120] rounded-2xl font-black border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#0b1120] hover:translate-y-1 hover:shadow-none transition-all"
+                    className="flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2.5 sm:py-4 bg-white text-[#0b1120] rounded-xl sm:rounded-2xl font-black text-xs sm:text-base border-2 sm:border-[3px] border-[#0b1120] shadow-[3px_3px_0px_#0b1120] sm:shadow-[6px_6px_0px_#0b1120] hover:translate-y-0.5 active:translate-y-1 transition-all"
                     title="Sync with Database"
                   >
-                    <RefreshCw className={`w-6 h-6 ${loading ? 'animate-spin' : ''}`} /> Sync
+                    <RefreshCw className={`w-4 h-4 sm:w-6 sm:h-6 ${loading ? 'animate-spin' : ''}`} /> Sync
                   </button>
                   <button 
                     onClick={exportPayments}
-                    className="flex items-center gap-3 px-8 py-4 bg-[#3b82f6] text-white rounded-2xl font-black border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#0b1120] hover:translate-y-1 hover:shadow-none transition-all"
+                    className="flex items-center gap-2 sm:gap-3 px-4 sm:px-8 py-2.5 sm:py-4 bg-[#3b82f6] text-white rounded-xl sm:rounded-2xl font-black text-xs sm:text-base border-2 sm:border-[3px] border-[#0b1120] shadow-[3px_3px_0px_#0b1120] sm:shadow-[6px_6px_0px_#0b1120] hover:translate-y-0.5 active:translate-y-1 transition-all"
                   >
-                    <Download className="w-6 h-6" /> Export CSV
+                    <Download className="w-4 h-4 sm:w-6 sm:h-6" /> Export CSV
                   </button>
                 </div>
               )}
               {effectiveTab === 'courses' && (
                 <button 
                   onClick={() => setShowAddCourse(true)}
-                  className="flex items-center gap-3 px-8 py-4 bg-[#10b981] text-[#0b1120] rounded-2xl font-black border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#0b1120] hover:translate-y-1 hover:shadow-none transition-all"
+                  className="flex items-center gap-2 sm:gap-3 px-4 sm:px-8 py-2.5 sm:py-4 bg-[#10b981] text-[#0b1120] rounded-xl sm:rounded-2xl font-black text-xs sm:text-base border-2 sm:border-[3px] border-[#0b1120] shadow-[3px_3px_0px_#0b1120] sm:shadow-[6px_6px_0px_#0b1120] hover:translate-y-0.5 active:translate-y-1 transition-all"
                 >
-                  <Plus className="w-6 h-6" /> Create Course
+                  <Plus className="w-4 h-4 sm:w-6 sm:h-6" /> Create Course
                 </button>
               )}
               {effectiveTab === 'discounts' && (
                 <button 
                   onClick={() => setShowAddDiscount(true)}
-                  className="flex items-center gap-3 px-8 py-4 bg-purple-500 text-white rounded-2xl font-black border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#0b1120] hover:translate-y-1 hover:shadow-none transition-all"
+                  className="flex items-center gap-2 sm:gap-3 px-4 sm:px-8 py-2.5 sm:py-4 bg-purple-500 text-white rounded-xl sm:rounded-2xl font-black text-xs sm:text-base border-2 sm:border-[3px] border-[#0b1120] shadow-[3px_3px_0px_#0b1120] sm:shadow-[6px_6px_0px_#0b1120] hover:translate-y-0.5 active:translate-y-1 transition-all"
                 >
-                  <Plus className="w-6 h-6" /> New Coupon
+                  <Plus className="w-4 h-4 sm:w-6 sm:h-6" /> New Coupon
                 </button>
               )}
             </div>
@@ -833,79 +863,81 @@ export default function Manager() {
               {effectiveTab === 'settings' && <SettingsManager />}
 
               {effectiveTab === 'users' && (
-                <div className="space-y-8">
+                <div className="space-y-6 sm:space-y-8">
                   {/* Search Bar for Users */}
-                  <div className="bg-white border-[4px] border-[#0b1120] rounded-[2rem] p-4 flex gap-4 items-center shadow-[6px_6px_0px_#0b1120]">
-                    <Search className="w-6 h-6 text-gray-400 shrink-0 ml-2" />
+                  <div className="bg-white border-2 sm:border-[4px] border-[#0b1120] rounded-xl sm:rounded-[2rem] p-3 sm:p-4 flex gap-3 sm:gap-4 items-center shadow-[3px_3px_0px_#0b1120] sm:shadow-[6px_6px_0px_#0b1120]">
+                    <Search className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400 shrink-0 ml-1 sm:ml-2" />
                     <input
                       type="text"
                       placeholder="Search by name, email, or Referral Code..."
                       value={userSearch}
                       onChange={(e) => setUserSearch(e.target.value)}
-                      className="w-full font-black outline-none text-lg text-[#0b1120] placeholder:text-gray-300"
+                      className="w-full font-black outline-none text-sm sm:text-lg text-[#0b1120] placeholder:text-gray-300"
                     />
                   </div>
 
-                  <div className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] overflow-hidden shadow-[12px_12px_0px_#0b1120]">
-                    <table className="w-full text-left">
-                    <thead className="bg-gray-50 border-b-[3px] border-gray-100 font-black text-sm uppercase text-gray-400">
-                      <tr>
-                        <th className="px-8 py-6">Name</th>
-                        <th className="px-8 py-6">Email</th>
-                        <th className="px-8 py-6">Phone</th>
-                        <th className="px-8 py-6">Gender</th>
-                        <th className="px-8 py-6">Joined At</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y-[3px] divide-gray-50 font-bold">
-                      {data.map((user: any) => (
-                        <tr 
-                          key={user.id} 
-                          onClick={() => fetchUserDetails(user)}
-                          className="hover:bg-blue-50/50 transition-colors cursor-pointer group"
-                        >
-                          <td className="px-8 py-6">
-                            <div className="flex items-center gap-3">
-                              <div className="text-lg font-black text-[#0b1120] group-hover:text-blue-600 transition-colors">{user.name || 'N/A'}</div>
-                              <ArrowRight className="w-4 h-4 text-transparent group-hover:text-blue-600 transition-colors" />
-                            </div>
-                          </td>
-                          <td className="px-8 py-6 text-gray-500">{user.email}</td>
-                          <td className="px-8 py-6 text-gray-500 font-mono">{user.phone || 'N/A'}</td>
-                          <td className="px-8 py-6">
-                            <span className="px-3 py-1 bg-gray-100 border-2 border-[#0b1120] rounded-lg text-[10px] font-black uppercase">
-                              {user.gender || 'N/A'}
-                            </span>
-                          </td>
-                          <td className="px-8 py-6 text-gray-400 text-sm">
-                            {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <div className="bg-white border-[3px] md:border-[4px] border-[#0b1120] rounded-[1.25rem] sm:rounded-[2.5rem] overflow-hidden shadow-[4px_4px_0px_#0b1120] md:shadow-[12px_12px_0px_#0b1120]">
+                    <div className="overflow-x-auto w-full touch-pan-x">
+                      <table className="w-full min-w-[600px] text-left">
+                        <thead className="bg-gray-50 border-b-2 sm:border-b-[3px] border-gray-100 font-black text-xs sm:text-sm uppercase text-gray-400">
+                          <tr>
+                            <th className="px-4 sm:px-8 py-3.5 sm:py-6">Name</th>
+                            <th className="px-4 sm:px-8 py-3.5 sm:py-6">Email</th>
+                            <th className="px-4 sm:px-8 py-3.5 sm:py-6">Phone</th>
+                            <th className="px-4 sm:px-8 py-3.5 sm:py-6">Gender</th>
+                            <th className="px-4 sm:px-8 py-3.5 sm:py-6">Joined At</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y-2 sm:divide-y-[3px] divide-gray-50 font-bold text-xs sm:text-base">
+                          {data.map((user: any) => (
+                            <tr 
+                              key={user.id} 
+                              onClick={() => fetchUserDetails(user)}
+                              className="hover:bg-blue-50/50 transition-colors cursor-pointer group"
+                            >
+                              <td className="px-4 sm:px-8 py-3.5 sm:py-6">
+                                <div className="flex items-center gap-2 sm:gap-3">
+                                  <div className="text-sm sm:text-lg font-black text-[#0b1120] group-hover:text-blue-600 transition-colors">{user.name || 'N/A'}</div>
+                                  <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-transparent group-hover:text-blue-600 transition-colors shrink-0" />
+                                </div>
+                              </td>
+                              <td className="px-4 sm:px-8 py-3.5 sm:py-6 text-gray-500 break-all">{user.email}</td>
+                              <td className="px-4 sm:px-8 py-3.5 sm:py-6 text-gray-500 font-mono">{user.phone || 'N/A'}</td>
+                              <td className="px-4 sm:px-8 py-3.5 sm:py-6">
+                                <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 bg-gray-100 border border-[#0b1120] sm:border-2 rounded-lg text-[9px] sm:text-[10px] font-black uppercase">
+                                  {user.gender || 'N/A'}
+                                </span>
+                              </td>
+                              <td className="px-4 sm:px-8 py-3.5 sm:py-6 text-gray-400 text-xs sm:text-sm">
+                                {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
               {effectiveTab === 'payments' && (
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                   {/* Search and Filters Bar */}
-                  <div className="flex flex-col lg:flex-row gap-6">
+                  <div className="flex flex-col lg:flex-row gap-3 sm:gap-6">
                     {/* Search Input */}
-                    <div className="flex-grow bg-white border-[4px] border-[#0b1120] rounded-[2rem] p-4 flex gap-4 items-center shadow-[6px_6px_0px_#0b1120]">
-                      <Search className="w-6 h-6 text-gray-400 shrink-0 ml-2" />
+                    <div className="flex-grow bg-white border-2 sm:border-[4px] border-[#0b1120] rounded-xl sm:rounded-[2rem] p-3 sm:p-4 flex gap-3 sm:gap-4 items-center shadow-[3px_3px_0px_#0b1120] sm:shadow-[6px_6px_0px_#0b1120]">
+                      <Search className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400 shrink-0 ml-1 sm:ml-2" />
                       <input
                         type="text"
                         placeholder="Search by name, email, phone, or Order ID..."
                         value={paymentSearch}
                         onChange={(e) => setPaymentSearch(e.target.value)}
-                        className="w-full font-black outline-none text-lg text-[#0b1120] placeholder:text-gray-300"
+                        className="w-full font-black outline-none text-sm sm:text-lg text-[#0b1120] placeholder:text-gray-300"
                       />
                     </div>
 
                     {/* Filter Buttons */}
-                    <div className="bg-white border-[4px] border-[#0b1120] rounded-[2rem] p-2 flex gap-2 shadow-[6px_6px_0px_#0b1120] overflow-x-auto whitespace-nowrap">
+                    <div className="bg-white border-2 sm:border-[4px] border-[#0b1120] rounded-xl sm:rounded-[2rem] p-1.5 sm:p-2 flex gap-1.5 sm:gap-2 shadow-[3px_3px_0px_#0b1120] sm:shadow-[6px_6px_0px_#0b1120] overflow-x-auto whitespace-nowrap no-scrollbar">
                       {[
                         { id: 'all', label: 'All Time' },
                         { id: 'today', label: 'Today' },
@@ -917,7 +949,7 @@ export default function Manager() {
                         <button
                           key={f.id}
                           onClick={() => setFilter(f.id as any)}
-                          className={`px-6 py-3 rounded-xl font-black text-sm transition-all ${
+                          className={`px-3.5 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl font-black text-xs sm:text-sm transition-all cursor-pointer ${
                             filter === f.id 
                               ? 'bg-[#0b1120] text-white' 
                               : 'text-gray-400 hover:bg-gray-100'
@@ -930,89 +962,91 @@ export default function Manager() {
                   </div>
 
                   {/* Payments Table */}
-                  <div className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] overflow-hidden shadow-[12px_12px_0px_#0b1120]">
-                    <table className="w-full text-left">
-                      <thead className="bg-gray-50 border-b-[3px] border-gray-100 font-black text-sm uppercase text-gray-400">
-                        <tr>
-                          <th className="px-8 py-6">Order Info</th>
-                          <th className="px-8 py-6">Courses</th>
-                          <th className="px-8 py-6">Amount</th>
-                          <th className="px-8 py-6">Status</th>
-                          <th className="px-8 py-6">Date</th>
-                          <th className="px-8 py-6 text-right">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y-[3px] divide-gray-50 font-bold">
-                        {data.map((order: any) => (
-                          <tr 
-                            key={order.order_id} 
-                            onClick={() => fetchUserDetails({
-                              email: order.user_email,
-                              name: order.user_name || order.user_email,
-                              phone: order.user_phone,
-                              created_at: order.user_joined_at
-                            })}
-                            className="hover:bg-blue-50/50 transition-colors cursor-pointer group"
-                          >
-                            <td className="px-8 py-6">
-                              <div className="flex items-center gap-3">
-                                <div className="text-lg font-black text-[#0b1120] group-hover:text-blue-600 transition-colors break-all">
-                                  {order.user_name || order.user_email || 'Unknown User'}
-                                </div>
-                                <ArrowRight className="w-4 h-4 text-transparent group-hover:text-blue-600 transition-colors" />
-                              </div>
-                              <div className="mt-1 space-y-0.5 text-xs text-gray-400">
-                                <div className="font-bold break-all">{order.user_email || 'No email'}</div>
-                                <div className="font-mono">{order.user_phone || 'No phone number'}</div>
-                                <div className="font-mono">{order.order_id}</div>
-                              </div>
-                            </td>
-                            <td className="px-8 py-6">
-                              <div className="flex flex-wrap gap-2">
-                                {Array.isArray(order.course_ids) ? order.course_ids.map((cid: string) => {
-                                  return (
-                                    <span key={cid} className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-xs font-black border border-blue-100">
-                                      {resolveCourseTitle(cid)}
-                                    </span>
-                                  );
-                                }) : <span className="text-gray-400">No courses</span>}
-                              </div>
-                            </td>
-                            <td className="px-8 py-6 text-xl font-black text-[#10b981]">₹{order.total_amount}</td>
-                            <td className="px-8 py-6">
-                              <span className={`px-4 py-2 rounded-xl text-xs font-black uppercase border-2 shadow-[2px_2px_0px_currentColor] ${
-                                order.status === 'PAID' ? 'bg-green-50 text-green-600 border-green-600' :
-                                order.status === 'FAILED' ? 'bg-red-50 text-red-600 border-red-600' :
-                                order.status === 'NOT_PURCHASED' ? 'bg-gray-50 text-gray-400 border-gray-400' :
-                                'bg-yellow-50 text-yellow-600 border-yellow-600'
-                              }`}>
-                                {order.status.replace('_', ' ')}
-                              </span>
-                            </td>
-                            <td className="px-8 py-6">
-                              {order.created_at ? new Date(order.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : 'N/A'}
-                            </td>
-                            <td className="px-8 py-6 text-right">
-                              {!order.order_id.startsWith('LEAD_') && (
-                                <button 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handlePaymentDelete(order.order_id);
-                                  }}
-                                  className="p-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
-                                  title="Delete Payment Record"
-                                >
-                                  <Trash2 className="w-5 h-5" />
-                                </button>
-                              )}
-                            </td>
+                  <div className="bg-white border-[3px] md:border-[4px] border-[#0b1120] rounded-[1.25rem] sm:rounded-[2.5rem] overflow-hidden shadow-[4px_4px_0px_#0b1120] md:shadow-[12px_12px_0px_#0b1120]">
+                    <div className="overflow-x-auto w-full touch-pan-x">
+                      <table className="w-full min-w-[700px] text-left">
+                        <thead className="bg-gray-50 border-b-2 sm:border-b-[3px] border-gray-100 font-black text-xs sm:text-sm uppercase text-gray-400">
+                          <tr>
+                            <th className="px-4 sm:px-8 py-3.5 sm:py-6">Order Info</th>
+                            <th className="px-4 sm:px-8 py-3.5 sm:py-6">Courses</th>
+                            <th className="px-4 sm:px-8 py-3.5 sm:py-6">Amount</th>
+                            <th className="px-4 sm:px-8 py-3.5 sm:py-6">Status</th>
+                            <th className="px-4 sm:px-8 py-3.5 sm:py-6">Date</th>
+                            <th className="px-4 sm:px-8 py-3.5 sm:py-6 text-right">Actions</th>
                           </tr>
-                        ))}
-                        {data.length === 0 && (
-                          <tr><td colSpan={6} className="px-8 py-24 text-center text-gray-300 font-black text-2xl uppercase tracking-widest">No payments found</td></tr>
-                        )}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody className="divide-y-2 sm:divide-y-[3px] divide-gray-50 font-bold text-xs sm:text-base">
+                          {data.map((order: any) => (
+                            <tr 
+                              key={order.order_id} 
+                              onClick={() => fetchUserDetails({
+                                email: order.user_email,
+                                name: order.user_name || order.user_email,
+                                phone: order.user_phone,
+                                created_at: order.user_joined_at
+                              })}
+                              className="hover:bg-blue-50/50 transition-colors cursor-pointer group"
+                            >
+                              <td className="px-4 sm:px-8 py-3.5 sm:py-6">
+                                <div className="flex items-center gap-2 sm:gap-3">
+                                  <div className="text-sm sm:text-lg font-black text-[#0b1120] group-hover:text-blue-600 transition-colors break-all">
+                                    {order.user_name || order.user_email || 'Unknown User'}
+                                  </div>
+                                  <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-transparent group-hover:text-blue-600 transition-colors shrink-0" />
+                                </div>
+                                <div className="mt-1 space-y-0.5 text-[11px] sm:text-xs text-gray-400">
+                                  <div className="font-bold break-all">{order.user_email || 'No email'}</div>
+                                  <div className="font-mono">{order.user_phone || 'No phone number'}</div>
+                                  <div className="font-mono">{order.order_id}</div>
+                                </div>
+                              </td>
+                              <td className="px-4 sm:px-8 py-3.5 sm:py-6">
+                                <div className="flex flex-wrap gap-1.5">
+                                  {Array.isArray(order.course_ids) ? order.course_ids.map((cid: string) => {
+                                    return (
+                                      <span key={cid} className="px-2 sm:px-3 py-0.5 sm:py-1 bg-blue-50 text-blue-600 rounded-lg text-[10px] sm:text-xs font-black border border-blue-100 max-w-full break-all">
+                                        {resolveCourseTitle(cid)}
+                                      </span>
+                                    );
+                                  }) : <span className="text-gray-400">No courses</span>}
+                                </div>
+                              </td>
+                              <td className="px-4 sm:px-8 py-3.5 sm:py-6 text-base sm:text-xl font-black text-[#10b981]">₹{order.total_amount}</td>
+                              <td className="px-4 sm:px-8 py-3.5 sm:py-6">
+                                <span className={`px-2.5 sm:px-4 py-1 sm:py-2 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black uppercase border-2 shadow-[2px_2px_0px_currentColor] ${
+                                  order.status === 'PAID' ? 'bg-green-50 text-green-600 border-green-600' :
+                                  order.status === 'FAILED' ? 'bg-red-50 text-red-600 border-red-600' :
+                                  order.status === 'NOT_PURCHASED' ? 'bg-gray-50 text-gray-400 border-gray-400' :
+                                  'bg-yellow-50 text-yellow-600 border-yellow-600'
+                                }`}>
+                                  {order.status.replace('_', ' ')}
+                                </span>
+                              </td>
+                              <td className="px-4 sm:px-8 py-3.5 sm:py-6 text-xs sm:text-sm text-gray-500 whitespace-nowrap">
+                                {order.created_at ? new Date(order.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}
+                              </td>
+                              <td className="px-4 sm:px-8 py-3.5 sm:py-6 text-right">
+                                {!order.order_id.startsWith('LEAD_') && (
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handlePaymentDelete(order.order_id);
+                                    }}
+                                    className="p-2 sm:p-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                                    title="Delete Payment Record"
+                                  >
+                                    <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                          {data.length === 0 && (
+                            <tr><td colSpan={6} className="px-4 sm:px-8 py-16 sm:py-24 text-center text-gray-300 font-black text-lg sm:text-2xl uppercase tracking-widest">No payments found</td></tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1137,55 +1171,57 @@ export default function Manager() {
               )}
 
               {effectiveTab === 'referrals' && (
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                   <div className="flex justify-end">
-                    <button onClick={exportReferrals} className="flex items-center gap-2 px-6 py-3 bg-[#0b1120] text-white rounded-xl font-black text-sm hover:bg-gray-800 transition-colors shadow-[4px_4px_0px_#0b1120]">
+                    <button onClick={exportReferrals} className="flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-[#0b1120] text-white rounded-xl font-black text-xs sm:text-sm hover:bg-gray-800 transition-colors shadow-[3px_3px_0px_#0b1120] sm:shadow-[4px_4px_0px_#0b1120]">
                       <Download className="w-4 h-4" /> Export CSV
                     </button>
                   </div>
-                  <div className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] overflow-hidden shadow-[12px_12px_0px_#0b1120]">
-                    <table className="w-full text-left">
-                      <thead className="bg-gray-50 border-b-[3px] border-gray-100 font-black text-sm uppercase text-gray-400">
-                        <tr>
-                          <th className="px-6 py-6">Buyer</th>
-                          <th className="px-6 py-6">Referrer Code</th>
-                          <th className="px-6 py-6">Original</th>
-                          <th className="px-6 py-6">Discount</th>
-                          <th className="px-6 py-6">Final Paid</th>
-                          <th className="px-6 py-6">Reward</th>
-                          <th className="px-6 py-6">Date</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y-[3px] divide-gray-50 font-bold">
-                        {data.map((tx: any) => (
-                          <tr key={tx.id} className="hover:bg-purple-50/50 transition-colors">
-                            <td className="px-6 py-5">
-                              <div className="text-sm font-black text-[#0b1120]">{tx.buyer_email}</div>
-                              <div className="text-[10px] text-gray-400 font-mono">{tx.order_id}</div>
-                            </td>
-                            <td className="px-6 py-5">
-                              <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-black border border-purple-200 tracking-widest">
-                                {tx.referral_code}
-                              </span>
-                            </td>
-                            <td className="px-6 py-5 font-black text-gray-500">₹{tx.original_price}</td>
-                            <td className="px-6 py-5 font-black text-green-600">-₹{tx.buyer_discount}</td>
-                            <td className="px-6 py-5 text-lg font-black text-[#0b1120]">₹{tx.final_price}</td>
-                            <td className="px-6 py-5">
-                              <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-lg text-sm font-black border border-amber-200">
-                                +{tx.referrer_reward} Coins
-                              </span>
-                            </td>
-                            <td className="px-6 py-5 text-sm text-gray-400">
-                              {tx.created_at ? new Date(tx.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}
-                            </td>
+                  <div className="bg-white border-[3px] md:border-[4px] border-[#0b1120] rounded-[1.25rem] sm:rounded-[2.5rem] overflow-hidden shadow-[4px_4px_0px_#0b1120] md:shadow-[12px_12px_0px_#0b1120]">
+                    <div className="overflow-x-auto w-full touch-pan-x">
+                      <table className="w-full min-w-[650px] text-left">
+                        <thead className="bg-gray-50 border-b-2 sm:border-b-[3px] border-gray-100 font-black text-xs sm:text-sm uppercase text-gray-400">
+                          <tr>
+                            <th className="px-4 sm:px-6 py-3.5 sm:py-6">Buyer</th>
+                            <th className="px-4 sm:px-6 py-3.5 sm:py-6">Referrer Code</th>
+                            <th className="px-4 sm:px-6 py-3.5 sm:py-6">Original</th>
+                            <th className="px-4 sm:px-6 py-3.5 sm:py-6">Discount</th>
+                            <th className="px-4 sm:px-6 py-3.5 sm:py-6">Final Paid</th>
+                            <th className="px-4 sm:px-6 py-3.5 sm:py-6">Reward</th>
+                            <th className="px-4 sm:px-6 py-3.5 sm:py-6">Date</th>
                           </tr>
-                        ))}
-                        {data.length === 0 && (
-                          <tr><td colSpan={7} className="px-8 py-24 text-center text-gray-300 font-black text-2xl uppercase tracking-widest">No referral transactions yet</td></tr>
-                        )}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody className="divide-y-2 sm:divide-y-[3px] divide-gray-50 font-bold text-xs sm:text-base">
+                          {data.map((tx: any) => (
+                            <tr key={tx.id} className="hover:bg-purple-50/50 transition-colors">
+                              <td className="px-4 sm:px-6 py-3.5 sm:py-5">
+                                <div className="text-xs sm:text-sm font-black text-[#0b1120] break-all">{tx.buyer_email}</div>
+                                <div className="text-[9px] sm:text-[10px] text-gray-400 font-mono">{tx.order_id}</div>
+                              </td>
+                              <td className="px-4 sm:px-6 py-3.5 sm:py-5">
+                                <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 bg-purple-100 text-purple-700 rounded-lg text-[10px] sm:text-xs font-black border border-purple-200 tracking-widest">
+                                  {tx.referral_code}
+                                </span>
+                              </td>
+                              <td className="px-4 sm:px-6 py-3.5 sm:py-5 font-black text-gray-500">₹{tx.original_price}</td>
+                              <td className="px-4 sm:px-6 py-3.5 sm:py-5 font-black text-green-600">-₹{tx.buyer_discount}</td>
+                              <td className="px-4 sm:px-6 py-3.5 sm:py-5 text-sm sm:text-lg font-black text-[#0b1120]">₹{tx.final_price}</td>
+                              <td className="px-4 sm:px-6 py-3.5 sm:py-5">
+                                <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 bg-amber-100 text-amber-700 rounded-lg text-xs sm:text-sm font-black border border-amber-200">
+                                  +{tx.referrer_reward} Coins
+                                </span>
+                              </td>
+                              <td className="px-4 sm:px-6 py-3.5 sm:py-5 text-xs sm:text-sm text-gray-400 whitespace-nowrap">
+                                {tx.created_at ? new Date(tx.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}
+                              </td>
+                            </tr>
+                          ))}
+                          {data.length === 0 && (
+                            <tr><td colSpan={7} className="px-4 sm:px-8 py-16 sm:py-24 text-center text-gray-300 font-black text-lg sm:text-2xl uppercase tracking-widest">No referral transactions yet</td></tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1197,17 +1233,26 @@ export default function Manager() {
       {/* Course Modal */}
       <AnimatePresence>
         {(showAddCourse || editingCourse) && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 lg:p-12">
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-2.5 sm:p-6 lg:p-12">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { setShowAddCourse(false); setEditingCourse(null); }} className="absolute inset-0 bg-[#0b1120]/60 backdrop-blur-md" />
             <motion.div 
               initial={{ scale: 0.9, y: 30 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 30 }}
-              className="relative bg-white border-[6px] border-[#0b1120] rounded-[3.5rem] p-10 lg:p-16 w-full max-w-7xl shadow-[20px_20px_0px_#0b1120] overflow-y-auto max-h-[90vh]"
+              className="relative bg-white border-[3px] md:border-[6px] border-[#0b1120] rounded-[1.5rem] sm:rounded-[2.5rem] md:rounded-[3.5rem] p-4 sm:p-8 lg:p-16 w-full max-w-7xl shadow-[8px_8px_0px_#0b1120] md:shadow-[20px_20px_0px_#0b1120] overflow-y-auto max-h-[92vh]"
             >
-              <h2 className="text-3xl font-black text-[#0b1120] mb-8 flex items-center gap-4">
-                {editingCourse ? 'Update Course' : 'Create Course'}
-              </h2>
+              <div className="flex items-center justify-between mb-6 sm:mb-8">
+                <h2 className="text-xl sm:text-3xl font-black text-[#0b1120] flex items-center gap-3">
+                  {editingCourse ? 'Update Course' : 'Create Course'}
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => { setShowAddCourse(false); setEditingCourse(null); }}
+                  className="w-10 h-10 rounded-full border-2 border-[#0b1120] flex items-center justify-center hover:bg-gray-100 transition-colors shadow-[2px_2px_0px_#0b1120]"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-10">
                 <div className="space-y-6">
                   <div>
                     <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Course Name</label>
@@ -1829,7 +1874,7 @@ export default function Manager() {
                 </div>
               </div>
 
-              <div className="flex gap-6 mt-16">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-6 mt-8 sm:mt-16">
                 <button 
                   onClick={() => {
                     const rawId = (document.getElementById('c-id') as HTMLInputElement)?.value || editingCourse?.id;
@@ -1931,11 +1976,14 @@ export default function Manager() {
                       exam_stages: selectedExamStages,
                     });
                   }}
-                  className="flex-grow py-5 bg-[#10b981] text-[#0b1120] rounded-2xl font-black text-lg border-[4px] border-[#0b1120] flex items-center justify-center gap-3 shadow-[8px_8px_0px_#0b1120] active:translate-y-1 active:shadow-none"
+                  className="flex-grow py-3.5 sm:py-5 bg-[#10b981] text-[#0b1120] rounded-xl sm:rounded-2xl font-black text-sm sm:text-lg border-2 sm:border-[4px] border-[#0b1120] flex items-center justify-center gap-2 sm:gap-3 shadow-[4px_4px_0px_#0b1120] sm:shadow-[8px_8px_0px_#0b1120] hover:translate-y-0.5 active:translate-y-1 active:shadow-none transition-all cursor-pointer"
                 >
-                  <Save className="w-6 h-6" /> Confirm Changes
+                  <Save className="w-5 h-5 sm:w-6 sm:h-6" /> Confirm Changes
                 </button>
-                <button onClick={() => { setShowAddCourse(false); setEditingCourse(null); }} className="px-10 py-5 bg-white text-[#0b1120] rounded-2xl font-black border-[4px] border-[#0b1120] hover:bg-gray-50 flex items-center justify-center">
+                <button 
+                  onClick={() => { setShowAddCourse(false); setEditingCourse(null); }} 
+                  className="px-6 sm:px-10 py-3.5 sm:py-5 bg-white text-[#0b1120] rounded-xl sm:rounded-2xl font-black text-sm sm:text-base border-2 sm:border-[4px] border-[#0b1120] hover:bg-gray-50 flex items-center justify-center cursor-pointer shadow-[2px_2px_0px_#0b1120] sm:shadow-none"
+                >
                   Abort
                 </button>
               </div>
@@ -1947,15 +1995,24 @@ export default function Manager() {
       {/* Discount Modal */}
       <AnimatePresence>
         {(showAddDiscount || editingDiscount) && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 lg:p-12">
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-2.5 sm:p-6 lg:p-12">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { setShowAddDiscount(false); setEditingDiscount(null); }} className="absolute inset-0 bg-[#0b1120]/60 backdrop-blur-md" />
             <motion.div 
               initial={{ scale: 0.9, y: 30 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 30 }}
-              className="relative bg-white border-[6px] border-[#0b1120] rounded-[3rem] p-6 lg:p-10 w-full max-w-4xl max-h-[calc(100vh-3rem)] overflow-y-auto shadow-[20px_20px_0px_#0b1120]"
+              className="relative bg-white border-[3px] md:border-[6px] border-[#0b1120] rounded-[1.5rem] sm:rounded-[2.5rem] md:rounded-[3rem] p-4 sm:p-6 lg:p-10 w-full max-w-4xl max-h-[92vh] overflow-y-auto shadow-[8px_8px_0px_#0b1120] md:shadow-[20px_20px_0px_#0b1120]"
             >
-              <h2 className="text-2xl font-black text-[#0b1120] mb-8 flex items-center gap-4">
-                {editingDiscount ? 'Update Coupon' : 'Create Coupon'}
-              </h2>
+              <div className="flex items-center justify-between mb-6 sm:mb-8">
+                <h2 className="text-xl sm:text-2xl font-black text-[#0b1120] flex items-center gap-3">
+                  {editingDiscount ? 'Update Coupon' : 'Create Coupon'}
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => { setShowAddDiscount(false); setEditingDiscount(null); }}
+                  className="w-10 h-10 rounded-full border-2 border-[#0b1120] flex items-center justify-center hover:bg-gray-100 transition-colors shadow-[2px_2px_0px_#0b1120]"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
               <div className="space-y-6">
                 <div>
@@ -2072,7 +2129,7 @@ export default function Manager() {
                 </div>
               </div>
 
-              <div className="flex gap-6 mt-12">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-6 mt-8 sm:mt-12">
                 <button 
                   onClick={() => {
                     const code = (document.getElementById('d-code') as HTMLInputElement).value;
@@ -2122,11 +2179,14 @@ export default function Manager() {
                       discountEmails
                     });
                   }}
-                  className="flex-grow py-5 bg-purple-500 text-white rounded-2xl font-black text-lg border-[4px] border-[#0b1120] flex items-center justify-center gap-3 shadow-[8px_8px_0px_#0b1120] active:translate-y-1 active:shadow-none hover:bg-purple-600 transition-colors"
+                  className="flex-grow py-3.5 sm:py-5 bg-purple-500 text-white rounded-xl sm:rounded-2xl font-black text-sm sm:text-lg border-2 sm:border-[4px] border-[#0b1120] flex items-center justify-center gap-2 sm:gap-3 shadow-[4px_4px_0px_#0b1120] sm:shadow-[8px_8px_0px_#0b1120] hover:translate-y-0.5 active:translate-y-1 active:shadow-none hover:bg-purple-600 transition-colors cursor-pointer"
                 >
-                  <Save className="w-6 h-6" /> Confirm Changes
+                  <Save className="w-5 h-5 sm:w-6 sm:h-6" /> Confirm Changes
                 </button>
-                <button onClick={() => { setShowAddDiscount(false); setEditingDiscount(null); }} className="px-10 py-5 bg-white text-[#0b1120] rounded-2xl font-black border-[4px] border-[#0b1120] hover:bg-gray-50 flex items-center justify-center">
+                <button 
+                  onClick={() => { setShowAddDiscount(false); setEditingDiscount(null); }} 
+                  className="px-6 sm:px-10 py-3.5 sm:py-5 bg-white text-[#0b1120] rounded-xl sm:rounded-2xl font-black text-sm sm:text-base border-2 sm:border-[4px] border-[#0b1120] hover:bg-gray-50 flex items-center justify-center cursor-pointer shadow-[2px_2px_0px_#0b1120] sm:shadow-none"
+                >
                   Abort
                 </button>
               </div>
@@ -2138,31 +2198,34 @@ export default function Manager() {
       {/* USER DETAILS MODAL */}
       <AnimatePresence>
         {selectedUser && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex items-start justify-center p-3 sm:p-6 overflow-y-auto">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex items-start justify-center p-2.5 sm:p-6 overflow-y-auto">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white border-[4px] border-[#0b1120] rounded-[2rem] lg:rounded-[2.5rem] p-5 sm:p-6 lg:p-8 w-full max-w-7xl max-h-[calc(100vh-1.5rem)] sm:max-h-[calc(100vh-3rem)] overflow-y-auto shadow-[10px_10px_0px_#0b1120] lg:shadow-[16px_16px_0px_#0b1120] my-3"
+              className="bg-white border-[3px] md:border-[4px] border-[#0b1120] rounded-[1.5rem] sm:rounded-[2rem] lg:rounded-[2.5rem] p-4 sm:p-6 lg:p-8 w-full max-w-7xl max-h-[94vh] overflow-y-auto shadow-[6px_6px_0px_#0b1120] lg:shadow-[16px_16px_0px_#0b1120] my-2 sm:my-3"
             >
-              <div className="flex justify-between items-start gap-4 border-b-[3px] border-gray-100 pb-6 mb-8">
+              <div className="flex justify-between items-start gap-3 sm:gap-4 border-b-2 sm:border-b-[3px] border-gray-100 pb-4 sm:pb-6 mb-6 sm:mb-8">
                 <div className="min-w-0">
-                  <h3 className="text-xl font-black text-[#0b1120] flex items-center gap-3 min-w-0">
-                    <User className="w-8 h-8 text-blue-500 shrink-0" />
+                  <h3 className="text-lg sm:text-xl font-black text-[#0b1120] flex items-center gap-2 sm:gap-3 min-w-0">
+                    <User className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500 shrink-0" />
                     <span className="break-all">{selectedUser.name || 'Anonymous User'}</span>
                   </h3>
-                  <p className="text-gray-500 font-bold mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
+                  <p className="text-gray-500 font-bold mt-1 sm:mt-2 flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-1 text-xs sm:text-sm">
                     <span className="break-all">{selectedUser.email}</span>
                     <span className="font-mono">{selectedUser.phone || 'No phone number'}</span>
                     {selectedUser.created_at && (
-                      <span className="text-gray-4" style={{ opacity: 0.7 }}>
+                      <span className="text-gray-400">
                          Joined: {new Date(selectedUser.created_at).toLocaleDateString()}
                       </span>
                     )}
                   </p>
                 </div>
-                <button onClick={() => setSelectedUser(null)} className="w-12 h-12 shrink-0 rounded-full border-[3px] border-[#0b1120] flex items-center justify-center hover:bg-gray-100 transition-colors shadow-[4px_4px_0px_#0b1120]">
-                  <X className="w-6 h-6 text-[#0b1120]" />
+                <button 
+                  onClick={() => setSelectedUser(null)} 
+                  className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-full border-2 sm:border-[3px] border-[#0b1120] flex items-center justify-center hover:bg-gray-100 transition-colors shadow-[2px_2px_0px_#0b1120] sm:shadow-[4px_4px_0px_#0b1120]"
+                >
+                  <X className="w-5 h-5 sm:w-6 sm:h-6 text-[#0b1120]" />
                 </button>
               </div>
 
@@ -2397,58 +2460,58 @@ function LogsManager() {
         </div>
       </div>
 
-      {/* Results count */}
       <div className="text-sm font-bold text-gray-400">
         Showing {filtered.length} {filtered.length === 1 ? 'entry' : 'entries'}
       </div>
 
-      {/* Logs Table */}
       {filtered.length === 0 ? (
-        <div className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] p-16 text-center shadow-[12px_12px_0px_#0b1120]">
-          <AlertCircle className="w-12 h-12 text-gray-200 mx-auto mb-4" />
-          <h3 className="text-xl font-black text-gray-300 mb-2">No Logs Found</h3>
-          <p className="text-gray-400 font-bold">Activity logs will appear here when employee records are created, updated, deleted, or verified.</p>
+        <div className="bg-white border-[3px] md:border-[4px] border-[#0b1120] rounded-[1.25rem] sm:rounded-[2.5rem] p-8 sm:p-16 text-center shadow-[4px_4px_0px_#0b1120] md:shadow-[12px_12px_0px_#0b1120]">
+          <AlertCircle className="w-10 h-10 sm:w-12 sm:h-12 text-gray-200 mx-auto mb-4" />
+          <h3 className="text-lg sm:text-xl font-black text-gray-300 mb-2">No Logs Found</h3>
+          <p className="text-gray-400 font-bold text-xs sm:text-sm">Activity logs will appear here when employee records are created, updated, deleted, or verified.</p>
         </div>
       ) : (
-        <div className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] overflow-hidden shadow-[12px_12px_0px_#0b1120]">
-          <table className="w-full text-left">
-            <thead className="bg-gray-50 border-b-[3px] border-gray-100 font-black text-sm uppercase text-gray-400">
-              <tr>
-                <th className="px-6 py-5">Timestamp</th>
-                <th className="px-6 py-5">Actor</th>
-                <th className="px-6 py-5">Action</th>
-                <th className="px-6 py-5">Employee</th>
-                <th className="px-6 py-5">Details</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y-[3px] divide-gray-50 font-bold text-sm">
-              {filtered.map((log: any, i: number) => (
-                <tr key={log.id || i} className="hover:bg-blue-50/30 transition-colors">
-                  <td className="px-6 py-4 text-gray-400 text-xs font-mono whitespace-nowrap">
-                    {log.created_at ? new Date(log.created_at).toLocaleString('en-GB', {
-                      day: '2-digit', month: '2-digit', year: 'numeric',
-                      hour: '2-digit', minute: '2-digit'
-                    }) : 'N/A'}
-                  </td>
-                  <td className="px-6 py-4 text-gray-600 text-xs max-w-[200px] truncate" title={log.actor_email}>
-                    {log.actor_email}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-block px-3 py-1 rounded-lg text-[10px] font-black uppercase border ${actionColors[log.action_type] || 'bg-gray-100 text-gray-700 border-gray-200'}`}>
-                      {log.action_type}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-[#0b1120] font-black">{log.employee_name || 'N/A'}</div>
-                    <div className="text-xs text-gray-400 font-mono">{log.employee_id}</div>
-                  </td>
-                  <td className="px-6 py-4 text-gray-500 text-xs max-w-[300px]">
-                    {log.details}
-                  </td>
+        <div className="bg-white border-[3px] md:border-[4px] border-[#0b1120] rounded-[1.25rem] sm:rounded-[2.5rem] overflow-hidden shadow-[4px_4px_0px_#0b1120] md:shadow-[12px_12px_0px_#0b1120]">
+          <div className="overflow-x-auto w-full touch-pan-x">
+            <table className="w-full min-w-[650px] text-left">
+              <thead className="bg-gray-50 border-b-2 sm:border-b-[3px] border-gray-100 font-black text-xs sm:text-sm uppercase text-gray-400">
+                <tr>
+                  <th className="px-4 sm:px-6 py-3.5 sm:py-5">Timestamp</th>
+                  <th className="px-4 sm:px-6 py-3.5 sm:py-5">Actor</th>
+                  <th className="px-4 sm:px-6 py-3.5 sm:py-5">Action</th>
+                  <th className="px-4 sm:px-6 py-3.5 sm:py-5">Employee</th>
+                  <th className="px-4 sm:px-6 py-3.5 sm:py-5">Details</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y-2 sm:divide-y-[3px] divide-gray-50 font-bold text-xs sm:text-sm">
+                {filtered.map((log: any, i: number) => (
+                  <tr key={log.id || i} className="hover:bg-blue-50/30 transition-colors">
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-gray-400 text-xs font-mono whitespace-nowrap">
+                      {log.created_at ? new Date(log.created_at).toLocaleString('en-GB', {
+                        day: '2-digit', month: '2-digit', year: 'numeric',
+                        hour: '2-digit', minute: '2-digit'
+                      }) : 'N/A'}
+                    </td>
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-gray-600 text-xs max-w-[200px] truncate" title={log.actor_email}>
+                      {log.actor_email}
+                    </td>
+                    <td className="px-4 sm:px-6 py-3 sm:py-4">
+                      <span className={`inline-block px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-lg text-[9px] sm:text-[10px] font-black uppercase border ${actionColors[log.action_type] || 'bg-gray-100 text-gray-700 border-gray-200'}`}>
+                        {log.action_type}
+                      </span>
+                    </td>
+                    <td className="px-4 sm:px-6 py-3 sm:py-4">
+                      <div className="text-[#0b1120] font-black">{log.employee_name || 'N/A'}</div>
+                      <div className="text-[10px] text-gray-400 font-mono">{log.employee_id}</div>
+                    </td>
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-gray-500 text-xs max-w-[300px]">
+                      {log.details}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
@@ -2547,28 +2610,28 @@ function BoxesManager({
   };
 
   return (
-    <div className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] p-8 md:p-12 shadow-[12px_12px_0px_#0b1120] space-y-8">
-      <div className="border-b-4 border-[#0b1120] pb-6">
-        <h2 className="text-3xl font-black text-[#0b1120] mb-2">Boxes</h2>
-        <p className="text-gray-500 font-bold text-sm">
+    <div className="bg-white border-[3px] md:border-[4px] border-[#0b1120] rounded-[1.25rem] sm:rounded-[2.5rem] p-4 sm:p-8 md:p-12 shadow-[4px_4px_0px_#0b1120] md:shadow-[12px_12px_0px_#0b1120] space-y-6 sm:space-y-8">
+      <div className="border-b-2 sm:border-b-4 border-[#0b1120] pb-4 sm:pb-6">
+        <h2 className="text-2xl sm:text-3xl font-black text-[#0b1120] mb-1 sm:mb-2">Boxes</h2>
+        <p className="text-gray-500 font-bold text-xs sm:text-sm">
           Add the exam boxes students choose after selecting a term, then assign courses into those boxes from course edit.
         </p>
       </div>
 
       {error && (
-        <div className="p-4 bg-red-50 border-[3px] border-red-500 text-red-700 rounded-2xl font-bold flex items-center gap-3">
-          <AlertCircle className="w-6 h-6 shrink-0" />
+        <div className="p-3.5 sm:p-4 bg-red-50 border-2 sm:border-[3px] border-red-500 text-red-700 rounded-xl sm:rounded-2xl font-bold flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
+          <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
           <span>{error}</span>
         </div>
       )}
       {success && (
-        <div className="p-4 bg-green-50 border-[3px] border-green-500 text-green-700 rounded-2xl font-bold flex items-center gap-3">
-          <ShieldCheck className="w-6 h-6 shrink-0" />
+        <div className="p-3.5 sm:p-4 bg-green-50 border-2 sm:border-[3px] border-green-500 text-green-700 rounded-xl sm:rounded-2xl font-bold flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
+          <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
           <span>{success}</span>
         </div>
       )}
 
-      <div className="flex flex-wrap gap-3 border-b-2 border-gray-100 pb-6">
+      <div className="flex flex-wrap gap-2 sm:gap-3 border-b-2 border-gray-100 pb-4 sm:pb-6">
         {TERM_OPTIONS.map((term) => (
           <button
             key={term}
@@ -2578,9 +2641,9 @@ function BoxesManager({
               setError('');
               setSuccess('');
             }}
-            className={`px-6 py-3 rounded-2xl font-black text-sm border-[3px] border-[#0b1120] transition-all cursor-pointer ${
+            className={`px-4 sm:px-6 py-2 sm:py-3 rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm border-2 sm:border-[3px] border-[#0b1120] transition-all cursor-pointer ${
               activeTerm === term
-                ? 'bg-[#0b1120] text-white shadow-[4px_4px_0px_#2563eb]'
+                ? 'bg-[#0b1120] text-white shadow-[2px_2px_0px_#2563eb] sm:shadow-[4px_4px_0px_#2563eb]'
                 : 'bg-white text-[#0b1120] hover:bg-gray-50'
             }`}
           >
@@ -2589,30 +2652,30 @@ function BoxesManager({
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8">
-        <div className="space-y-4">
-          <h3 className="text-lg font-black text-[#0b1120] uppercase tracking-wide">{activeTerm} Boxes</h3>
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 sm:gap-8">
+        <div className="space-y-3 sm:space-y-4">
+          <h3 className="text-sm sm:text-lg font-black text-[#0b1120] uppercase tracking-wide">{activeTerm} Boxes</h3>
           {boxesForActiveTerm.length === 0 ? (
-            <div className="p-8 bg-gray-50 border-[3px] border-dashed border-gray-200 rounded-2xl text-center font-black text-gray-300 uppercase tracking-widest">
+            <div className="p-6 sm:p-8 bg-gray-50 border-2 sm:border-[3px] border-dashed border-gray-200 rounded-xl sm:rounded-2xl text-center font-black text-gray-300 uppercase tracking-widest text-xs sm:text-sm">
               No boxes added
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {boxesForActiveTerm.map((box, index) => (
-                <div key={`${box}-${index}`} className="flex items-center gap-3">
+                <div key={`${box}-${index}`} className="flex items-center gap-2 sm:gap-3">
                   <input
                     type="text"
                     value={box}
                     onChange={(e) => updateBox(index, e.target.value)}
-                    className="flex-grow px-5 py-4 bg-gray-50 border-[3px] border-[#0b1120] rounded-2xl font-black text-[#0b1120] outline-none focus:bg-white"
+                    className="flex-grow px-3.5 sm:px-5 py-2.5 sm:py-4 bg-gray-50 border-2 sm:border-[3px] border-[#0b1120] rounded-xl sm:rounded-2xl font-black text-xs sm:text-base text-[#0b1120] outline-none focus:bg-white"
                   />
                   <button
                     type="button"
                     onClick={() => removeBox(box)}
-                    className="p-4 text-red-500 bg-red-50 border-[3px] border-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-colors"
+                    className="p-2.5 sm:p-4 text-red-500 bg-red-50 border-2 sm:border-[3px] border-red-500 rounded-xl sm:rounded-2xl hover:bg-red-500 hover:text-white transition-colors cursor-pointer"
                     title="Remove box"
                   >
-                    <Trash2 className="w-5 h-5" />
+                    <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                 </div>
               ))}
@@ -2620,60 +2683,55 @@ function BoxesManager({
           )}
         </div>
 
-        <div className="bg-gray-50 border-[3px] border-[#0b1120] rounded-2xl p-6 h-fit space-y-4">
-          <h3 className="text-sm font-black text-[#0b1120] uppercase tracking-widest">Add Box</h3>
-          <input
-            type="text"
-            value={newBoxName}
-            onChange={(e) => setNewBoxName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') addBox();
-            }}
-            placeholder="e.g. Q1, Quiz 2, Full Term"
-            className="w-full px-4 py-3 bg-white border-[3px] border-[#0b1120] rounded-xl font-black text-[#0b1120] outline-none"
-          />
+        <div className="bg-gray-50 border-2 sm:border-[3px] border-[#0b1120] rounded-xl sm:rounded-2xl p-4 sm:p-6 h-fit space-y-3 sm:space-y-4">
+          <h3 className="text-xs sm:text-sm font-black text-[#0b1120] uppercase tracking-wide">Add Box to {activeTerm}</h3>
+          <div className="space-y-2 sm:space-y-3">
+            <input
+              type="text"
+              value={newBoxName}
+              placeholder="e.g. Quiz 1, End Term"
+              onChange={(e) => setNewBoxName(e.target.value)}
+              className="w-full px-3.5 sm:px-4 py-2 sm:py-3 bg-white border-2 sm:border-[3px] border-[#0b1120] rounded-xl font-bold text-xs sm:text-sm text-[#0b1120] outline-none"
+            />
+            <button
+              type="button"
+              onClick={addBox}
+              className="w-full py-2.5 sm:py-3 bg-[#0b1120] text-white rounded-xl font-black text-xs sm:text-sm border-2 border-[#0b1120] shadow-[2px_2px_0px_#0b1120] sm:shadow-[3px_3px_0px_#0b1120] hover:translate-y-0.5 active:translate-y-1 transition-all cursor-pointer"
+            >
+              + Add Box
+            </button>
+          </div>
           <button
             type="button"
-            onClick={addBox}
-            className="w-full flex items-center justify-center gap-2 px-5 py-4 bg-blue-600 text-white rounded-xl font-black border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] active:translate-y-1 active:shadow-none transition-all"
+            onClick={handleSaveBoxes}
+            disabled={saving}
+            className="w-full py-3 sm:py-4 bg-[#10b981] text-[#0b1120] rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm border-2 sm:border-[3px] border-[#0b1120] shadow-[3px_3px_0px_#0b1120] sm:shadow-[4px_4px_0px_#0b1120] hover:translate-y-0.5 active:translate-y-1 transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            <Plus className="w-5 h-5" /> Add to {activeTerm}
+            {saving ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" /> Saving...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" /> Save Boxes
+              </>
+            )}
           </button>
         </div>
-      </div>
-
-      <div className="pt-6 border-t-2 border-gray-100 flex justify-end">
-        <button
-          type="button"
-          onClick={handleSaveBoxes}
-          disabled={saving}
-          className="flex items-center gap-3 px-8 py-4 bg-[#10b981] text-[#0b1120] rounded-2xl font-black border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#0b1120] hover:translate-y-0.5 hover:shadow-[4px_4px_0px_#0b1120] active:translate-y-1 active:shadow-none transition-all cursor-pointer disabled:opacity-50"
-        >
-          {saving ? (
-            <>
-              <Loader2 className="w-5 h-5 animate-spin" /> Saving...
-            </>
-          ) : (
-            <>
-              <Save className="w-5 h-5" /> Save Boxes
-            </>
-          )}
-        </button>
       </div>
     </div>
   );
 }
 
 function SettingsManager() {
+  const [activeConfigTab, setActiveConfigTab] = useState<'Qualifier' | 'Re-attempt' | 'Foundation' | 'DIPLOMA'>('Foundation');
+  const [activeFoundationSubTab, setActiveFoundationSubTab] = useState<'Term 1' | 'Term 2'>('Term 1');
   const [videoUrl, setVideoUrl] = useState('');
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Pricing state
-  const [activeConfigTab, setActiveConfigTab] = useState<'Qualifier' | 'Re-attempt' | 'Foundation' | 'DIPLOMA'>('Foundation');
-  const [activeFoundationSubTab, setActiveFoundationSubTab] = useState<'Term 1' | 'Term 2'>('Term 1');
   const [stagePricing, setStagePricing] = useState<Record<string, {
     quiz1: number;
     quiz2: number;
@@ -2694,7 +2752,6 @@ function SettingsManager() {
     async function loadSettings() {
       try {
         setLoading(true);
-        // Query Video URL
         const { data: videoData, error: videoError } = await supabase
           .from('settings')
           .select('*')
@@ -2706,7 +2763,6 @@ function SettingsManager() {
           setVideoUrl(videoData.value);
         }
 
-        // Query Stage Pricing
         const { data: priceData, error: priceError } = await supabase
           .from('settings')
           .select('*')
@@ -2733,13 +2789,11 @@ function SettingsManager() {
       setError('');
       setSuccess('');
 
-      // 1. Save Video URL
       const { error: videoError } = await supabase
         .from('settings')
         .upsert({ key: 'homepage_video_url', value: videoUrl.trim() });
       if (videoError) throw videoError;
 
-      // 2. Save Stage Pricing
       const { error: priceError } = await supabase
         .from('settings')
         .upsert({ key: 'stage_pricing', value: JSON.stringify(stagePricing) });
@@ -2765,39 +2819,36 @@ function SettingsManager() {
     || { quiz1: 0, quiz2: 0, endTerm: 0, fullTerm: 0, calculationMode: 'fixed', fixedTotal: 0 };
 
   return (
-    <div className="space-y-12">
-      {/* 1. Global Success/Error Messages */}
+    <div className="space-y-6 sm:space-y-12">
       {error && (
-        <div className="p-4 bg-red-50 border-[3px] border-red-500 text-red-700 rounded-2xl font-bold flex items-center gap-3">
-          <AlertCircle className="w-6 h-6 shrink-0" />
+        <div className="p-3.5 sm:p-4 bg-red-50 border-2 sm:border-[3px] border-red-500 text-red-700 rounded-xl sm:rounded-2xl font-bold flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
+          <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
           <span>{error}</span>
         </div>
       )}
       {success && (
-        <div className="p-4 bg-green-50 border-[3px] border-green-500 text-green-700 rounded-2xl font-bold flex items-center gap-3">
-          <ShieldCheck className="w-6 h-6 shrink-0" />
+        <div className="p-3.5 sm:p-4 bg-green-50 border-2 sm:border-[3px] border-green-500 text-green-700 rounded-xl sm:rounded-2xl font-bold flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
+          <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
           <span>{success}</span>
         </div>
       )}
 
       {loading ? (
-        <div className="flex items-center justify-center p-20 text-gray-300 animate-pulse font-black text-lg uppercase bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] shadow-[12px_12px_0px_#0b1120]">
+        <div className="flex items-center justify-center p-12 sm:p-20 text-gray-300 animate-pulse font-black text-sm sm:text-lg uppercase bg-white border-[3px] md:border-[4px] border-[#0b1120] rounded-[1.25rem] sm:rounded-[2.5rem] shadow-[4px_4px_0px_#0b1120] md:shadow-[12px_12px_0px_#0b1120]">
           Loading System Settings...
         </div>
       ) : (
         <>
-          {/* Exam Configuration and Pricing panel */}
-          <div className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] p-8 md:p-12 shadow-[12px_12px_0px_#0b1120] space-y-8">
-            <div className="border-b-4 border-[#0b1120] pb-6">
-              <h2 className="text-3xl font-black text-[#0b1120] mb-2">Exam Pricing Controls</h2>
-              <p className="text-gray-500 font-bold text-sm">
+          <div className="bg-white border-[3px] md:border-[4px] border-[#0b1120] rounded-[1.25rem] sm:rounded-[2.5rem] p-4 sm:p-8 md:p-12 shadow-[4px_4px_0px_#0b1120] md:shadow-[12px_12px_0px_#0b1120] space-y-6 sm:space-y-8">
+            <div className="border-b-2 sm:border-b-4 border-[#0b1120] pb-4 sm:pb-6">
+              <h2 className="text-2xl sm:text-3xl font-black text-[#0b1120] mb-1 sm:mb-2">Exam Pricing Controls</h2>
+              <p className="text-gray-500 font-bold text-xs sm:text-sm">
                 Configure stage prices and bundles. <span className="text-blue-600 font-black">If any exam price is 0 or left blank, that exam button will be hidden automatically on the courses page.</span>
               </p>
             </div>
 
-            {/* Tab Buttons for Academic Levels */}
-            <div className="space-y-4 border-b-2 border-gray-100 pb-6">
-              <div className="flex flex-wrap gap-3">
+            <div className="space-y-3 sm:space-y-4 border-b-2 border-gray-100 pb-4 sm:pb-6">
+              <div className="flex flex-wrap gap-2 sm:gap-3">
                 {(['Qualifier', 'Re-attempt', 'Foundation', 'DIPLOMA'] as const).map((level) => (
                   <button
                     key={level}
@@ -2807,9 +2858,9 @@ function SettingsManager() {
                       setSuccess('');
                       setActiveConfigTab(level);
                     }}
-                    className={`px-6 py-3 rounded-2xl font-black text-sm border-[3px] border-[#0b1120] transition-all cursor-pointer ${
+                    className={`px-4 sm:px-6 py-2 sm:py-3 rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm border-2 sm:border-[3px] border-[#0b1120] transition-all cursor-pointer ${
                       activeConfigTab === level
-                        ? 'bg-[#0b1120] text-white shadow-[4px_4px_0px_#2563eb]'
+                        ? 'bg-[#0b1120] text-white shadow-[2px_2px_0px_#2563eb] sm:shadow-[4px_4px_0px_#2563eb]'
                         : 'bg-white text-[#0b1120] hover:bg-gray-50'
                     }`}
                   >
@@ -2818,18 +2869,17 @@ function SettingsManager() {
                 ))}
               </div>
 
-              {/* Foundation Sub-Term Tabs (TERM 1 / TERM 2) */}
               {activeConfigTab === 'Foundation' && (
-                <div className="pt-2 flex flex-wrap items-center gap-3">
-                  <span className="text-xs font-black uppercase tracking-wider text-gray-400">Select Foundation Term:</span>
+                <div className="pt-2 flex flex-wrap items-center gap-2 sm:gap-3">
+                  <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-gray-400">Select Foundation Term:</span>
                   {(['Term 1', 'Term 2'] as const).map((subTerm) => (
                     <button
                       key={subTerm}
                       type="button"
                       onClick={() => setActiveFoundationSubTab(subTerm)}
-                      className={`px-5 py-2.5 rounded-xl font-black text-xs border-[2.5px] border-[#0b1120] transition-all cursor-pointer ${
+                      className={`px-3.5 sm:px-5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl font-black text-[11px] sm:text-xs border-2 sm:border-[2.5px] border-[#0b1120] transition-all cursor-pointer ${
                         activeFoundationSubTab === subTerm
-                          ? 'bg-blue-600 text-white shadow-[3px_3px_0px_#0b1120]'
+                          ? 'bg-blue-600 text-white shadow-[2px_2px_0px_#0b1120] sm:shadow-[3px_3px_0px_#0b1120]'
                           : 'bg-gray-50 text-[#0b1120] hover:bg-white'
                       }`}
                     >
@@ -2840,23 +2890,21 @@ function SettingsManager() {
               )}
             </div>
 
-            {/* Controls for Selected Academic Level */}
-            <div className="space-y-8">
-              {/* Stage Pricing Inputs */}
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-black text-[#0b1120] uppercase tracking-wide">
+            <div className="space-y-6 sm:space-y-8">
+              <div className="space-y-4 sm:space-y-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1">
+                  <h3 className="text-sm sm:text-lg font-black text-[#0b1120] uppercase tracking-wide">
                     Stage Final Prices (₹) — {activeConfigTab === 'Foundation' ? `Foundation (${activeFoundationSubTab})` : activeConfigTab}
                   </h3>
-                  <span className="text-xs font-bold text-gray-400">Set 0 or leave empty to hide that exam button</span>
+                  <span className="text-[11px] sm:text-xs font-bold text-gray-400">Set 0 or leave empty to hide that exam button</span>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4">
                   {(['quiz1', 'quiz2', 'endTerm', 'fullTerm'] as const).map((key) => {
                     const label = key === 'quiz1' ? 'Quiz 1' : key === 'quiz2' ? 'Quiz 2' : key === 'endTerm' ? 'End Term' : 'Full Term';
                     return (
-                      <div key={key} className="space-y-2">
-                        <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">{label} Price</label>
+                      <div key={key} className="space-y-1.5 sm:space-y-2">
+                        <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-400 block">{label} Price</label>
                         <input
                           type="number"
                           value={currentPrices[key] ?? ''}
@@ -2871,7 +2919,7 @@ function SettingsManager() {
                               }
                             });
                           }}
-                          className="w-full px-4 py-3 bg-gray-50 border-[3px] border-[#0b1120] rounded-xl font-black text-[#0b1120] outline-none focus:bg-white"
+                          className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-gray-50 border-2 sm:border-[3px] border-[#0b1120] rounded-xl font-black text-sm sm:text-base text-[#0b1120] outline-none focus:bg-white"
                         />
                       </div>
                     );
@@ -2879,14 +2927,12 @@ function SettingsManager() {
                 </div>
               </div>
 
-              {/* Pricing Mode Selection */}
-              <div className="space-y-6 pt-6 border-t-2 border-dashed border-gray-100">
-                <h3 className="text-lg font-black text-[#0b1120] uppercase tracking-wide">Full Term Total Calculation</h3>
+              <div className="space-y-4 sm:space-y-6 pt-4 sm:pt-6 border-t-2 border-dashed border-gray-100">
+                <h3 className="text-sm sm:text-lg font-black text-[#0b1120] uppercase tracking-wide">Full Term Total Calculation</h3>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Calculation Mode Select */}
-                  <div className="space-y-2">
-                    <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">Calculation Method</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                  <div className="space-y-1.5 sm:space-y-2">
+                    <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-400 block">Calculation Method</label>
                     <select
                       value={currentPrices.calculationMode || 'fixed'}
                       onChange={(e) => {
@@ -2898,17 +2944,16 @@ function SettingsManager() {
                           }
                         });
                       }}
-                      className="w-full px-4 py-3 bg-white border-[3px] border-[#0b1120] rounded-xl font-black text-[#0b1120] outline-none bg-white"
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-white border-2 sm:border-[3px] border-[#0b1120] rounded-xl font-black text-xs sm:text-base text-[#0b1120] outline-none"
                     >
                       <option value="fixed">Use Fixed Final Price</option>
                       <option value="sum">Sum Stage Prices (Quiz 1 + Quiz 2 + End Term)</option>
                     </select>
                   </div>
 
-                  {/* Fixed Price Field */}
                   {currentPrices.calculationMode === 'fixed' && (
-                    <div className="space-y-2">
-                      <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">Fixed Full Term Total Price (₹)</label>
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-400 block">Fixed Full Term Total Price (₹)</label>
                       <input
                         type="number"
                         value={currentPrices.fixedTotal ?? ''}
@@ -2923,28 +2968,28 @@ function SettingsManager() {
                             }
                           });
                         }}
-                        className="w-full px-4 py-3 bg-gray-50 border-[3px] border-[#0b1120] rounded-xl font-black text-[#0b1120] outline-none focus:bg-white"
+                        className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-gray-50 border-2 sm:border-[3px] border-[#0b1120] rounded-xl font-black text-sm sm:text-base text-[#0b1120] outline-none focus:bg-white"
                       />
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Save Button for Config */}
-              <div className="pt-6 border-t-2 border-gray-100 flex justify-end">
+              {/* Save Button for Exam Config */}
+              <div className="pt-4 sm:pt-6 border-t-2 border-gray-100 flex justify-end">
                 <button
                   type="button"
                   onClick={handleSave}
                   disabled={saving}
-                  className="flex items-center gap-3 px-8 py-4 bg-[#10b981] text-[#0b1120] rounded-2xl font-black border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#0b1120] hover:translate-y-0.5 hover:shadow-[4px_4px_0px_#0b1120] active:translate-y-1 active:shadow-none transition-all cursor-pointer disabled:opacity-50"
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3 sm:py-4 bg-[#10b981] text-[#0b1120] rounded-xl sm:rounded-2xl font-black text-sm sm:text-base border-2 sm:border-[3px] border-[#0b1120] shadow-[3px_3px_0px_#0b1120] sm:shadow-[6px_6px_0px_#0b1120] hover:translate-y-0.5 active:translate-y-1 active:shadow-none transition-all cursor-pointer disabled:opacity-50"
                 >
                   {saving ? (
                     <>
-                      <Loader2 className="w-5 h-5 animate-spin" /> Saving...
+                      <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" /> Saving...
                     </>
                   ) : (
                     <>
-                      <Save className="w-5 h-5" /> Save Configuration
+                      <Save className="w-4 h-4 sm:w-5 sm:h-5" /> Save Configuration
                     </>
                   )}
                 </button>
@@ -2953,17 +2998,17 @@ function SettingsManager() {
           </div>
 
           {/* 2. Global Video Settings Modal Card */}
-          <div className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] p-8 md:p-12 shadow-[12px_12px_0px_#0b1120] space-y-8">
-            <div className="border-b-4 border-[#0b1120] pb-6">
-              <h2 className="text-3xl font-black text-[#0b1120] mb-2">Homepage Video Modal</h2>
-              <p className="text-gray-500 font-bold text-sm">
+          <div className="bg-white border-[3px] md:border-[4px] border-[#0b1120] rounded-[1.25rem] sm:rounded-[2.5rem] p-4 sm:p-8 md:p-12 shadow-[4px_4px_0px_#0b1120] md:shadow-[12px_12px_0px_#0b1120] space-y-6 sm:space-y-8">
+            <div className="border-b-2 sm:border-b-4 border-[#0b1120] pb-4 sm:pb-6">
+              <h2 className="text-2xl sm:text-3xl font-black text-[#0b1120] mb-1 sm:mb-2">Homepage Video Modal</h2>
+              <p className="text-gray-500 font-bold text-xs sm:text-sm">
                 Configure the YouTube video popup shown to homepage visitors.
               </p>
             </div>
 
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">
+            <div className="space-y-4 sm:space-y-6">
+              <div className="space-y-1.5 sm:space-y-2">
+                <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-400 block">
                   YouTube Video URL
                 </label>
                 <input
@@ -2971,20 +3016,20 @@ function SettingsManager() {
                   placeholder="e.g. https://www.youtube.com/watch?v=dQw4w9WgXcQ"
                   value={videoUrl}
                   onChange={(e) => setVideoUrl(e.target.value)}
-                  className="w-full px-6 py-4 bg-gray-50 border-[3px] border-[#0b1120] rounded-2xl font-black text-[#0b1120] outline-none focus:bg-white transition-all placeholder:text-gray-300"
+                  className="w-full px-4 sm:px-6 py-2.5 sm:py-4 bg-gray-50 border-2 sm:border-[3px] border-[#0b1120] rounded-xl sm:rounded-2xl font-black text-sm sm:text-base text-[#0b1120] outline-none focus:bg-white transition-all placeholder:text-gray-300"
                 />
-                <p className="text-xs text-gray-400 font-bold">
+                <p className="text-[11px] sm:text-xs text-gray-400 font-bold">
                   Supports normal links, short links, or embed links. Clear the URL to disable the popup entirely.
                 </p>
               </div>
 
               {/* Video Preview */}
               {videoId ? (
-                <div className="space-y-2">
-                  <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">
+                <div className="space-y-1.5 sm:space-y-2">
+                  <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-400 block">
                     Player Preview
                   </label>
-                  <div className="max-w-md aspect-video border-[3px] border-[#0b1120] rounded-2xl overflow-hidden bg-black shadow-[6px_6px_0px_#0b1120]">
+                  <div className="max-w-md aspect-video border-2 sm:border-[3px] border-[#0b1120] rounded-xl sm:rounded-2xl overflow-hidden bg-black shadow-[4px_4px_0px_#0b1120] sm:shadow-[6px_6px_0px_#0b1120]">
                     <iframe
                       src={`https://www.youtube.com/embed/${videoId}`}
                       title="YouTube video player preview"
@@ -2996,7 +3041,7 @@ function SettingsManager() {
                   </div>
                 </div>
               ) : videoUrl.trim() ? (
-                <div className="p-4 bg-yellow-50 border-[3px] border-yellow-500 text-yellow-700 rounded-2xl font-bold text-sm">
+                <div className="p-3.5 sm:p-4 bg-yellow-50 border-2 sm:border-[3px] border-yellow-500 text-yellow-700 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm">
                   ⚠️ Invalid YouTube URL. Preview not available. Please make sure the link is a valid YouTube video.
                 </div>
               ) : null}
@@ -3006,15 +3051,15 @@ function SettingsManager() {
                   type="button"
                   onClick={handleSave}
                   disabled={saving}
-                  className="flex items-center gap-3 px-8 py-4 bg-blue-600 text-white rounded-2xl font-black border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#0b1120] hover:translate-y-0.5 hover:shadow-[4px_4px_0px_#0b1120] active:translate-y-1 active:shadow-none transition-all cursor-pointer disabled:opacity-50"
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3 sm:py-4 bg-blue-600 text-white rounded-xl sm:rounded-2xl font-black text-sm sm:text-base border-2 sm:border-[3px] border-[#0b1120] shadow-[3px_3px_0px_#0b1120] sm:shadow-[6px_6px_0px_#0b1120] hover:translate-y-0.5 active:translate-y-1 active:shadow-none transition-all cursor-pointer disabled:opacity-50"
                 >
                   {saving ? (
                     <>
-                      <Loader2 className="w-5 h-5 animate-spin" /> Saving...
+                      <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" /> Saving...
                     </>
                   ) : (
                     <>
-                      <Save className="w-5 h-5" /> Save Video Link
+                      <Save className="w-4 h-4 sm:w-5 sm:h-5" /> Save Video Link
                     </>
                   )}
                 </button>
