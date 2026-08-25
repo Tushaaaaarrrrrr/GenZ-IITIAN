@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { RefreshCcw, GraduationCap, Star, Loader2, ChevronRight, BookOpen } from 'lucide-react';
+import { RefreshCcw, GraduationCap, Star, Loader2, ChevronRight, BookOpen, Minus } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { CourseCardData } from '../CourseCard';
 
@@ -205,19 +205,21 @@ export default function MobileCourses({
     return (
       <div className="md:hidden bg-[#0b1120] min-h-screen">
         <div className="px-4 py-5">
-          <div className="flex items-center justify-between bg-[#111827] border-[2px] border-white/10 rounded-xl px-4 py-3 mb-5 shadow-lg">
+          <div className="flex items-center justify-between bg-[#111827] border-[2px] border-white/10 rounded-2xl px-3.5 py-2.5 mb-5 shadow-lg">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Active:</span>
-              <span className="text-xs font-black text-white uppercase tracking-wide bg-blue-600/50 px-2.5 py-0.5 rounded-md border border-blue-500/70 shadow-[2px_2px_0px_rgba(37,99,235,0.4)]">
-                {selectedTerm}
-              </span>
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Active:</span>
+              <div className="inline-flex items-center gap-1.5 bg-blue-600 text-white pl-2.5 pr-1 py-1 rounded-xl border border-blue-400 text-xs font-black uppercase shadow-[2px_2px_0px_#0b1120]">
+                <span>{selectedTerm}</span>
+                <button 
+                  type="button"
+                  onClick={onClearTerm}
+                  title="Remove Level Filter"
+                  className="w-5 h-5 rounded-lg bg-red-500 hover:bg-red-600 active:bg-red-700 text-white flex items-center justify-center border border-red-700 shadow-sm transition-colors cursor-pointer"
+                >
+                  <Minus className="w-3 h-3 stroke-[3]" />
+                </button>
+              </div>
             </div>
-            <button 
-              onClick={onClearTerm}
-              className="flex items-center gap-1.5 text-[11px] font-black text-gray-400 hover:text-white uppercase transition-colors"
-            >
-              <RefreshCcw className="w-3 h-3" /> Change Level
-            </button>
           </div>
 
           <div className="mb-5">
@@ -273,35 +275,32 @@ export default function MobileCourses({
     return (
       <div className="md:hidden bg-[#0b1120] min-h-screen">
         <div className="px-4 py-5">
-          <div className="bg-[#111827] border-[2px] border-white/10 rounded-2xl p-3.5 mb-5 shadow-lg space-y-2.5">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Active Filters</span>
-              <div className="flex items-center gap-1.5 flex-wrap justify-end">
-                {selectedSubTerm && onClearSubTerm && (
-                  <button 
-                    onClick={onClearSubTerm}
-                    className="flex items-center gap-1 text-[10px] font-black text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 px-2 py-1 rounded-lg border border-white/10 uppercase transition-colors"
-                  >
-                    <RefreshCcw className="w-2.5 h-2.5" /> Term
-                  </button>
-                )}
+          <div className="flex items-center justify-between bg-[#111827] border-[2px] border-white/10 rounded-2xl px-3.5 py-2.5 mb-5 shadow-lg">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Active:</span>
+              <div className="inline-flex items-center gap-1.5 bg-blue-600 text-white pl-2.5 pr-1 py-1 rounded-xl border border-blue-400 text-xs font-black uppercase shadow-[2px_2px_0px_#0b1120]">
+                <span>{selectedTerm}</span>
                 <button 
+                  type="button"
                   onClick={onClearTerm}
-                  className="flex items-center gap-1 text-[10px] font-black text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 px-2 py-1 rounded-lg border border-white/10 uppercase transition-colors"
+                  title="Remove Level Filter"
+                  className="w-5 h-5 rounded-lg bg-red-500 hover:bg-red-600 active:bg-red-700 text-white flex items-center justify-center border border-red-700 shadow-sm transition-colors cursor-pointer"
                 >
-                  <RefreshCcw className="w-2.5 h-2.5" /> Level
+                  <Minus className="w-3 h-3 stroke-[3]" />
                 </button>
               </div>
-            </div>
-
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[11px] font-black text-white uppercase tracking-wide bg-blue-600 px-2.5 py-1 rounded-lg border border-blue-400 shadow-[2px_2px_0px_#0b1120]">
-                {selectedTerm}
-              </span>
               {selectedSubTerm && (
-                <span className="text-[11px] font-black text-white uppercase tracking-wide bg-blue-500 px-2.5 py-1 rounded-lg border border-blue-300 shadow-[2px_2px_0px_#0b1120]">
-                  {selectedSubTerm}
-                </span>
+                <div className="inline-flex items-center gap-1.5 bg-blue-500 text-white pl-2.5 pr-1 py-1 rounded-xl border border-blue-300 text-xs font-black uppercase shadow-[2px_2px_0px_#0b1120]">
+                  <span>{selectedSubTerm}</span>
+                  <button 
+                    type="button"
+                    onClick={onClearSubTerm}
+                    title="Remove Term Filter"
+                    className="w-5 h-5 rounded-lg bg-red-500 hover:bg-red-600 active:bg-red-700 text-white flex items-center justify-center border border-red-700 shadow-sm transition-colors cursor-pointer"
+                  >
+                    <Minus className="w-3 h-3 stroke-[3]" />
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -348,56 +347,8 @@ export default function MobileCourses({
   }
 
   return (
-    <div className="md:hidden bg-[#0b1120] min-h-screen">
+    <div className="md:hidden bg-[#0b1120] min-h-screen pb-36">
       <div className="px-4 py-5">
-        {selectedTerm && (
-          <div className="bg-[#111827] border-[2px] border-white/10 rounded-2xl p-3.5 mb-4 shadow-lg space-y-2.5">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Active Filters</span>
-              <div className="flex items-center gap-1.5 flex-wrap justify-end">
-                {onClearExam && selectedExamStage && activeBoxes.length > 1 && (
-                  <button 
-                    onClick={onClearExam}
-                    className="flex items-center gap-1 text-[10px] font-black text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 px-2 py-1 rounded-lg border border-white/10 uppercase transition-colors"
-                  >
-                    <RefreshCcw className="w-2.5 h-2.5" /> Exam
-                  </button>
-                )}
-                {selectedSubTerm && onClearSubTerm && (
-                  <button 
-                    onClick={onClearSubTerm}
-                    className="flex items-center gap-1 text-[10px] font-black text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 px-2 py-1 rounded-lg border border-white/10 uppercase transition-colors"
-                  >
-                    <RefreshCcw className="w-2.5 h-2.5" /> Term
-                  </button>
-                )}
-                <button 
-                  onClick={onClearTerm}
-                  className="flex items-center gap-1 text-[10px] font-black text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 px-2 py-1 rounded-lg border border-white/10 uppercase transition-colors"
-                >
-                  <RefreshCcw className="w-2.5 h-2.5" /> Level
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[11px] font-black text-white uppercase tracking-wide bg-blue-600 px-2.5 py-1 rounded-lg border border-blue-400 shadow-[2px_2px_0px_#0b1120]">
-                {selectedTerm}
-              </span>
-              {selectedSubTerm && (
-                <span className="text-[11px] font-black text-white uppercase tracking-wide bg-blue-500 px-2.5 py-1 rounded-lg border border-blue-300 shadow-[2px_2px_0px_#0b1120]">
-                  {selectedSubTerm}
-                </span>
-              )}
-              {selectedExamStage && (
-                <span className="text-[11px] font-black text-white uppercase tracking-wide bg-emerald-500 px-2.5 py-1 rounded-lg border border-emerald-300 shadow-[2px_2px_0px_#0b1120]">
-                  {selectedExamStage}
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-
         {/* Mobile Stage Selector (Horizontal Scroll with smooth padding) - only if multiple exams exist */}
         {selectedTerm && !loading && activeBoxes.length > 1 && (
           <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-4 -mx-4 px-4 scrollbar-none snap-x touch-pan-x">
@@ -501,6 +452,66 @@ export default function MobileCourses({
           </>
         )}
       </div>
+
+      {/* Sticky Active Filters Bar above Bottom Navigation */}
+      {selectedTerm && (
+        <div 
+          className="fixed bottom-[65px] inset-x-0 z-[80] bg-[#0b1120]/95 backdrop-blur-md border-t-[2.5px] border-white/10 px-4 py-2.5 shadow-[0_-4px_20px_rgba(0,0,0,0.6)]"
+        >
+          <div className="flex items-center justify-between gap-2 max-w-md mx-auto">
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest shrink-0">
+              Active:
+            </span>
+            
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 flex-nowrap">
+              {/* Level / Term badge with red minus button */}
+              <div className="inline-flex items-center gap-1.5 bg-blue-600 text-white pl-2.5 pr-1 py-1 rounded-xl border border-blue-400 text-xs font-black uppercase shrink-0 shadow-[2px_2px_0px_#0b1120]">
+                <span>{selectedTerm}</span>
+                <button
+                  type="button"
+                  onClick={onClearTerm}
+                  title="Remove Level Filter"
+                  className="w-5 h-5 rounded-lg bg-red-500 hover:bg-red-600 active:bg-red-700 text-white flex items-center justify-center border border-red-700 shadow-sm transition-colors cursor-pointer"
+                >
+                  <Minus className="w-3 h-3 stroke-[3]" />
+                </button>
+              </div>
+
+              {/* Sub-term badge with red minus button */}
+              {selectedSubTerm && (
+                <div className="inline-flex items-center gap-1.5 bg-blue-500 text-white pl-2.5 pr-1 py-1 rounded-xl border border-blue-300 text-xs font-black uppercase shrink-0 shadow-[2px_2px_0px_#0b1120]">
+                  <span>{selectedSubTerm}</span>
+                  <button
+                    type="button"
+                    onClick={onClearSubTerm}
+                    title="Remove Term Filter"
+                    className="w-5 h-5 rounded-lg bg-red-500 hover:bg-red-600 active:bg-red-700 text-white flex items-center justify-center border border-red-700 shadow-sm transition-colors cursor-pointer"
+                  >
+                    <Minus className="w-3 h-3 stroke-[3]" />
+                  </button>
+                </div>
+              )}
+
+              {/* Exam Stage badge with red minus button */}
+              {selectedExamStage && (
+                <div className="inline-flex items-center gap-1.5 bg-emerald-500 text-white pl-2.5 pr-1 py-1 rounded-xl border border-emerald-300 text-xs font-black uppercase shrink-0 shadow-[2px_2px_0px_#0b1120]">
+                  <span>{selectedExamStage}</span>
+                  {activeBoxes.length > 1 && onClearExam && (
+                    <button
+                      type="button"
+                      onClick={onClearExam}
+                      title="Remove Exam Filter"
+                      className="w-5 h-5 rounded-lg bg-red-500 hover:bg-red-600 active:bg-red-700 text-white flex items-center justify-center border border-red-700 shadow-sm transition-colors cursor-pointer"
+                    >
+                      <Minus className="w-3 h-3 stroke-[3]" />
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
