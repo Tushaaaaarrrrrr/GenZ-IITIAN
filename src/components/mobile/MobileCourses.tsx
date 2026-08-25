@@ -230,13 +230,36 @@ export default function MobileCourses({
                 key={sub.id}
                 type="button"
                 onClick={() => onSelectSubTerm?.(sub.id)}
-                className="w-full text-center bg-white border-[2.5px] border-[#0b1120] rounded-[18px] p-4 shadow-[4px_4px_0px_#2563eb] active:translate-y-0.5 active:shadow-none transition-all flex flex-col items-center justify-between"
+                className="w-full text-left bg-white border-[2.5px] border-[#0b1120] rounded-[18px] p-3.5 shadow-[4px_4px_0px_#2563eb] active:translate-y-0.5 active:shadow-none transition-all flex flex-col justify-between"
               >
-                <div className="w-10 h-10 rounded-xl bg-blue-50 border-2 border-[#0b1120] flex items-center justify-center text-blue-600 mb-2">
-                  <BookOpen className="w-5 h-5" />
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="w-8 h-8 rounded-lg bg-blue-50 border-2 border-[#0b1120] flex items-center justify-center text-blue-600">
+                      <BookOpen className="w-4 h-4" />
+                    </div>
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                  </div>
+                  
+                  <h3 className="font-black text-base text-[#0b1120] uppercase mb-2">{sub.name}</h3>
+
+                  <div className="text-[9px] font-black uppercase tracking-wider text-gray-400 mb-1.5">
+                    Subjects:
+                  </div>
+                  <div className="flex flex-wrap gap-1 mb-3">
+                    {sub.subjects.map((subj) => (
+                      <span
+                        key={subj}
+                        className="px-1.5 py-0.5 bg-gray-50 border border-gray-300 rounded-md text-[10px] font-black text-[#0b1120]"
+                      >
+                        {subj}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-                <h3 className="font-black text-base text-[#0b1120] uppercase">{sub.name}</h3>
-                <span className="text-[10px] font-black text-blue-600 uppercase mt-2">Select ›</span>
+
+                <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-[11px] font-black text-blue-600 uppercase">
+                  <span>Select ›</span>
+                </div>
               </button>
             ))}
           </div>
@@ -245,8 +268,8 @@ export default function MobileCourses({
     );
   }
 
-  // Step 3: Choose Exam Stage on Mobile
-  if (selectedTerm && (selectedTerm !== 'Foundation' || selectedSubTerm) && !selectedExamStage) {
+  // Step 3: Choose Exam Stage on Mobile (only if 2 or more exams available)
+  if (selectedTerm && (selectedTerm !== 'Foundation' || selectedSubTerm) && !selectedExamStage && activeBoxes.length > 1) {
     return (
       <div className="md:hidden bg-[#0b1120] min-h-screen">
         <div className="px-4 py-5">
@@ -288,29 +311,37 @@ export default function MobileCourses({
             <p className="text-white/50 text-xs font-bold mt-1">Pick the exam box you want to prepare for.</p>
           </div>
 
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-16 gap-3">
-              <Loader2 className="w-9 h-9 animate-spin text-white" />
-              <span className="font-black text-white/60 text-sm">Loading exams...</span>
-            </div>
-          ) : activeBoxes.length === 0 ? (
-            <div className="bg-[#111827] border-[2px] border-white/10 rounded-[20px] p-6 text-center">
-              <p className="text-white/50 font-black text-sm">No exams are available for this term yet.</p>
-            </div>
-          ) : (
-            <div className={`grid ${activeBoxes.length > 1 ? 'grid-cols-2' : 'grid-cols-1'} gap-3`}>
-              {activeBoxes.map((box) => (
-                <button
-                  key={box}
-                  type="button"
-                  onClick={() => onSelectExamStage?.(box)}
-                  className="w-full text-center bg-white border-[2.5px] border-[#0b1120] rounded-[18px] px-4 py-4 text-[#0b1120] font-black text-base shadow-[4px_4px_0px_#2563eb] active:translate-y-0.5 active:shadow-none transition-all"
-                >
-                  {box}
-                </button>
-              ))}
-            </div>
-          )}
+          <div className={`grid ${activeBoxes.length > 1 ? 'grid-cols-2' : 'grid-cols-1'} gap-3`}>
+            {activeBoxes.map((box) => (
+              <button
+                key={box}
+                type="button"
+                onClick={() => onSelectExamStage?.(box)}
+                className="w-full text-center bg-white border-[2.5px] border-[#0b1120] rounded-[18px] px-4 py-4 text-[#0b1120] font-black text-base shadow-[4px_4px_0px_#2563eb] active:translate-y-0.5 active:shadow-none transition-all"
+              >
+                {box}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // If no exams available on Mobile
+  if (selectedTerm && (selectedTerm !== 'Foundation' || selectedSubTerm) && !selectedExamStage && activeBoxes.length === 0) {
+    return (
+      <div className="md:hidden bg-[#0b1120] min-h-screen">
+        <div className="px-4 py-5">
+          <div className="bg-[#111827] border-[2px] border-white/10 rounded-[20px] p-6 text-center mt-10">
+            <p className="text-white/50 font-black text-sm mb-4">No exams are available for this term yet.</p>
+            <button
+              onClick={selectedSubTerm ? onClearSubTerm : onClearTerm}
+              className="px-5 py-2.5 bg-blue-600 text-white rounded-xl font-black text-xs border-2 border-blue-400 uppercase"
+            >
+              Change {selectedSubTerm ? 'Term' : 'Level'}
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -324,7 +355,7 @@ export default function MobileCourses({
             <div className="flex items-center justify-between gap-2">
               <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Active Filters</span>
               <div className="flex items-center gap-1.5 flex-wrap justify-end">
-                {onClearExam && selectedExamStage && (
+                {onClearExam && selectedExamStage && activeBoxes.length > 1 && (
                   <button 
                     onClick={onClearExam}
                     className="flex items-center gap-1 text-[10px] font-black text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 px-2 py-1 rounded-lg border border-white/10 uppercase transition-colors"
@@ -367,8 +398,8 @@ export default function MobileCourses({
           </div>
         )}
 
-        {/* Mobile Stage Selector (Horizontal Scroll with smooth padding) */}
-        {selectedTerm && !loading && (
+        {/* Mobile Stage Selector (Horizontal Scroll with smooth padding) - only if multiple exams exist */}
+        {selectedTerm && !loading && activeBoxes.length > 1 && (
           <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-4 -mx-4 px-4 scrollbar-none snap-x touch-pan-x">
             {activeBoxes.map((stage) => (
               <button

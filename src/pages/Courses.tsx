@@ -294,19 +294,59 @@ export default function Courses() {
     }
   };
 
+  // Auto-select single exam when only 1 exam is configured for the active level / sub-term
+  useEffect(() => {
+    if (!boxesLoaded || loading || !selectedTerm) return;
+    if (selectedTerm === 'Foundation' && !selectedSubTerm) return;
+
+    if (activeBoxes.length === 1 && selectedExamStage !== activeBoxes[0]) {
+      setSelectedExamStage(activeBoxes[0]);
+      localStorage.setItem('selected_exam_stage', activeBoxes[0]);
+    }
+  }, [selectedTerm, selectedSubTerm, activeBoxes, selectedExamStage, boxesLoaded, loading]);
+
   const handleSelectTerm = (term: string) => {
     setSelectedTerm(term);
     setSelectedSubTerm(null);
-    setSelectedExamStage(null);
     localStorage.setItem('selected_term', term);
     localStorage.removeItem('selected_sub_term');
+
+    if (term !== 'Foundation') {
+      const raw = examVisibility[term] || DEFAULT_BOX_CONFIG[term] || [];
+      const pricing = stagePricing[term];
+      const boxes = raw.filter(b => {
+        if (!pricing) return true;
+        return getStagePrice(b, pricing) > 0;
+      });
+      if (boxes.length === 1) {
+        setSelectedExamStage(boxes[0]);
+        localStorage.setItem('selected_exam_stage', boxes[0]);
+        return;
+      }
+    }
+
+    setSelectedExamStage(null);
     localStorage.removeItem('selected_exam_stage');
   };
 
   const handleSelectSubTerm = (subTerm: string) => {
     setSelectedSubTerm(subTerm);
-    setSelectedExamStage(null);
     localStorage.setItem('selected_sub_term', subTerm);
+
+    const raw = examVisibility['Foundation'] || DEFAULT_BOX_CONFIG['Foundation'] || [];
+    const pricing = stagePricing[`Foundation_${subTerm}`] || stagePricing['Foundation'];
+    const boxes = raw.filter(b => {
+      if (!pricing) return true;
+      return getStagePrice(b, pricing) > 0;
+    });
+
+    if (boxes.length === 1) {
+      setSelectedExamStage(boxes[0]);
+      localStorage.setItem('selected_exam_stage', boxes[0]);
+      return;
+    }
+
+    setSelectedExamStage(null);
     localStorage.removeItem('selected_exam_stage');
   };
 
@@ -509,8 +549,8 @@ export default function Courses() {
     );
   }
 
-  // Step 3: Choose Exam Stage
-  if (!selectedExamStage) {
+  // Step 3: Choose Exam Stage (only if there are 2 or more exams available)
+  if (!selectedExamStage && activeBoxes.length > 1) {
     return (
       <>
         <MobileCourses 
@@ -550,34 +590,22 @@ export default function Courses() {
               </p>
             </motion.div>
 
-            {activeBoxes.length === 0 ? (
-              <div className="bg-white border-[4px] border-[#0b1120] rounded-[2rem] p-10 shadow-[8px_8px_0px_#0b1120]">
-                <h3 className="text-2xl font-black text-gray-400 mb-6">No exams are available for this term yet.</h3>
-                <button
-                  onClick={selectedSubTerm ? handleClearSubTerm : handleClearTerm}
-                  className="px-6 py-3 border-[3px] border-[#0b1120] rounded-xl font-black text-sm bg-white hover:bg-gray-50 text-[#0b1120] shadow-[4px_4px_0px_#0b1120] active:translate-y-1 active:shadow-none transition-all"
+            <div className="flex flex-wrap justify-center gap-6">
+              {activeBoxes.map((box, index) => (
+                <motion.button
+                  key={box}
+                  type="button"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.06, duration: 0.35 }}
+                  whileHover={{ scale: 1.04, y: -3 }}
+                  onClick={() => handleSelectExamStage(box)}
+                  className="min-w-[180px] px-8 py-6 bg-white border-[4px] border-[#0b1120] rounded-[1.5rem] text-[#0b1120] font-black text-xl shadow-[6px_6px_0px_#0b1120] hover:shadow-[6px_6px_0px_#2563eb] transition-all"
                 >
-                  Change {selectedSubTerm ? 'Term' : 'Level'}
-                </button>
-              </div>
-            ) : (
-              <div className="flex flex-wrap justify-center gap-6">
-                {activeBoxes.map((box, index) => (
-                  <motion.button
-                    key={box}
-                    type="button"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.06, duration: 0.35 }}
-                    whileHover={{ scale: 1.04, y: -3 }}
-                    onClick={() => handleSelectExamStage(box)}
-                    className="min-w-[180px] px-8 py-6 bg-white border-[4px] border-[#0b1120] rounded-[1.5rem] text-[#0b1120] font-black text-xl shadow-[6px_6px_0px_#0b1120] hover:shadow-[6px_6px_0px_#2563eb] transition-all"
-                  >
-                    {box}
-                  </motion.button>
-                ))}
-              </div>
-            )}
+                  {box}
+                </motion.button>
+              ))}
+            </div>
 
             <div className="mt-10 flex items-center justify-center gap-3">
               {selectedSubTerm && (
@@ -600,6 +628,23 @@ export default function Courses() {
           </div>
         </div>
       </>
+    );
+  }
+
+  // If no exams are configured at all for this term/sub-term
+  if (!selectedExamStage && activeBoxes.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center py-20 px-6">
+        <div className="bg-white border-[4px] border-[#0b1120] rounded-[2rem] p-10 max-w-lg text-center shadow-[8px_8px_0px_#0b1120]">
+          <h3 className="text-2xl font-black text-gray-400 mb-6">No exams are available for this term yet.</h3>
+          <button
+            onClick={selectedSubTerm ? handleClearSubTerm : handleClearTerm}
+            className="px-6 py-3 border-[3px] border-[#0b1120] rounded-xl font-black text-sm bg-white hover:bg-gray-50 text-[#0b1120] shadow-[4px_4px_0px_#0b1120] active:translate-y-1 active:shadow-none transition-all"
+          >
+            Change {selectedSubTerm ? 'Term' : 'Level'}
+          </button>
+        </div>
+      </div>
     );
   }
 
@@ -657,18 +702,22 @@ export default function Courses() {
               {selectedSubTerm}
             </span>
           )}
-          <span className="px-4 py-1.5 bg-white text-[#0b1120] border-2 border-[#0b1120] shadow-[3px_3px_0px_#10b981] rounded-xl text-xs font-black uppercase tracking-wider">
-            {selectedExamStage}
-          </span>
+          {selectedExamStage && (
+            <span className="px-4 py-1.5 bg-white text-[#0b1120] border-2 border-[#0b1120] shadow-[3px_3px_0px_#10b981] rounded-xl text-xs font-black uppercase tracking-wider">
+              {selectedExamStage}
+            </span>
+          )}
         </div>
         <div className="flex flex-wrap gap-3">
-          <button 
-            onClick={handleClearExam}
-            className="sm:self-center px-4 py-2 border-[2.5px] border-[#0b1120] rounded-xl font-black text-xs bg-white hover:bg-gray-50 text-[#0b1120] shadow-[3px_3px_0px_#0b1120] active:translate-y-0.5 active:shadow-none transition-all flex items-center gap-1.5 justify-center cursor-pointer"
-          >
-            <RefreshCcw className="w-3.5 h-3.5" />
-            Change Exam
-          </button>
+          {activeBoxes.length > 1 && (
+            <button 
+              onClick={handleClearExam}
+              className="sm:self-center px-4 py-2 border-[2.5px] border-[#0b1120] rounded-xl font-black text-xs bg-white hover:bg-gray-50 text-[#0b1120] shadow-[3px_3px_0px_#0b1120] active:translate-y-0.5 active:shadow-none transition-all flex items-center gap-1.5 justify-center cursor-pointer"
+            >
+              <RefreshCcw className="w-3.5 h-3.5" />
+              Change Exam
+            </button>
+          )}
           {selectedSubTerm && (
             <button 
               onClick={handleClearSubTerm}
@@ -688,8 +737,8 @@ export default function Courses() {
         </div>
       </div>
 
-      {/* Exam Selector Tabs */}
-      {selectedTerm && !loading && (
+      {/* Exam Selector Tabs (only if multiple exams are available) */}
+      {selectedTerm && !loading && activeBoxes.length > 1 && (
         <div className="max-w-7xl mx-auto px-6 mt-8 flex flex-wrap justify-center gap-3">
           {activeBoxes.map((stage) => (
             <button
