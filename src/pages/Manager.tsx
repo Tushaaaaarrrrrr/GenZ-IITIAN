@@ -76,6 +76,7 @@ export default function Manager() {
   const [courseTags, setCourseTags] = useState<string[]>([]);
   const [courseCategory, setCourseCategory] = useState<'QUALIFIER' | 'LIVE' | 'RECORDED' | 'NONE'>('NONE');
   const [courseTerm, setCourseTerm] = useState<CourseTerm | 'NONE'>('NONE');
+  const [courseFoundationTerm, setCourseFoundationTerm] = useState<'Term 1' | 'Term 2' | 'BOTH'>('Term 1');
   const [selectedExamStages, setSelectedExamStages] = useState<string[]>([]);
   const [boxConfig, setBoxConfig] = useState<Record<CourseTerm, string[]>>(DEFAULT_BOX_CONFIG);
 
@@ -140,6 +141,22 @@ export default function Manager() {
       setCourseTags(editingCourse.tags || []);
       setCourseCategory(editingCourse.courseCategory || 'NONE');
       setCourseTerm(editingCourse.term || 'NONE');
+
+      const tags = editingCourse.tags || [];
+      const hasTerm1 = tags.some((t: string) => t.toLowerCase() === 'term 1');
+      const hasTerm2 = tags.some((t: string) => t.toLowerCase() === 'term 2');
+      const hasBoth = tags.some((t: string) => t.toLowerCase() === 'both' || t.toLowerCase() === 'both terms');
+
+      if (hasBoth || (hasTerm1 && hasTerm2)) {
+        setCourseFoundationTerm('BOTH');
+      } else if (hasTerm2) {
+        setCourseFoundationTerm('Term 2');
+      } else if (hasTerm1) {
+        setCourseFoundationTerm('Term 1');
+      } else {
+        setCourseFoundationTerm('Term 1');
+      }
+
       setSelectedExamStages(editingCourse.exam_stages || []);
     } else {
       setIsBundle(false);
@@ -153,6 +170,7 @@ export default function Manager() {
       setCourseTags([]);
       setCourseCategory('NONE');
       setCourseTerm('NONE');
+      setCourseFoundationTerm('Term 1');
       setSelectedExamStages([]);
     }
   }, [editingCourse, showAddCourse]);
@@ -1279,7 +1297,7 @@ export default function Manager() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Select Term</label>
                       <select value={courseTerm} onChange={(e) => handleCourseTermChange(e.target.value as CourseTerm | 'NONE')} className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-black focus:ring-[6px] ring-blue-100 outline-none bg-white">
@@ -1289,6 +1307,21 @@ export default function Manager() {
                         ))}
                       </select>
                     </div>
+
+                    {courseTerm === 'Foundation' && (
+                      <div className="animate-in fade-in slide-in-from-top-2 duration-200">
+                        <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Foundation Term</label>
+                        <select 
+                          value={courseFoundationTerm} 
+                          onChange={(e) => setCourseFoundationTerm(e.target.value as 'Term 1' | 'Term 2' | 'BOTH')} 
+                          className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-black focus:ring-[6px] ring-blue-100 outline-none bg-white"
+                        >
+                          <option value="Term 1">TERM 1 (Math 1, Eng 1, Stats 1, CT)</option>
+                          <option value="Term 2">TERM 2 (Math 2, Eng 2, Stats 2, Python)</option>
+                          <option value="BOTH">✨ Both Terms (Term 1 &amp; Term 2)</option>
+                        </select>
+                      </div>
+                    )}
                   </div>
 
                   <div className="mt-4 border-t-2 border-dashed border-gray-200 pt-4">
@@ -1841,6 +1874,15 @@ export default function Manager() {
                       };
                     });
 
+                    let finalCourseTags = courseTags.filter(t => !['Term 1', 'Term 2', 'TERM 1', 'TERM 2', 'Both Terms', 'BOTH'].includes(t));
+                    if (courseTerm === 'Foundation') {
+                      if (courseFoundationTerm === 'BOTH') {
+                        finalCourseTags.push('Term 1', 'Term 2');
+                      } else {
+                        finalCourseTags.push(courseFoundationTerm);
+                      }
+                    }
+
                     handleCourseAction({ 
                       id, previousId: editingCourse?.id, name, price, isPinned, subtitle,
                       cohortContent,
@@ -1854,7 +1896,7 @@ export default function Manager() {
                       bundleDiscountCode: isBundle && bundleDiscountCode ? bundleDiscountCode : null,
                       isFixedBundle: isBundle && isFixedBundle,
                       pricing_options: isBundle && isFixedBundle ? pricingOptions : [],
-                      tags: courseTags,
+                      tags: finalCourseTags,
                       courseCategory,
                       term: courseTerm,
                       startDate: startDate ? new Date(startDate).toISOString() : null,
@@ -2605,6 +2647,7 @@ function SettingsManager() {
 
   // Pricing state
   const [activeConfigTab, setActiveConfigTab] = useState<'Qualifier' | 'Re-attempt' | 'Foundation' | 'DIPLOMA'>('Foundation');
+  const [activeFoundationSubTab, setActiveFoundationSubTab] = useState<'Term 1' | 'Term 2'>('Term 1');
   const [stagePricing, setStagePricing] = useState<Record<string, {
     quiz1: number;
     quiz2: number;
@@ -2616,6 +2659,8 @@ function SettingsManager() {
     Qualifier: { quiz1: 0, quiz2: 0, endTerm: 0, fullTerm: 0, calculationMode: 'fixed', fixedTotal: 499 },
     'Re-attempt': { quiz1: 0, quiz2: 0, endTerm: 0, fullTerm: 0, calculationMode: 'fixed', fixedTotal: 499 },
     Foundation: { quiz1: 299, quiz2: 399, endTerm: 499, fullTerm: 1199, calculationMode: 'fixed', fixedTotal: 999 },
+    'Foundation_Term 1': { quiz1: 299, quiz2: 299, endTerm: 899, fullTerm: 1499, calculationMode: 'fixed', fixedTotal: 1499 },
+    'Foundation_Term 2': { quiz1: 299, quiz2: 299, endTerm: 899, fullTerm: 1499, calculationMode: 'fixed', fixedTotal: 1499 },
     DIPLOMA: { quiz1: 399, quiz2: 499, endTerm: 599, fullTerm: 1499, calculationMode: 'fixed', fixedTotal: 1299 }
   });
 
@@ -2685,6 +2730,14 @@ function SettingsManager() {
 
   const videoId = getYouTubeId(videoUrl);
 
+  const activePricingKey = activeConfigTab === 'Foundation'
+    ? `Foundation_${activeFoundationSubTab}`
+    : activeConfigTab;
+
+  const currentPrices = stagePricing[activePricingKey] 
+    || (activeConfigTab === 'Foundation' ? stagePricing['Foundation'] : null)
+    || { quiz1: 0, quiz2: 0, endTerm: 0, fullTerm: 0, calculationMode: 'fixed', fixedTotal: 0 };
+
   return (
     <div className="space-y-12">
       {/* 1. Global Success/Error Messages */}
@@ -2712,52 +2765,81 @@ function SettingsManager() {
             <div className="border-b-4 border-[#0b1120] pb-6">
               <h2 className="text-3xl font-black text-[#0b1120] mb-2">Exam Pricing Controls</h2>
               <p className="text-gray-500 font-bold text-sm">
-                Configure stage-based pricing packages. Box visibility is controlled from the Boxes tab.
+                Configure stage prices and bundles. <span className="text-blue-600 font-black">If any exam price is 0 or left blank, that exam button will be hidden automatically on the courses page.</span>
               </p>
             </div>
 
             {/* Tab Buttons for Academic Levels */}
-            <div className="flex flex-wrap gap-3 border-b-2 border-gray-100 pb-6">
-              {(['Qualifier', 'Re-attempt', 'Foundation', 'DIPLOMA'] as const).map((level) => (
-                <button
-                  key={level}
-                  type="button"
-                  onClick={() => {
-                    setError('');
-                    setSuccess('');
-                    setActiveConfigTab(level);
-                  }}
-                  className={`px-6 py-3 rounded-2xl font-black text-sm border-[3px] border-[#0b1120] transition-all cursor-pointer ${
-                    activeConfigTab === level
-                      ? 'bg-[#0b1120] text-white shadow-[4px_4px_0px_#2563eb]'
-                      : 'bg-white text-[#0b1120] hover:bg-gray-50'
-                  }`}
-                >
-                  {level}
-                </button>
-              ))}
+            <div className="space-y-4 border-b-2 border-gray-100 pb-6">
+              <div className="flex flex-wrap gap-3">
+                {(['Qualifier', 'Re-attempt', 'Foundation', 'DIPLOMA'] as const).map((level) => (
+                  <button
+                    key={level}
+                    type="button"
+                    onClick={() => {
+                      setError('');
+                      setSuccess('');
+                      setActiveConfigTab(level);
+                    }}
+                    className={`px-6 py-3 rounded-2xl font-black text-sm border-[3px] border-[#0b1120] transition-all cursor-pointer ${
+                      activeConfigTab === level
+                        ? 'bg-[#0b1120] text-white shadow-[4px_4px_0px_#2563eb]'
+                        : 'bg-white text-[#0b1120] hover:bg-gray-50'
+                    }`}
+                  >
+                    {level}
+                  </button>
+                ))}
+              </div>
+
+              {/* Foundation Sub-Term Tabs (TERM 1 / TERM 2) */}
+              {activeConfigTab === 'Foundation' && (
+                <div className="pt-2 flex flex-wrap items-center gap-3">
+                  <span className="text-xs font-black uppercase tracking-wider text-gray-400">Select Foundation Term:</span>
+                  {(['Term 1', 'Term 2'] as const).map((subTerm) => (
+                    <button
+                      key={subTerm}
+                      type="button"
+                      onClick={() => setActiveFoundationSubTab(subTerm)}
+                      className={`px-5 py-2.5 rounded-xl font-black text-xs border-[2.5px] border-[#0b1120] transition-all cursor-pointer ${
+                        activeFoundationSubTab === subTerm
+                          ? 'bg-blue-600 text-white shadow-[3px_3px_0px_#0b1120]'
+                          : 'bg-gray-50 text-[#0b1120] hover:bg-white'
+                      }`}
+                    >
+                      {subTerm === 'Term 1' ? 'TERM 1 (Math 1, Eng 1, Stats 1, CT)' : 'TERM 2 (Math 2, Eng 2, Stats 2, Python)'}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Controls for Selected Academic Level */}
             <div className="space-y-8">
               {/* Stage Pricing Inputs */}
               <div className="space-y-6">
-                <h3 className="text-lg font-black text-[#0b1120] uppercase tracking-wide">Stage Final Prices (₹)</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-black text-[#0b1120] uppercase tracking-wide">
+                    Stage Final Prices (₹) — {activeConfigTab === 'Foundation' ? `Foundation (${activeFoundationSubTab})` : activeConfigTab}
+                  </h3>
+                  <span className="text-xs font-bold text-gray-400">Set 0 or leave empty to hide that exam button</span>
+                </div>
+
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {(['quiz1', 'quiz2', 'endTerm', 'fullTerm'] as const).map((key) => {
                     const label = key === 'quiz1' ? 'Quiz 1' : key === 'quiz2' ? 'Quiz 2' : key === 'endTerm' ? 'End Term' : 'Full Term';
-                    const currentPrices = stagePricing[activeConfigTab] || { quiz1: 0, quiz2: 0, endTerm: 0, fullTerm: 0, calculationMode: 'fixed', fixedTotal: 0 };
                     return (
                       <div key={key} className="space-y-2">
                         <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">{label} Price</label>
                         <input
                           type="number"
-                          value={currentPrices[key] || ''}
+                          value={currentPrices[key] ?? ''}
+                          placeholder="0 (hidden)"
                           onChange={(e) => {
-                            const val = parseInt(e.target.value) || 0;
+                            const val = e.target.value === '' ? 0 : parseInt(e.target.value) || 0;
                             setStagePricing({
                               ...stagePricing,
-                              [activeConfigTab]: {
+                              [activePricingKey]: {
                                 ...currentPrices,
                                 [key]: val
                               }
@@ -2773,19 +2855,18 @@ function SettingsManager() {
 
               {/* Pricing Mode Selection */}
               <div className="space-y-6 pt-6 border-t-2 border-dashed border-gray-100">
-                <h3 className="text-lg font-black text-[#0b1120] uppercase tracking-wide">End Term Total Calculation</h3>
+                <h3 className="text-lg font-black text-[#0b1120] uppercase tracking-wide">Full Term Total Calculation</h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Calculation Mode Select */}
                   <div className="space-y-2">
                     <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">Calculation Method</label>
                     <select
-                      value={stagePricing[activeConfigTab]?.calculationMode || 'fixed'}
+                      value={currentPrices.calculationMode || 'fixed'}
                       onChange={(e) => {
-                        const currentPrices = stagePricing[activeConfigTab] || { quiz1: 0, quiz2: 0, endTerm: 0, fullTerm: 0, calculationMode: 'fixed', fixedTotal: 0 };
                         setStagePricing({
                           ...stagePricing,
-                          [activeConfigTab]: {
+                          [activePricingKey]: {
                             ...currentPrices,
                             calculationMode: e.target.value as 'sum' | 'fixed'
                           }
@@ -2799,18 +2880,18 @@ function SettingsManager() {
                   </div>
 
                   {/* Fixed Price Field */}
-                  {stagePricing[activeConfigTab]?.calculationMode === 'fixed' && (
+                  {currentPrices.calculationMode === 'fixed' && (
                     <div className="space-y-2">
-                      <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">Fixed End Term Total Price (₹)</label>
+                      <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">Fixed Full Term Total Price (₹)</label>
                       <input
                         type="number"
-                        value={stagePricing[activeConfigTab]?.fixedTotal || ''}
+                        value={currentPrices.fixedTotal ?? ''}
+                        placeholder="0"
                         onChange={(e) => {
-                          const currentPrices = stagePricing[activeConfigTab] || { quiz1: 0, quiz2: 0, endTerm: 0, fullTerm: 0, calculationMode: 'fixed', fixedTotal: 0 };
-                          const val = parseInt(e.target.value) || 0;
+                          const val = e.target.value === '' ? 0 : parseInt(e.target.value) || 0;
                           setStagePricing({
                             ...stagePricing,
-                            [activeConfigTab]: {
+                            [activePricingKey]: {
                               ...currentPrices,
                               fixedTotal: val
                             }

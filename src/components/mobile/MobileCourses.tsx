@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { RefreshCcw, GraduationCap, Star, Loader2, ChevronRight } from 'lucide-react';
+import { RefreshCcw, GraduationCap, Star, Loader2, ChevronRight, BookOpen } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { CourseCardData } from '../CourseCard';
 
@@ -102,16 +102,30 @@ function CohortCard({ course, accent }: { course: CourseCardData; accent?: boole
   );
 }
 
+import { FOUNDATION_SUB_TERMS, isCourseInSubTerm, getStagePrice } from '../../pages/Courses';
+
 interface MobileCoursesProps {
   selectedTerm: string | null;
+  selectedSubTerm?: string | null;
   selectedExamStage?: string | null;
   onClearTerm: () => void;
+  onClearSubTerm?: () => void;
   onClearExam?: () => void;
+  onSelectSubTerm?: (subTerm: string) => void;
   onSelectExamStage?: (stage: string) => void;
 }
 
 /** Mobile-only Courses screen — featured cohort cards on a navy background. */
-export default function MobileCourses({ selectedTerm, selectedExamStage = null, onClearTerm, onClearExam, onSelectExamStage }: MobileCoursesProps) {
+export default function MobileCourses({
+  selectedTerm,
+  selectedSubTerm = null,
+  selectedExamStage = null,
+  onClearTerm,
+  onClearSubTerm,
+  onClearExam,
+  onSelectSubTerm,
+  onSelectExamStage
+}: MobileCoursesProps) {
   const [courses, setCourses] = useState<CourseCardData[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -152,22 +166,44 @@ export default function MobileCourses({ selectedTerm, selectedExamStage = null, 
   const filteredCourses = courses.filter((course) => {
     const matchesTerm = !selectedTerm || course.term === selectedTerm;
     
+    const matchesSubTerm = !selectedSubTerm || selectedTerm !== 'Foundation' || isCourseInSubTerm(course, selectedSubTerm);
+
     // Filter by stage if stage is selected
     const matchesStage = !selectedExamStage || 
       (Array.isArray(course.exam_stages) && course.exam_stages.includes(selectedExamStage));
 
-    return matchesTerm && matchesStage;
+    return matchesTerm && matchesSubTerm && matchesStage;
   });
 
-  const activeBoxes = selectedTerm ? (examVisibility[selectedTerm] || DEFAULT_BOX_CONFIG[selectedTerm] || []) : [];
+  const rawBoxes = selectedTerm ? (examVisibility[selectedTerm] || DEFAULT_BOX_CONFIG[selectedTerm] || []) : [];
+  const currentPricingKey = (selectedTerm === 'Foundation' && selectedSubTerm)
+    ? `Foundation_${selectedSubTerm}`
+    : selectedTerm || '';
+  const currentPricingConfig = stagePricing[currentPricingKey] || (selectedTerm === 'Foundation' ? stagePricing['Foundation'] : null);
 
-  if (selectedTerm && !selectedExamStage) {
+  // If pricing is configured for this level/term, filter to only boxes where price > 0
+  const activeBoxes = rawBoxes.filter(stage => {
+    if (!currentPricingConfig) return true;
+    return getStagePrice(stage, currentPricingConfig) > 0;
+  });
+
+  const activeFoundationSubTerms = FOUNDATION_SUB_TERMS.filter(sub => {
+    const hasCourse = courses.some(c => c.term === 'Foundation' && isCourseInSubTerm(c, sub.id));
+    if (!hasCourse) return false;
+
+    const subPricing = stagePricing[`Foundation_${sub.id}`] || stagePricing['Foundation'];
+    const rawBoxes = examVisibility['Foundation'] || DEFAULT_BOX_CONFIG['Foundation'] || [];
+    return rawBoxes.some(box => getStagePrice(box, subPricing) > 0);
+  });
+
+  // Step 2: Foundation Term Selection (TERM 1 / TERM 2) on Mobile
+  if (selectedTerm === 'Foundation' && !selectedSubTerm) {
     return (
       <div className="md:hidden bg-[#0b1120] min-h-screen">
         <div className="px-4 py-5">
           <div className="flex items-center justify-between bg-[#111827] border-[2px] border-white/10 rounded-xl px-4 py-3 mb-5 shadow-lg">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Active Term:</span>
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Active:</span>
               <span className="text-xs font-black text-white uppercase tracking-wide bg-blue-600/50 px-2.5 py-0.5 rounded-md border border-blue-500/70 shadow-[2px_2px_0px_rgba(37,99,235,0.4)]">
                 {selectedTerm}
               </span>
@@ -176,13 +212,77 @@ export default function MobileCourses({ selectedTerm, selectedExamStage = null, 
               onClick={onClearTerm}
               className="flex items-center gap-1.5 text-[11px] font-black text-gray-400 hover:text-white uppercase transition-colors"
             >
-              <RefreshCcw className="w-3 h-3" /> Change
+              <RefreshCcw className="w-3 h-3" /> Change Level
             </button>
           </div>
 
           <div className="mb-5">
-            <h2 className="font-black text-[28px] leading-tight text-white">Choose Exam</h2>
-            <p className="text-white/50 text-sm font-bold mt-1">Pick the box you want to prepare for.</p>
+            <h2 className="font-black text-2xl leading-tight text-white">Select Foundation Term</h2>
+            <p className="text-white/50 text-xs font-bold mt-1">Pick your term to see subjects and exams.</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3.5">
+            {activeFoundationSubTerms.map((sub) => (
+              <button
+                key={sub.id}
+                type="button"
+                onClick={() => onSelectSubTerm?.(sub.id)}
+                className="w-full text-center bg-white border-[2.5px] border-[#0b1120] rounded-[18px] p-4 shadow-[4px_4px_0px_#2563eb] active:translate-y-0.5 active:shadow-none transition-all flex flex-col items-center justify-between"
+              >
+                <div className="w-10 h-10 rounded-xl bg-blue-50 border-2 border-[#0b1120] flex items-center justify-center text-blue-600 mb-2">
+                  <BookOpen className="w-5 h-5" />
+                </div>
+                <h3 className="font-black text-base text-[#0b1120] uppercase">{sub.name}</h3>
+                <span className="text-[10px] font-black text-blue-600 uppercase mt-2">Select ›</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Step 3: Choose Exam Stage on Mobile
+  if (selectedTerm && (selectedTerm !== 'Foundation' || selectedSubTerm) && !selectedExamStage) {
+    return (
+      <div className="md:hidden bg-[#0b1120] min-h-screen">
+        <div className="px-4 py-5">
+          <div className="bg-[#111827] border-[2px] border-white/10 rounded-2xl p-3.5 mb-5 shadow-lg space-y-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Active Filters</span>
+              <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                {selectedSubTerm && onClearSubTerm && (
+                  <button 
+                    onClick={onClearSubTerm}
+                    className="flex items-center gap-1 text-[10px] font-black text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 px-2 py-1 rounded-lg border border-white/10 uppercase transition-colors"
+                  >
+                    <RefreshCcw className="w-2.5 h-2.5" /> Term
+                  </button>
+                )}
+                <button 
+                  onClick={onClearTerm}
+                  className="flex items-center gap-1 text-[10px] font-black text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 px-2 py-1 rounded-lg border border-white/10 uppercase transition-colors"
+                >
+                  <RefreshCcw className="w-2.5 h-2.5" /> Level
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[11px] font-black text-white uppercase tracking-wide bg-blue-600 px-2.5 py-1 rounded-lg border border-blue-400 shadow-[2px_2px_0px_#0b1120]">
+                {selectedTerm}
+              </span>
+              {selectedSubTerm && (
+                <span className="text-[11px] font-black text-white uppercase tracking-wide bg-blue-500 px-2.5 py-1 rounded-lg border border-blue-300 shadow-[2px_2px_0px_#0b1120]">
+                  {selectedSubTerm}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="mb-5">
+            <h2 className="font-black text-2xl leading-tight text-white">Choose Exam</h2>
+            <p className="text-white/50 text-xs font-bold mt-1">Pick the exam box you want to prepare for.</p>
           </div>
 
           {loading ? (
@@ -195,13 +295,13 @@ export default function MobileCourses({ selectedTerm, selectedExamStage = null, 
               <p className="text-white/50 font-black text-sm">No exams are available for this term yet.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-3">
+            <div className={`grid ${activeBoxes.length > 1 ? 'grid-cols-2' : 'grid-cols-1'} gap-3`}>
               {activeBoxes.map((box) => (
                 <button
                   key={box}
                   type="button"
                   onClick={() => onSelectExamStage?.(box)}
-                  className="w-full text-left bg-white border-[2.5px] border-[#0b1120] rounded-[18px] px-5 py-5 text-[#0b1120] font-black text-lg shadow-[4px_4px_0px_#2563eb]"
+                  className="w-full text-center bg-white border-[2.5px] border-[#0b1120] rounded-[18px] px-4 py-4 text-[#0b1120] font-black text-base shadow-[4px_4px_0px_#2563eb] active:translate-y-0.5 active:shadow-none transition-all"
                 >
                   {box}
                 </button>
@@ -217,45 +317,61 @@ export default function MobileCourses({ selectedTerm, selectedExamStage = null, 
     <div className="md:hidden bg-[#0b1120] min-h-screen">
       <div className="px-4 py-5">
         {selectedTerm && (
-          <div className="flex items-center justify-between bg-[#111827] border-[2px] border-white/10 rounded-xl px-4 py-3 mb-4 shadow-lg">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Active:</span>
-              <span className="text-xs font-black text-white uppercase tracking-wide bg-blue-600/50 px-2.5 py-0.5 rounded-md border border-blue-500/70 shadow-[2px_2px_0px_rgba(37,99,235,0.4)]">
+          <div className="bg-[#111827] border-[2px] border-white/10 rounded-2xl p-3.5 mb-4 shadow-lg space-y-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Active Filters</span>
+              <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                {onClearExam && selectedExamStage && (
+                  <button 
+                    onClick={onClearExam}
+                    className="flex items-center gap-1 text-[10px] font-black text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 px-2 py-1 rounded-lg border border-white/10 uppercase transition-colors"
+                  >
+                    <RefreshCcw className="w-2.5 h-2.5" /> Exam
+                  </button>
+                )}
+                {selectedSubTerm && onClearSubTerm && (
+                  <button 
+                    onClick={onClearSubTerm}
+                    className="flex items-center gap-1 text-[10px] font-black text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 px-2 py-1 rounded-lg border border-white/10 uppercase transition-colors"
+                  >
+                    <RefreshCcw className="w-2.5 h-2.5" /> Term
+                  </button>
+                )}
+                <button 
+                  onClick={onClearTerm}
+                  className="flex items-center gap-1 text-[10px] font-black text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 px-2 py-1 rounded-lg border border-white/10 uppercase transition-colors"
+                >
+                  <RefreshCcw className="w-2.5 h-2.5" /> Level
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[11px] font-black text-white uppercase tracking-wide bg-blue-600 px-2.5 py-1 rounded-lg border border-blue-400 shadow-[2px_2px_0px_#0b1120]">
                 {selectedTerm}
               </span>
+              {selectedSubTerm && (
+                <span className="text-[11px] font-black text-white uppercase tracking-wide bg-blue-500 px-2.5 py-1 rounded-lg border border-blue-300 shadow-[2px_2px_0px_#0b1120]">
+                  {selectedSubTerm}
+                </span>
+              )}
               {selectedExamStage && (
-                <span className="text-xs font-black text-white uppercase tracking-wide bg-emerald-600/50 px-2.5 py-0.5 rounded-md border border-emerald-500/70 shadow-[2px_2px_0px_rgba(16,185,129,0.4)]">
+                <span className="text-[11px] font-black text-white uppercase tracking-wide bg-emerald-500 px-2.5 py-1 rounded-lg border border-emerald-300 shadow-[2px_2px_0px_#0b1120]">
                   {selectedExamStage}
                 </span>
               )}
             </div>
-            <div className="flex gap-3">
-              {onClearExam && (
-                <button 
-                  onClick={onClearExam}
-                  className="flex items-center gap-1.5 text-[11px] font-black text-gray-400 hover:text-white uppercase transition-colors"
-                >
-                  <RefreshCcw className="w-3 h-3" /> Exam
-                </button>
-              )}
-              <button 
-                onClick={onClearTerm}
-                className="flex items-center gap-1.5 text-[11px] font-black text-gray-400 hover:text-white uppercase transition-colors"
-              >
-                <RefreshCcw className="w-3 h-3" /> Term
-              </button>
-            </div>
           </div>
         )}
 
-        {/* Mobile Stage Selector (Horizontal Scroll) */}
+        {/* Mobile Stage Selector (Horizontal Scroll with smooth padding) */}
         {selectedTerm && !loading && (
-          <div className="flex gap-2 overflow-x-auto pb-4 mb-4 scrollbar-none">
+          <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-4 -mx-4 px-4 scrollbar-none snap-x touch-pan-x">
             {activeBoxes.map((stage) => (
               <button
                 key={stage}
                 onClick={() => onSelectExamStage?.(stage)}
-                className={`px-4 py-2 shrink-0 rounded-xl font-black text-xs border-[2.5px] transition-all cursor-pointer ${
+                className={`px-4 py-2.5 shrink-0 whitespace-nowrap rounded-xl font-black text-xs border-[2.5px] transition-all cursor-pointer ${
                   selectedExamStage === stage
                     ? 'bg-blue-600 text-white border-blue-500 shadow-[3px_3px_0px_#ffffff]'
                     : 'bg-[#111827] text-gray-300 hover:text-white border-white/10'
@@ -281,24 +397,25 @@ export default function MobileCourses({ selectedTerm, selectedExamStage = null, 
           </div>
         ) : (
           <>
-            {/* Mobile End Term Pricing Section */}
-            {selectedTerm && selectedExamStage === 'End Term' && (() => {
-              const pricingConfig = stagePricing[selectedTerm] || { quiz1: 0, quiz2: 0, endTerm: 0, fullTerm: 0, calculationMode: 'fixed', fixedTotal: 0 };
+            {/* Mobile Full Term Pricing Section */}
+            {selectedTerm && selectedExamStage === 'Full Term' && (() => {
+              const pricingConfig = currentPricingConfig || { quiz1: 0, quiz2: 0, endTerm: 0, fullTerm: 0, calculationMode: 'fixed', fixedTotal: 0 };
               const quiz1Price = pricingConfig.quiz1 || 0;
               const quiz2Price = pricingConfig.quiz2 || 0;
               const endTermPrice = pricingConfig.endTerm || 0;
               const isFixedMode = pricingConfig.calculationMode === 'fixed';
-              const finalPrice = isFixedMode ? (pricingConfig.fixedTotal || 0) : (quiz1Price + quiz2Price + endTermPrice);
+              const finalPrice = isFixedMode ? (pricingConfig.fixedTotal || pricingConfig.fullTerm || 0) : (quiz1Price + quiz2Price + endTermPrice);
               
-              const endTermCourse = courses.find(c => c.term === selectedTerm && Array.isArray(c.exam_stages) && c.exam_stages.includes('End Term'));
+              const fullTermCourse = courses.find(c => c.term === selectedTerm && Array.isArray(c.exam_stages) && c.exam_stages.includes('Full Term'))
+                || courses.find(c => c.term === selectedTerm && Array.isArray(c.exam_stages) && c.exam_stages.includes('End Term'));
 
               return (
-                <div className="bg-white border-[2.5px] border-[#0b1120] rounded-[20px] p-6 mb-6 shadow-[4px_4px_0px_#0b1120] space-y-4">
-                  <div className="text-center border-b-2 border-gray-100 pb-4">
+                <div className="bg-white border-[2.5px] border-[#0b1120] rounded-[20px] p-5 mb-6 shadow-[4px_4px_0px_#0b1120] space-y-4">
+                  <div className="text-center border-b-2 border-gray-100 pb-3">
                     <span className="px-2.5 py-1 bg-blue-100 text-blue-700 text-[10px] font-black rounded-lg border border-blue-200 uppercase tracking-widest">
-                      End Term Package
+                      Full Term Package
                     </span>
-                    <h3 className="text-xl font-black text-[#0b1120] mt-2">Syllabus Package</h3>
+                    <h3 className="text-lg font-black text-[#0b1120] mt-2">Syllabus Package</h3>
                     <p className="text-gray-400 font-bold text-xs mt-0.5">Complete syllabus coverage + mocks</p>
                   </div>
 
@@ -311,28 +428,28 @@ export default function MobileCourses({ selectedTerm, selectedExamStage = null, 
                       <span>Quiz 2 Prep Syllabus</span>
                       <span className="font-black text-[#0b1120]">₹{quiz2Price}</span>
                     </div>
-                    <div className="flex justify-between items-center text-xs font-bold text-gray-500 border-b border-dashed border-gray-100 pb-3">
+                    <div className="flex justify-between items-center text-xs font-bold text-gray-500 border-b border-dashed border-gray-100 pb-2.5">
                       <span>End Term Final Mock Papers</span>
                       <span className="font-black text-[#0b1120]">₹{endTermPrice}</span>
                     </div>
-                    <div className="flex justify-between items-center pt-1.5">
+                    <div className="flex justify-between items-center pt-1">
                       <span className="text-xs font-black text-[#0b1120] uppercase tracking-wide">Final Package Price</span>
                       <span className="text-xl font-black text-[#0b1120]">₹{finalPrice}</span>
                     </div>
                   </div>
 
-                  {endTermCourse ? (
-                    <div className="pt-2">
+                  {fullTermCourse ? (
+                    <div className="pt-1">
                       <Link
-                        to={`/checkout/${endTermCourse.id}`}
-                        className="w-full block text-center py-4 bg-[#15B981] text-[#0b1120] rounded-xl font-black text-sm border-[2.5px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
+                        to={`/checkout/${fullTermCourse.id}`}
+                        className="w-full block text-center py-3.5 bg-[#15B981] text-[#0b1120] rounded-xl font-black text-sm border-[2.5px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
                       >
-                        Unlock End Term Package
+                        Unlock Full Term Package
                       </Link>
                     </div>
                   ) : (
                     <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-center text-[10px] font-bold text-gray-400">
-                      End Term package checkout is currently offline.
+                      Full Term package checkout is currently offline.
                     </div>
                   )}
                 </div>

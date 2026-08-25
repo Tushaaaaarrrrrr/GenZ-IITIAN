@@ -212,19 +212,27 @@ export default function CourseSelection() {
       if (error) throw error;
       setCourse(data);
 
-      // Check if course belongs to End Term stage
-      if (Array.isArray(data.exam_stages) && data.exam_stages.includes('End Term')) {
+      // Check if course belongs to Full Term or End Term stage
+      if (Array.isArray(data.exam_stages) && (data.exam_stages.includes('Full Term') || data.exam_stages.includes('End Term'))) {
         try {
           const { data: priceData } = await supabase.from('settings').select('*').eq('key', 'stage_pricing').maybeSingle();
           if (priceData) {
             const pricingConfig = JSON.parse(priceData.value || '{}');
-            const termKey = data.term || 'Foundation';
-            const config = pricingConfig[termKey];
+            let termKey = data.term || 'Foundation';
+            if (termKey === 'Foundation') {
+              const tags = data.tags || [];
+              if (tags.some((t: string) => t.toLowerCase() === 'term 2')) {
+                termKey = 'Foundation_Term 2';
+              } else if (tags.some((t: string) => t.toLowerCase() === 'term 1')) {
+                termKey = 'Foundation_Term 1';
+              }
+            }
+            const config = pricingConfig[termKey] || pricingConfig['Foundation'];
             if (config) {
               if (config.calculationMode === 'sum') {
                 setOverriddenPrice(Number(config.quiz1 || 0) + Number(config.quiz2 || 0) + Number(config.endTerm || 0));
               } else {
-                setOverriddenPrice(Number(config.fixedTotal || 0));
+                setOverriddenPrice(Number(config.fixedTotal || config.fullTerm || 0));
               }
             }
           }

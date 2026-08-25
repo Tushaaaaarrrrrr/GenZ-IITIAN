@@ -13,6 +13,142 @@ const DEFAULT_BOX_CONFIG: Record<string, string[]> = {
   DIPLOMA: ['Quiz 1', 'Quiz 2', 'End Term', 'Full Term']
 };
 
+export const FOUNDATION_SUB_TERMS = [
+  {
+    id: 'Term 1',
+    name: 'TERM 1',
+    subjects: ['MATH 1', 'ENG 1', 'STATS 1', 'CT'],
+    subjectNames: ['Mathematics 1', 'English 1', 'Statistics 1', 'Computational Thinking'],
+    desc: 'Foundational courses: Mathematics 1, English 1, Statistics 1, and Computational Thinking.'
+  },
+  {
+    id: 'Term 2',
+    name: 'TERM 2',
+    subjects: ['MATH 2', 'ENG 2', 'STATS 2', 'PYTHON'],
+    subjectNames: ['Mathematics 2', 'English 2', 'Statistics 2', 'Programming in Python'],
+    desc: 'Foundational courses: Mathematics 2, English 2, Statistics 2, and Python Programming.'
+  }
+];
+
+export const TERM_OPTIONS = [
+  {
+    id: 'Qualifier',
+    name: 'Qualifier',
+    icon: BookOpen,
+    color: 'border-[#0b1120] hover:shadow-[8px_8px_0px_#eab308]',
+    textColor: 'text-yellow-600',
+    bgColor: 'bg-yellow-50 border-yellow-300',
+    iconColor: 'text-yellow-600',
+    desc: 'Crack the qualifier exam. Get comprehensive study plans, live tutorials, and mock papers to guarantee your admission.'
+  },
+  {
+    id: 'Re-attempt',
+    name: 'Re-attempt',
+    icon: RefreshCcw,
+    color: 'border-[#0b1120] hover:shadow-[8px_8px_0px_#ef4444]',
+    textColor: 'text-red-600',
+    bgColor: 'bg-red-50 border-red-300',
+    iconColor: 'text-red-600',
+    desc: 'Ready to try again? Get targeted preparation strategies, intensive practice, and guidance to ace your next attempt.'
+  },
+  {
+    id: 'Foundation',
+    name: 'Foundation',
+    icon: BookOpen,
+    color: 'border-[#0b1120] hover:shadow-[8px_8px_0px_#3b82f6]',
+    textColor: 'text-blue-600',
+    bgColor: 'bg-blue-50 border-blue-300',
+    iconColor: 'text-blue-600',
+    desc: 'Build a rock-solid academic base. Master core fundamentals with senior IITM BS students and conceptual live sessions.'
+  },
+  {
+    id: 'DIPLOMA',
+    name: 'DIPLOMA',
+    icon: GraduationCap,
+    color: 'border-[#0b1120] hover:shadow-[8px_8px_0px_#10b981]',
+    textColor: 'text-emerald-600',
+    bgColor: 'bg-emerald-50 border-emerald-300',
+    iconColor: 'text-emerald-600',
+    desc: 'Deep-dive into advanced coursework. Excel in project labs, coding assignments, and specialized diploma curriculum.'
+  }
+];
+
+export function getStagePrice(stage: string, config: any): number {
+  if (!config) return 0;
+  if (stage === 'Quiz 1') return Number(config.quiz1 || 0);
+  if (stage === 'Quiz 2') return Number(config.quiz2 || 0);
+  if (stage === 'End Term') return Number(config.endTerm || 0);
+  if (stage === 'Full Term') {
+    if (config.calculationMode === 'sum') {
+      return Number(config.quiz1 || 0) + Number(config.quiz2 || 0) + Number(config.endTerm || 0);
+    }
+    return Number(config.fixedTotal || config.fullTerm || 0);
+  }
+  return Number(config.fixedTotal || config.fullTerm || 0);
+}
+
+export function isCourseInSubTerm(course: CourseCardData, subTerm: string): boolean {
+  if (!subTerm) return true;
+  
+  const tags = course.tags || [];
+  const hasBothTags = tags.some(t => t.toLowerCase() === 'both' || t.toLowerCase() === 'both terms' || t.toLowerCase() === 'both') ||
+    (tags.some(t => t.toLowerCase() === 'term 1') && tags.some(t => t.toLowerCase() === 'term 2'));
+    
+  if (hasBothTags) return true;
+
+  const hasExplicitTerm1Tag = tags.some(t => t.toLowerCase() === 'term 1');
+  const hasExplicitTerm2Tag = tags.some(t => t.toLowerCase() === 'term 2');
+
+  if (hasExplicitTerm1Tag && !hasExplicitTerm2Tag) {
+    return subTerm === 'Term 1';
+  }
+  if (hasExplicitTerm2Tag && !hasExplicitTerm1Tag) {
+    return subTerm === 'Term 2';
+  }
+
+  const textToScan = [
+    course.name || '',
+    course.subject || '',
+    course.description || '',
+    ...tags,
+    ...(course.bundleCourses?.map(b => `${b.courseName} ${b.courseId}`) || [])
+  ].join(' ').toLowerCase();
+
+  if (subTerm === 'Term 1') {
+    const term1Patterns = [
+      'term 1', 'term-1', 'term1', 'foundation 1', 'foundation-1',
+      'math 1', 'maths 1', 'mathematics 1', 'mathematics i', 'math-1', 'maths-1',
+      'eng 1', 'english 1', 'english i', 'eng-1', 'english-1',
+      'stats 1', 'statistics 1', 'statistics i', 'stats-1', 'statistics-1',
+      'computational thinking'
+    ];
+    const hasTerm1 = term1Patterns.some(p => textToScan.includes(p)) || /\bct\b/i.test(textToScan);
+    const hasTerm2 = ['term 2', 'term-2', 'term2', 'math 2', 'maths 2', 'mathematics 2', 'eng 2', 'english 2', 'stats 2', 'statistics 2', 'python'].some(p => textToScan.includes(p));
+
+    if (hasTerm1) return true;
+    if (hasTerm2 && !hasTerm1) return false;
+    return true;
+  }
+
+  if (subTerm === 'Term 2') {
+    const term2Patterns = [
+      'term 2', 'term-2', 'term2', 'foundation 2', 'foundation-2',
+      'math 2', 'maths 2', 'mathematics 2', 'mathematics ii', 'math-2', 'maths-2',
+      'eng 2', 'english 2', 'english ii', 'eng-2', 'english-2',
+      'stats 2', 'statistics 2', 'statistics ii', 'stats-2', 'statistics-2',
+      'python', 'programming in python'
+    ];
+    const hasTerm2 = term2Patterns.some(p => textToScan.includes(p));
+    const hasTerm1 = ['term 1', 'term-1', 'term1', 'math 1', 'maths 1', 'mathematics 1', 'eng 1', 'english 1', 'stats 1', 'statistics 1', 'computational thinking'].some(p => textToScan.includes(p)) || /\bct\b/i.test(textToScan);
+
+    if (hasTerm2) return true;
+    if (hasTerm1 && !hasTerm2) return false;
+    return true;
+  }
+
+  return true;
+}
+
 export default function Courses() {
   const [courses, setCourses] = useState<CourseCardData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,26 +166,94 @@ export default function Courses() {
     return localStorage.getItem('selected_term');
   });
 
+  const [selectedSubTerm, setSelectedSubTerm] = useState<string | null>(() => {
+    return localStorage.getItem('selected_sub_term');
+  });
+
   useEffect(() => {
     fetchCourses();
   }, []);
 
-  // Clear the selected exam if it does not belong to the selected term anymore.
+  // Dynamic filter: only show a term if there is at least one course configured for it AND at least one active exam with price > 0
+  const activeTerms = termOptions.filter(option => {
+    // 1. Must have at least one course for this term
+    const hasCourse = courses.some(course => course.term === option.id);
+    if (!hasCourse) return false;
+
+    // 2. Must have at least one exam configured with price > 0 in stagePricing
+    const rawBoxes = examVisibility[option.id] || DEFAULT_BOX_CONFIG[option.id] || [];
+    if (rawBoxes.length === 0) return false;
+
+    if (option.id === 'Foundation') {
+      const term1Config = stagePricing['Foundation_Term 1'] || stagePricing['Foundation'];
+      const term2Config = stagePricing['Foundation_Term 2'] || stagePricing['Foundation'];
+      
+      const hasTerm1Active = rawBoxes.some(box => getStagePrice(box, term1Config) > 0);
+      const hasTerm2Active = rawBoxes.some(box => getStagePrice(box, term2Config) > 0);
+
+      return hasTerm1Active || hasTerm2Active;
+    }
+
+    const currentPricing = stagePricing[option.id];
+    return rawBoxes.some(box => getStagePrice(box, currentPricing) > 0);
+  });
+
+  const activeFoundationSubTerms = FOUNDATION_SUB_TERMS.filter(sub => {
+    // 1. Must have at least one course matching this sub-term
+    const hasCourse = courses.some(c => c.term === 'Foundation' && isCourseInSubTerm(c, sub.id));
+    if (!hasCourse) return false;
+
+    // 2. Must have at least one exam with price > 0
+    const subPricing = stagePricing[`Foundation_${sub.id}`] || stagePricing['Foundation'];
+    const rawBoxes = examVisibility['Foundation'] || DEFAULT_BOX_CONFIG['Foundation'] || [];
+    return rawBoxes.some(box => getStagePrice(box, subPricing) > 0);
+  });
+
+  const rawBoxes = selectedTerm ? (examVisibility[selectedTerm] || DEFAULT_BOX_CONFIG[selectedTerm] || []) : [];
+  const currentPricingKey = (selectedTerm === 'Foundation' && selectedSubTerm)
+    ? `Foundation_${selectedSubTerm}`
+    : selectedTerm || '';
+  const currentPricingConfig = stagePricing[currentPricingKey] || (selectedTerm === 'Foundation' ? stagePricing['Foundation'] : null);
+
+  // If pricing is configured for this level/term, filter to only boxes where price > 0
+  const activeBoxes = rawBoxes.filter(stage => {
+    if (!currentPricingConfig) return true;
+    return getStagePrice(stage, currentPricingConfig) > 0;
+  });
+
+  // Clear any selection that is not fully setup anymore
   useEffect(() => {
-    if (!selectedTerm) {
-      setSelectedExamStage(null);
-      localStorage.removeItem('selected_exam_stage');
-      return;
+    if (!boxesLoaded || loading) return;
+
+    if (selectedTerm) {
+      const isTermValid = activeTerms.some(t => t.id === selectedTerm);
+      if (!isTermValid && courses.length > 0) {
+        setSelectedTerm(null);
+        setSelectedSubTerm(null);
+        setSelectedExamStage(null);
+        localStorage.removeItem('selected_term');
+        localStorage.removeItem('selected_sub_term');
+        localStorage.removeItem('selected_exam_stage');
+        return;
+      }
     }
 
-    if (!boxesLoaded) return;
+    if (selectedTerm === 'Foundation' && selectedSubTerm) {
+      const isSubTermValid = activeFoundationSubTerms.some(s => s.id === selectedSubTerm);
+      if (!isSubTermValid && courses.length > 0) {
+        setSelectedSubTerm(null);
+        setSelectedExamStage(null);
+        localStorage.removeItem('selected_sub_term');
+        localStorage.removeItem('selected_exam_stage');
+        return;
+      }
+    }
 
-    const visibleStages = examVisibility[selectedTerm] || DEFAULT_BOX_CONFIG[selectedTerm] || [];
-    if (selectedExamStage && !visibleStages.includes(selectedExamStage)) {
+    if (selectedExamStage && !activeBoxes.includes(selectedExamStage)) {
       setSelectedExamStage(null);
       localStorage.removeItem('selected_exam_stage');
     }
-  }, [selectedTerm, selectedExamStage, examVisibility, boxesLoaded]);
+  }, [selectedTerm, selectedSubTerm, selectedExamStage, activeTerms, activeFoundationSubTerms, activeBoxes, boxesLoaded, loading, courses.length]);
 
   const fetchCourses = async () => {
     try {
@@ -86,8 +290,17 @@ export default function Courses() {
 
   const handleSelectTerm = (term: string) => {
     setSelectedTerm(term);
+    setSelectedSubTerm(null);
     setSelectedExamStage(null);
     localStorage.setItem('selected_term', term);
+    localStorage.removeItem('selected_sub_term');
+    localStorage.removeItem('selected_exam_stage');
+  };
+
+  const handleSelectSubTerm = (subTerm: string) => {
+    setSelectedSubTerm(subTerm);
+    setSelectedExamStage(null);
+    localStorage.setItem('selected_sub_term', subTerm);
     localStorage.removeItem('selected_exam_stage');
   };
 
@@ -98,9 +311,18 @@ export default function Courses() {
 
   const handleClearTerm = () => {
     setSelectedTerm(null);
-    localStorage.removeItem('selected_term');
-    localStorage.removeItem('selected_exam_stage');
+    setSelectedSubTerm(null);
     setSelectedExamStage(null);
+    localStorage.removeItem('selected_term');
+    localStorage.removeItem('selected_sub_term');
+    localStorage.removeItem('selected_exam_stage');
+  };
+
+  const handleClearSubTerm = () => {
+    setSelectedSubTerm(null);
+    setSelectedExamStage(null);
+    localStorage.removeItem('selected_sub_term');
+    localStorage.removeItem('selected_exam_stage');
   };
 
   const handleClearExam = () => {
@@ -108,10 +330,12 @@ export default function Courses() {
     localStorage.removeItem('selected_exam_stage');
   };
 
-  // Filter courses by selected academic term and selected exam stage:
+  // Filter courses by selected academic term, sub-term, and selected exam stage:
   const filteredCourses = courses.filter(course => {
     const matchesTerm = !selectedTerm || course.term === selectedTerm;
     
+    const matchesSubTerm = !selectedSubTerm || selectedTerm !== 'Foundation' || isCourseInSubTerm(course, selectedSubTerm);
+
     // Only filter by stage if a stage is selected
     const matchesStage = !selectedExamStage || 
       (Array.isArray(course.exam_stages) && course.exam_stages.includes(selectedExamStage));
@@ -119,7 +343,7 @@ export default function Courses() {
     const matchesSearch = course.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       course.description?.toLowerCase().includes(searchQuery.toLowerCase());
       
-    return matchesTerm && matchesStage && matchesSearch;
+    return matchesTerm && matchesSubTerm && matchesStage && matchesSearch;
   });
 
   if (loading) {
@@ -131,77 +355,25 @@ export default function Courses() {
     );
   }
 
-  // Define our term configurations
-  const termOptions = [
-    {
-      id: 'Qualifier',
-      name: 'Qualifier',
-      icon: BookOpen,
-      color: 'border-[#0b1120] hover:shadow-[8px_8px_0px_#eab308]',
-      textColor: 'text-yellow-600',
-      bgColor: 'bg-yellow-50 border-yellow-300',
-      iconColor: 'text-yellow-600',
-      desc: 'Crack the qualifier exam. Get comprehensive study plans, live tutorials, and mock papers to guarantee your admission.'
-    },
-    {
-      id: 'Re-attempt',
-      name: 'Re-attempt',
-      icon: RefreshCcw,
-      color: 'border-[#0b1120] hover:shadow-[8px_8px_0px_#ef4444]',
-      textColor: 'text-red-600',
-      bgColor: 'bg-red-50 border-red-300',
-      iconColor: 'text-red-600',
-      desc: 'Ready to try again? Get targeted preparation strategies, intensive practice, and guidance to ace your next attempt.'
-    },
-    {
-      id: 'Foundation',
-      name: 'Foundation',
-      icon: BookOpen,
-      color: 'border-[#0b1120] hover:shadow-[8px_8px_0px_#3b82f6]',
-      textColor: 'text-blue-600',
-      bgColor: 'bg-blue-50 border-blue-300',
-      iconColor: 'text-blue-600',
-      desc: 'Build a rock-solid academic base. Master core fundamentals with senior IITM BS students and conceptual live sessions.'
-    },
-    {
-      id: 'DIPLOMA',
-      name: 'DIPLOMA',
-      icon: GraduationCap,
-      color: 'border-[#0b1120] hover:shadow-[8px_8px_0px_#10b981]',
-      textColor: 'text-emerald-600',
-      bgColor: 'bg-emerald-50 border-emerald-300',
-      iconColor: 'text-emerald-600',
-      desc: 'Deep-dive into advanced coursework. Excel in project labs, coding assignments, and specialized diploma curriculum.'
-    }
-  ];
-
-  // Dynamic filter: only show a term if there is at least one course configured for it
-  const hasAnyTermAssigned = courses.some(c => c.term && ['Re-attempt', 'Foundation', 'DIPLOMA', 'Qualifier'].includes(c.term));
-  const activeTerms = termOptions.filter(option => {
-    if (!hasAnyTermAssigned) return true; // Fallback: show all if no terms are assigned yet
-    return courses.some(course => course.term === option.id);
-  });
-
+  // Step 1: Select Academic Tier / Level
   if (!selectedTerm) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center py-20 px-6">
+      <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center py-12 md:py-20 px-4 md:px-6">
 
         <div className="max-w-6xl w-full text-center relative z-10">
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="mb-12"
+            className="mb-8 md:mb-12"
           >
-            <h1 className="text-4xl md:text-5xl font-black text-[#0b1120] mb-4 leading-tight tracking-tight">
+            <h1 className="text-3xl md:text-5xl font-black text-[#0b1120] leading-tight tracking-tight">
               Please Select Your <span className="text-blue-600">Term</span>
             </h1>
-            <p className="text-gray-500 font-bold max-w-xl mx-auto text-sm md:text-base">
-              Choose your academic tier to explore the courses, schedules, and guidance curated specifically for you.
-            </p>
           </motion.div>
 
-          <div className={`grid grid-cols-1 ${activeTerms.length === 4 ? 'md:grid-cols-4' : activeTerms.length === 3 ? 'md:grid-cols-3' : activeTerms.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-1'} gap-8 text-left max-w-5xl mx-auto`}>
+          {/* At least 2 boxes per row on mobile (grid-cols-2), responsive on desktop */}
+          <div className={`grid grid-cols-2 ${activeTerms.length === 4 ? 'md:grid-cols-4' : activeTerms.length === 3 ? 'md:grid-cols-3' : activeTerms.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-1'} gap-3.5 md:gap-8 text-center md:text-left max-w-5xl mx-auto`}>
             {activeTerms.map((term, index) => {
               const IconComponent = term.icon;
               return (
@@ -209,24 +381,24 @@ export default function Courses() {
                   key={term.id}
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1, duration: 0.5 }}
-                  whileHover={{ scale: 1.03, y: -5 }}
+                  transition={{ delay: index * 0.08, duration: 0.4 }}
+                  whileHover={{ scale: 1.03, y: -4 }}
                   onClick={() => handleSelectTerm(term.id)}
-                  className={`group bg-white border-[4px] rounded-[2rem] p-8 cursor-pointer transition-all flex flex-col justify-between shadow-[6px_6px_0px_#0b1120] hover:translate-y-1 ${term.color}`}
+                  className={`group bg-white border-[3px] md:border-[4px] rounded-[1.5rem] md:rounded-[2rem] p-4 sm:p-6 md:p-8 cursor-pointer transition-all flex flex-col justify-between items-center md:items-start shadow-[4px_4px_0px_#0b1120] md:shadow-[6px_6px_0px_#0b1120] hover:translate-y-0.5 active:translate-y-1 ${term.color}`}
                 >
-                  <div>
-                    <div className={`w-14 h-14 border-[3px] rounded-2xl flex items-center justify-center mb-6 ${term.bgColor}`}>
-                      <IconComponent className={`w-6 h-6 ${term.iconColor}`} />
+                  <div className="w-full flex flex-col items-center md:items-start">
+                    <div className={`w-11 h-11 md:w-14 md:h-14 border-[2.5px] md:border-[3px] rounded-xl md:rounded-2xl flex items-center justify-center mb-3 md:mb-6 ${term.bgColor}`}>
+                      <IconComponent className={`w-5 h-5 md:w-6 md:h-6 ${term.iconColor}`} />
                     </div>
-                    <h3 className={`text-2xl font-black mb-3 text-[#0b1120] tracking-tight`}>
+                    <h3 className="text-sm sm:text-base md:text-2xl font-black mb-1 md:mb-3 text-[#0b1120] tracking-tight uppercase">
                       {term.name}
                     </h3>
-                    <p className="text-gray-500 font-bold text-sm leading-relaxed mb-6">
+                    <p className="hidden md:block text-gray-500 font-bold text-sm leading-relaxed mb-6">
                       {term.desc}
                     </p>
                   </div>
-                  <div className={`mt-auto pt-4 flex items-center justify-between text-xs font-black uppercase transition-transform group-hover:translate-x-1 ${term.textColor}`}>
-                    <span>Select {term.name} ›</span>
+                  <div className={`mt-2 md:mt-auto pt-0 md:pt-4 flex items-center justify-center md:justify-between text-[11px] md:text-xs font-black uppercase transition-transform group-hover:translate-x-1 ${term.textColor}`}>
+                    <span className="md:inline">Select ›</span>
                   </div>
                 </motion.div>
               );
@@ -237,12 +409,20 @@ export default function Courses() {
     );
   }
 
-  const activeBoxes = examVisibility[selectedTerm] || DEFAULT_BOX_CONFIG[selectedTerm] || [];
-
-  if (!selectedExamStage) {
+  // Step 2: If Foundation is selected, select Sub-Term (TERM 1 / TERM 2)
+  if (selectedTerm === 'Foundation' && !selectedSubTerm) {
     return (
       <>
-        <MobileCourses selectedTerm={selectedTerm} selectedExamStage={selectedExamStage} onClearTerm={handleClearTerm} onSelectExamStage={handleSelectExamStage} />
+        <MobileCourses 
+          selectedTerm={selectedTerm}
+          selectedSubTerm={selectedSubTerm}
+          selectedExamStage={selectedExamStage}
+          onClearTerm={handleClearTerm}
+          onClearSubTerm={handleClearSubTerm}
+          onClearExam={handleClearExam}
+          onSelectSubTerm={handleSelectSubTerm}
+          onSelectExamStage={handleSelectExamStage}
+        />
 
         <div className="hidden md:flex min-h-screen bg-gray-50 flex-col justify-center items-center py-20 px-6">
           <div className="max-w-5xl w-full text-center relative z-10">
@@ -254,8 +434,113 @@ export default function Courses() {
             >
               <div className="mb-5 flex justify-center">
                 <span className="px-4 py-1.5 bg-[#0b1120] text-white border-2 border-[#0b1120] shadow-[3px_3px_0px_#2563eb] rounded-xl text-xs font-black uppercase tracking-wider">
+                  {selectedTerm} Level
+                </span>
+              </div>
+              <h1 className="text-4xl md:text-5xl font-black text-[#0b1120] mb-4 leading-tight tracking-tight">
+                Select Your <span className="text-blue-600">Foundation Term</span>
+              </h1>
+              <p className="text-gray-500 font-bold max-w-xl mx-auto text-sm md:text-base">
+                Choose your specific Foundation term to explore relevant subjects and exams.
+              </p>
+            </motion.div>
+
+            <div className={`grid grid-cols-1 ${activeFoundationSubTerms.length === 1 ? 'max-w-md' : 'md:grid-cols-2 max-w-4xl'} gap-8 text-left mx-auto`}>
+              {activeFoundationSubTerms.map((sub, index) => (
+                <motion.div
+                  key={sub.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1, duration: 0.5 }}
+                  whileHover={{ scale: 1.02, y: -4 }}
+                  onClick={() => handleSelectSubTerm(sub.id)}
+                  className="group bg-white border-[4px] border-[#0b1120] rounded-[2rem] p-8 cursor-pointer transition-all flex flex-col justify-between shadow-[8px_8px_0px_#0b1120] hover:shadow-[8px_8px_0px_#2563eb]"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="px-3.5 py-1.5 bg-blue-50 text-blue-700 border-2 border-blue-200 rounded-xl text-xs font-black uppercase tracking-wider">
+                        Foundation
+                      </span>
+                      <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
+                    </div>
+
+                    <h3 className="text-3xl font-black text-[#0b1120] tracking-tight mb-2">
+                      {sub.name}
+                    </h3>
+                    <p className="text-gray-500 font-bold text-xs mb-6">
+                      {sub.desc}
+                    </p>
+
+                    {/* Subjects list underneath */}
+                    <div className="mb-6">
+                      <div className="text-[11px] font-black uppercase tracking-widest text-gray-400 mb-3">
+                        Included Subjects
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {sub.subjects.map((subj) => (
+                          <span
+                            key={subj}
+                            className="px-3 py-1.5 bg-gray-50 border-2 border-[#0b1120] text-[#0b1120] rounded-xl text-xs font-black shadow-[2px_2px_0px_#0b1120]"
+                          >
+                            {subj}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-auto pt-4 border-t-2 border-dashed border-gray-100 flex items-center justify-between text-xs font-black uppercase text-blue-600 group-hover:translate-x-1 transition-transform">
+                    <span>Select {sub.name} ›</span>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            <button
+              onClick={handleClearTerm}
+              className="mt-10 inline-flex items-center gap-2 px-5 py-3 border-[2.5px] border-[#0b1120] rounded-xl font-black text-xs bg-white hover:bg-gray-50 text-[#0b1120] shadow-[3px_3px_0px_#0b1120] active:translate-y-0.5 active:shadow-none transition-all"
+            >
+              <RefreshCcw className="w-4 h-4" />
+              Change Level
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Step 3: Choose Exam Stage
+  if (!selectedExamStage) {
+    return (
+      <>
+        <MobileCourses 
+          selectedTerm={selectedTerm}
+          selectedSubTerm={selectedSubTerm}
+          selectedExamStage={selectedExamStage}
+          onClearTerm={handleClearTerm}
+          onClearSubTerm={handleClearSubTerm}
+          onClearExam={handleClearExam}
+          onSelectSubTerm={handleSelectSubTerm}
+          onSelectExamStage={handleSelectExamStage}
+        />
+
+        <div className="hidden md:flex min-h-screen bg-gray-50 flex-col justify-center items-center py-20 px-6">
+          <div className="max-w-5xl w-full text-center relative z-10">
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="mb-10"
+            >
+              <div className="mb-5 flex justify-center items-center gap-2">
+                <span className="px-4 py-1.5 bg-[#0b1120] text-white border-2 border-[#0b1120] shadow-[3px_3px_0px_#2563eb] rounded-xl text-xs font-black uppercase tracking-wider">
                   {selectedTerm}
                 </span>
+                {selectedSubTerm && (
+                  <span className="px-4 py-1.5 bg-blue-600 text-white border-2 border-[#0b1120] shadow-[3px_3px_0px_#0b1120] rounded-xl text-xs font-black uppercase tracking-wider">
+                    {selectedSubTerm}
+                  </span>
+                )}
               </div>
               <h1 className="text-4xl md:text-5xl font-black text-[#0b1120] mb-4 leading-tight tracking-tight">
                 Choose <span className="text-blue-600">Exam</span>
@@ -269,10 +554,10 @@ export default function Courses() {
               <div className="bg-white border-[4px] border-[#0b1120] rounded-[2rem] p-10 shadow-[8px_8px_0px_#0b1120]">
                 <h3 className="text-2xl font-black text-gray-400 mb-6">No exams are available for this term yet.</h3>
                 <button
-                  onClick={handleClearTerm}
+                  onClick={selectedSubTerm ? handleClearSubTerm : handleClearTerm}
                   className="px-6 py-3 border-[3px] border-[#0b1120] rounded-xl font-black text-sm bg-white hover:bg-gray-50 text-[#0b1120] shadow-[4px_4px_0px_#0b1120] active:translate-y-1 active:shadow-none transition-all"
                 >
-                  Change Term
+                  Change {selectedSubTerm ? 'Term' : 'Level'}
                 </button>
               </div>
             ) : (
@@ -294,13 +579,24 @@ export default function Courses() {
               </div>
             )}
 
-            <button
-              onClick={handleClearTerm}
-              className="mt-10 inline-flex items-center gap-2 px-5 py-3 border-[2.5px] border-[#0b1120] rounded-xl font-black text-xs bg-white hover:bg-gray-50 text-[#0b1120] shadow-[3px_3px_0px_#0b1120] active:translate-y-0.5 active:shadow-none transition-all"
-            >
-              <RefreshCcw className="w-4 h-4" />
-              Change Term
-            </button>
+            <div className="mt-10 flex items-center justify-center gap-3">
+              {selectedSubTerm && (
+                <button
+                  onClick={handleClearSubTerm}
+                  className="inline-flex items-center gap-2 px-5 py-3 border-[2.5px] border-[#0b1120] rounded-xl font-black text-xs bg-white hover:bg-gray-50 text-[#0b1120] shadow-[3px_3px_0px_#0b1120] active:translate-y-0.5 active:shadow-none transition-all"
+                >
+                  <RefreshCcw className="w-4 h-4" />
+                  Change Term
+                </button>
+              )}
+              <button
+                onClick={handleClearTerm}
+                className="inline-flex items-center gap-2 px-5 py-3 border-[2.5px] border-[#0b1120] rounded-xl font-black text-xs bg-white hover:bg-gray-50 text-[#0b1120] shadow-[3px_3px_0px_#0b1120] active:translate-y-0.5 active:shadow-none transition-all"
+              >
+                <RefreshCcw className="w-4 h-4" />
+                Change Level
+              </button>
+            </div>
           </div>
         </div>
       </>
@@ -310,7 +606,16 @@ export default function Courses() {
   return (
     <>
     {/* Mobile cohorts screen (md:hidden) — matches the Gen-Z IITian mobile design */}
-    <MobileCourses selectedTerm={selectedTerm} selectedExamStage={selectedExamStage} onClearTerm={handleClearTerm} onClearExam={handleClearExam} onSelectExamStage={handleSelectExamStage} />
+    <MobileCourses 
+      selectedTerm={selectedTerm}
+      selectedSubTerm={selectedSubTerm}
+      selectedExamStage={selectedExamStage}
+      onClearTerm={handleClearTerm}
+      onClearSubTerm={handleClearSubTerm}
+      onClearExam={handleClearExam}
+      onSelectSubTerm={handleSelectSubTerm}
+      onSelectExamStage={handleSelectExamStage}
+    />
 
     <div className="hidden md:block min-h-screen bg-white">
       {/* Hero Section */}
@@ -347,6 +652,11 @@ export default function Courses() {
           <span className="px-4 py-1.5 bg-[#0b1120] text-white border-2 border-[#0b1120] shadow-[3px_3px_0px_#2563eb] rounded-xl text-xs font-black uppercase tracking-wider">
             {selectedTerm}
           </span>
+          {selectedSubTerm && (
+            <span className="px-4 py-1.5 bg-blue-600 text-white border-2 border-[#0b1120] shadow-[3px_3px_0px_#0b1120] rounded-xl text-xs font-black uppercase tracking-wider">
+              {selectedSubTerm}
+            </span>
+          )}
           <span className="px-4 py-1.5 bg-white text-[#0b1120] border-2 border-[#0b1120] shadow-[3px_3px_0px_#10b981] rounded-xl text-xs font-black uppercase tracking-wider">
             {selectedExamStage}
           </span>
@@ -359,12 +669,21 @@ export default function Courses() {
             <RefreshCcw className="w-3.5 h-3.5" />
             Change Exam
           </button>
+          {selectedSubTerm && (
+            <button 
+              onClick={handleClearSubTerm}
+              className="sm:self-center px-4 py-2 border-[2.5px] border-[#0b1120] rounded-xl font-black text-xs bg-white hover:bg-gray-50 text-[#0b1120] shadow-[3px_3px_0px_#0b1120] active:translate-y-0.5 active:shadow-none transition-all flex items-center gap-1.5 justify-center cursor-pointer"
+            >
+              <RefreshCcw className="w-3.5 h-3.5" />
+              Change Term
+            </button>
+          )}
           <button 
             onClick={handleClearTerm}
             className="sm:self-center px-4 py-2 border-[2.5px] border-[#0b1120] rounded-xl font-black text-xs bg-white hover:bg-gray-50 text-[#0b1120] shadow-[3px_3px_0px_#0b1120] active:translate-y-0.5 active:shadow-none transition-all flex items-center gap-1.5 justify-center cursor-pointer"
           >
             <RefreshCcw className="w-3.5 h-3.5" />
-            Change Term
+            Change Level
           </button>
         </div>
       </div>
@@ -397,28 +716,29 @@ export default function Courses() {
           </div>
         ) : (
           <>
-            {/* End Term Pricing Section */}
-            {selectedTerm && selectedExamStage === 'End Term' && (() => {
-              const pricingConfig = stagePricing[selectedTerm] || { quiz1: 0, quiz2: 0, endTerm: 0, fullTerm: 0, calculationMode: 'fixed', fixedTotal: 0 };
+            {/* Full Term Pricing Section */}
+            {selectedTerm && selectedExamStage === 'Full Term' && (() => {
+              const pricingConfig = currentPricingConfig || { quiz1: 0, quiz2: 0, endTerm: 0, fullTerm: 0, calculationMode: 'fixed', fixedTotal: 0 };
               const quiz1Price = pricingConfig.quiz1 || 0;
               const quiz2Price = pricingConfig.quiz2 || 0;
               const endTermPrice = pricingConfig.endTerm || 0;
               const isFixedMode = pricingConfig.calculationMode === 'fixed';
-              const finalPrice = isFixedMode ? (pricingConfig.fixedTotal || 0) : (quiz1Price + quiz2Price + endTermPrice);
+              const finalPrice = isFixedMode ? (pricingConfig.fixedTotal || pricingConfig.fullTerm || 0) : (quiz1Price + quiz2Price + endTermPrice);
               
-              const endTermCourse = courses.find(c => c.term === selectedTerm && Array.isArray(c.exam_stages) && c.exam_stages.includes('End Term'));
+              const fullTermCourse = courses.find(c => c.term === selectedTerm && Array.isArray(c.exam_stages) && c.exam_stages.includes('Full Term'))
+                || courses.find(c => c.term === selectedTerm && Array.isArray(c.exam_stages) && c.exam_stages.includes('End Term'));
 
               return (
-                <div className="max-w-2xl mx-auto mb-16 bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] p-8 md:p-12 shadow-[12px_12px_0px_#0b1120] space-y-6">
-                  <div className="text-center border-b-4 border-[#0b1120] pb-6">
-                    <span className="px-3.5 py-1.5 bg-blue-100 text-blue-700 text-xs font-black rounded-xl border-2 border-blue-200 uppercase tracking-widest">
-                      End Term Package
+                <div className="max-w-lg mx-auto mb-10 bg-white border-[3px] border-[#0b1120] rounded-[24px] p-6 md:p-8 shadow-[8px_8px_0px_#0b1120] space-y-5">
+                  <div className="text-center border-b-2 border-dashed border-gray-200 pb-4">
+                    <span className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-black rounded-xl border border-blue-200 uppercase tracking-widest">
+                      Full Term Package
                     </span>
-                    <h2 className="text-3xl font-black text-[#0b1120] mt-3">Syllabus Package Breakdown</h2>
-                    <p className="text-gray-500 font-bold text-sm mt-1">Get complete syllabus coverage with all classes and final mocks</p>
+                    <h2 className="text-2xl font-black text-[#0b1120] mt-2">Syllabus Package Breakdown</h2>
+                    <p className="text-gray-500 font-bold text-xs mt-1">Get complete syllabus coverage with all classes and final mocks</p>
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     <div className="flex justify-between items-center text-sm font-bold text-gray-500">
                       <span>Quiz 1 Prep Syllabus</span>
                       <span className="font-black text-[#0b1120]">₹{quiz1Price}</span>
@@ -427,28 +747,28 @@ export default function Courses() {
                       <span>Quiz 2 Prep Syllabus</span>
                       <span className="font-black text-[#0b1120]">₹{quiz2Price}</span>
                     </div>
-                    <div className="flex justify-between items-center text-sm font-bold text-gray-500 border-b-2 border-dashed border-gray-100 pb-4">
+                    <div className="flex justify-between items-center text-sm font-bold text-gray-500 border-b-2 border-dashed border-gray-100 pb-3">
                       <span>End Term Final Mock Papers</span>
                       <span className="font-black text-[#0b1120]">₹{endTermPrice}</span>
                     </div>
-                    <div className="flex justify-between items-center pt-2">
-                      <span className="text-base font-black text-[#0b1120] uppercase tracking-wide">Final Package Price</span>
-                      <span className="text-3xl font-black text-[#0b1120]">₹{finalPrice}</span>
+                    <div className="flex justify-between items-center pt-1">
+                      <span className="text-sm font-black text-[#0b1120] uppercase tracking-wide">Final Package Price</span>
+                      <span className="text-2xl font-black text-[#0b1120]">₹{finalPrice}</span>
                     </div>
                   </div>
 
-                  {endTermCourse ? (
-                    <div className="pt-4 flex justify-center">
+                  {fullTermCourse ? (
+                    <div className="pt-2 flex justify-center">
                       <Link
-                        to={`/checkout/${endTermCourse.id}`}
-                        className="w-full text-center py-5 bg-[#10b981] text-[#0b1120] rounded-2xl font-black text-lg border-[4px] border-[#0b1120] shadow-[8px_8px_0px_#0b1120] hover:translate-y-0.5 hover:shadow-[6px_6px_0px_#0b1120] active:translate-y-1 active:shadow-none transition-all flex items-center justify-center gap-2 cursor-pointer"
+                        to={`/checkout/${fullTermCourse.id}`}
+                        className="w-full text-center py-3.5 bg-[#10b981] text-[#0b1120] rounded-xl font-black text-base border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] hover:translate-y-0.5 hover:shadow-[2px_2px_0px_#0b1120] active:translate-y-1 active:shadow-none transition-all flex items-center justify-center gap-2 cursor-pointer"
                       >
-                        Unlock End Term Package
+                        Unlock Full Term Package
                       </Link>
                     </div>
                   ) : (
-                    <div className="p-4 bg-gray-50 border-2 border-gray-200 rounded-xl text-center text-xs font-bold text-gray-400">
-                      End Term package checkout is currently offline. Please contact the administrator.
+                    <div className="p-3 bg-gray-50 border-2 border-gray-200 rounded-xl text-center text-xs font-bold text-gray-400">
+                      Full Term package checkout is currently offline. Please contact the administrator.
                     </div>
                   )}
                 </div>
