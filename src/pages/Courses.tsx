@@ -75,16 +75,83 @@ export const TERM_OPTIONS = [
 
 export function getStagePrice(stage: string, config: any): number {
   if (!config) return 0;
-  if (stage === 'Quiz 1') return Number(config.quiz1 || 0);
-  if (stage === 'Quiz 2') return Number(config.quiz2 || 0);
-  if (stage === 'End Term') return Number(config.endTerm || 0);
-  if (stage === 'Full Term') {
+  const s = String(stage || '').trim().toLowerCase().replace(/[-_]/g, ' ');
+  if (s === 'quiz 1' || s === 'quiz1' || s.startsWith('quiz 1')) return Number(config.quiz1 || 0);
+  if (s === 'quiz 2' || s === 'quiz2' || s.startsWith('quiz 2')) return Number(config.quiz2 || 0);
+  if (s === 'end term' || s === 'endterm' || s.startsWith('end term')) return Number(config.endTerm || 0);
+  if (s === 'full term' || s === 'fullterm' || s.startsWith('full term')) {
     if (config.calculationMode === 'sum') {
       return Number(config.quiz1 || 0) + Number(config.quiz2 || 0) + Number(config.endTerm || 0);
     }
     return Number(config.fixedTotal || config.fullTerm || 0);
   }
   return Number(config.fixedTotal || config.fullTerm || 0);
+}
+
+const BOX_ORDER: Record<string, number> = {
+  'quiz 1': 1,
+  'quiz1': 1,
+  'quiz 2': 2,
+  'quiz2': 2,
+  'end term': 3,
+  'endterm': 3,
+  'full term': 4,
+  'fullterm': 4,
+  'qualifier': 1,
+  're-attempt': 1,
+  'reattempt': 1
+};
+
+export function getCandidateBoxes(
+  term: string | null,
+  subTerm: string | null,
+  examVisibility: Record<string, string[]>,
+  courses: CourseCardData[],
+  stagePricing: Record<string, any>
+): string[] {
+  if (!term) return [];
+  const defaultBoxes = DEFAULT_BOX_CONFIG[term] || [];
+  const savedBoxes = examVisibility[term] || [];
+  
+  const courseBoxes = courses
+    .filter(c => c.term === term && (!subTerm || isCourseInSubTerm(c, subTerm)))
+    .flatMap(c => c.exam_stages || []);
+
+  const currentPricingKey = (term === 'Foundation' && subTerm) ? `Foundation_${subTerm}` : term;
+  const pricingConfig = stagePricing[currentPricingKey] || (term === 'Foundation' ? stagePricing['Foundation'] : null);
+  
+  const pricingBoxes: string[] = [];
+  if (pricingConfig) {
+    if (Number(pricingConfig.quiz1) > 0) pricingBoxes.push('Quiz 1');
+    if (Number(pricingConfig.quiz2) > 0) pricingBoxes.push('Quiz 2');
+    if (Number(pricingConfig.endTerm) > 0) pricingBoxes.push('End Term');
+    if (Number(pricingConfig.fullTerm) > 0 || (pricingConfig.calculationMode === 'sum' && (Number(pricingConfig.quiz1) > 0 || Number(pricingConfig.quiz2) > 0 || Number(pricingConfig.endTerm) > 0))) {
+      if (!(pricingConfig.calculationMode === 'fixed' && Number(pricingConfig.fixedTotal || pricingConfig.fullTerm) === 0)) {
+        pricingBoxes.push('Full Term');
+      }
+    }
+  }
+
+  // Merge and deduplicate
+  const allUnique = Array.from(new Set([
+    ...savedBoxes,
+    ...defaultBoxes,
+    ...courseBoxes,
+    ...pricingBoxes
+  ])).filter(Boolean);
+
+  allUnique.sort((a, b) => {
+    const orderA = BOX_ORDER[a.toLowerCase()] ?? 50;
+    const orderB = BOX_ORDER[b.toLowerCase()] ?? 50;
+    return orderA - orderB;
+  });
+
+  // If pricing is defined, filter strictly by getStagePrice > 0
+  if (pricingConfig) {
+    return allUnique.filter(stage => getStagePrice(stage, pricingConfig) > 0);
+  }
+
+  return allUnique;
 }
 
 export function isCourseInSubTerm(course: CourseCardData, subTerm: string): boolean {
@@ -176,56 +243,39 @@ export default function Courses() {
 
   // Dynamic filter: only show a term if there is at least one course configured for it AND at least one active exam with price > 0
   const activeTerms = TERM_OPTIONS.filter(option => {
-    // 1. Must have at least one course for this term
     const hasCourse = courses.some(course => course.term === option.id);
     if (!hasCourse) return false;
 
-    // 2. Must have at least one exam configured with price > 0 in stagePricing
-    const rawBoxes = examVisibility[option.id] || DEFAULT_BOX_CONFIG[option.id] || [];
-    if (rawBoxes.length === 0) return false;
-
     if (option.id === 'Foundation') {
-      const term1Config = stagePricing['Foundation_Term 1'] || stagePricing['Foundation'];
-      const term2Config = stagePricing['Foundation_Term 2'] || stagePricing['Foundation'];
-      
-      const hasTerm1Active = rawBoxes.some(box => getStagePrice(box, term1Config) > 0);
-      const hasTerm2Active = rawBoxes.some(box => getStagePrice(box, term2Config) > 0);
-
-      return hasTerm1Active || hasTerm2Active;
+      const term1Boxes = getCandidateBoxes('Foundation', 'Term 1', examVisibility, courses, stagePricing);
+      const term2Boxes = getCandidateBoxes('Foundation', 'Term 2', examVisibility, courses, stagePricing);
+      return term1Boxes.length > 0 || term2Boxes.length > 0;
     }
 
-    const currentPricing = stagePricing[option.id];
-    return rawBoxes.some(box => getStagePrice(box, currentPricing) > 0);
+    const boxes = getCandidateBoxes(option.id, null, examVisibility, courses, stagePricing);
+    return boxes.length > 0;
   });
 
   const displayTerms = activeTerms.length > 0 ? activeTerms : TERM_OPTIONS.filter(option => courses.some(c => c.term === option.id));
 
   const activeFoundationSubTerms = FOUNDATION_SUB_TERMS.filter(sub => {
-    // 1. Must have at least one course matching this sub-term
     const hasCourse = courses.some(c => c.term === 'Foundation' && isCourseInSubTerm(c, sub.id));
     if (!hasCourse) return false;
 
-    // 2. Must have at least one exam with price > 0
-    const subPricing = stagePricing[`Foundation_${sub.id}`] || stagePricing['Foundation'];
-    const rawBoxes = examVisibility['Foundation'] || DEFAULT_BOX_CONFIG['Foundation'] || [];
-    return rawBoxes.some(box => getStagePrice(box, subPricing) > 0);
+    const boxes = getCandidateBoxes('Foundation', sub.id, examVisibility, courses, stagePricing);
+    return boxes.length > 0;
   });
 
   const displaySubTerms = activeFoundationSubTerms.length > 0 
     ? activeFoundationSubTerms 
     : FOUNDATION_SUB_TERMS.filter(sub => courses.some(c => c.term === 'Foundation' && isCourseInSubTerm(c, sub.id)));
 
-  const rawBoxes = selectedTerm ? (examVisibility[selectedTerm] || DEFAULT_BOX_CONFIG[selectedTerm] || []) : [];
   const currentPricingKey = (selectedTerm === 'Foundation' && selectedSubTerm)
     ? `Foundation_${selectedSubTerm}`
     : selectedTerm || '';
   const currentPricingConfig = stagePricing[currentPricingKey] || (selectedTerm === 'Foundation' ? stagePricing['Foundation'] : null);
 
-  // If pricing is configured for this level/term, filter to only boxes where price > 0
-  const activeBoxes = rawBoxes.filter(stage => {
-    if (!currentPricingConfig) return true;
-    return getStagePrice(stage, currentPricingConfig) > 0;
-  });
+  const activeBoxes = getCandidateBoxes(selectedTerm, selectedSubTerm, examVisibility, courses, stagePricing);
 
   // Clear any selection that is not fully setup anymore
   useEffect(() => {

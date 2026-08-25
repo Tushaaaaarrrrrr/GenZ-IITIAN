@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { RefreshCcw, GraduationCap, Star, Loader2, ChevronRight, BookOpen, Minus } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { CourseCardData } from '../CourseCard';
+import { isCourseInSubTerm, getStagePrice, getCandidateBoxes } from '../../pages/Courses';
 
 const DEFAULT_BOX_CONFIG: Record<string, string[]> = {
   Qualifier: ['Qualifier'],
@@ -175,25 +176,19 @@ export default function MobileCourses({
     return matchesTerm && matchesSubTerm && matchesStage;
   });
 
-  const rawBoxes = selectedTerm ? (examVisibility[selectedTerm] || DEFAULT_BOX_CONFIG[selectedTerm] || []) : [];
   const currentPricingKey = (selectedTerm === 'Foundation' && selectedSubTerm)
     ? `Foundation_${selectedSubTerm}`
     : selectedTerm || '';
   const currentPricingConfig = stagePricing[currentPricingKey] || (selectedTerm === 'Foundation' ? stagePricing['Foundation'] : null);
 
-  // If pricing is configured for this level/term, filter to only boxes where price > 0
-  const activeBoxes = rawBoxes.filter(stage => {
-    if (!currentPricingConfig) return true;
-    return getStagePrice(stage, currentPricingConfig) > 0;
-  });
+  const activeBoxes = getCandidateBoxes(selectedTerm, selectedSubTerm, examVisibility, courses, stagePricing);
 
   const activeFoundationSubTerms = FOUNDATION_SUB_TERMS.filter(sub => {
     const hasCourse = courses.some(c => c.term === 'Foundation' && isCourseInSubTerm(c, sub.id));
     if (!hasCourse) return false;
 
-    const subPricing = stagePricing[`Foundation_${sub.id}`] || stagePricing['Foundation'];
-    const rawBoxes = examVisibility['Foundation'] || DEFAULT_BOX_CONFIG['Foundation'] || [];
-    return rawBoxes.some(box => getStagePrice(box, subPricing) > 0);
+    const boxes = getCandidateBoxes('Foundation', sub.id, examVisibility, courses, stagePricing);
+    return boxes.length > 0;
   });
 
   const displaySubTerms = activeFoundationSubTerms.length > 0 
