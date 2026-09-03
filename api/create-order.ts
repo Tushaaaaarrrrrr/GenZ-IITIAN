@@ -350,46 +350,11 @@ export default async function handler(req: any, res: any) {
         return res.status(400).json({ error: 'Invalid course IDs' });
       }
 
-      // Check if this is a Full Term or End Term package purchase
-      const fullOrEndTermCourse = courses.find((c: any) => Array.isArray(c.exam_stages) && (c.exam_stages.includes('Full Term') || c.exam_stages.includes('End Term')));
-      let stagePriceOverridden = false;
-      let overriddenPrice = 0;
-
-      if (fullOrEndTermCourse) {
-        const { data: priceData } = await supabase.from('settings').select('*').eq('key', 'stage_pricing').maybeSingle();
-        if (priceData) {
-          const stagePricing = JSON.parse(priceData.value || '{}');
-          let termKey = fullOrEndTermCourse.term || 'Foundation';
-          if (termKey === 'Foundation') {
-            const tags = fullOrEndTermCourse.tags || [];
-            if (tags.some((t: string) => t.toLowerCase() === 'term 2')) {
-              termKey = 'Foundation_Term 2';
-            } else if (tags.some((t: string) => t.toLowerCase() === 'term 1')) {
-              termKey = 'Foundation_Term 1';
-            }
-          }
-          const config = stagePricing[termKey] || stagePricing['Foundation'];
-          if (config) {
-            stagePriceOverridden = true;
-            if (config.calculationMode === 'sum') {
-              overriddenPrice = Number(config.quiz1 || 0) + Number(config.quiz2 || 0) + Number(config.endTerm || 0);
-            } else {
-              overriddenPrice = Number(config.fixedTotal || config.fullTerm || 0);
-            }
-          }
-        }
-      }
-
-      if (stagePriceOverridden) {
-        totalAmount = overriddenPrice;
-        totalOriginalPrice = overriddenPrice;
-      } else {
-        totalOriginalPrice = courses.reduce((sum: number, course: any) => sum + Number(course.price || 0), 0);
-        totalAmount = courses.reduce((sum: number, course: any) => {
-          const effectivePrice = course.discountPrice && Number(course.discountPrice) > 0 ? Number(course.discountPrice) : Number(course.price || 0);
-          return sum + effectivePrice;
-        }, 0);
-      }
+      totalOriginalPrice = courses.reduce((sum: number, course: any) => sum + Number(course.price || 0), 0);
+      totalAmount = courses.reduce((sum: number, course: any) => {
+        const effectivePrice = course.discountPrice && Number(course.discountPrice) > 0 ? Number(course.discountPrice) : Number(course.price || 0);
+        return sum + effectivePrice;
+      }, 0);
 
       // Handle Coupons/Referrals for standalone courses (SINGLE DISCOUNT ENFORCEMENT)
       if (discountCode) {

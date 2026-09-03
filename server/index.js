@@ -556,43 +556,8 @@ app.post('/api/create-order', async (req, res) => {
             const { data: courses } = await supabase.from('courses').select('id, name, price, discountPrice, term, exam_stages, tags').in('id', courseIds);
             if (!courses || courses.length === 0) return res.status(400).json({ error: 'Invalid course IDs' });
 
-            // Check if this is a Full Term or End Term package purchase
-            const fullOrEndTermCourse = courses.find(c => Array.isArray(c.exam_stages) && (c.exam_stages.includes('Full Term') || c.exam_stages.includes('End Term')));
-            let stagePriceOverridden = false;
-            let overriddenPrice = 0;
-
-            if (fullOrEndTermCourse) {
-                const { data: priceData } = await supabase.from('settings').select('*').eq('key', 'stage_pricing').maybeSingle();
-                if (priceData) {
-                    const stagePricing = JSON.parse(priceData.value || '{}');
-                    let termKey = fullOrEndTermCourse.term || 'Foundation';
-                    if (termKey === 'Foundation') {
-                        const tags = fullOrEndTermCourse.tags || [];
-                        if (tags.some(t => t.toLowerCase() === 'term 2')) {
-                            termKey = 'Foundation_Term 2';
-                        } else if (tags.some(t => t.toLowerCase() === 'term 1')) {
-                            termKey = 'Foundation_Term 1';
-                        }
-                    }
-                    const config = stagePricing[termKey] || stagePricing['Foundation'];
-                    if (config) {
-                        stagePriceOverridden = true;
-                        if (config.calculationMode === 'sum') {
-                            overriddenPrice = Number(config.quiz1 || 0) + Number(config.quiz2 || 0) + Number(config.endTerm || 0);
-                        } else {
-                            overriddenPrice = Number(config.fixedTotal || config.fullTerm || 0);
-                        }
-                    }
-                }
-            }
-
-            if (stagePriceOverridden) {
-                totalAmount = overriddenPrice;
-                originalAmount = overriddenPrice;
-            } else {
-                totalAmount = courses.reduce((sum, c) => sum + Number((c.discountPrice && c.discountPrice > 0) ? c.discountPrice : c.price), 0);
-                originalAmount = courses.reduce((sum, c) => sum + Number(c.price), 0);
-            }
+            totalAmount = courses.reduce((sum, c) => sum + Number((c.discountPrice && c.discountPrice > 0) ? c.discountPrice : c.price), 0);
+            originalAmount = courses.reduce((sum, c) => sum + Number(c.price), 0);
             
             // Get course names for notes
             const courseNames = courses.map(c => c.name).join(', ');
