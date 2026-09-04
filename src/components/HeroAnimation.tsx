@@ -26,44 +26,47 @@ export default function HeroAnimation() {
           {/* Laptop Screen */}
           <motion.rect
             x="96" y="136" width="308" height="188" rx="8"
-            fill="#10b981"
+            fill="#0f172a"
+            stroke="#ef4444"
+            strokeWidth="1.5"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.3 }}
           />
 
-          {/* Screen Content - Welcome Text */}
+          {/* Screen Content - Welcome / War-room Text */}
           <motion.text
-            x="250" y="185"
+            x="250" y="180"
             textAnchor="middle"
             fontFamily="Arial, sans-serif"
             fontWeight="900"
-            fontSize="22"
-            fill="white"
+            fontSize="15"
+            letterSpacing="2"
+            fill="#f87171"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.6 }}
           >
-            Welcome to
+            END TERM 2026
           </motion.text>
           <motion.text
-            x="250" y="225"
+            x="250" y="218"
             textAnchor="middle"
             fontFamily="Arial, sans-serif"
             fontWeight="900"
-            fontSize="30"
+            fontSize="26"
             fill="white"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.9 }}
           >
-            Gen-Z IITian
+            NOW OR NEVER
           </motion.text>
 
           {/* Screen - decorative underline */}
           <motion.rect
-            x="175" y="235" width="150" height="4" rx="2"
-            fill="#f59e0b"
+            x="165" y="228" width="170" height="4" rx="2"
+            fill="#ef4444"
             initial={{ scaleX: 0 }}
             animate={{ scaleX: 1 }}
             transition={{ duration: 0.5, delay: 1.2 }}
@@ -72,32 +75,32 @@ export default function HeroAnimation() {
 
           {/* Screen - Tagline */}
           <motion.text
-            x="250" y="265"
+            x="250" y="258"
             textAnchor="middle"
             fontFamily="Arial, sans-serif"
-            fontWeight="600"
+            fontWeight="700"
             fontSize="12"
-            fill="rgba(255,255,255,0.75)"
+            fill="#fbbf24"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1.4 }}
           >
-            Master IIT-Level Courses Online
+            10 Days Left • End Term : 13 Sept
           </motion.text>
 
           {/* Screen - Progress bar */}
           <motion.rect
-            x="160" y="285" width="180" height="8" rx="4"
-            fill="rgba(255,255,255,0.2)"
+            x="160" y="278" width="180" height="8" rx="4"
+            fill="rgba(255,255,255,0.15)"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1.5 }}
           />
           <motion.rect
-            x="160" y="285" width="180" height="8" rx="4"
-            fill="rgba(255,255,255,0.6)"
+            x="160" y="278" width="180" height="8" rx="4"
+            fill="#ef4444"
             initial={{ scaleX: 0 }}
-            animate={{ scaleX: [0, 0.7, 0.7, 0.7] }}
+            animate={{ scaleX: [0, 0.85, 0.85, 0.85] }}
             transition={{ duration: 3, delay: 1.7, repeat: Infinity, repeatDelay: 2 }}
             style={{ originX: 0 }}
           />
@@ -328,59 +331,59 @@ export default function HeroAnimation() {
         </svg>
       </motion.div>
 
-      {/* Floating "S Grade" Badge - top right */}
+      {/* Floating "Target S Grade" Badge - top right */}
       <motion.div
         animate={{ y: [-10, 10, -10], rotate: [-5, 5, -5] }}
         transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute top-4 right-2 sm:top-8 sm:right-8 bg-white px-2 py-1.5 sm:px-4 sm:py-3 rounded-xl sm:rounded-2xl border-2 sm:border-[3px] border-[#0b1120] shadow-[3px_3px_0px_#0b1120] sm:shadow-[6px_6px_0px_#0b1120] z-10"
+        className="absolute top-4 right-2 sm:top-8 sm:right-8 bg-white px-2.5 py-1.5 sm:px-4 sm:py-3 rounded-xl sm:rounded-2xl border-2 sm:border-[3px] border-[#0b1120] shadow-[3px_3px_0px_#0b1120] sm:shadow-[6px_6px_0px_#10b981] z-10"
       >
         <div className="flex items-center gap-1.5 sm:gap-2">
           <div className="w-5 h-5 sm:w-8 sm:h-8 rounded-md sm:rounded-lg bg-[#10b981] flex items-center justify-center">
             <span className="text-white font-black text-[10px] sm:text-sm">S</span>
           </div>
-          <span className="font-black text-[#0b1120] text-[10px] sm:text-sm">S Grade</span>
+          <span className="font-black text-[#0b1120] text-[10px] sm:text-sm">Target S Grade</span>
         </div>
       </motion.div>
 
-      {/* Floating "9+ CGPA" Badge - bottom left */}
+      {/* Floating "High-Yield PYQs" Badge - bottom left */}
       <motion.div
         animate={{ y: [10, -10, 10], rotate: [5, -5, 5] }}
         transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute bottom-14 -left-2 sm:bottom-20 sm:left-0 bg-white px-2 py-1.5 sm:px-4 sm:py-3 rounded-xl sm:rounded-2xl border-2 sm:border-[3px] border-[#0b1120] shadow-[3px_3px_0px_#0b1120] sm:shadow-[6px_6px_0px_#0b1120] z-10"
+        className="absolute bottom-14 -left-2 sm:bottom-20 sm:left-0 bg-white px-2.5 py-1.5 sm:px-4 sm:py-3 rounded-xl sm:rounded-2xl border-2 sm:border-[3px] border-[#0b1120] shadow-[3px_3px_0px_#0b1120] sm:shadow-[6px_6px_0px_#f59e0b] z-10"
       >
         <div className="flex items-center gap-1.5 sm:gap-2">
           <div className="w-5 h-5 sm:w-8 sm:h-8 rounded-md sm:rounded-lg bg-[#f59e0b] flex items-center justify-center">
-            <span className="text-white font-black text-[8px] sm:text-xs">9+</span>
+            <span className="text-white font-black text-[9px] sm:text-xs">PYQ</span>
           </div>
-          <span className="font-black text-[#0b1120] text-[10px] sm:text-sm">CGPA</span>
+          <span className="font-black text-[#0b1120] text-[10px] sm:text-sm">High-Yield PYQs</span>
         </div>
       </motion.div>
 
-      {/* Floating "Data Scientists" Badge - bottom right */}
+      {/* Floating "End Term Mocks" Badge - bottom right */}
       <motion.div
         animate={{ y: [-8, 8, -8], rotate: [3, -3, 3] }}
         transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-        className="absolute bottom-4 right-0 sm:bottom-6 sm:right-12 bg-white px-2 py-1.5 sm:px-4 sm:py-3 rounded-xl sm:rounded-2xl border-2 sm:border-[3px] border-[#0b1120] shadow-[3px_3px_0px_#0b1120] sm:shadow-[6px_6px_0px_#0b1120] z-10"
+        className="absolute bottom-4 right-0 sm:bottom-6 sm:right-12 bg-white px-2.5 py-1.5 sm:px-4 sm:py-3 rounded-xl sm:rounded-2xl border-2 sm:border-[3px] border-[#0b1120] shadow-[3px_3px_0px_#0b1120] sm:shadow-[6px_6px_0px_#3b82f6] z-10"
       >
         <div className="flex items-center gap-1.5 sm:gap-2">
-          <div className="w-5 h-5 sm:w-8 sm:h-8 rounded-md sm:rounded-lg bg-[#3b82f6] flex items-center justify-center">
-            <svg className="w-3 h-3 sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="white"><path d="M3 3v18h18V3H3zm16 16H5V5h14v14zM7 7h4v4H7V7zm6 0h4v4h-4V7zm-6 6h4v4H7v-4zm6 0h4v4h-4v-4z"/></svg>
+          <div className="w-5 h-5 sm:w-8 sm:h-8 rounded-md sm:rounded-lg bg-[#3b82f6] flex items-center justify-center text-white">
+            <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
           </div>
-          <span className="font-black text-[#0b1120] text-[10px] sm:text-sm">Data Scientists</span>
+          <span className="font-black text-[#0b1120] text-[10px] sm:text-sm">Full Mock Tests</span>
         </div>
       </motion.div>
 
-      {/* Floating "ML Engineer" Badge - top left area */}
+      {/* Floating "MAY'26 ENDTERM" Badge - top left area */}
       <motion.div
         animate={{ y: [8, -8, 8], rotate: [-3, 3, -3] }}
         transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
-        className="absolute top-12 -left-2 sm:top-16 sm:left-0 bg-white px-2 py-1.5 sm:px-4 sm:py-3 rounded-xl sm:rounded-2xl border-2 sm:border-[3px] border-[#0b1120] shadow-[3px_3px_0px_#0b1120] sm:shadow-[6px_6px_0px_#0b1120] z-10"
+        className="absolute top-12 -left-2 sm:top-16 sm:left-0 bg-white px-2.5 py-1.5 sm:px-4 sm:py-3 rounded-xl sm:rounded-2xl border-2 sm:border-[3px] border-[#0b1120] shadow-[3px_3px_0px_#0b1120] sm:shadow-[6px_6px_0px_#ef4444] z-10"
       >
         <div className="flex items-center gap-1.5 sm:gap-2">
-          <div className="w-5 h-5 sm:w-8 sm:h-8 rounded-md sm:rounded-lg bg-[#8b5cf6] flex items-center justify-center">
-            <svg className="w-3 h-3 sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+          <div className="w-5 h-5 sm:w-8 sm:h-8 rounded-md sm:rounded-lg bg-red-600 flex items-center justify-center text-white">
+            <span className="font-black text-[10px] sm:text-xs">10d</span>
           </div>
-          <span className="font-black text-[#0b1120] text-[10px] sm:text-sm">ML Engineer</span>
+          <span className="font-black text-red-600 text-[10px] sm:text-sm uppercase tracking-wide">MAY'26 ENDTERM</span>
         </div>
       </motion.div>
     </div>

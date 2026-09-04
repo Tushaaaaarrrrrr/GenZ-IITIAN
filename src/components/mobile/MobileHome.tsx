@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ChevronRight, Sparkles, Play } from 'lucide-react';
+import { ChevronRight, Sparkles, Play, Flame } from 'lucide-react';
 
 const ECO_TAGS = [
   'Daily Live', 'Recorded', 'Weekly Mock Test', 'Live Doubts',
@@ -19,20 +19,20 @@ function HeroArt() {
   return (
     <div className="relative h-[250px] my-1.5">
       {/* backdrop circle */}
-      <div className="absolute top-[18px] left-1/2 -translate-x-1/2 w-[214px] h-[214px] rounded-full bg-[#E7EBFB] border-[2.5px] border-[#0b1120]" />
+      <div className="absolute top-[18px] left-1/2 -translate-x-1/2 w-[214px] h-[214px] rounded-full bg-[#fee2e2] border-[2.5px] border-[#0b1120]" />
       {/* welcome card */}
-      <div className="absolute top-[78px] left-1/2 -translate-x-1/2 w-[170px] bg-[#15B981] border-[2.5px] border-[#0b1120] rounded-2xl shadow-[3px_3px_0px_#0b1120] px-3 pt-3.5 pb-3 text-center text-white">
-        <div className="font-semibold text-[11px] opacity-90">Welcome to</div>
-        <div className="font-black text-[17px] leading-tight">Gen-Z IITian</div>
-        <div className="text-[9px] font-semibold opacity-90 mt-1 border-t border-white/45 pt-1.5">Master IIT-Level Courses Online</div>
-        <div className="mx-auto mt-2 w-[26px] h-[26px] rounded-full bg-white flex items-center justify-center text-[#0E9E6A]">
-          <Play className="w-3.5 h-3.5 fill-current" />
+      <div className="absolute top-[78px] left-1/2 -translate-x-1/2 w-[175px] bg-[#0f172a] border-[2.5px] border-red-500 rounded-2xl shadow-[3px_3px_0px_#0b1120] px-3 pt-3.5 pb-3 text-center text-white">
+        <div className="font-black text-[10px] text-red-400 tracking-wider uppercase">END TERM 2026</div>
+        <div className="font-black text-[17px] leading-tight text-white mt-0.5">NOW OR NEVER</div>
+        <div className="text-[9px] font-bold text-amber-300 mt-1 border-t border-white/20 pt-1.5">10 Days Left &bull; 13 Sept</div>
+        <div className="mx-auto mt-2 w-[26px] h-[26px] rounded-full bg-red-600 flex items-center justify-center text-white">
+          <Flame className="w-3.5 h-3.5 fill-current" />
         </div>
       </div>
-      <Chip label="ML Engineer" bg="#7C3AED" glyph="◍" className="top-1.5 left-0" />
-      <Chip label="S Grade" bg="#15B981" glyph="S" className="top-3.5 right-0.5" />
-      <Chip label="9+ CGPA" bg="#F6A623" glyph="9" className="bottom-[30px] left-1.5" />
-      <Chip label="Data Sci" bg="#2563EB" glyph="⛁" className="bottom-2 right-1" />
+      <Chip label="MAY'26 ENDTERM" bg="#DC2626" glyph="🔥" className="top-1.5 left-0" />
+      <Chip label="Target S" bg="#15B981" glyph="S" className="top-3.5 right-0.5" />
+      <Chip label="High Yield" bg="#F6A623" glyph="⚡" className="bottom-[30px] left-1.5" />
+      <Chip label="Full Mocks" bg="#2563EB" glyph="📝" className="bottom-2 right-1" />
     </div>
   );
 }
@@ -51,23 +51,22 @@ export default function MobileHome() {
   return (
     <div className="md:hidden">
       <div className="px-4 pt-5 pb-2">
-        <div className="inline-flex items-center gap-1.5 bg-[#E7EEFF] border-2 border-[#0b1120] rounded-full px-3.5 py-1.5 shadow-[2px_2px_0px_#0b1120]">
-          <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-          <span className="text-[11px] font-black tracking-wide text-blue-700">MAY TERM BATCHES ARE LIVE!</span>
-        </div>
+        <h1 className="font-black text-[30px] leading-[1.1] text-[#0b1120]">
+          ENDTERM CRASH COURSE <br />
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 via-orange-500 to-amber-500">
+            IS NOW LIVE
+          </span>
+        </h1>
 
-        <h1 className="mt-4 font-black text-[38px] leading-[1.02] text-[#0b1120]">Welcome to</h1>
-        <h1 className="font-black text-[38px] leading-[1.02] text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500">Gen-Z IITian</h1>
-
-        <p className="mt-3.5 text-[15px] leading-relaxed text-gray-500 font-medium">
-          We help online &amp; hybrid degree students master IIT-level courses with smart notes, quizzes, PYQs, and expert-led lectures.
+        <p className="mt-2.5 text-[14px] leading-relaxed text-gray-700 font-bold">
+          10 days to 13 Sept. Cut through the noise—master high-weightage topics, practice PYQs, and take timed mock tests for your S-Grade.
         </p>
 
         <Link
-          to="/courses"
-          className="mt-4 w-full flex items-center justify-center gap-2 bg-blue-600 text-white rounded-xl border-[2.5px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] py-[15px] text-[15.5px] font-black active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_#0b1120] transition-all"
+          to="/courses?exam=End+Term"
+          className="mt-4 w-full flex items-center justify-center gap-2 bg-red-600 text-white rounded-xl border-[2.5px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] py-[15px] text-[15px] font-black active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_#0b1120] transition-all"
         >
-          Enroll for May Term <ChevronRight className="w-4 h-4" />
+          <Flame className="w-4 h-4 fill-current" /> GET ENDTERM CRASH COURSE <ChevronRight className="w-4 h-4" />
         </Link>
         <div className="grid grid-cols-2 gap-2.5 mt-2.5">
           <a

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useInView, animate } from 'motion/react';
-import { ChevronRight, ChevronLeft, Award, CheckCircle2, X as XIcon, Star } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Award, CheckCircle2, X as XIcon, Star, Flame, Clock, AlertTriangle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import CourseCard, { CourseCardData } from '../components/CourseCard';
 import HeroAnimation from '../components/HeroAnimation';
@@ -9,6 +9,69 @@ import MobileHome from '../components/mobile/MobileHome';
 import { supabase } from '../lib/supabase';
 import { BlogPost, fallbackBlogs } from '../data/blogsData';
 import { getYouTubeId } from '../utils/youtube';
+
+function EndTermCountdown() {
+  const targetDate = new Date('2026-09-13T09:00:00+05:30').getTime();
+  const calculateTimeLeft = () => {
+    const now = new Date().getTime();
+    let diff = targetDate - now;
+    if (diff <= 0 || isNaN(diff)) {
+      diff = 10 * 24 * 60 * 60 * 1000;
+    }
+    return {
+      days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+      hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
+      minutes: Math.floor((diff / (1000 * 60)) % 60),
+      seconds: Math.floor((diff / 1000) % 60),
+    };
+  };
+
+  const [timeLeft, setTimeLeft] = useState(calculateTimeLeft);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft(calculateTimeLeft());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="w-full max-w-xl bg-gradient-to-br from-[#0b1120] via-[#111827] to-[#0b1120] border-[3px] border-[#0b1120] rounded-2xl p-4 sm:p-5 shadow-[6px_6px_0px_#ef4444] mb-6 text-white">
+      <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-2.5 mb-3">
+        <div className="flex items-center gap-2">
+          <span className="flex h-2.5 w-2.5 relative">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+          </span>
+          <span className="text-xs sm:text-sm font-black tracking-wider uppercase text-red-400 flex items-center gap-1.5">
+            <Flame className="w-4 h-4 fill-red-500 text-red-500" /> End Term Countdown
+          </span>
+        </div>
+        <span className="text-[11px] sm:text-xs font-bold text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-md">
+          END TERM : 13 SEPT (10 Days)
+        </span>
+      </div>
+
+      <div className="grid grid-cols-4 gap-2 sm:gap-3 text-center">
+        {[
+          { label: 'DAYS', value: String(timeLeft.days).padStart(2, '0') },
+          { label: 'HOURS', value: String(timeLeft.hours).padStart(2, '0') },
+          { label: 'MINUTES', value: String(timeLeft.minutes).padStart(2, '0') },
+          { label: 'SECONDS', value: String(timeLeft.seconds).padStart(2, '0') },
+        ].map((item, idx) => (
+          <div key={idx} className="bg-white/5 border border-white/10 rounded-xl p-2 sm:p-2.5 flex flex-col items-center">
+            <span className="text-2xl sm:text-3xl lg:text-4xl font-black text-amber-400 font-mono tracking-tight leading-none">
+              {item.value}
+            </span>
+            <span className="text-[9px] sm:text-[10px] font-black text-gray-400 tracking-wider mt-1.5 uppercase">
+              {item.label}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function AnimatedNumber({ value, decimals = 0, suffix = "" }: { value: number, decimals?: number, suffix?: string }) {
   const [displayValue, setDisplayValue] = useState("0");
@@ -123,47 +186,47 @@ export default function Home() {
       <MobileHome />
 
       {/* Hero Section (desktop) */}
-      <section className="hidden md:block relative pt-12 pb-16 sm:pt-16 sm:pb-24 px-4 sm:px-8 max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 sm:gap-16 items-center">
+      <section className="hidden md:block relative pt-10 pb-16 sm:pt-14 sm:pb-20 px-4 sm:px-8 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 sm:gap-14 items-center">
           {/* Text Content */}
           <div className="relative z-10 flex flex-col items-start">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-100 text-blue-600 font-black tracking-widest uppercase text-xs sm:text-sm rounded-full border-2 border-blue-500 mb-5 sm:mb-6 shadow-[3px_3px_0px_#2563eb]">
-              <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
-              ✨ May Term Batches are LIVE!
-            </div>
-
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight mb-4 sm:mb-6 text-[#0b1120]">
-              Welcome to <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500">
-                Gen-Z IITian
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-[1.08] tracking-tight mb-4 sm:mb-5 text-[#0b1120]">
+              ENDTERM CRASH COURSE <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 via-orange-500 to-amber-500">
+                IS NOW LIVE
               </span>
             </h1>
 
-            <p className="text-lg sm:text-xl lg:text-2xl text-gray-600 font-medium mb-6 sm:mb-8 max-w-2xl leading-relaxed">
-              We help online and hybrid degree students master IIT-level courses with smart notes, quizzes, PYQs, and expert-led lectures.
+            <p className="text-base sm:text-lg lg:text-xl text-gray-700 font-bold mb-5 max-w-2xl leading-relaxed">
+              The final sprint begins now. Cut through the noise—master high-weightage modules, solve previous year questions (PYQs), and simulate real End Term mock tests to secure your S-Grade.
             </p>
 
-            <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+            {/* Real-time 10-Day Countdown Box */}
+            <EndTermCountdown />
+
+            <div className="flex flex-wrap items-center gap-4 sm:gap-5">
               <motion.div
                 animate={{ scale: [1, 1.03, 1] }}
                 transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
               >
-                <Link to="/courses" className="px-6 py-3 sm:px-8 sm:py-4 lg:text-lg bg-blue-600 text-white rounded-xl font-black tracking-wide text-base border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[8px_8px_0px_#2563eb] transition-all flex items-center gap-2 relative overflow-hidden group">
-                  <span className="relative z-10 flex items-center gap-2">Enroll for May Term <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 group-hover:translate-x-1 transition-transform" /></span>
+                <Link to="/courses?exam=End+Term" className="px-6 py-3.5 sm:px-8 sm:py-4 lg:text-lg bg-red-600 text-white rounded-xl font-black tracking-wide text-base border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[8px_8px_0px_#ef4444] transition-all flex items-center gap-2 relative overflow-hidden group">
+                  <span className="relative z-10 flex items-center gap-2">
+                    <Flame className="w-5 h-5 fill-current" /> GET ENDTERM CRASH COURSE <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 group-hover:translate-x-1 transition-transform" />
+                  </span>
                   <div className="absolute inset-0 bg-white/20 translate-x-[-100%] skew-x-[-15deg] animate-[shine_3s_ease-out_infinite]"></div>
                 </Link>
               </motion.div>
-              <a href="https://chat.whatsapp.com/Gi4D9yAd99p7q1XeVh0J1e" target="_blank" rel="noopener noreferrer" className="px-6 py-3 sm:px-8 sm:py-4 lg:text-lg bg-white text-[#0b1120] rounded-xl font-bold text-base border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[8px_8px_0px_#10b981] transition-all flex items-center gap-2">
+              <a href="https://chat.whatsapp.com/Gi4D9yAd99p7q1XeVh0J1e" target="_blank" rel="noopener noreferrer" className="px-5 py-3 sm:px-7 sm:py-4 lg:text-lg bg-white text-[#0b1120] rounded-xl font-bold text-base border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[8px_8px_0px_#10b981] transition-all flex items-center gap-2">
                 <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="white" className="sm:w-3 sm:h-3"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
                 </div>
-                WhatsApp Community
+                WhatsApp War-Room
               </a>
-              <a href="https://youtube.com/@Gen-ZIITian/" target="_blank" rel="noopener noreferrer" className="px-6 py-3 sm:px-8 sm:py-4 lg:text-lg bg-white text-[#0b1120] rounded-xl font-bold text-base border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[8px_8px_0px_#10b981] transition-all flex items-center gap-2">
+              <a href="https://youtube.com/@Gen-ZIITian/" target="_blank" rel="noopener noreferrer" className="px-5 py-3 sm:px-7 sm:py-4 lg:text-lg bg-white text-[#0b1120] rounded-xl font-bold text-base border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[8px_8px_0px_#ef4444] transition-all flex items-center gap-2">
                 <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-red-500 flex items-center justify-center">
                    <svg width="12" height="12" viewBox="0 0 24 24" fill="white" className="sm:w-3 sm:h-3"><path d="M8 5v14l11-7z" /></svg>
                 </div>
-                YouTube
+                YouTube Lectures
               </a>
             </div>
           </div>
@@ -174,15 +237,21 @@ export default function Home() {
       </section>
 
       {/* Featured Courses Section */}
-      <section className="bg-[#0b1120] py-12 border-t-[3px] border-b-[3px] border-[#0b1120] relative overflow-hidden">
+      <section className="bg-[#0b1120] py-14 border-t-[3px] border-b-[3px] border-[#0b1120] relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 relative z-10">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-8">
-            <h2 className="text-2xl lg:text-3xl font-black text-white">Featured Cohorts</h2>
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-red-500/20 text-red-400 border border-red-500/40 rounded-lg text-xs font-black uppercase tracking-wider mb-2">
+                <Flame className="w-3.5 h-3.5 fill-current" /> 13 Sept End Term Focus
+              </div>
+              <h2 className="text-2xl lg:text-3xl font-black text-white">End Term Special Revision Cohorts &amp; Mocks</h2>
+              <p className="text-gray-400 font-bold text-sm mt-1">High-yield revision batches engineered for the final 10-day sprint.</p>
+            </div>
             <Link
-              to="/courses"
-              className="inline-flex items-center gap-2 text-sm font-black text-[#0b1120] bg-white border-[3px] border-[#0b1120] rounded-xl px-5 py-3 shadow-[4px_4px_0px_#10b981] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[8px_8px_0px_#10b981] transition-all"
+              to="/courses?exam=End+Term"
+              className="inline-flex items-center gap-2 text-sm font-black text-[#0b1120] bg-white border-[3px] border-[#0b1120] rounded-xl px-5 py-3 shadow-[4px_4px_0px_#ef4444] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[8px_8px_0px_#ef4444] transition-all"
             >
-              See All Courses <ChevronRight className="w-4 h-4" />
+              See All End Term Courses <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { Search, Loader2, RefreshCcw, BookOpen, GraduationCap } from 'lucide-react';
+import { Search, Loader2, RefreshCcw, BookOpen, GraduationCap, Flame } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import CourseCard, { CourseCardData } from '../components/CourseCard';
 import MobileCourses from '../components/mobile/MobileCourses';
@@ -352,6 +352,17 @@ export default function Courses() {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center py-12 md:py-20 px-4 md:px-6">
 
+        {/* End Term War-Room Announcement Header */}
+        <div className="max-w-4xl w-full mb-8 bg-[#0b1120] border-[3px] border-red-500/60 rounded-2xl p-4 sm:p-5 text-white shadow-[6px_6px_0px_#ef4444] text-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-red-600/20 text-red-400 border border-red-500/40 rounded-full text-xs font-black uppercase tracking-wider mb-2">
+            <Flame className="w-3.5 h-3.5 fill-current" /> END TERM : 13 SEPT (10 Days Left)
+          </div>
+          <h2 className="text-xl sm:text-2xl font-black text-white">Select Your Level for End Term High-Yield Prep</h2>
+          <p className="text-gray-400 text-xs sm:text-sm font-bold mt-1">
+            Access intensive previous year paper solutions, formula sheets, and timed mock tests.
+          </p>
+        </div>
+
         <div className="max-w-6xl w-full text-center relative z-10">
           <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -537,20 +548,33 @@ export default function Courses() {
             </motion.div>
 
             <div className="flex flex-wrap justify-center gap-6">
-              {activeBoxes.map((box, index) => (
-                <motion.button
-                  key={box}
-                  type="button"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.06, duration: 0.35 }}
-                  whileHover={{ scale: 1.04, y: -3 }}
-                  onClick={() => handleSelectExamStage(box)}
-                  className="min-w-[180px] px-8 py-6 bg-white border-[4px] border-[#0b1120] rounded-[1.5rem] text-[#0b1120] font-black text-xl shadow-[6px_6px_0px_#0b1120] hover:shadow-[6px_6px_0px_#2563eb] transition-all"
-                >
-                  {box}
-                </motion.button>
-              ))}
+              {activeBoxes.map((box, index) => {
+                const isEndTerm = box === 'End Term';
+                return (
+                  <motion.button
+                    key={box}
+                    type="button"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.06, duration: 0.35 }}
+                    whileHover={{ scale: 1.04, y: -3 }}
+                    onClick={() => handleSelectExamStage(box)}
+                    className={`relative min-w-[200px] px-8 py-6 rounded-[1.5rem] font-black text-xl transition-all cursor-pointer ${
+                      isEndTerm
+                        ? 'bg-gradient-to-br from-red-600 to-red-700 text-white border-[4px] border-[#0b1120] shadow-[6px_6px_0px_#0b1120] hover:shadow-[8px_8px_0px_#ef4444]'
+                        : 'bg-white border-[4px] border-[#0b1120] text-[#0b1120] shadow-[6px_6px_0px_#0b1120] hover:shadow-[6px_6px_0px_#2563eb]'
+                    }`}
+                  >
+                    {isEndTerm && (
+                      <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-amber-400 text-[#0b1120] text-[10px] font-black rounded-full border-2 border-[#0b1120] uppercase tracking-wider whitespace-nowrap shadow-sm flex items-center gap-1">
+                        <Flame className="w-3 h-3 fill-current text-red-600" />
+                        10 Days Left &bull; 13 Sept
+                      </div>
+                    )}
+                    {box}
+                  </motion.button>
+                );
+              })}
             </div>
 
             <div className="mt-10 flex items-center justify-center gap-3">
@@ -614,21 +638,34 @@ export default function Courses() {
         {/* Exam Tabs directly on the left */}
         <div className="flex flex-wrap items-center gap-3">
           {selectedTerm && !loading && activeBoxes.length > 1 ? (
-            activeBoxes.map((stage) => (
-              <button
-                key={stage}
-                onClick={() => handleSelectExamStage(stage)}
-                className={`px-6 py-2.5 rounded-2xl font-black text-sm border-[3px] border-[#0b1120] transition-all cursor-pointer ${
-                  selectedExamStage === stage
-                    ? 'bg-[#0b1120] text-white shadow-[4px_4px_0px_#2563eb]'
-                    : 'bg-white text-[#0b1120] hover:bg-gray-50 shadow-[2px_2px_0px_#0b1120]'
-                }`}
-              >
-                {stage}
-              </button>
-            ))
+            activeBoxes.map((stage) => {
+              const isEndTerm = stage === 'End Term';
+              return (
+                <button
+                  key={stage}
+                  onClick={() => handleSelectExamStage(stage)}
+                  className={`px-5 py-2.5 rounded-2xl font-black text-sm border-[3px] border-[#0b1120] transition-all cursor-pointer flex items-center gap-1.5 ${
+                    selectedExamStage === stage
+                      ? isEndTerm
+                        ? 'bg-red-600 text-white shadow-[4px_4px_0px_#0b1120]'
+                        : 'bg-[#0b1120] text-white shadow-[4px_4px_0px_#2563eb]'
+                      : isEndTerm
+                        ? 'bg-red-50 text-red-700 hover:bg-red-100 shadow-[2px_2px_0px_#ef4444]'
+                        : 'bg-white text-[#0b1120] hover:bg-gray-50 shadow-[2px_2px_0px_#0b1120]'
+                  }`}
+                >
+                  {isEndTerm && <Flame className="w-3.5 h-3.5 fill-current text-red-500" />}
+                  {stage}
+                </button>
+              );
+            })
           ) : selectedExamStage ? (
-            <span className="px-6 py-2.5 bg-[#0b1120] text-white border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#2563eb] rounded-2xl text-sm font-black uppercase tracking-wider">
+            <span className={`px-6 py-2.5 border-[3px] border-[#0b1120] rounded-2xl text-sm font-black uppercase tracking-wider flex items-center gap-1.5 ${
+              selectedExamStage === 'End Term'
+                ? 'bg-red-600 text-white shadow-[4px_4px_0px_#0b1120]'
+                : 'bg-[#0b1120] text-white shadow-[4px_4px_0px_#2563eb]'
+            }`}>
+              {selectedExamStage === 'End Term' && <Flame className="w-4 h-4 fill-current" />}
               {selectedExamStage}
             </span>
           ) : null}
@@ -655,8 +692,33 @@ export default function Courses() {
         </div>
       </div>
 
+      {/* End Term War-Room Sprint Banner */}
+      <div className="max-w-7xl mx-auto px-6 pt-6">
+        <div className="bg-gradient-to-r from-[#0b1120] via-[#1c1917] to-[#0b1120] border-[3px] border-red-500/60 rounded-2xl p-4 sm:p-5 text-white shadow-[6px_6px_0px_#ef4444] flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="px-2.5 py-0.5 bg-red-600 text-white text-[10px] font-black uppercase rounded border border-red-400">
+                10-Day Sprint
+              </span>
+              <span className="text-amber-300 text-xs font-black">
+                END TERM : 13 SEPT
+              </span>
+            </div>
+            <h3 className="text-lg sm:text-xl font-black text-white">End Term PYQs, Formula Sheets &amp; Mock Test Series</h3>
+            <p className="text-gray-300 text-xs sm:text-sm font-medium mt-0.5">
+              High-yield modules specifically engineered to master high-weightage topics and secure your target S-Grade.
+            </p>
+          </div>
+          <div className="shrink-0 flex items-center gap-2">
+            <span className="inline-block text-xs font-black bg-white/10 px-3 py-2 rounded-xl border border-white/20 text-white uppercase tracking-wider">
+              🔥 Target S-Grade
+            </span>
+          </div>
+        </div>
+      </div>
+
       {/* Courses Grid */}
-      <section className="py-16 px-6 max-w-7xl mx-auto">
+      <section className="py-12 px-6 max-w-7xl mx-auto">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <Loader2 className="w-12 h-12 animate-spin text-[#0b1120]" />

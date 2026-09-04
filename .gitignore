@@ -38,3 +38,10 @@ Thumbs.db
 
 # Paperclip
 .paperclip/
+
+# Local End Term Theme Backups
+.backup_original_theme/
+*.patch
+restore-original.sh
+apply-endterm-idea.sh
+

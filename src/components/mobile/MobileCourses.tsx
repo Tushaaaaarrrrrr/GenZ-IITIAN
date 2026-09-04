@@ -310,16 +310,28 @@ export default function MobileCourses({
           </div>
 
           <div className={`grid ${activeBoxes.length > 1 ? 'grid-cols-2' : 'grid-cols-1'} gap-3`}>
-            {activeBoxes.map((box) => (
-              <button
-                key={box}
-                type="button"
-                onClick={() => onSelectExamStage?.(box)}
-                className="w-full text-center bg-white border-[2.5px] border-[#0b1120] rounded-[18px] px-4 py-4 text-[#0b1120] font-black text-base shadow-[4px_4px_0px_#2563eb] active:translate-y-0.5 active:shadow-none transition-all"
-              >
-                {box}
-              </button>
-            ))}
+            {activeBoxes.map((box) => {
+              const isEndTerm = box === 'End Term';
+              return (
+                <button
+                  key={box}
+                  type="button"
+                  onClick={() => onSelectExamStage?.(box)}
+                  className={`w-full text-center rounded-[18px] px-4 py-4 font-black text-base transition-all relative active:translate-y-0.5 active:shadow-none ${
+                    isEndTerm
+                      ? 'bg-gradient-to-br from-red-600 to-red-700 text-white border-[2.5px] border-white/30 shadow-[4px_4px_0px_#000]'
+                      : 'bg-white border-[2.5px] border-[#0b1120] text-[#0b1120] shadow-[4px_4px_0px_#2563eb]'
+                  }`}
+                >
+                  {isEndTerm && (
+                    <span className="block text-[10px] font-black text-amber-300 uppercase tracking-wider mb-0.5">
+                      🔥 10d Left &bull; 13 Sept
+                    </span>
+                  )}
+                  {box}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -348,22 +360,43 @@ export default function MobileCourses({
   return (
     <div className="md:hidden bg-[#0b1120] min-h-screen pb-44">
       <div className="px-4 py-5">
+        {/* End Term Mobile Urgency Card */}
+        <div className="bg-[#111827] border-[2px] border-red-500/40 rounded-2xl p-3.5 mb-4 text-white">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+            <span className="text-[11px] font-black text-red-400 uppercase tracking-wide">
+              End Term Sprint &bull; 10 Days Left
+            </span>
+          </div>
+          <p className="text-xs font-bold text-gray-300">
+            END TERM : 13 SEPT &bull; Focus on End Term mocks &amp; PYQs for S-Grade!
+          </p>
+        </div>
+
         {/* Mobile Stage Selector (Horizontal Scroll with smooth padding) - only if multiple exams exist */}
         {selectedTerm && !loading && activeBoxes.length > 1 && (
           <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-4 -mx-4 px-4 scrollbar-none snap-x touch-pan-x">
-            {activeBoxes.map((stage) => (
-              <button
-                key={stage}
-                onClick={() => onSelectExamStage?.(stage)}
-                className={`px-4 py-2.5 shrink-0 whitespace-nowrap rounded-xl font-black text-xs border-[2.5px] transition-all cursor-pointer ${
-                  selectedExamStage === stage
-                    ? 'bg-blue-600 text-white border-blue-500 shadow-[3px_3px_0px_#ffffff]'
-                    : 'bg-[#111827] text-gray-300 hover:text-white border-white/10'
-                }`}
-              >
-                {stage}
-              </button>
-            ))}
+            {activeBoxes.map((stage) => {
+              const isEndTerm = stage === 'End Term';
+              return (
+                <button
+                  key={stage}
+                  onClick={() => onSelectExamStage?.(stage)}
+                  className={`px-4 py-2.5 shrink-0 whitespace-nowrap rounded-xl font-black text-xs border-[2.5px] transition-all cursor-pointer ${
+                    selectedExamStage === stage
+                      ? isEndTerm
+                        ? 'bg-red-600 text-white border-red-400 shadow-[3px_3px_0px_#ffffff]'
+                        : 'bg-blue-600 text-white border-blue-500 shadow-[3px_3px_0px_#ffffff]'
+                      : isEndTerm
+                        ? 'bg-red-950/70 text-red-300 border-red-500/40'
+                        : 'bg-[#111827] text-gray-300 hover:text-white border-white/10'
+                  }`}
+                >
+                  {isEndTerm && '🔥 '}
+                  {stage}
+                </button>
+              );
+            })}
           </div>
         )}
 

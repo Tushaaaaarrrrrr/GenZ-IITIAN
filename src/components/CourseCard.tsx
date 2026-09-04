@@ -63,11 +63,18 @@ export default function CourseCard({ course, className = '' }: CourseCardProps) 
       )}
 
       <div className="p-6 md:p-8 flex-grow flex flex-col relative bg-white h-full">
-        <div className="w-14 h-14 bg-pink-100 border-[3px] border-[#0b1120] rounded-2xl flex items-center justify-center mb-6">
-          {course.isBundle ? (
-            <RefreshCcw className="w-6 h-6 text-[#0b1120]" />
-          ) : (
-            <GraduationCap className="w-6 h-6 text-[#0b1120]" />
+        <div className="flex items-start justify-between gap-4 mb-6">
+          <div className="w-14 h-14 bg-pink-100 border-[3px] border-[#0b1120] rounded-2xl flex items-center justify-center shrink-0">
+            {course.isBundle ? (
+              <RefreshCcw className="w-6 h-6 text-[#0b1120]" />
+            ) : (
+              <GraduationCap className="w-6 h-6 text-[#0b1120]" />
+            )}
+          </div>
+          {Array.isArray(course.exam_stages) && course.exam_stages.includes('End Term') && (
+            <div className="inline-flex items-center gap-1 bg-red-50 text-red-600 border-2 border-red-500 rounded-xl px-2.5 py-1 text-[11px] font-black tracking-wider uppercase shadow-[2px_2px_0px_#ef4444]">
+              🔥 End Term 13 Sept
+            </div>
           )}
         </div>
 
