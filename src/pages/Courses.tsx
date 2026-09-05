@@ -692,30 +692,6 @@ export default function Courses() {
         </div>
       </div>
 
-      {/* End Term War-Room Sprint Banner */}
-      <div className="max-w-7xl mx-auto px-6 pt-6">
-        <div className="bg-gradient-to-r from-[#0b1120] via-[#1c1917] to-[#0b1120] border-[3px] border-red-500/60 rounded-2xl p-4 sm:p-5 text-white shadow-[6px_6px_0px_#ef4444] flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="px-2.5 py-0.5 bg-red-600 text-white text-[10px] font-black uppercase rounded border border-red-400">
-                10-Day Sprint
-              </span>
-              <span className="text-amber-300 text-xs font-black">
-                END TERM : 13 SEPT
-              </span>
-            </div>
-            <h3 className="text-lg sm:text-xl font-black text-white">End Term PYQs, Formula Sheets &amp; Mock Test Series</h3>
-            <p className="text-gray-300 text-xs sm:text-sm font-medium mt-0.5">
-              High-yield modules specifically engineered to master high-weightage topics and secure your target S-Grade.
-            </p>
-          </div>
-          <div className="shrink-0 flex items-center gap-2">
-            <span className="inline-block text-xs font-black bg-white/10 px-3 py-2 rounded-xl border border-white/20 text-white uppercase tracking-wider">
-              🔥 Target S-Grade
-            </span>
-          </div>
-        </div>
-      </div>
 
       {/* Courses Grid */}
       <section className="py-12 px-6 max-w-7xl mx-auto">

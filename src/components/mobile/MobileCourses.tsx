@@ -360,18 +360,6 @@ export default function MobileCourses({
   return (
     <div className="md:hidden bg-[#0b1120] min-h-screen pb-44">
       <div className="px-4 py-5">
-        {/* End Term Mobile Urgency Card */}
-        <div className="bg-[#111827] border-[2px] border-red-500/40 rounded-2xl p-3.5 mb-4 text-white">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
-            <span className="text-[11px] font-black text-red-400 uppercase tracking-wide">
-              End Term Sprint &bull; 10 Days Left
-            </span>
-          </div>
-          <p className="text-xs font-bold text-gray-300">
-            END TERM : 13 SEPT &bull; Focus on End Term mocks &amp; PYQs for S-Grade!
-          </p>
-        </div>
 
         {/* Mobile Stage Selector (Horizontal Scroll with smooth padding) - only if multiple exams exist */}
         {selectedTerm && !loading && activeBoxes.length > 1 && (
