@@ -1,4 +1,4 @@
-import { Share, ChevronRight, ChevronDown, X, ClipboardList, FileText } from 'lucide-react';
+import { Share, ChevronRight, ChevronDown, X, ClipboardList, FileText, Calculator, TrendingUp } from 'lucide-react';
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { staticNotes } from '../data/staticNotes';
@@ -315,9 +315,56 @@ export default function Resources() {
             >
               <ClipboardList className="w-3.5 h-3.5" /> PYQs
             </button>
+            <button
+              onClick={() => setActiveTab('tools')}
+              className={`flex items-center gap-2 py-3 text-xs font-black whitespace-nowrap border-b-[3px] transition-colors ${activeTab === 'tools' ? 'border-[#10b981] text-[#0b1120]' : 'border-transparent text-gray-500 hover:text-[#0b1120]'}`}
+            >
+              <Calculator className="w-3.5 h-3.5" /> Tools
+            </button>
           </div>
         </div>
       </div>
+
+      {/* ====== TOOLS TAB ====== */}
+      {activeTab === 'tools' && (
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <p className="text-gray-500 font-medium mb-8 max-w-2xl">
+            Calculate your CGPA/SGPA and predict a course grade before the Final — everything runs in your browser.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pb-24">
+            <Link
+              to="/tools/cgpa-calculator"
+              className="group flex flex-col gap-3 p-6 bg-white border-[3px] border-[#0b1120] rounded-2xl hover:-translate-y-1 hover:-translate-x-1 shadow-[4px_4px_0px_#0b1120] hover:shadow-[8px_8px_0px_#0b1120] transition-all"
+            >
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-emerald-50">
+                <Calculator className="w-5 h-5 text-emerald-600" />
+              </div>
+              <h3 className="font-black text-lg text-[#0b1120] group-hover:text-[#10b981] transition-colors">CGPA / SGPA Ledger</h3>
+              <p className="text-sm text-gray-500 font-medium">
+                Log every term's grades and see your running CGPA and equivalent percentage update live. Sign-in required to save your ledger.
+              </p>
+              <div className="mt-auto flex items-center gap-2 text-xs text-gray-600 font-bold">
+                Open Ledger <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </Link>
+            <Link
+              to="/tools/grade-predictor"
+              className="group flex flex-col gap-3 p-6 bg-white border-[3px] border-[#0b1120] rounded-2xl hover:-translate-y-1 hover:-translate-x-1 shadow-[4px_4px_0px_#0b1120] hover:shadow-[8px_8px_0px_#0b1120] transition-all"
+            >
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-amber-50">
+                <TrendingUp className="w-5 h-5 text-amber-500" />
+              </div>
+              <h3 className="font-black text-lg text-[#0b1120] group-hover:text-[#10b981] transition-colors">Grade Predictor</h3>
+              <p className="text-sm text-gray-500 font-medium">
+                Enter your quiz/PE marks and see the exact minimum Final-exam score you need for each grade band.
+              </p>
+              <div className="mt-auto flex items-center gap-2 text-xs text-gray-600 font-bold">
+                Open Predictor <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* ====== NOTES TAB ====== */}
       {activeTab === 'notes' && (

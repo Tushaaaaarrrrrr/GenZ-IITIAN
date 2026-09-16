@@ -68,7 +68,7 @@ export default function Navbar() {
             <button 
               onClick={() => setResourcesOpen(!resourcesOpen)}
               className={`flex items-center gap-1 relative font-bold text-[15px] transition-colors pb-1 ${
-                location.pathname.includes('/resources') || location.pathname.includes('/docs') || location.pathname.includes('/graded-assignment') || location.pathname.includes('/blog')
+                location.pathname.includes('/resources') || location.pathname.includes('/docs') || location.pathname.includes('/graded-assignment') || location.pathname.includes('/blog') || location.pathname.includes('/tools')
                   ? 'text-[#0b1120] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2.5px] after:bg-blue-600 after:rounded-full'
                   : 'text-gray-600 hover:text-[#0b1120]'
               }`}
@@ -80,6 +80,8 @@ export default function Navbar() {
                 <Link to="/resources" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">PYQs & Notes</Link>
                 <Link to="/syllabus" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">Syllabus</Link>
                 <Link to="/graded-assignment" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">Graded Assignment</Link>
+                <Link to="/tools/cgpa-calculator" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">CGPA Calculator</Link>
+                <Link to="/tools/grade-predictor" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">Grade Predictor</Link>
                 <Link to="/blog" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">Blog</Link>
               </div>
             )}
@@ -184,6 +186,8 @@ export default function Navbar() {
                 <Link to="/resources" className="text-sm font-bold text-gray-600 hover:text-blue-600">PYQs & Notes</Link>
                 <Link to="/syllabus" className="text-sm font-bold text-gray-600 hover:text-blue-600">Syllabus</Link>
                 <Link to="/graded-assignment" className="text-sm font-bold text-gray-600 hover:text-blue-600">Graded Assignment</Link>
+                <Link to="/tools/cgpa-calculator" className="text-sm font-bold text-gray-600 hover:text-blue-600">CGPA Calculator</Link>
+                <Link to="/tools/grade-predictor" className="text-sm font-bold text-gray-600 hover:text-blue-600">Grade Predictor</Link>
                 <Link to="/blog" className="text-sm font-bold text-gray-600 hover:text-blue-600">Blog</Link>
               </div>
             )}

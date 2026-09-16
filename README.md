@@ -194,3 +194,76 @@ vercel dev
 ### Deployment (Vercel)
 The project connects directly to Vercel. 
 The `vercel.json` maps frontend routing to `index.html` and ensures `/api/` hits the serverless functions. Ensure all environment variables are populated securely in the Vercel dashboard. Do **not** expose `SUPABASE_SERVICE_ROLE_KEY` to the `VITE_` prefix.
+
+---
+
+## 14. CGPA LEDGER & GRADE PREDICTOR (`/tools/*`)
+
+A fully client-side pair of tools for the IITM BS Degree grading scheme, reachable at `/tools/cgpa-calculator`, `/tools/grade-predictor`, and `/tools/grading-scale` (also linked from the Resources page's "Tools" tab and the navbar's Resources dropdown). No backend involved — all grade data lives in `localStorage` in the user's own browser. The CGPA Ledger tab requires the user to be signed in (existing Supabase Google OAuth) before it renders, since it stores personal grade data; the Predictor and Grading Scale tabs are open to everyone.
+
+All grading math lives in [`src/lib/grading.ts`](src/lib/grading.ts) as pure, unit-tested functions — nothing here talks to Supabase or an API.
+
+### Grading model
+The program uses **absolute cutoffs**, not curved/relative grading:
+
+| Score (T) | Letter | Points |
+|---|---|---|
+| ≥ 90 | S | 10 |
+| 80 – 89.99 | A | 9 |
+| 70 – 79.99 | B | 8 |
+| 60 – 69.99 | C | 7 |
+| 50 – 59.99 | D | 6 |
+| 40 – 49.99 | E | 4 |
+| < 40 | U | 0 |
+| attendance < 85% | W | 0 |
+
+`U` and `W` both carry 0 grade points, and their credits stay in the CGPA denominator until the course is re-registered and passed — see `letterFor()` / `pointsForLetter()` in `grading.ts`.
+
+### Course score (T) formulas
+**Non-OPPE (theory courses)** — best of two weighted combinations, plus an optional instructor bonus, capped at 100:
+```
+formulaA = 0.6 * Final + 0.3 * max(Quiz1, Quiz2)
+formulaB = 0.45 * Final + 0.25 * Quiz1 + 0.3 * Quiz2
+T = min(100, max(formulaA, formulaB) + bonus)
+```
+
+**OPPE (Online Proctored Programming Exam courses)** — a single weighted formula that rewards the better of the two programming exams more heavily:
+```
+T = min(100, 0.15*Quiz1 + 0.4*Final + 0.25*max(PE1,PE2) + 0.2*min(PE1,PE2) + bonus)
+```
+
+### SGPA / CGPA
+```
+SGPA / CGPA = Σ(credits_i * gradePoint_i) / Σ(credits_i)
+Percentage  = CGPA * 10
+```
+`sgpa()` computes this for one term's courses; `cgpa()` does the same over every term flattened together (so a U/W course's credits are still counted).
+
+### "What do I need in the Final?" solver
+Given the marks already entered (everything except the Final), `neededFinalNonOppe()` / `neededFinalOppe()` invert the formulas above to find the minimum Final score that reaches each grade band:
+- If the cutoff is already met with a Final of 0 → **"Already there"**.
+- If even a Final of 100 doesn't reach the cutoff → **"Not reachable"**.
+- Otherwise, the required Final is solved algebraically (for Non-OPPE, whichever of formulaA/formulaB needs the lower Final wins, since T uses `max()` of the two) and rounded to 1 decimal place.
+
+### Running the tests
+```bash
+npm run test        # runs the Vitest suite (vitest.config.ts), incl. every grade boundary,
+                     # the Non-OPPE best-of-two-formulas selection, the OPPE formula,
+                     # bonus clamping, SGPA/CGPA across terms with a U grade, and all
+                     # three branches of the "needed Final" solver.
+```
+`vitest.config.ts` is intentionally separate from `vite.config.ts` — folding the app's Vite plugins into the test config pulls in vitest's own bundled Vite types and breaks `tsc --noEmit`; the tests only need a plain Node environment.
+
+### Where things live
+```
+src/lib/grading.ts                    # grade tables, letterFor(), formulas, SGPA/CGPA, "needed Final" solver
+src/lib/grading.test.ts               # Vitest coverage for all of the above
+src/lib/foundationCourses.ts          # the 8 foundation-level courses (for ledger quick-add/autocomplete)
+src/hooks/useLocalStorage.ts          # generic localStorage-backed React state
+src/styles/ledger.css                 # scoped "academic ledger" theme (fonts, colors, light/dark)
+src/components/tools/Ledger/          # TermCard, CourseRow, CgpaStrip, LedgerPanel (owns ledger state)
+src/components/tools/Predictor/       # PredictorForm, ResultStamp, NeedTable, PredictorPanel
+src/components/tools/GradingScale.tsx
+src/components/tools/Tabs.tsx
+src/pages/tools/ToolsPage.tsx         # shared shell mounted at all three /tools/* routes
+```
