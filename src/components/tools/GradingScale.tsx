@@ -23,48 +23,50 @@ export default function GradingScale() {
   return (
     <div>
       <div className="bg-white border-[3px] border-[#0b1120] rounded-2xl overflow-hidden shadow-[4px_4px_0px_#0b1120] mb-10">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-gray-50 border-b-2 border-gray-100 text-left text-[10px] font-black uppercase tracking-wider text-gray-400">
-              <th className="px-4 py-3">Score (T)</th>
-              <th className="px-4 py-3">Letter</th>
-              <th className="px-4 py-3">Points</th>
-              <th className="px-4 py-3">Meaning</th>
-            </tr>
-          </thead>
-          <tbody>
-            {GRADE_BANDS.map((band, i) => {
-              const next = GRADE_BANDS[i - 1];
-              const rangeLabel = i === 0 ? `≥ ${band.min}` : `${band.min} – ${(next.min - 0.01).toFixed(2)}`;
-              return (
-                <tr key={band.letter} className="border-b border-gray-100">
-                  <td className="px-4 py-3 font-bold text-gray-600">{rangeLabel}</td>
-                  <td className="px-4 py-3">
-                    <GradeBadge letter={band.letter} />
-                  </td>
-                  <td className="px-4 py-3 font-black text-[#0b1120]">{band.points}</td>
-                  <td className="px-4 py-3 text-gray-500 font-medium">{band.label}</td>
-                </tr>
-              );
-            })}
-            <tr className="border-b border-gray-100">
-              <td className="px-4 py-3 font-bold text-gray-600">&lt; 40</td>
-              <td className="px-4 py-3">
-                <GradeBadge letter={U_GRADE.letter} />
-              </td>
-              <td className="px-4 py-3 font-black text-[#0b1120]">{U_GRADE.points}</td>
-              <td className="px-4 py-3 text-gray-500 font-medium">{U_GRADE.label}</td>
-            </tr>
-            <tr>
-              <td className="px-4 py-3 font-bold text-gray-600">Attendance &lt; 85%</td>
-              <td className="px-4 py-3">
-                <GradeBadge letter={W_GRADE.letter} />
-              </td>
-              <td className="px-4 py-3 font-black text-[#0b1120]">{W_GRADE.points}</td>
-              <td className="px-4 py-3 text-gray-500 font-medium">{W_GRADE.label}</td>
-            </tr>
-          </tbody>
-        </table>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[480px]">
+            <thead>
+              <tr className="bg-gray-50 border-b-2 border-gray-100 text-left text-[10px] font-black uppercase tracking-wider text-gray-400">
+                <th className="px-4 py-3">Score (T)</th>
+                <th className="px-4 py-3">Letter</th>
+                <th className="px-4 py-3">Points</th>
+                <th className="px-4 py-3">Meaning</th>
+              </tr>
+            </thead>
+            <tbody>
+              {GRADE_BANDS.map((band, i) => {
+                const next = GRADE_BANDS[i - 1];
+                const rangeLabel = i === 0 ? `≥ ${band.min}` : `${band.min} – ${(next.min - 0.01).toFixed(2)}`;
+                return (
+                  <tr key={band.letter} className="border-b border-gray-100">
+                    <td className="px-4 py-3 font-bold text-gray-600">{rangeLabel}</td>
+                    <td className="px-4 py-3">
+                      <GradeBadge letter={band.letter} />
+                    </td>
+                    <td className="px-4 py-3 font-black text-[#0b1120]">{band.points}</td>
+                    <td className="px-4 py-3 text-gray-500 font-medium">{band.label}</td>
+                  </tr>
+                );
+              })}
+              <tr className="border-b border-gray-100">
+                <td className="px-4 py-3 font-bold text-gray-600">&lt; 40</td>
+                <td className="px-4 py-3">
+                  <GradeBadge letter={U_GRADE.letter} />
+                </td>
+                <td className="px-4 py-3 font-black text-[#0b1120]">{U_GRADE.points}</td>
+                <td className="px-4 py-3 text-gray-500 font-medium">{U_GRADE.label}</td>
+              </tr>
+              <tr>
+                <td className="px-4 py-3 font-bold text-gray-600">Attendance &lt; 85%</td>
+                <td className="px-4 py-3">
+                  <GradeBadge letter={W_GRADE.letter} />
+                </td>
+                <td className="px-4 py-3 font-black text-[#0b1120]">{W_GRADE.points}</td>
+                <td className="px-4 py-3 text-gray-500 font-medium">{W_GRADE.label}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div className="space-y-6 max-w-2xl">

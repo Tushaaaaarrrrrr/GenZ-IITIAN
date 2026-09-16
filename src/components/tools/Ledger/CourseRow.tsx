@@ -13,7 +13,7 @@ export interface LedgerCourse {
 const GRADE_OPTIONS: LetterGrade[] = ['S', 'A', 'B', 'C', 'D', 'E', 'U', 'W'];
 
 const inputClass =
-  'w-full px-3 py-2 rounded-xl bg-gray-50 border-2 border-gray-200 text-[#0b1120] placeholder-gray-400 focus:outline-none focus:bg-white focus:border-[#10b981] transition-colors font-bold text-sm';
+  'px-3 py-2 rounded-xl bg-gray-50 border-2 border-gray-200 text-[#0b1120] placeholder-gray-400 focus:outline-none focus:bg-white focus:border-[#10b981] transition-colors font-bold text-sm';
 
 interface CourseRowProps {
   course: LedgerCourse;
@@ -30,8 +30,8 @@ export default function CourseRow({ course, onChange, onRemove }: CourseRowProps
       : [];
 
   return (
-    <div className="flex flex-wrap items-center gap-2 py-2.5 border-b border-dashed border-gray-200 last:border-b-0">
-      <div className="relative flex-1 min-w-[160px]">
+    <div className="flex flex-col sm:flex-row sm:items-center gap-2 py-3 border-b border-dashed border-gray-200 last:border-b-0">
+      <div className="relative w-full sm:flex-1 sm:min-w-0">
         <input
           type="text"
           value={course.name}
@@ -39,7 +39,7 @@ export default function CourseRow({ course, onChange, onRemove }: CourseRowProps
           onFocus={() => setShowSuggestions(true)}
           onBlur={() => setTimeout(() => setShowSuggestions(false), 120)}
           placeholder="Course name"
-          className={inputClass}
+          className={`${inputClass} w-full`}
           aria-label="Course name"
         />
         {showSuggestions && suggestions.length > 0 && (
@@ -59,38 +59,40 @@ export default function CourseRow({ course, onChange, onRemove }: CourseRowProps
         )}
       </div>
 
-      <input
-        type="number"
-        min={1}
-        max={20}
-        value={course.credits}
-        onChange={(e) => onChange({ credits: Math.max(1, Math.min(20, Number(e.target.value) || 1)) })}
-        placeholder="Credits"
-        aria-label="Credits"
-        className={`${inputClass} w-20 text-center`}
-      />
+      <div className="flex items-center gap-2 shrink-0">
+        <input
+          type="number"
+          min={1}
+          max={20}
+          value={course.credits}
+          onChange={(e) => onChange({ credits: Math.max(1, Math.min(20, Number(e.target.value) || 1)) })}
+          placeholder="Credits"
+          aria-label="Credits"
+          className={`${inputClass} w-16 text-center shrink-0`}
+        />
 
-      <select
-        value={course.grade}
-        onChange={(e) => onChange({ grade: e.target.value as LetterGrade })}
-        aria-label="Grade"
-        className={`${inputClass} w-20 appearance-none cursor-pointer`}
-      >
-        {GRADE_OPTIONS.map((g) => (
-          <option key={g} value={g}>
-            {g}
-          </option>
-        ))}
-      </select>
+        <select
+          value={course.grade}
+          onChange={(e) => onChange({ grade: e.target.value as LetterGrade })}
+          aria-label="Grade"
+          className={`${inputClass} w-16 appearance-none cursor-pointer shrink-0`}
+        >
+          {GRADE_OPTIONS.map((g) => (
+            <option key={g} value={g}>
+              {g}
+            </option>
+          ))}
+        </select>
 
-      <button
-        type="button"
-        onClick={onRemove}
-        aria-label="Remove course"
-        className="w-9 h-9 flex items-center justify-center rounded-xl bg-red-50 border-2 border-red-200 text-red-500 hover:bg-red-100 transition-colors shrink-0"
-      >
-        <Trash2 className="w-4 h-4" />
-      </button>
+        <button
+          type="button"
+          onClick={onRemove}
+          aria-label="Remove course"
+          className="w-9 h-9 flex items-center justify-center rounded-xl bg-red-50 border-2 border-red-200 text-red-500 hover:bg-red-100 transition-colors shrink-0"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
     </div>
   );
 }
