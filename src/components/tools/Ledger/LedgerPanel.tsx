@@ -30,6 +30,9 @@ function makeFoundationTerm(): LedgerTerm {
   };
 }
 
+const toolBtnClass =
+  'flex items-center gap-1.5 px-3.5 py-2 bg-white border-[2px] border-[#0b1120] rounded-xl text-xs font-black hover:-translate-y-0.5 shadow-[2px_2px_0px_#0b1120] hover:shadow-[4px_4px_0px_#0b1120] transition-all';
+
 export default function LedgerPanel() {
   const [terms, setTerms] = useLocalStorageState<LedgerTerm[]>(STORAGE_KEY, () => [makeEmptyTerm('Term 1')]);
   const [confirmingReset, setConfirmingReset] = useState(false);
@@ -109,7 +112,7 @@ export default function LedgerPanel() {
     <div>
       <CgpaStrip cgpaValue={overallCgpa} percentage={percentageFromCgpa(overallCgpa)} totalCredits={totalCredits} />
 
-      <div className="space-y-5">
+      <div className="space-y-6">
         {terms.map((term) => (
           <TermCard
             key={term.id}
@@ -125,18 +128,22 @@ export default function LedgerPanel() {
         ))}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 mt-6 pt-4 border-t border-[var(--gz-rule)]">
-        <button type="button" onClick={addTerm} className="gz-btn flex items-center gap-1.5 px-3 py-2 text-sm">
-          <Plus className="w-4 h-4" /> Add term
+      <div className="flex flex-wrap items-center gap-2 mt-6 pt-5 border-t-2 border-gray-100">
+        <button type="button" onClick={addTerm} className={toolBtnClass}>
+          <Plus className="w-3.5 h-3.5" /> Add term
         </button>
-        <button type="button" onClick={addFoundationTerm} className="gz-btn gz-btn-primary flex items-center gap-1.5 px-3 py-2 text-sm">
-          <Plus className="w-4 h-4" /> Add foundation-level courses
+        <button
+          type="button"
+          onClick={addFoundationTerm}
+          className="flex items-center gap-1.5 px-3.5 py-2 bg-[#10b981] text-white border-[2px] border-[#0b1120] rounded-xl text-xs font-black hover:-translate-y-0.5 shadow-[2px_2px_0px_#0b1120] hover:shadow-[4px_4px_0px_#0b1120] transition-all"
+        >
+          <Plus className="w-3.5 h-3.5" /> Add foundation-level courses
         </button>
-        <button type="button" onClick={exportLedger} className="gz-btn flex items-center gap-1.5 px-3 py-2 text-sm">
-          <Download className="w-4 h-4" /> Export JSON
+        <button type="button" onClick={exportLedger} className={toolBtnClass}>
+          <Download className="w-3.5 h-3.5" /> Export JSON
         </button>
-        <button type="button" onClick={() => fileInputRef.current?.click()} className="gz-btn flex items-center gap-1.5 px-3 py-2 text-sm">
-          <Upload className="w-4 h-4" /> Import JSON
+        <button type="button" onClick={() => fileInputRef.current?.click()} className={toolBtnClass}>
+          <Upload className="w-3.5 h-3.5" /> Import JSON
         </button>
         <input
           ref={fileInputRef}
@@ -155,17 +162,25 @@ export default function LedgerPanel() {
             <button
               type="button"
               onClick={() => setConfirmingReset(true)}
-              className="gz-btn gz-btn-danger flex items-center gap-1.5 px-3 py-2 text-sm"
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-red-50 border-[2px] border-red-300 rounded-xl text-xs font-black text-red-600 hover:bg-red-100 transition-all"
             >
-              <RotateCcw className="w-4 h-4" /> Reset ledger
+              <RotateCcw className="w-3.5 h-3.5" /> Reset ledger
             </button>
           ) : (
             <div className="flex items-center gap-2 text-sm">
-              <span className="text-[var(--gz-ink-soft)]">Erase all terms?</span>
-              <button type="button" onClick={resetLedger} className="gz-btn gz-btn-danger px-3 py-1.5">
+              <span className="text-gray-500 font-bold text-xs">Erase all terms?</span>
+              <button
+                type="button"
+                onClick={resetLedger}
+                className="px-3 py-1.5 bg-red-500 text-white border-[2px] border-[#0b1120] rounded-xl text-xs font-black hover:bg-red-600 transition-colors"
+              >
                 Yes, reset
               </button>
-              <button type="button" onClick={() => setConfirmingReset(false)} className="gz-btn px-3 py-1.5">
+              <button
+                type="button"
+                onClick={() => setConfirmingReset(false)}
+                className="px-3 py-1.5 bg-white border-[2px] border-[#0b1120] rounded-xl text-xs font-black hover:bg-gray-50 transition-colors"
+              >
                 Cancel
               </button>
             </div>
@@ -173,7 +188,7 @@ export default function LedgerPanel() {
         </div>
       </div>
 
-      {importError && <p className="text-sm text-[var(--gz-accent-red-strong)] mt-2">{importError}</p>}
+      {importError && <p className="text-sm text-red-600 font-bold mt-3">{importError}</p>}
     </div>
   );
 }

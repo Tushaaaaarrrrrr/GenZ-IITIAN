@@ -7,8 +7,8 @@ interface NumberFieldProps {
 
 function NumberField({ label, value, onChange, max }: NumberFieldProps) {
   return (
-    <label className="flex flex-col gap-1">
-      <span className="text-xs uppercase tracking-wider text-[var(--gz-ink-soft)] gz-mono">{label}</span>
+    <label className="flex flex-col gap-1.5">
+      <span className="text-[10px] font-black uppercase tracking-[0.15em] text-gray-400">{label}</span>
       <input
         type="number"
         min={0}
@@ -22,7 +22,7 @@ function NumberField({ label, value, onChange, max }: NumberFieldProps) {
           if (Number.isNaN(n)) return;
           onChange(Math.min(max, Math.max(0, n)));
         }}
-        className="gz-input px-3 py-2 text-base"
+        className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border-2 border-gray-200 text-[#0b1120] font-bold text-base focus:outline-none focus:bg-white focus:border-[#10b981] transition-colors"
       />
     </label>
   );

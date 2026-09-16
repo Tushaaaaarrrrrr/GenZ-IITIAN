@@ -27,13 +27,17 @@ export default function PredictorPanel() {
 
   return (
     <div>
-      <div className="flex gap-2 mb-6" role="tablist" aria-label="Course type">
+      <div className="flex flex-wrap gap-2 mb-6" role="tablist" aria-label="Course type">
         <button
           type="button"
           role="tab"
           aria-selected={courseType === 'non-oppe'}
           onClick={() => setCourseType('non-oppe')}
-          className={`gz-btn px-4 py-2 text-sm ${courseType === 'non-oppe' ? 'gz-btn-primary' : ''}`}
+          className={`px-4 py-2 border-[3px] border-[#0b1120] rounded-xl text-xs font-black transition-all hover:-translate-y-0.5 ${
+            courseType === 'non-oppe'
+              ? 'bg-[#10b981] text-white shadow-[3px_3px_0px_#0b1120]'
+              : 'bg-white text-[#0b1120] shadow-[2px_2px_0px_#0b1120]'
+          }`}
         >
           Non-OPPE (theory)
         </button>
@@ -42,14 +46,18 @@ export default function PredictorPanel() {
           role="tab"
           aria-selected={courseType === 'oppe'}
           onClick={() => setCourseType('oppe')}
-          className={`gz-btn px-4 py-2 text-sm ${courseType === 'oppe' ? 'gz-btn-primary' : ''}`}
+          className={`px-4 py-2 border-[3px] border-[#0b1120] rounded-xl text-xs font-black transition-all hover:-translate-y-0.5 ${
+            courseType === 'oppe'
+              ? 'bg-[#10b981] text-white shadow-[3px_3px_0px_#0b1120]'
+              : 'bg-white text-[#0b1120] shadow-[2px_2px_0px_#0b1120]'
+          }`}
         >
           OPPE (programming)
         </button>
       </div>
 
       <div className="grid lg:grid-cols-[1fr_auto] gap-8 items-start">
-        <div className="gz-card p-5">
+        <div className="bg-white border-[3px] border-[#0b1120] rounded-2xl shadow-[4px_4px_0px_#0b1120] p-5 sm:p-6">
           <PredictorForm
             courseType={courseType}
             nonOppe={nonOppe}
@@ -59,12 +67,14 @@ export default function PredictorPanel() {
           />
 
           {courseType === 'non-oppe' && (
-            <div className="mt-5 pt-4 border-t border-dashed border-[var(--gz-rule-strong)] gz-mono text-sm text-[var(--gz-ink-soft)] flex flex-wrap gap-x-6 gap-y-1">
+            <div className="mt-5 pt-4 border-t-2 border-dashed border-gray-200 text-sm text-gray-500 font-bold flex flex-wrap gap-x-6 gap-y-1">
               <span>
-                Formula A: <strong className={nonOppeResult.used === 'A' ? 'text-[var(--gz-ink)]' : ''}>{nonOppeResult.formulaA.toFixed(2)}</strong>
+                Formula A:{' '}
+                <strong className={nonOppeResult.used === 'A' ? 'text-[#0b1120]' : ''}>{nonOppeResult.formulaA.toFixed(2)}</strong>
               </span>
               <span>
-                Formula B: <strong className={nonOppeResult.used === 'B' ? 'text-[var(--gz-ink)]' : ''}>{nonOppeResult.formulaB.toFixed(2)}</strong>
+                Formula B:{' '}
+                <strong className={nonOppeResult.used === 'B' ? 'text-[#0b1120]' : ''}>{nonOppeResult.formulaB.toFixed(2)}</strong>
               </span>
               <span>Using: Formula {nonOppeResult.used} (higher of the two)</span>
             </div>
@@ -75,8 +85,8 @@ export default function PredictorPanel() {
       </div>
 
       <div className="mt-8">
-        <h3 className="text-lg font-semibold mb-3">What do I need in the Final?</h3>
-        <p className="text-sm text-[var(--gz-ink-soft)] mb-3">
+        <h3 className="text-lg font-black text-[#0b1120] mb-2">What do I need in the Final?</h3>
+        <p className="text-sm text-gray-500 font-medium mb-4">
           Based on the marks entered above (excluding the Final), here's the minimum Final-exam score needed for each grade.
         </p>
         <NeedTable rows={needRows} />

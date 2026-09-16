@@ -33,27 +33,28 @@ export default function TermCard({
   const totalCredits = term.courses.reduce((s, c) => s + c.credits, 0);
 
   return (
-    <div className="gz-card p-4 sm:p-5">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+    <div className="bg-white border-[3px] border-[#0b1120] rounded-2xl shadow-[4px_4px_0px_#0b1120] p-5 sm:p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <input
           type="text"
           value={term.name}
           onChange={(e) => onRename(e.target.value)}
-          className="gz-input px-2.5 py-1.5 text-base font-semibold flex-1 min-w-[140px]"
-          style={{ fontFamily: "'Source Serif 4', serif" }}
+          className="px-3 py-2 rounded-xl bg-gray-50 border-2 border-gray-200 text-[#0b1120] font-black text-lg flex-1 min-w-[140px] focus:outline-none focus:bg-white focus:border-[#10b981] transition-colors"
           aria-label="Term name"
         />
-        <div className="flex items-center gap-3 gz-mono text-sm">
-          <span className="text-[var(--gz-ink-soft)]">{totalCredits} cr</span>
-          <span>
-            SGPA <strong className="text-base">{termSgpa.toFixed(2)}</strong>
+        <div className="flex items-center gap-3 text-sm">
+          <span className="px-3 py-1 bg-gray-50 border border-gray-200 rounded-full text-xs font-bold text-gray-500">
+            {totalCredits} credits
+          </span>
+          <span className="font-bold text-gray-500">
+            SGPA <strong className="text-lg font-black text-[#0b1120]">{termSgpa.toFixed(2)}</strong>
           </span>
         </div>
       </div>
 
       <div>
         {term.courses.length === 0 && (
-          <p className="text-sm text-[var(--gz-ink-soft)] py-3">No courses yet — add one below.</p>
+          <p className="text-sm text-gray-400 font-medium py-3">No courses yet — add one below.</p>
         )}
         {term.courses.map((course) => (
           <CourseRow
@@ -65,16 +66,28 @@ export default function TermCard({
         ))}
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2 mt-3 pt-1">
-        <button type="button" onClick={onAddCourse} className="gz-btn flex items-center gap-1.5 px-3 py-1.5 text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2 mt-4 pt-1">
+        <button
+          type="button"
+          onClick={onAddCourse}
+          className="flex items-center gap-1.5 px-3.5 py-2 bg-white border-[2px] border-[#0b1120] rounded-xl text-xs font-black hover:-translate-y-0.5 shadow-[2px_2px_0px_#0b1120] hover:shadow-[4px_4px_0px_#0b1120] transition-all"
+        >
           <Plus className="w-3.5 h-3.5" /> Add course
         </button>
         <div className="flex items-center gap-2">
-          <button type="button" onClick={onDuplicateTerm} className="gz-btn flex items-center gap-1.5 px-3 py-1.5 text-sm">
+          <button
+            type="button"
+            onClick={onDuplicateTerm}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-white border-[2px] border-[#0b1120] rounded-xl text-xs font-black hover:-translate-y-0.5 shadow-[2px_2px_0px_#0b1120] hover:shadow-[4px_4px_0px_#0b1120] transition-all"
+          >
             <Copy className="w-3.5 h-3.5" /> Duplicate
           </button>
           {canRemoveTerm && (
-            <button type="button" onClick={onRemoveTerm} className="gz-btn gz-btn-danger flex items-center gap-1.5 px-3 py-1.5 text-sm">
+            <button
+              type="button"
+              onClick={onRemoveTerm}
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-red-50 border-[2px] border-red-300 rounded-xl text-xs font-black text-red-600 hover:bg-red-100 transition-all"
+            >
               <Trash2 className="w-3.5 h-3.5" /> Remove term
             </button>
           )}
