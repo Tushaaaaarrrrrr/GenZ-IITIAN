@@ -42,6 +42,8 @@ export default function Footer() {
               <ul className="space-y-4">
                 <li><Link to="/courses" className="text-gray-400 font-bold hover:text-[#10b981] transition-colors">Courses</Link></li>
                 <li><Link to="/resources" className="text-gray-400 font-bold hover:text-[#10b981] transition-colors">Resources</Link></li>
+                <li><Link to="/tools/cgpa-calculator" className="text-gray-400 font-bold hover:text-[#10b981] transition-colors">CGPA Calculator</Link></li>
+                <li><Link to="/tools/grade-predictor" className="text-gray-400 font-bold hover:text-[#10b981] transition-colors">Grade Predictor</Link></li>
                 <li><Link to="/blog" className="text-gray-400 font-bold hover:text-[#10b981] transition-colors">Blog</Link></li>
                 <li><Link to="/contact" className="text-gray-400 font-bold hover:text-[#10b981] transition-colors">Contact</Link></li>
                 <li><Link to="/about" className="text-gray-400 font-bold hover:text-[#10b981] transition-colors">About Us</Link></li>
