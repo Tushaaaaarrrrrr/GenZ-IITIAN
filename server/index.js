@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import Razorpay from 'razorpay';
 import express from 'express';
+import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { fileURLToPath } from 'url';
@@ -755,8 +756,43 @@ app.post('/api/welcome-email', async (req, res) => {
     }
 });
 
-// In-memory cache fallback for 1:1 bookings
+// Persistent file storage & in-memory cache for 1:1 bookings
+const BOOKINGS_FILE = path.join(__dirname, 'data', 'one_on_one_bookings.json');
 const memory1on1Bookings = new Map();
+
+function loadBookingsFromFile() {
+    try {
+        if (fs.existsSync(BOOKINGS_FILE)) {
+            const raw = fs.readFileSync(BOOKINGS_FILE, 'utf-8');
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+                for (const b of parsed) {
+                    if (b && b.id) {
+                        memory1on1Bookings.set(b.id, b);
+                    }
+                }
+            }
+        }
+    } catch (err) {
+        console.warn('[1:1 Bookings] Error reading bookings file:', err.message);
+    }
+}
+
+function saveBookingsToFile() {
+    try {
+        const dir = path.dirname(BOOKINGS_FILE);
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+        const list = Array.from(memory1on1Bookings.values());
+        fs.writeFileSync(BOOKINGS_FILE, JSON.stringify(list, null, 2), 'utf-8');
+    } catch (err) {
+        console.warn('[1:1 Bookings] Error writing bookings file:', err.message);
+    }
+}
+
+// Initial load on server start
+loadBookingsFromFile();
 
 // Helper to dispatch 1:1 webhook to Google Apps Script
 async function dispatch1on1Webhook(payload) {
@@ -779,7 +815,7 @@ async function dispatch1on1Webhook(payload) {
         const res = await fetch(webhookUrl, {
             method: 'POST',
             redirect: 'follow',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({
                 ...payload,
                 bcc: 'genziitian@gmail.com, lkiitmng2428@gmail.com',
@@ -788,6 +824,12 @@ async function dispatch1on1Webhook(payload) {
         });
         const resText = await res.text();
         console.log(`[1:1 Webhook] Response for ${payload.type}:`, resText.slice(0, 150));
+
+        if (resText.includes('<!DOCTYPE html>') || resText.includes('ppConfig') || resText.includes('accounts.google.com')) {
+            console.error('\n🚨 [1:1 Webhook ERROR] Google Apps Script returned a Google Login HTML challenge instead of JSON!');
+            console.error('👉 CAUSE: The Web App deployment on Google Apps Script is set to "Only myself" or requires Google Account login.');
+            console.error('👉 30-SECOND FIX: Open script.google.com -> Click Deploy -> Manage deployments -> Edit (pencil icon) -> Set "Who has access" to "Anyone" -> Deploy.\n');
+        }
     } catch (err) {
         console.error('[1:1 Webhook] Failed to dispatch:', err.message);
     }
@@ -893,8 +935,9 @@ app.post('/api/book-1on1-slot', async (req, res) => {
             updated_at: new Date().toISOString()
         };
 
-        // Cache in memory fallback
+        // Cache in memory and persist immediately to file
         memory1on1Bookings.set(bookingId, bookingRecord);
+        saveBookingsToFile();
 
         // 1. Supabase Activity Log & Table Entry
         if (supabase) {
@@ -942,26 +985,108 @@ app.get('/api/1on1-bookings', async (req, res) => {
     try {
         const studentEmail = req.query.email ? String(req.query.email).trim().toLowerCase() : null;
 
+        // 1. Refresh memory from local persistent disk storage
+        loadBookingsFromFile();
+
+        // 2. Query Supabase one_on_one_bookings table (if exists)
         let dbBookings = [];
         if (supabase) {
-            let query = supabase.from('one_on_one_bookings').select('*').order('created_at', { ascending: false });
-            if (studentEmail) {
-                query = query.eq('email', studentEmail);
-            }
-            const { data, error } = await query;
-            if (!error && Array.isArray(data)) {
-                dbBookings = data;
+            try {
+                let query = supabase.from('one_on_one_bookings').select('*').order('created_at', { ascending: false });
+                if (studentEmail) {
+                    query = query.eq('email', studentEmail);
+                }
+                const { data, error } = await query;
+                if (!error && Array.isArray(data)) {
+                    dbBookings = data;
+                }
+            } catch (e) {}
+        }
+
+        // 3. Query Supabase activity_logs for any 1:1 booking events (guarantees recovery across redeployments)
+        let logBookings = [];
+        if (supabase) {
+            try {
+                let logQuery = supabase
+                    .from('activity_logs')
+                    .select('*')
+                    .in('action', ['1ON1_SLOT_BOOKED', '1ON1_SLOT_CANCELLED', '1ON1_SLOT_RESCHEDULED', '1ON1_STATUS_UPDATED'])
+                    .order('created_at', { ascending: true });
+                if (studentEmail) {
+                    logQuery = logQuery.eq('email', studentEmail);
+                }
+                const { data: logs, error: logErr } = await logQuery;
+                if (!logErr && Array.isArray(logs)) {
+                    const logMap = new Map();
+                    for (const log of logs) {
+                        const meta = log.metadata || {};
+                        const bId = meta.id || `log-${log.id}`;
+                        if (log.action === '1ON1_SLOT_BOOKED') {
+                            logMap.set(bId, {
+                                id: bId,
+                                name: meta.name || 'Student',
+                                email: (log.email || meta.email || '').trim().toLowerCase(),
+                                phone: meta.phone || '',
+                                level: meta.level || 'Foundation Level',
+                                subjects: meta.subjects || 'General',
+                                slot_date: meta.slot_date || 'Upcoming',
+                                slot_time: meta.slot_time || '15-min consultation',
+                                plan: meta.plan || '1:1 Personalised Teaching',
+                                notes: meta.notes || '',
+                                status: meta.status || 'CONFIRMED',
+                                created_at: meta.created_at || log.created_at || new Date().toISOString(),
+                                updated_at: meta.updated_at || log.created_at || new Date().toISOString()
+                            });
+                        } else if (log.action === '1ON1_SLOT_CANCELLED' && logMap.has(bId)) {
+                            const b = logMap.get(bId);
+                            b.status = 'CANCELLED';
+                            if (meta.reason) b.notes = meta.reason;
+                            b.updated_at = log.created_at;
+                        } else if (log.action === '1ON1_SLOT_RESCHEDULED' && logMap.has(bId)) {
+                            const b = logMap.get(bId);
+                            b.status = 'RESCHEDULED';
+                            if (meta.new_slot_date) b.slot_date = meta.new_slot_date;
+                            if (meta.new_slot_time) b.slot_time = meta.new_slot_time;
+                            b.updated_at = log.created_at;
+                        } else if (log.action === '1ON1_STATUS_UPDATED' && logMap.has(bId)) {
+                            const b = logMap.get(bId);
+                            if (meta.status) b.status = meta.status;
+                            if (meta.notes) b.notes = meta.notes;
+                            b.updated_at = log.created_at;
+                        }
+                    }
+                    logBookings = Array.from(logMap.values());
+                }
+            } catch (e) {
+                console.warn('[1:1 Get Bookings] activity_logs fetch warning:', e.message);
             }
         }
 
-        // Merge with in-memory bookings
+        // 4. Merge all sources using unique ID (NEVER merge or overwrite different bookings)
         const combinedMap = new Map();
-        dbBookings.forEach(b => combinedMap.set(b.id, b));
+
+        // Add activity_logs entries first
+        logBookings.forEach(b => {
+            if (b && b.id) combinedMap.set(b.id, b);
+        });
+
+        // Add Supabase table entries (higher authority if table exists)
+        dbBookings.forEach(b => {
+            if (b && b.id) combinedMap.set(b.id, b);
+        });
+
+        // Add in-memory & file-backed bookings (covers recent additions before DB sync)
         memory1on1Bookings.forEach((b, id) => {
-            if (!studentEmail || b.email === studentEmail) {
+            if (!studentEmail || (b.email && b.email.toLowerCase() === studentEmail)) {
                 combinedMap.set(id, b);
             }
         });
+
+        // Sync combined bookings back to memory and disk so nothing is ever lost
+        combinedMap.forEach((b, id) => {
+            memory1on1Bookings.set(id, b);
+        });
+        saveBookingsToFile();
 
         const sorted = Array.from(combinedMap.values()).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
         res.json({ success: true, bookings: sorted });
@@ -1001,7 +1126,9 @@ app.post('/api/1on1-bookings/cancel', async (req, res) => {
         if (booking) {
             booking.status = 'CANCELLED';
             booking.notes = reason;
+            booking.updated_at = new Date().toISOString();
             memory1on1Bookings.set(id, booking);
+            saveBookingsToFile();
 
             // Dispatch Cancellation Email to Student + BCC
             await dispatch1on1Webhook({
@@ -1062,7 +1189,9 @@ app.post('/api/1on1-bookings/reschedule', async (req, res) => {
             booking.slot_date = new_slot_date;
             booking.slot_time = new_slot_time;
             booking.status = 'RESCHEDULED';
+            booking.updated_at = new Date().toISOString();
             memory1on1Bookings.set(id, booking);
+            saveBookingsToFile();
 
             // Dispatch Reschedule Email to Student + BCC
             await dispatch1on1Webhook({
@@ -1105,7 +1234,9 @@ app.post('/api/1on1-bookings/update-status', async (req, res) => {
         if (booking) {
             booking.status = status;
             if (notes) booking.notes = notes;
+            booking.updated_at = new Date().toISOString();
             memory1on1Bookings.set(id, booking);
+            saveBookingsToFile();
 
             if (status === 'CANCELLED') {
                 dispatch1on1Webhook({ type: 'one_on_one_cancelled', ...booking, reason: notes || 'Cancelled by manager' });
