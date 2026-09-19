@@ -222,9 +222,8 @@ export default function CourseSelection() {
       } else if (data.isFixedBundle) {
           // Mandatory selection for fixed bundles
           setSelectedCourses(data.bundleCourses?.map((bc: any) => bc.courseId) || []);
-          if (data.pricing_options && data.pricing_options.length > 0) {
-              setSelectedPricingTier(0); // Default to first tier
-          }
+          // Do not auto-select a pricing tier — user must choose a plan
+          setSelectedPricingTier(null);
       } else {
           // Selectable bundles start empty per user request
           setSelectedCourses([]);
@@ -755,7 +754,13 @@ export default function CourseSelection() {
   }
 
   const isQualifier = course?.courseCategory === 'QUALIFIER';
+  const hasPricingPlans = !!(course?.isFixedBundle && course?.pricing_options && course.pricing_options.length > 0);
   const goToSummary = () => summaryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const selectPricingPlan = (idx: number) => {
+    setSelectedPricingTier(idx);
+    // Let the continue button render, then scroll user down to checkout summary
+    window.setTimeout(() => goToSummary(), 80);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 pt-8 sm:pt-16 pb-10 px-4 sm:px-6 text-[#0b1120]">
@@ -958,7 +963,7 @@ export default function CourseSelection() {
               key="selection"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className={`space-y-6 ${isQualifier ? 'pb-24 lg:pb-0' : ''}`}
+              className={`space-y-6 ${hasPricingPlans ? 'pb-24 lg:pb-0' : ''}`}
             >
               {course.isBundle && hasBundleDiscount && (
                   <div className={`p-3 md:p-5 rounded-3xl border-[4px] transition-all duration-500 shadow-[8px_8px_0px_#0b1120] ${isBundleDiscountEligible ? 'bg-green-50 border-[#10b981]' : 'bg-blue-50 border-[#0b1120]'}`}>
@@ -1039,14 +1044,16 @@ export default function CourseSelection() {
                   </div>
               )}
 
-              {/* Multi-Pricing Tiers for Fixed Bundle */}
-              {course.isFixedBundle && course.pricing_options && course.pricing_options.length > 0 && (
+              {hasPricingPlans && (
                 <div className="space-y-4 mb-8">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center border-2 border-[#0b1120] shadow-[2px_2px_0px_#0b1120]">
                       <CreditCard className="w-4 h-4 text-white" />
                     </div>
-                    <h3 className="text-xl font-black text-[#0b1120] uppercase tracking-tight">Select Your Plan</h3>
+                    <div>
+                      <h3 className="text-xl font-black text-[#0b1120] uppercase tracking-tight">Select Your Plan</h3>
+                      <p className="text-xs font-bold text-gray-400 mt-0.5">Pick a plan to continue to checkout</p>
+                    </div>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-stretch">
@@ -1056,7 +1063,8 @@ export default function CourseSelection() {
                       return (
                         <button
                           key={idx}
-                          onClick={() => setSelectedPricingTier(idx)}
+                          type="button"
+                          onClick={() => selectPricingPlan(idx)}
                           className={`relative p-5 md:p-6 rounded-[2rem] border-[4px] transition-all text-left flex flex-col gap-3 ${
                             selected
                               ? 'bg-blue-600 border-[#0b1120] text-white shadow-[8px_8px_0px_#0b1120]'
@@ -1113,7 +1121,7 @@ export default function CourseSelection() {
                     })}
                   </div>
 
-                  {!isQualifier && course.pricing_options[selectedPricingTier]?.description && (
+                  {!isQualifier && selectedPricingTier !== null && course.pricing_options[selectedPricingTier]?.description && (
                     <div className="mt-4 p-4 bg-blue-50 border-2 border-blue-200 rounded-2xl">
                       <p className="text-sm font-bold text-gray-700 leading-relaxed">
                         {course.pricing_options[selectedPricingTier].description}
@@ -1121,7 +1129,7 @@ export default function CourseSelection() {
                     </div>
                   )}
 
-                  {selectedPricingTier !== null && course.pricing_options && course.pricing_options[selectedPricingTier]?.banner_text && (
+                  {selectedPricingTier !== null && course.pricing_options?.[selectedPricingTier]?.banner_text && (
                     <div className="mt-5 p-4 md:p-5 bg-amber-50 border-[4px] border-[#0b1120] rounded-[1.5rem] shadow-[4px_4px_0px_#0b1120] flex items-center gap-3.5">
                       <div className="shrink-0 w-10 h-10 bg-amber-100 border-2 border-[#0b1120] rounded-xl flex items-center justify-center shadow-[2px_2px_0px_#0b1120]">
                         <Star className="w-5 h-5 text-amber-500 fill-amber-500" strokeWidth={2.5} />
@@ -1131,6 +1139,22 @@ export default function CourseSelection() {
                           {course.pricing_options[selectedPricingTier].banner_text}
                         </p>
                       </div>
+                    </div>
+                  )}
+
+                  {selectedPricingTier !== null ? (
+                    <button
+                      type="button"
+                      onClick={goToSummary}
+                      className="w-full sm:w-auto mx-auto flex items-center justify-center gap-2 px-6 py-3.5 bg-[#10b981] text-[#0b1120] rounded-xl font-black text-sm border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] hover:translate-y-0.5 hover:shadow-[2px_2px_0px_#0b1120] transition-all"
+                    >
+                      Continue to Checkout
+                      <span className="font-black">₹{course.pricing_options[selectedPricingTier]?.price}</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  ) : (
+                    <div className="text-center py-2 text-xs font-bold text-gray-400 uppercase tracking-wide">
+                      Select a plan above to continue
                     </div>
                   )}
                 </div>
@@ -1149,7 +1173,11 @@ export default function CourseSelection() {
                                 </div>
                                 <span className="font-black text-base text-[#0b1120]">{course.name}</span>
                             </div>
-                            <span className="font-black text-lg text-[#10b981]">₹{calculateTotal()}</span>
+                            <span className="font-black text-lg text-[#10b981]">
+                              {isTierSelectionRequired() && !getSelectedPricingOption()
+                                ? '—'
+                                : `₹${calculateTotal()}`}
+                            </span>
                         </div>
                     ) : (
                         <div className="space-y-2.5">
@@ -1246,7 +1274,7 @@ export default function CourseSelection() {
                               <div className="space-y-1">
                                 <div className="flex gap-2">
                                   <input
-                                    type="number"
+                                    type="text" inputMode="decimal"
                                     min={0}
                                     max={Math.min(MAX_COINS_PER_ORDER, walletBalance, Math.max(calculateTotal() - discountAmount - referralDiscount - 1, 0))}
                                     placeholder={`Max ${Math.min(MAX_COINS_PER_ORDER, walletBalance, Math.max(calculateTotal() - discountAmount - referralDiscount - 1, 0))}`}
@@ -1315,7 +1343,11 @@ export default function CourseSelection() {
                         className="w-full py-3.5 bg-[#10b981] text-[#0b1120] rounded-xl font-black text-lg border-[3px] border-[#0b1120] shadow-[5px_5px_0px_#0b1120] hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:grayscale"
                     >
                         {isProcessing ? <Loader2 className="animate-spin w-5 h-5" /> : (
-                          selectedCourses.length === 0 ? "Select a Course" : <>Enroll Now <ArrowRight className="w-5 h-5" /></>
+                          selectedCourses.length === 0
+                            ? "Select a Course"
+                            : (isTierSelectionRequired() && !getSelectedPricingOption())
+                              ? "Select a Plan"
+                              : <>Enroll Now <ArrowRight className="w-5 h-5" /></>
                         )}
                     </button>
 
@@ -1326,10 +1358,11 @@ export default function CourseSelection() {
               </div>
             </div>
 
-            {/* Mobile sticky "Continue with [plan]" bar — Qualifier only */}
-            {isQualifier && getSelectedPricingOption() && (
+            {/* Mobile sticky continue bar — any multi-plan course */}
+            {hasPricingPlans && getSelectedPricingOption() && (
               <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t-[3px] border-[#0b1120] p-3">
                 <button
+                  type="button"
                   onClick={goToSummary}
                   className="w-full flex items-center justify-between gap-3 px-4 py-3.5 bg-[#10b981] text-[#0b1120] rounded-xl font-black border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] active:translate-y-0.5 active:shadow-[1px_1px_0px_#0b1120] transition-all"
                 >

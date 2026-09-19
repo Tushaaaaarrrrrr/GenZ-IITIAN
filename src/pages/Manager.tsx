@@ -1284,7 +1284,7 @@ export default function Manager() {
                     <div>
                       <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Display Price / Starts From (₹)</label>
                       <input 
-                        type="number" 
+                        type="text" inputMode="decimal" 
                         defaultValue={editingCourse?.price} 
                         id="c-price" 
                         onChange={(e) => {
@@ -1301,7 +1301,7 @@ export default function Manager() {
                     <div>
                       <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Discount Display Price (₹)</label>
                       <input 
-                        type="number" 
+                        type="text" inputMode="decimal" 
                         defaultValue={editingCourse?.discountPrice} 
                         id="c-discount" 
                         placeholder="Optional" 
@@ -1568,7 +1568,7 @@ export default function Manager() {
                           <div className="relative">
                             <span className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 font-black text-xl">₹</span>
                             <input
-                              type="number"
+                              type="text" inputMode="decimal"
                               value={bundleDiscountPrice}
                               onChange={e => setBundleDiscountPrice(e.target.value ? parseInt(e.target.value) : '')}
                               placeholder="e.g. 799"
@@ -1672,7 +1672,7 @@ export default function Manager() {
                                 <div className="space-y-1">
                                   <label className="text-[10px] font-black text-gray-400 uppercase">Price (₹)</label>
                                   <input 
-                                    type="number"
+                                    type="text" inputMode="decimal"
                                     value={opt.price} 
                                     onChange={e => updatePricingOption(idx, 'price', parseInt(e.target.value) || 0)}
                                     className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl font-bold outline-none focus:border-blue-400"
@@ -1845,7 +1845,7 @@ export default function Manager() {
                               <div className="relative">
                                 <span className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 font-black text-xl">₹</span>
                                 <input 
-                                  type="number" 
+                                  type="text" inputMode="decimal" 
                                   value={bc.price} 
                                   onChange={e => {
                                      const newPrice = parseInt(e.target.value) || 0;
@@ -2024,7 +2024,7 @@ export default function Manager() {
                     <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Discount Value</label>
                     <input
                       key={discountValueType}
-                      type="number"
+                      type="text" inputMode="decimal"
                       defaultValue={discountValueType === 'percentage' ? editingDiscount?.discount_percentage : editingDiscount?.discount_amount}
                       id="d-value"
                       placeholder={discountValueType === 'percentage' ? '% Off' : '₹ Off'}
@@ -2084,11 +2084,11 @@ export default function Manager() {
                   </div>
                   <div>
                     <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Max Uses (Optional)</label>
-                    <input type="number" min="1" defaultValue={editingDiscount?.max_uses || ''} id="d-max-uses" placeholder="Unlimited" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-purple-100 outline-none" />
+                    <input type="text" inputMode="decimal" min="1" defaultValue={editingDiscount?.max_uses || ''} id="d-max-uses" placeholder="Unlimited" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-purple-100 outline-none" />
                   </div>
                   <div>
                     <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Min Order Value (Optional)</label>
-                    <input type="number" min="0" defaultValue={editingDiscount?.min_order_value || ''} id="d-min-order" placeholder="₹ No minimum" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-purple-100 outline-none" />
+                    <input type="text" inputMode="decimal" min="0" defaultValue={editingDiscount?.min_order_value || ''} id="d-min-order" placeholder="₹ No minimum" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-purple-100 outline-none" />
                   </div>
                 </div>
 

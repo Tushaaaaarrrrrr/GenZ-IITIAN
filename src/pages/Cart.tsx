@@ -463,7 +463,7 @@ export default function Cart() {
                         <div className="space-y-1">
                           <div className="flex gap-2">
                             <input
-                              type="number"
+                              type="text" inputMode="decimal"
                               min={0}
                               max={Math.min(MAX_COINS_PER_ORDER, walletBalance, Math.max(total - discountAmount - referralDiscount - 1, 0))}
                               placeholder={`Max ${Math.min(MAX_COINS_PER_ORDER, walletBalance, Math.max(total - discountAmount - referralDiscount - 1, 0))}`}

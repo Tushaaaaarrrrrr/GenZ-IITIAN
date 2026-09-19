@@ -61,7 +61,7 @@ export default function CourseRow({ course, onChange, onRemove }: CourseRowProps
 
       <div className="flex items-center gap-2 shrink-0">
         <input
-          type="number"
+          type="text" inputMode="decimal"
           min={1}
           max={20}
           value={course.credits}

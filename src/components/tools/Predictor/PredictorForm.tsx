@@ -10,7 +10,7 @@ function NumberField({ label, value, onChange, max }: NumberFieldProps) {
     <label className="flex flex-col gap-1.5">
       <span className="text-[10px] font-black uppercase tracking-[0.15em] text-gray-400">{label}</span>
       <input
-        type="number"
+        type="text" inputMode="decimal"
         min={0}
         max={max}
         step="0.01"
