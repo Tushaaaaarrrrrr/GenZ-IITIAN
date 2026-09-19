@@ -176,6 +176,7 @@ VITE_RAZORPAY_KEY_ID=rzp_test_xxxx
 RAZORPAY_SECRET=your_backend_rzp_secret
 LMS_ENROLL_URL=url_to_webhook
 EXTERNAL_ENROLL_SECRET=secret_for_webhook
+LEAD_MAGNET_WEBHOOK_URL=url_to_lead_magnet_apps_script_web_app
 ```
 
 ### Setup & Run
@@ -267,3 +268,15 @@ src/components/tools/GradingScale.tsx
 src/components/tools/Tabs.tsx
 src/pages/tools/ToolsPage.tsx         # shared shell mounted at all three /tools/* routes
 ```
+
+---
+
+## 15. LEAD MAGNET — "ACCESS PDF" (`/access-pdf`)
+
+A simple lead-capture form (name, email, phone, Foundation/Diploma level) styled to match the rest of the site. On submit it:
+1. POSTs to `/api/lead-magnet` (`api/lead-magnet.ts` on Vercel, mirrored in `server/index.js` for local/self-hosted dev).
+2. That endpoint validates the input, best-effort logs a `LEAD_MAGNET_PDF_REQUEST` row to Supabase `activity_logs` if configured, and forwards the lead to a Google Apps Script webhook.
+3. The Apps Script (`lead-magnet-app-script.js` — paste into script.google.com per the setup comment at the top of that file) logs the lead into a `LeadMagnet_PDF` sheet tab and emails the requester a styled HTML email with a **Download PDF** button, BCC'd to the admin inbox.
+4. The frontend also immediately shows a **Download PDF Now** button (same Google Drive file, using the `drive.google.com/uc?export=download&id=...` direct-download URL derived from the shared file's ID) so the student doesn't have to wait on email delivery.
+
+To point this at your own file: update `PDF_DRIVE_FILE_ID` in `lead-magnet-app-script.js` (the Drive file must be shared as "Anyone with the link can view"), redeploy the Apps Script, and set `LEAD_MAGNET_WEBHOOK_URL` per the Environment Variables section above.
