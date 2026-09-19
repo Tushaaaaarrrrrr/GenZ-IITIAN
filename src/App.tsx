@@ -65,13 +65,14 @@ function AppContent() {
   const location = useLocation();
   const isCheckoutPage = location.pathname.startsWith('/checkout/');
   const isCoursesPage = location.pathname === '/courses';
+  const isManagerPage = location.pathname.startsWith('/manager');
 
   return (
     <div className="min-h-screen bg-white text-[#0b1120] font-sans selection:bg-blue-100 flex flex-col">
       <ScrollToTop />
-      <Navbar />
-      {/* pb on mobile clears the fixed bottom tab bar; removed on the checkout flow */}
-      <main className={`flex-grow ${isCheckoutPage ? '' : 'pb-24 md:pb-0'}`}>
+      {!isManagerPage && <Navbar />}
+      {/* pb on mobile clears the fixed bottom tab bar; removed on checkout + manager */}
+      <main className={`flex-grow ${isCheckoutPage || isManagerPage ? '' : 'pb-24 md:pb-0'}`}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/menu" element={<Menu />} />
@@ -110,12 +111,12 @@ function AppContent() {
         </Routes>
       </main>
       {/* Footer is hidden on mobile — the bottom-nav Menu tab covers all links there */}
-      {!isCheckoutPage && !isCoursesPage && (
+      {!isCheckoutPage && !isCoursesPage && !isManagerPage && (
         <div className="hidden md:block">
           <Footer />
         </div>
       )}
-      {!isCheckoutPage && <MobileNav />}
+      {!isCheckoutPage && !isManagerPage && <MobileNav />}
     </div>
   );
 }

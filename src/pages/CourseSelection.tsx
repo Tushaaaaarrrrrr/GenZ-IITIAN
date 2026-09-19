@@ -7,6 +7,7 @@ import { validateReferralCode, getReferralProfile } from '../lib/referral';
 import { useAuth } from '../context/AuthContext';
 import { Check, Loader2, ShieldCheck, AlertCircle, User, UserCheck, CreditCard, ArrowRight, BookOpen, Copy, CheckCheck, Coins } from 'lucide-react';
 import { validateCouponForCheckout } from '../utils/coupons';
+import { resolveBundleDiscountConfig } from '../utils/bundleDiscount';
 
 const RAZORPAY_SCRIPT_URL = "https://checkout.razorpay.com/v1/checkout.js";
 const MIN_PROMO_ORDER_AMOUNT = 300;
@@ -285,10 +286,9 @@ export default function CourseSelection() {
       
       // Auto-revoke bundle discount if criteria broken
       if (course?.isBundle && appliedDiscountCode === course?.bundleDiscountCode) {
-         const firstBundleCourse = Array.isArray(course?.bundleCourses) ? course.bundleCourses[0] : null;
-         const mode = (course?.bundleDiscountMode || firstBundleCourse?._bundleDiscountMode) === 'any' ? 'any' : 'all';
+         const { mode, minCourses } = resolveBundleDiscountConfig(course);
          const requiredCountRaw = mode === 'any'
-           ? Number(course?.bundleDiscountMinCourses || firstBundleCourse?._bundleDiscountMinCourses || 3)
+           ? minCourses
            : Number(course?.bundleCourses?.length || 0);
          const requiredCount = Math.max(1, Math.min(requiredCountRaw, Number(course?.bundleCourses?.length || requiredCountRaw || 1)));
          const isStillEligible = next.length >= requiredCount;
@@ -301,10 +301,9 @@ export default function CourseSelection() {
     });
   };
 
-  const bundleDiscountModeRaw = course?.bundleDiscountMode || course?.bundleCourses?.[0]?._bundleDiscountMode;
-  const bundleDiscountMode = bundleDiscountModeRaw === 'any' ? 'any' : 'all';
+  const { mode: bundleDiscountMode, minCourses: bundleDiscountMinCoursesResolved } = resolveBundleDiscountConfig(course);
   const bundleDiscountRequiredCountRaw = bundleDiscountMode === 'any'
-    ? Number(course?.bundleDiscountMinCourses || course?.bundleCourses?.[0]?._bundleDiscountMinCourses || 3)
+    ? bundleDiscountMinCoursesResolved
     : Number(course?.bundleCourses?.length || 0);
   const bundleDiscountRequiredCount = Math.max(
     1,
@@ -531,10 +530,9 @@ export default function CourseSelection() {
       appliedDiscountCode.toUpperCase() === String(course.bundleDiscountCode).toUpperCase();
 
     if (isBundleCode) {
-      const firstBundleCourse = Array.isArray(course.bundleCourses) ? course.bundleCourses[0] : null;
-      const mode = (course.bundleDiscountMode || firstBundleCourse?._bundleDiscountMode) === 'any' ? 'any' : 'all';
+      const { mode, minCourses } = resolveBundleDiscountConfig(course);
       const requiredCountRaw = mode === 'any'
-        ? Number(course.bundleDiscountMinCourses || firstBundleCourse?._bundleDiscountMinCourses || 3)
+        ? minCourses
         : Number(course.bundleCourses?.length || 0);
       const requiredCount = Math.max(
         1,

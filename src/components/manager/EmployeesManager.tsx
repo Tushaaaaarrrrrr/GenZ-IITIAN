@@ -530,9 +530,9 @@ export default function EmployeesManager() {
         {/* Add Button */}
         <button 
           onClick={openCreate}
-          className="w-full sm:w-auto px-6 py-3.5 bg-blue-600 border-2 border-blue-600 text-white font-black rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 shadow-[4px_4px_0px_#0b1120] hover:translate-y-[-2px] hover:translate-x-[-2px] active:translate-y-[0px] active:translate-x-[0px] transition-transform"
+          className="w-full sm:w-auto px-4 py-2.5 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 transition-colors flex items-center justify-center gap-2 text-sm"
         >
-          <Plus className="w-5 h-5" /> Add Employee Record
+          <Plus className="w-4 h-4" /> Add Employee Record
         </button>
       </div>
 

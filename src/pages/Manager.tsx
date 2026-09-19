@@ -9,6 +9,7 @@ import BlogsManager from '../components/manager/BlogsManager';
 import EmployeesManager from '../components/manager/EmployeesManager';
 import ManagerFullPageSheet from '../components/manager/ManagerFullPageSheet';
 import { getYouTubeId } from '../utils/youtube';
+import { resolveBundleDiscountConfig } from '../utils/bundleDiscount';
 
 
 type Tab = 'users' | 'courses' | 'boxes' | 'discounts' | 'payments' | 'catalog' | 'referrals' | 'blogs' | 'settings' | 'employees' | 'logs';
@@ -23,12 +24,7 @@ const DEFAULT_BOX_CONFIG: Record<CourseTerm, string[]> = {
 };
 
 function getBundleDiscountConfig(course: any): { mode: 'all' | 'any'; minCourses: 1 | 2 | 3 | 5 } {
-  const firstBundleCourse = Array.isArray(course?.bundleCourses) ? course.bundleCourses[0] : null;
-  const storedMode = course?.bundleDiscountMode || firstBundleCourse?._bundleDiscountMode;
-  const mode = storedMode === 'any' ? 'any' : 'all';
-  const rawMin = Number(course?.bundleDiscountMinCourses || firstBundleCourse?._bundleDiscountMinCourses || 3);
-  const minCourses = ([1, 2, 3, 5].includes(rawMin) ? rawMin : 3) as 1 | 2 | 3 | 5;
-  return { mode, minCourses };
+  return resolveBundleDiscountConfig(course);
 }
 
 function sanitizeCourseId(value: string) {
@@ -301,7 +297,7 @@ export default function Manager() {
   };
 
   const fetchData = async () => {
-    if (effectiveTab === 'blogs' || effectiveTab === 'settings' || effectiveTab === 'logs' || effectiveTab === 'boxes') {
+    if (effectiveTab === 'blogs' || effectiveTab === 'settings' || effectiveTab === 'logs' || effectiveTab === 'boxes' || effectiveTab === 'employees') {
       setLoading(false);
       return;
     }
@@ -527,6 +523,12 @@ export default function Manager() {
         bundleCourses: course.bundleCourses || [],
         bundleDiscountPrice: course.bundleDiscountPrice || null,
         bundleDiscountCode: course.bundleDiscountCode || null,
+        bundleDiscountMode: course.isBundle
+          ? (course.bundleDiscountMode === 'any' ? 'any' : 'all')
+          : null,
+        bundleDiscountMinCourses: course.isBundle && course.bundleDiscountMode === 'any'
+          ? Number(course.bundleDiscountMinCourses) || 3
+          : null,
         isFixedBundle: course.isFixedBundle || false,
         pricing_options: course.pricing_options || [],
         subject: course.category || null,
@@ -714,26 +716,26 @@ export default function Manager() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
+    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
       {/* Mobile Top Header & Navigation */}
-      <div className="md:hidden bg-[#0b1120] text-white border-b-2 border-white/10 sticky top-0 z-40">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+      <div className="md:hidden bg-white border-b border-slate-200 sticky top-0 z-40">
+        <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center font-black text-sm text-white border border-white">G</div>
-            <span className="font-black text-base tracking-tight">GenZ Manager</span>
+            <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center text-sm font-semibold text-white">G</div>
+            <span className="font-semibold text-base text-slate-900 tracking-tight">Manager</span>
           </div>
-          <span className="text-[10px] font-black uppercase tracking-wider bg-blue-600/60 px-2.5 py-1 rounded-full border border-blue-400">
+          <span className="text-[10px] font-semibold uppercase tracking-wider bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md">
             {effectiveTab}
           </span>
         </div>
-        <nav className="flex gap-1.5 overflow-x-auto no-scrollbar py-2 px-3">
+        <nav className="flex gap-1 overflow-x-auto no-scrollbar py-2 px-3 border-t border-slate-100">
           {managerTabs.map((tab) => (
             <NavLink
               key={tab.id}
               to={tab.path}
               className={({ isActive }) => `
-                flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-black text-xs whitespace-nowrap transition-all border
-                ${isActive ? 'bg-blue-600 border-white text-white shadow-[2px_2px_0px_#fff]' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'}
+                flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors
+                ${isActive ? 'bg-slate-900 text-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}
               `}
             >
               <tab.icon className="w-3.5 h-3.5" />
@@ -744,115 +746,122 @@ export default function Manager() {
       </div>
 
       {/* Desktop Sidebar */}
-      <div className="hidden md:flex md:w-20 lg:w-64 bg-[#0b1120] text-white p-4 lg:p-6 flex-col gap-8 h-screen sticky top-0 border-r-4 border-[#0b1120] shrink-0">
-        <div className="flex items-center gap-3 px-2">
-          <div className="w-10 h-10 bg-red-500 rounded-xl flex items-center justify-center font-black text-xl text-white border-2 border-white shadow-[2px_2px_0px_#fff]">G</div>
-          <span className="hidden lg:block font-black text-xl tracking-tight">GenZ Manager</span>
+      <aside className="hidden md:flex md:w-56 lg:w-60 bg-white text-slate-700 p-4 flex-col gap-6 h-screen sticky top-0 border-r border-slate-200 shrink-0">
+        <div className="flex items-center gap-3 px-2 pt-1">
+          <div className="w-9 h-9 bg-slate-900 rounded-lg flex items-center justify-center text-sm font-semibold text-white">G</div>
+          <div className="min-w-0">
+            <div className="font-semibold text-sm text-slate-900 truncate">GenZ Manager</div>
+            <div className="text-[11px] text-slate-400">Admin panel</div>
+          </div>
         </div>
         
-        <nav className="space-y-3 flex-grow overflow-y-auto no-scrollbar">
+        <nav className="space-y-0.5 flex-grow overflow-y-auto no-scrollbar">
           {managerTabs.map((tab) => (
             <NavLink
               key={tab.id}
               to={tab.path}
               end={tab.id === 'dashboard'}
               className={({ isActive }) => `
-                w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl font-black transition-all border-2 text-sm
-                ${isActive ? 'bg-blue-600 border-white text-white shadow-[4px_4px_0px_#fff]' : 'hover:bg-white/5 border-transparent text-gray-400'}
+                w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                ${isActive ? 'bg-slate-900 text-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'}
               `}
             >
-              <tab.icon className="w-5 h-5 shrink-0" />
-              <span className="hidden lg:block capitalize">{tab.id}</span>
+              <tab.icon className="w-4.5 h-4.5 shrink-0" />
+              <span className="capitalize">{tab.id}</span>
             </NavLink>
           ))}
         </nav>
-      </div>
+      </aside>
 
       {/* Main Content */}
-      <div className="flex-grow p-3.5 sm:p-6 md:p-8 lg:p-12 overflow-y-auto min-w-0 w-full">
-        <div className="max-w-6xl mx-auto space-y-6 sm:space-y-8 md:space-y-12">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3.5 border-b-4 md:border-b-[6px] border-[#0b1120] pb-4 sm:pb-8">
+      <div className="flex-grow p-4 sm:p-6 lg:p-8 overflow-y-auto min-w-0 w-full">
+        <div className="max-w-7xl mx-auto space-y-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div>
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-[#0b1120] capitalize mb-1">{effectiveTab}</h1>
-              <p className="text-sm sm:text-base md:text-xl text-gray-500 font-bold tracking-tight">Platform administration panel.</p>
+              <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 capitalize tracking-tight">{effectiveTab}</h1>
+              <p className="text-sm text-slate-500 mt-0.5">Platform administration</p>
             </div>
-            <div className="flex flex-wrap items-center gap-2 sm:gap-4 w-full sm:w-auto">
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
               {effectiveTab === 'users' && (
-                <div className="flex flex-wrap gap-2 sm:gap-4 w-full sm:w-auto">
+                <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                   <button 
                     onClick={() => {
                       setFilter(filter === 'no-number' ? 'all' : 'no-number');
                     }}
-                    className={`flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2.5 sm:py-4 rounded-xl sm:rounded-2xl font-black text-xs sm:text-base border-2 sm:border-[3px] border-[#0b1120] shadow-[3px_3px_0px_#0b1120] sm:shadow-[6px_6px_0px_#0b1120] hover:translate-y-0.5 active:translate-y-1 transition-all ${
-                      filter === 'no-number' ? 'bg-[#0b1120] text-white' : 'bg-white text-[#0b1120]'
+                    className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                      filter === 'no-number'
+                        ? 'bg-slate-900 text-white border-slate-900'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                     }`}
                   >
-                    <Users className="w-4 h-4 sm:w-6 sm:h-6" /> No Number
+                    <Users className="w-4 h-4" /> No Number
                   </button>
                   <button 
                     onClick={exportUsers}
-                    className="flex items-center gap-2 sm:gap-3 px-4 sm:px-8 py-2.5 sm:py-4 bg-[#3b82f6] text-white rounded-xl sm:rounded-2xl font-black text-xs sm:text-base border-2 sm:border-[3px] border-[#0b1120] shadow-[3px_3px_0px_#0b1120] sm:shadow-[6px_6px_0px_#0b1120] hover:translate-y-0.5 active:translate-y-1 transition-all"
+                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium bg-slate-900 text-white hover:bg-slate-800 transition-colors"
                   >
-                    <Download className="w-4 h-4 sm:w-6 sm:h-6" /> Export CSV
+                    <Download className="w-4 h-4" /> Export CSV
                   </button>
                 </div>
               )}
               {effectiveTab === 'catalog' && (
                 <button 
                   onClick={exportCatalog}
-                  className="flex items-center gap-2 sm:gap-3 px-4 sm:px-8 py-2.5 sm:py-4 bg-[#3b82f6] text-white rounded-xl sm:rounded-2xl font-black text-xs sm:text-base border-2 sm:border-[3px] border-[#0b1120] shadow-[3px_3px_0px_#0b1120] sm:shadow-[6px_6px_0px_#0b1120] hover:translate-y-0.5 active:translate-y-1 transition-all"
+                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium bg-slate-900 text-white hover:bg-slate-800 transition-colors"
                 >
-                  <Download className="w-4 h-4 sm:w-6 sm:h-6" /> Export CSV
+                  <Download className="w-4 h-4" /> Export CSV
                 </button>
               )}
               {effectiveTab === 'payments' && (
-                <div className="flex flex-wrap gap-2 sm:gap-4 w-full sm:w-auto">
+                <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                   <button 
                     onClick={() => setFilter(filter === 'not-purchased' ? 'all' : 'not-purchased')}
-                    className={`flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2.5 sm:py-4 rounded-xl sm:rounded-2xl font-black text-xs sm:text-base border-2 sm:border-[3px] border-[#0b1120] shadow-[3px_3px_0px_#0b1120] sm:shadow-[6px_6px_0px_#0b1120] hover:translate-y-0.5 active:translate-y-1 transition-all ${
-                      filter === 'not-purchased' ? 'bg-[#0b1120] text-white' : 'bg-white text-[#0b1120]'
+                    className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                      filter === 'not-purchased'
+                        ? 'bg-slate-900 text-white border-slate-900'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                     }`}
                   >
-                    <User className="w-4 h-4 sm:w-6 sm:h-6" /> Just Created
+                    <User className="w-4 h-4" /> Just Created
                   </button>
                   <button 
                     onClick={fetchData}
-                    className="flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2.5 sm:py-4 bg-white text-[#0b1120] rounded-xl sm:rounded-2xl font-black text-xs sm:text-base border-2 sm:border-[3px] border-[#0b1120] shadow-[3px_3px_0px_#0b1120] sm:shadow-[6px_6px_0px_#0b1120] hover:translate-y-0.5 active:translate-y-1 transition-all"
+                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition-colors"
                     title="Sync with Database"
                   >
-                    <RefreshCw className={`w-4 h-4 sm:w-6 sm:h-6 ${loading ? 'animate-spin' : ''}`} /> Sync
+                    <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Sync
                   </button>
                   <button 
                     onClick={exportPayments}
-                    className="flex items-center gap-2 sm:gap-3 px-4 sm:px-8 py-2.5 sm:py-4 bg-[#3b82f6] text-white rounded-xl sm:rounded-2xl font-black text-xs sm:text-base border-2 sm:border-[3px] border-[#0b1120] shadow-[3px_3px_0px_#0b1120] sm:shadow-[6px_6px_0px_#0b1120] hover:translate-y-0.5 active:translate-y-1 transition-all"
+                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium bg-slate-900 text-white hover:bg-slate-800 transition-colors"
                   >
-                    <Download className="w-4 h-4 sm:w-6 sm:h-6" /> Export CSV
+                    <Download className="w-4 h-4" /> Export CSV
                   </button>
                 </div>
               )}
               {effectiveTab === 'courses' && (
                 <button 
                   onClick={() => setShowAddCourse(true)}
-                  className="flex items-center gap-2 sm:gap-3 px-4 sm:px-8 py-2.5 sm:py-4 bg-[#10b981] text-[#0b1120] rounded-xl sm:rounded-2xl font-black text-xs sm:text-base border-2 sm:border-[3px] border-[#0b1120] shadow-[3px_3px_0px_#0b1120] sm:shadow-[6px_6px_0px_#0b1120] hover:translate-y-0.5 active:translate-y-1 transition-all"
+                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
                 >
-                  <Plus className="w-4 h-4 sm:w-6 sm:h-6" /> Create Course
+                  <Plus className="w-4 h-4" /> Create Course
                 </button>
               )}
               {effectiveTab === 'discounts' && (
                 <button 
                   onClick={() => setShowAddDiscount(true)}
-                  className="flex items-center gap-2 sm:gap-3 px-4 sm:px-8 py-2.5 sm:py-4 bg-purple-500 text-white rounded-xl sm:rounded-2xl font-black text-xs sm:text-base border-2 sm:border-[3px] border-[#0b1120] shadow-[3px_3px_0px_#0b1120] sm:shadow-[6px_6px_0px_#0b1120] hover:translate-y-0.5 active:translate-y-1 transition-all"
+                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium bg-violet-600 text-white hover:bg-violet-700 transition-colors"
                 >
-                  <Plus className="w-4 h-4 sm:w-6 sm:h-6" /> New Coupon
+                  <Plus className="w-4 h-4" /> New Coupon
                 </button>
               )}
             </div>
           </div>
 
           {loading ? (
-            <div className="flex justify-center p-24 text-gray-300 animate-pulse font-black text-2xl uppercase tracking-widest">Loading Data...</div>
+            <div className="flex justify-center p-20 text-slate-400 text-sm font-medium">Loading…</div>
           ) : (
-            <div className="space-y-8">
+            <div className="space-y-6">
 
               {effectiveTab === 'blogs' && <BlogsManager />}
 
@@ -865,52 +874,51 @@ export default function Manager() {
               {effectiveTab === 'settings' && <SettingsManager />}
 
               {effectiveTab === 'users' && (
-                <div className="space-y-6 sm:space-y-8">
-                  {/* Search Bar for Users */}
-                  <div className="bg-white border-2 sm:border-[4px] border-[#0b1120] rounded-xl sm:rounded-[2rem] p-3 sm:p-4 flex gap-3 sm:gap-4 items-center shadow-[3px_3px_0px_#0b1120] sm:shadow-[6px_6px_0px_#0b1120]">
-                    <Search className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400 shrink-0 ml-1 sm:ml-2" />
+                <div className="space-y-4">
+                  <div className="bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 flex gap-3 items-center">
+                    <Search className="w-4 h-4 text-slate-400 shrink-0" />
                     <input
                       type="text"
-                      placeholder="Search by name, email, or Referral Code..."
+                      placeholder="Search by name, email, or referral code…"
                       value={userSearch}
                       onChange={(e) => setUserSearch(e.target.value)}
-                      className="w-full font-black outline-none text-sm sm:text-lg text-[#0b1120] placeholder:text-gray-300"
+                      className="w-full outline-none text-sm text-slate-800 placeholder:text-slate-400"
                     />
                   </div>
 
-                  <div className="bg-white border-[3px] md:border-[4px] border-[#0b1120] rounded-[1.25rem] sm:rounded-[2.5rem] overflow-hidden shadow-[4px_4px_0px_#0b1120] md:shadow-[12px_12px_0px_#0b1120]">
+                  <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
                     <div className="overflow-x-auto w-full touch-pan-x">
-                      <table className="w-full min-w-[600px] text-left">
-                        <thead className="bg-gray-50 border-b-2 sm:border-b-[3px] border-gray-100 font-black text-xs sm:text-sm uppercase text-gray-400">
+                      <table className="w-full min-w-[600px] text-left text-sm">
+                        <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wide text-slate-500">
                           <tr>
-                            <th className="px-4 sm:px-8 py-3.5 sm:py-6">Name</th>
-                            <th className="px-4 sm:px-8 py-3.5 sm:py-6">Email</th>
-                            <th className="px-4 sm:px-8 py-3.5 sm:py-6">Phone</th>
-                            <th className="px-4 sm:px-8 py-3.5 sm:py-6">Gender</th>
-                            <th className="px-4 sm:px-8 py-3.5 sm:py-6">Joined At</th>
+                            <th className="px-4 sm:px-5 py-3">Name</th>
+                            <th className="px-4 sm:px-5 py-3">Email</th>
+                            <th className="px-4 sm:px-5 py-3">Phone</th>
+                            <th className="px-4 sm:px-5 py-3">Gender</th>
+                            <th className="px-4 sm:px-5 py-3">Joined</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y-2 sm:divide-y-[3px] divide-gray-50 font-bold text-xs sm:text-base">
+                        <tbody className="divide-y divide-slate-100">
                           {data.map((user: any) => (
                             <tr 
                               key={user.id} 
                               onClick={() => fetchUserDetails(user)}
-                              className="hover:bg-blue-50/50 transition-colors cursor-pointer group"
+                              className="hover:bg-slate-50 transition-colors cursor-pointer group"
                             >
-                              <td className="px-4 sm:px-8 py-3.5 sm:py-6">
-                                <div className="flex items-center gap-2 sm:gap-3">
-                                  <div className="text-sm sm:text-lg font-black text-[#0b1120] group-hover:text-blue-600 transition-colors">{user.name || 'N/A'}</div>
-                                  <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-transparent group-hover:text-blue-600 transition-colors shrink-0" />
+                              <td className="px-4 sm:px-5 py-3.5">
+                                <div className="flex items-center gap-2">
+                                  <div className="font-medium text-slate-900 group-hover:text-blue-600 transition-colors">{user.name || 'N/A'}</div>
+                                  <ArrowRight className="w-3.5 h-3.5 text-transparent group-hover:text-blue-600 transition-colors shrink-0" />
                                 </div>
                               </td>
-                              <td className="px-4 sm:px-8 py-3.5 sm:py-6 text-gray-500 break-all">{user.email}</td>
-                              <td className="px-4 sm:px-8 py-3.5 sm:py-6 text-gray-500 font-mono">{user.phone || 'N/A'}</td>
-                              <td className="px-4 sm:px-8 py-3.5 sm:py-6">
-                                <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 bg-gray-100 border border-[#0b1120] sm:border-2 rounded-lg text-[9px] sm:text-[10px] font-black uppercase">
+                              <td className="px-4 sm:px-5 py-3.5 text-slate-500 break-all">{user.email}</td>
+                              <td className="px-4 sm:px-5 py-3.5 text-slate-500 font-mono text-xs">{user.phone || 'N/A'}</td>
+                              <td className="px-4 sm:px-5 py-3.5">
+                                <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md text-[11px] font-medium uppercase">
                                   {user.gender || 'N/A'}
                                 </span>
                               </td>
-                              <td className="px-4 sm:px-8 py-3.5 sm:py-6 text-gray-400 text-xs sm:text-sm">
+                              <td className="px-4 sm:px-5 py-3.5 text-slate-400 text-xs">
                                 {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
                               </td>
                             </tr>
@@ -923,38 +931,35 @@ export default function Manager() {
               )}
 
               {effectiveTab === 'payments' && (
-                <div className="space-y-4 sm:space-y-6">
-                  {/* Search and Filters Bar */}
-                  <div className="flex flex-col lg:flex-row gap-3 sm:gap-6">
-                    {/* Search Input */}
-                    <div className="flex-grow bg-white border-2 sm:border-[4px] border-[#0b1120] rounded-xl sm:rounded-[2rem] p-3 sm:p-4 flex gap-3 sm:gap-4 items-center shadow-[3px_3px_0px_#0b1120] sm:shadow-[6px_6px_0px_#0b1120]">
-                      <Search className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400 shrink-0 ml-1 sm:ml-2" />
+                <div className="space-y-4">
+                  <div className="flex flex-col lg:flex-row gap-3">
+                    <div className="flex-grow bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 flex gap-3 items-center">
+                      <Search className="w-4 h-4 text-slate-400 shrink-0" />
                       <input
                         type="text"
-                        placeholder="Search by name, email, phone, or Order ID..."
+                        placeholder="Search by name, email, phone, or order ID…"
                         value={paymentSearch}
                         onChange={(e) => setPaymentSearch(e.target.value)}
-                        className="w-full font-black outline-none text-sm sm:text-lg text-[#0b1120] placeholder:text-gray-300"
+                        className="w-full outline-none text-sm text-slate-800 placeholder:text-slate-400"
                       />
                     </div>
 
-                    {/* Filter Buttons */}
-                    <div className="bg-white border-2 sm:border-[4px] border-[#0b1120] rounded-xl sm:rounded-[2rem] p-1.5 sm:p-2 flex gap-1.5 sm:gap-2 shadow-[3px_3px_0px_#0b1120] sm:shadow-[6px_6px_0px_#0b1120] overflow-x-auto whitespace-nowrap no-scrollbar">
+                    <div className="bg-white border border-slate-200 rounded-xl p-1 flex gap-1 overflow-x-auto whitespace-nowrap no-scrollbar">
                       {[
                         { id: 'all', label: 'All Time' },
                         { id: 'today', label: 'Today' },
                         { id: 'yesterday', label: 'Yesterday' },
                         { id: 'lastweek', label: 'Last Week' },
                         { id: 'not-purchased', label: 'Just Created' },
-                        { id: 'abandoned', label: 'Abandoned Checkouts' }
+                        { id: 'abandoned', label: 'Abandoned' }
                       ].map((f) => (
                         <button
                           key={f.id}
                           onClick={() => setFilter(f.id as any)}
-                          className={`px-3.5 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl font-black text-xs sm:text-sm transition-all cursor-pointer ${
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
                             filter === f.id 
-                              ? 'bg-[#0b1120] text-white' 
-                              : 'text-gray-400 hover:bg-gray-100'
+                              ? 'bg-slate-900 text-white' 
+                              : 'text-slate-500 hover:bg-slate-100'
                           }`}
                         >
                           {f.label}
@@ -963,21 +968,20 @@ export default function Manager() {
                     </div>
                   </div>
 
-                  {/* Payments Table */}
-                  <div className="bg-white border-[3px] md:border-[4px] border-[#0b1120] rounded-[1.25rem] sm:rounded-[2.5rem] overflow-hidden shadow-[4px_4px_0px_#0b1120] md:shadow-[12px_12px_0px_#0b1120]">
+                  <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
                     <div className="overflow-x-auto w-full touch-pan-x">
-                      <table className="w-full min-w-[700px] text-left">
-                        <thead className="bg-gray-50 border-b-2 sm:border-b-[3px] border-gray-100 font-black text-xs sm:text-sm uppercase text-gray-400">
+                      <table className="w-full min-w-[700px] text-left text-sm">
+                        <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wide text-slate-500">
                           <tr>
-                            <th className="px-4 sm:px-8 py-3.5 sm:py-6">Order Info</th>
-                            <th className="px-4 sm:px-8 py-3.5 sm:py-6">Courses</th>
-                            <th className="px-4 sm:px-8 py-3.5 sm:py-6">Amount</th>
-                            <th className="px-4 sm:px-8 py-3.5 sm:py-6">Status</th>
-                            <th className="px-4 sm:px-8 py-3.5 sm:py-6">Date</th>
-                            <th className="px-4 sm:px-8 py-3.5 sm:py-6 text-right">Actions</th>
+                            <th className="px-4 sm:px-5 py-3">Order</th>
+                            <th className="px-4 sm:px-5 py-3">Courses</th>
+                            <th className="px-4 sm:px-5 py-3">Amount</th>
+                            <th className="px-4 sm:px-5 py-3">Status</th>
+                            <th className="px-4 sm:px-5 py-3">Date</th>
+                            <th className="px-4 sm:px-5 py-3 text-right">Actions</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y-2 sm:divide-y-[3px] divide-gray-50 font-bold text-xs sm:text-base">
+                        <tbody className="divide-y divide-slate-100">
                           {data.map((order: any) => (
                             <tr 
                               key={order.order_id} 
@@ -987,64 +991,64 @@ export default function Manager() {
                                 phone: order.user_phone,
                                 created_at: order.user_joined_at
                               })}
-                              className="hover:bg-blue-50/50 transition-colors cursor-pointer group"
+                              className="hover:bg-slate-50 transition-colors cursor-pointer group"
                             >
-                              <td className="px-4 sm:px-8 py-3.5 sm:py-6">
-                                <div className="flex items-center gap-2 sm:gap-3">
-                                  <div className="text-sm sm:text-lg font-black text-[#0b1120] group-hover:text-blue-600 transition-colors break-all">
+                              <td className="px-4 sm:px-5 py-3.5">
+                                <div className="flex items-center gap-2">
+                                  <div className="font-medium text-slate-900 group-hover:text-blue-600 transition-colors break-all">
                                     {order.user_name || order.user_email || 'Unknown User'}
                                   </div>
-                                  <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-transparent group-hover:text-blue-600 transition-colors shrink-0" />
+                                  <ArrowRight className="w-3.5 h-3.5 text-transparent group-hover:text-blue-600 transition-colors shrink-0" />
                                 </div>
-                                <div className="mt-1 space-y-0.5 text-[11px] sm:text-xs text-gray-400">
-                                  <div className="font-bold break-all">{order.user_email || 'No email'}</div>
-                                  <div className="font-mono">{order.user_phone || 'No phone number'}</div>
+                                <div className="mt-1 space-y-0.5 text-[11px] text-slate-400">
+                                  <div className="break-all">{order.user_email || 'No email'}</div>
+                                  <div className="font-mono">{order.user_phone || 'No phone'}</div>
                                   <div className="font-mono">{order.order_id}</div>
                                 </div>
                               </td>
-                              <td className="px-4 sm:px-8 py-3.5 sm:py-6">
-                                <div className="flex flex-wrap gap-1.5">
+                              <td className="px-4 sm:px-5 py-3.5">
+                                <div className="flex flex-wrap gap-1">
                                   {Array.isArray(order.course_ids) ? order.course_ids.map((cid: string) => {
                                     return (
-                                      <span key={cid} className="px-2 sm:px-3 py-0.5 sm:py-1 bg-blue-50 text-blue-600 rounded-lg text-[10px] sm:text-xs font-black border border-blue-100 max-w-full break-all">
+                                      <span key={cid} className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-md text-[11px] font-medium max-w-full break-all">
                                         {resolveCourseTitle(cid)}
                                       </span>
                                     );
-                                  }) : <span className="text-gray-400">No courses</span>}
+                                  }) : <span className="text-slate-400">No courses</span>}
                                 </div>
                               </td>
-                              <td className="px-4 sm:px-8 py-3.5 sm:py-6 text-base sm:text-xl font-black text-[#10b981]">₹{order.total_amount}</td>
-                              <td className="px-4 sm:px-8 py-3.5 sm:py-6">
-                                <span className={`px-2.5 sm:px-4 py-1 sm:py-2 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black uppercase border-2 shadow-[2px_2px_0px_currentColor] ${
-                                  order.status === 'PAID' ? 'bg-green-50 text-green-600 border-green-600' :
-                                  order.status === 'FAILED' ? 'bg-red-50 text-red-600 border-red-600' :
-                                  order.status === 'NOT_PURCHASED' ? 'bg-gray-50 text-gray-400 border-gray-400' :
-                                  'bg-yellow-50 text-yellow-600 border-yellow-600'
+                              <td className="px-4 sm:px-5 py-3.5 font-semibold text-emerald-600">₹{order.total_amount}</td>
+                              <td className="px-4 sm:px-5 py-3.5">
+                                <span className={`px-2 py-0.5 rounded-md text-[11px] font-medium uppercase ${
+                                  order.status === 'PAID' ? 'bg-emerald-50 text-emerald-700' :
+                                  order.status === 'FAILED' ? 'bg-red-50 text-red-700' :
+                                  order.status === 'NOT_PURCHASED' ? 'bg-slate-100 text-slate-500' :
+                                  'bg-amber-50 text-amber-700'
                                 }`}>
                                   {order.status.replace('_', ' ')}
                                 </span>
                               </td>
-                              <td className="px-4 sm:px-8 py-3.5 sm:py-6 text-xs sm:text-sm text-gray-500 whitespace-nowrap">
+                              <td className="px-4 sm:px-5 py-3.5 text-xs text-slate-500 whitespace-nowrap">
                                 {order.created_at ? new Date(order.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}
                               </td>
-                              <td className="px-4 sm:px-8 py-3.5 sm:py-6 text-right">
+                              <td className="px-4 sm:px-5 py-3.5 text-right">
                                 {!order.order_id.startsWith('LEAD_') && (
                                   <button 
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       handlePaymentDelete(order.order_id);
                                     }}
-                                    className="p-2 sm:p-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                                    className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                                     title="Delete Payment Record"
                                   >
-                                    <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                                    <Trash2 className="w-4 h-4" />
                                   </button>
                                 )}
                               </td>
                             </tr>
                           ))}
                           {data.length === 0 && (
-                            <tr><td colSpan={6} className="px-4 sm:px-8 py-16 sm:py-24 text-center text-gray-300 font-black text-lg sm:text-2xl uppercase tracking-widest">No payments found</td></tr>
+                            <tr><td colSpan={6} className="px-5 py-16 text-center text-slate-400 text-sm">No payments found</td></tr>
                           )}
                         </tbody>
                       </table>
@@ -1053,178 +1057,202 @@ export default function Manager() {
                 </div>
               )}
 
-
-
-
-
-
-
-
               {effectiveTab === 'courses' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-                  {data.map((course) => (
-                    <div key={course.id} className={`bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] p-8 shadow-[10px_10px_0px_#0b1120] flex flex-col hover:shadow-[10px_10px_0px_#10b981] transition-all ${course.active === false ? 'opacity-70' : ''}`}>
-                      <div className="w-full aspect-video bg-gray-100 rounded-2xl border-2 border-[#0b1120] mb-6 overflow-hidden">
-                        <img src={course.image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=800'} className="w-full h-full object-cover" />
-                      </div>
-                      <h3 className="text-2xl font-black text-[#0b1120] mb-2">{course.name}</h3>
-                      {course.active === false && (
-                        <div className="mb-3 inline-flex items-center gap-1.5 px-3 py-1 bg-red-50 border-2 border-red-200 rounded-lg text-[10px] font-black text-red-600 uppercase tracking-wider">
-                          Disabled — hidden from users
-                        </div>
-                      )}
-                      <div className="text-3xl font-black text-[#10b981] mb-6">
-                        {course.discountPrice ? (
-                          <><span className="text-sm text-gray-400 line-through mr-2">₹{course.price}</span>₹{course.discountPrice}</>
-                        ) : (
-                          `₹${course.price}`
+                <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                  <div className="overflow-x-auto w-full touch-pan-x">
+                    <table className="w-full min-w-[720px] text-left text-sm">
+                      <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        <tr>
+                          <th className="px-4 sm:px-5 py-3">Course</th>
+                          <th className="px-4 sm:px-5 py-3">ID</th>
+                          <th className="px-4 sm:px-5 py-3">Price</th>
+                          <th className="px-4 sm:px-5 py-3">Term / Boxes</th>
+                          <th className="px-4 sm:px-5 py-3">Status</th>
+                          <th className="px-4 sm:px-5 py-3 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {data.map((course) => (
+                          <tr key={course.id} className={`hover:bg-slate-50 transition-colors ${course.active === false ? 'opacity-60' : ''}`}>
+                            <td className="px-4 sm:px-5 py-3.5">
+                              <div className="font-medium text-slate-900">{course.name}</div>
+                            </td>
+                            <td className="px-4 sm:px-5 py-3.5">
+                              <code className="text-xs text-slate-500 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">{course.id}</code>
+                            </td>
+                            <td className="px-4 sm:px-5 py-3.5 whitespace-nowrap">
+                              {course.discountPrice ? (
+                                <span className="font-semibold text-emerald-600">
+                                  <span className="text-xs text-slate-400 line-through mr-1.5 font-normal">₹{course.price}</span>
+                                  ₹{course.discountPrice}
+                                </span>
+                              ) : (
+                                <span className="font-semibold text-slate-800">₹{course.price}</span>
+                              )}
+                            </td>
+                            <td className="px-4 sm:px-5 py-3.5">
+                              <div className="flex flex-wrap gap-1">
+                                <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-md text-[11px] font-medium uppercase">
+                                  {course.term || 'No Term'}
+                                </span>
+                                {Array.isArray(course.exam_stages) && course.exam_stages.length > 0 ? course.exam_stages.map((box: string) => (
+                                  <span key={box} className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-md text-[11px] font-medium uppercase">
+                                    {box}
+                                  </span>
+                                )) : (
+                                  <span className="px-2 py-0.5 bg-slate-100 text-slate-400 rounded-md text-[11px] font-medium uppercase">
+                                    No Boxes
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-4 sm:px-5 py-3.5">
+                              {course.active === false ? (
+                                <span className="px-2 py-0.5 bg-red-50 text-red-600 rounded-md text-[11px] font-medium">Disabled</span>
+                              ) : (
+                                <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-md text-[11px] font-medium">Active</span>
+                              )}
+                            </td>
+                            <td className="px-4 sm:px-5 py-3.5">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button 
+                                  onClick={() => setEditingCourse(course)}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-900 text-white hover:bg-slate-800 transition-colors"
+                                >
+                                  <Edit className="w-3.5 h-3.5" /> Edit
+                                </button>
+                                <button 
+                                  onClick={() => handleCourseAction(course, true)}
+                                  className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                  title="Delete course"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                        {data.length === 0 && (
+                          <tr><td colSpan={6} className="px-5 py-16 text-center text-slate-400 text-sm">No courses yet</td></tr>
                         )}
-                      </div>
-                      
-                      <div className="space-y-2 mb-8">
-                        <div className="text-xs font-black uppercase tracking-widest text-gray-400">Database ID (Text)</div>
-                        <div className="text-sm font-bold p-2 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">{course.id}</div>
-                        <div className="text-xs font-black uppercase tracking-widest text-gray-400 pt-2">Term / Boxes</div>
-                        <div className="flex flex-wrap gap-2">
-                          <span className="px-3 py-1 bg-blue-50 border-2 border-blue-100 rounded-lg text-[10px] font-black text-blue-700 uppercase">
-                            {course.term || 'No Term'}
-                          </span>
-                          {Array.isArray(course.exam_stages) && course.exam_stages.length > 0 ? course.exam_stages.map((box: string) => (
-                            <span key={box} className="px-3 py-1 bg-emerald-50 border-2 border-emerald-100 rounded-lg text-[10px] font-black text-emerald-700 uppercase">
-                              {box}
-                            </span>
-                          )) : (
-                            <span className="px-3 py-1 bg-gray-50 border-2 border-gray-100 rounded-lg text-[10px] font-black text-gray-400 uppercase">
-                              No Boxes
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex gap-4 mt-auto">
-                        <button 
-                          onClick={() => setEditingCourse(course)}
-                          className="flex-grow py-4 bg-[#0b1120] text-white rounded-2xl font-black border-2 border-[#0b1120] hover:bg-white hover:text-[#0b1120] transition-colors flex items-center justify-center gap-2 shadow-[4px_4px_0px_#0b1120] hover:shadow-none translate-y-[-4px] hover:translate-y-0 active:translate-y-1"
-                        >
-                          <Edit className="w-5 h-5" /> Edit
-                        </button>
-                        <button 
-                          onClick={() => handleCourseAction(course, true)}
-                          className="p-4 text-red-500 bg-red-50 border-2 border-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-colors"
-                        >
-                          <Trash2 className="w-6 h-6" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
 
               {effectiveTab === 'discounts' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-                  {data.map((discount) => (
-                    <div key={discount.id} className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] p-8 shadow-[10px_10px_0px_#0b1120] flex flex-col hover:shadow-[10px_10px_0px_#8b5cf6] transition-all">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="px-4 py-2 bg-purple-100 text-purple-700 font-black rounded-lg border-2 border-purple-200 tracking-widest uppercase text-xs">
-                          COUPON CODE
-                        </div>
-                        <div className="flex items-center text-xs font-bold text-gray-400 gap-1 uppercase tracking-widest">
-                          <Users className="w-4 h-4" /> Used {discount.used_count || 0} times
-                        </div>
-                      </div>
-                      
-                      <h3 className="text-4xl font-black text-[#0b1120] mb-2 font-mono uppercase tracking-widest border-b-4 border-gray-100 pb-4 break-all">
-                        {discount.code}
-                      </h3>
-                      
-                      <div className="my-6 space-y-4">
-                        <div>
-                          <div className="text-[10px] font-black uppercase text-gray-400 mb-1">Discount Value</div>
-                          {discount.discount_percentage ? (
-                            <div className="text-2xl font-black text-purple-600">{discount.discount_percentage}% OFF</div>
-                          ) : discount.discount_amount ? (
-                            <div className="text-2xl font-black text-purple-600">₹{discount.discount_amount} OFF</div>
-                          ) : (
-                            <div className="text-xl font-black text-gray-400">Invalid Config</div>
-                          )}
-                        </div>
-                        <div>
-                          <div className="text-[10px] font-black uppercase text-gray-400 mb-1">Applies To</div>
-                          <div className="text-sm font-bold text-[#0b1120] bg-gray-50 border-2 border-dashed border-gray-200 p-2 rounded-lg truncate">
-                            {discount.applies_to === 'ALL'
-                              ? 'Everything (Global)'
-                              : `${(discountOptionMap.get(discount.applies_to) as any)?.name || discount.applies_to} ${(discountOptionMap.get(discount.applies_to) as any)?.isBundle ? '[Bundle]' : '[Course]'} (${discount.applies_to})`}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-4 mt-auto border-t-4 border-gray-50 pt-6">
-                        <button 
-                          onClick={() => setEditingDiscount(discount)}
-                          className="flex-grow py-4 bg-[#0b1120] text-white rounded-2xl font-black border-2 border-[#0b1120] hover:bg-white hover:text-[#0b1120] transition-colors flex items-center justify-center gap-2 shadow-[4px_4px_0px_#0b1120] hover:shadow-none translate-y-[-4px] hover:translate-y-0 active:translate-y-1"
-                        >
-                          <Edit className="w-5 h-5" /> Edit
-                        </button>
-                        <button 
-                          onClick={() => handleDiscountAction(discount, true)}
-                          className="p-4 text-red-500 bg-red-50 border-2 border-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-colors"
-                        >
-                          <Trash2 className="w-6 h-6" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                  <div className="overflow-x-auto w-full touch-pan-x">
+                    <table className="w-full min-w-[680px] text-left text-sm">
+                      <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        <tr>
+                          <th className="px-4 sm:px-5 py-3">Code</th>
+                          <th className="px-4 sm:px-5 py-3">Value</th>
+                          <th className="px-4 sm:px-5 py-3">Applies To</th>
+                          <th className="px-4 sm:px-5 py-3">Uses</th>
+                          <th className="px-4 sm:px-5 py-3 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {data.map((discount) => (
+                          <tr key={discount.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="px-4 sm:px-5 py-3.5">
+                              <code className="font-semibold text-slate-900 tracking-wide uppercase">{discount.code}</code>
+                            </td>
+                            <td className="px-4 sm:px-5 py-3.5">
+                              {discount.discount_percentage ? (
+                                <span className="font-semibold text-violet-600">{discount.discount_percentage}% OFF</span>
+                              ) : discount.discount_amount ? (
+                                <span className="font-semibold text-violet-600">₹{discount.discount_amount} OFF</span>
+                              ) : (
+                                <span className="text-slate-400">Invalid</span>
+                              )}
+                            </td>
+                            <td className="px-4 sm:px-5 py-3.5 text-slate-600 text-xs max-w-[280px]">
+                              {discount.applies_to === 'ALL'
+                                ? 'Everything (Global)'
+                                : `${(discountOptionMap.get(discount.applies_to) as any)?.name || discount.applies_to} ${(discountOptionMap.get(discount.applies_to) as any)?.isBundle ? '[Bundle]' : '[Course]'}`}
+                            </td>
+                            <td className="px-4 sm:px-5 py-3.5 text-slate-500 text-xs">
+                              {discount.used_count || 0} uses
+                            </td>
+                            <td className="px-4 sm:px-5 py-3.5">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button 
+                                  onClick={() => setEditingDiscount(discount)}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-900 text-white hover:bg-slate-800 transition-colors"
+                                >
+                                  <Edit className="w-3.5 h-3.5" /> Edit
+                                </button>
+                                <button 
+                                  onClick={() => handleDiscountAction(discount, true)}
+                                  className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                  title="Delete coupon"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                        {data.length === 0 && (
+                          <tr><td colSpan={5} className="px-5 py-16 text-center text-slate-400 text-sm">No coupons yet</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
 
               {effectiveTab === 'referrals' && (
-                <div className="space-y-4 sm:space-y-6">
+                <div className="space-y-4">
                   <div className="flex justify-end">
-                    <button onClick={exportReferrals} className="flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-[#0b1120] text-white rounded-xl font-black text-xs sm:text-sm hover:bg-gray-800 transition-colors shadow-[3px_3px_0px_#0b1120] sm:shadow-[4px_4px_0px_#0b1120]">
+                    <button onClick={exportReferrals} className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium bg-slate-900 text-white hover:bg-slate-800 transition-colors">
                       <Download className="w-4 h-4" /> Export CSV
                     </button>
                   </div>
-                  <div className="bg-white border-[3px] md:border-[4px] border-[#0b1120] rounded-[1.25rem] sm:rounded-[2.5rem] overflow-hidden shadow-[4px_4px_0px_#0b1120] md:shadow-[12px_12px_0px_#0b1120]">
+                  <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
                     <div className="overflow-x-auto w-full touch-pan-x">
-                      <table className="w-full min-w-[650px] text-left">
-                        <thead className="bg-gray-50 border-b-2 sm:border-b-[3px] border-gray-100 font-black text-xs sm:text-sm uppercase text-gray-400">
+                      <table className="w-full min-w-[650px] text-left text-sm">
+                        <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wide text-slate-500">
                           <tr>
-                            <th className="px-4 sm:px-6 py-3.5 sm:py-6">Buyer</th>
-                            <th className="px-4 sm:px-6 py-3.5 sm:py-6">Referrer Code</th>
-                            <th className="px-4 sm:px-6 py-3.5 sm:py-6">Original</th>
-                            <th className="px-4 sm:px-6 py-3.5 sm:py-6">Discount</th>
-                            <th className="px-4 sm:px-6 py-3.5 sm:py-6">Final Paid</th>
-                            <th className="px-4 sm:px-6 py-3.5 sm:py-6">Reward</th>
-                            <th className="px-4 sm:px-6 py-3.5 sm:py-6">Date</th>
+                            <th className="px-4 sm:px-5 py-3">Buyer</th>
+                            <th className="px-4 sm:px-5 py-3">Referrer Code</th>
+                            <th className="px-4 sm:px-5 py-3">Original</th>
+                            <th className="px-4 sm:px-5 py-3">Discount</th>
+                            <th className="px-4 sm:px-5 py-3">Final Paid</th>
+                            <th className="px-4 sm:px-5 py-3">Reward</th>
+                            <th className="px-4 sm:px-5 py-3">Date</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y-2 sm:divide-y-[3px] divide-gray-50 font-bold text-xs sm:text-base">
+                        <tbody className="divide-y divide-slate-100">
                           {data.map((tx: any) => (
-                            <tr key={tx.id} className="hover:bg-purple-50/50 transition-colors">
-                              <td className="px-4 sm:px-6 py-3.5 sm:py-5">
-                                <div className="text-xs sm:text-sm font-black text-[#0b1120] break-all">{tx.buyer_email}</div>
-                                <div className="text-[9px] sm:text-[10px] text-gray-400 font-mono">{tx.order_id}</div>
+                            <tr key={tx.id} className="hover:bg-slate-50 transition-colors">
+                              <td className="px-4 sm:px-5 py-3.5">
+                                <div className="text-sm font-medium text-slate-900 break-all">{tx.buyer_email}</div>
+                                <div className="text-[10px] text-slate-400 font-mono">{tx.order_id}</div>
                               </td>
-                              <td className="px-4 sm:px-6 py-3.5 sm:py-5">
-                                <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 bg-purple-100 text-purple-700 rounded-lg text-[10px] sm:text-xs font-black border border-purple-200 tracking-widest">
+                              <td className="px-4 sm:px-5 py-3.5">
+                                <span className="px-2 py-0.5 bg-violet-50 text-violet-700 rounded-md text-xs font-medium">
                                   {tx.referral_code}
                                 </span>
                               </td>
-                              <td className="px-4 sm:px-6 py-3.5 sm:py-5 font-black text-gray-500">₹{tx.original_price}</td>
-                              <td className="px-4 sm:px-6 py-3.5 sm:py-5 font-black text-green-600">-₹{tx.buyer_discount}</td>
-                              <td className="px-4 sm:px-6 py-3.5 sm:py-5 text-sm sm:text-lg font-black text-[#0b1120]">₹{tx.final_price}</td>
-                              <td className="px-4 sm:px-6 py-3.5 sm:py-5">
-                                <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 bg-amber-100 text-amber-700 rounded-lg text-xs sm:text-sm font-black border border-amber-200">
+                              <td className="px-4 sm:px-5 py-3.5 text-slate-500">₹{tx.original_price}</td>
+                              <td className="px-4 sm:px-5 py-3.5 text-emerald-600 font-medium">-₹{tx.buyer_discount}</td>
+                              <td className="px-4 sm:px-5 py-3.5 font-semibold text-slate-900">₹{tx.final_price}</td>
+                              <td className="px-4 sm:px-5 py-3.5">
+                                <span className="px-2 py-0.5 bg-amber-50 text-amber-700 rounded-md text-xs font-medium">
                                   +{tx.referrer_reward} Coins
                                 </span>
                               </td>
-                              <td className="px-4 sm:px-6 py-3.5 sm:py-5 text-xs sm:text-sm text-gray-400 whitespace-nowrap">
+                              <td className="px-4 sm:px-5 py-3.5 text-xs text-slate-400 whitespace-nowrap">
                                 {tx.created_at ? new Date(tx.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}
                               </td>
                             </tr>
                           ))}
                           {data.length === 0 && (
-                            <tr><td colSpan={7} className="px-4 sm:px-8 py-16 sm:py-24 text-center text-gray-300 font-black text-lg sm:text-2xl uppercase tracking-widest">No referral transactions yet</td></tr>
+                            <tr><td colSpan={7} className="px-5 py-16 text-center text-slate-400 text-sm">No referral transactions yet</td></tr>
                           )}
                         </tbody>
                       </table>
@@ -1978,6 +2006,8 @@ export default function Manager() {
                       bundleCourses: bundleCoursesForSave,
                       bundleDiscountPrice: isBundle && bundleDiscountPrice ? Number(bundleDiscountPrice) : null,
                       bundleDiscountCode: isBundle && bundleDiscountCode ? bundleDiscountCode : null,
+                      bundleDiscountMode: isBundle ? bundleDiscountMode : null,
+                      bundleDiscountMinCourses: isBundle && bundleDiscountMode === 'any' ? bundleDiscountMinCourses : null,
                       isFixedBundle: isBundle && isFixedBundle,
                       pricing_options: isBundle && isFixedBundle ? pricingOptions : [],
                       tags: finalCourseTags,
@@ -2369,38 +2399,35 @@ function LogsManager() {
 
   if (loading) {
     return (
-      <div className="flex justify-center p-24 text-gray-300 animate-pulse font-black text-2xl uppercase tracking-widest">
-        Loading Logs...
+      <div className="flex justify-center p-16 text-slate-400 text-sm font-medium">
+        Loading logs…
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 text-left">
-      {/* Filters */}
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Search */}
-        <div className="flex-grow bg-white border-[4px] border-[#0b1120] rounded-[2rem] p-4 flex gap-4 items-center shadow-[6px_6px_0px_#0b1120]">
-          <Search className="w-6 h-6 text-gray-400 shrink-0 ml-2" />
+    <div className="space-y-4 text-left">
+      <div className="flex flex-col lg:flex-row gap-3">
+        <div className="flex-grow bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 flex gap-3 items-center">
+          <Search className="w-4 h-4 text-slate-400 shrink-0" />
           <input
             type="text"
-            placeholder="Search by email, employee ID, or name..."
+            placeholder="Search by email, employee ID, or name…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full font-black outline-none text-lg text-[#0b1120] placeholder:text-gray-300"
+            className="w-full outline-none text-sm text-slate-800 placeholder:text-slate-400"
           />
         </div>
 
-        {/* Action Filter */}
-        <div className="bg-white border-[4px] border-[#0b1120] rounded-[2rem] p-2 flex gap-2 shadow-[6px_6px_0px_#0b1120] overflow-x-auto whitespace-nowrap">
+        <div className="bg-white border border-slate-200 rounded-xl p-1 flex gap-1 overflow-x-auto whitespace-nowrap">
           {['ALL', 'CREATE', 'UPDATE', 'DELETE', 'VERIFY'].map(action => (
             <button
               key={action}
               onClick={() => setFilterAction(action)}
-              className={`px-6 py-3 rounded-xl font-black text-sm transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 filterAction === action
-                  ? 'bg-[#0b1120] text-white'
-                  : 'text-gray-400 hover:bg-gray-100'
+                  ? 'bg-slate-900 text-white'
+                  : 'text-slate-500 hover:bg-slate-100'
               }`}
             >
               {action}
@@ -2409,51 +2436,51 @@ function LogsManager() {
         </div>
       </div>
 
-      <div className="text-sm font-bold text-gray-400">
+      <div className="text-xs text-slate-400">
         Showing {filtered.length} {filtered.length === 1 ? 'entry' : 'entries'}
       </div>
 
       {filtered.length === 0 ? (
-        <div className="bg-white border-[3px] md:border-[4px] border-[#0b1120] rounded-[1.25rem] sm:rounded-[2.5rem] p-8 sm:p-16 text-center shadow-[4px_4px_0px_#0b1120] md:shadow-[12px_12px_0px_#0b1120]">
-          <AlertCircle className="w-10 h-10 sm:w-12 sm:h-12 text-gray-200 mx-auto mb-4" />
-          <h3 className="text-lg sm:text-xl font-black text-gray-300 mb-2">No Logs Found</h3>
-          <p className="text-gray-400 font-bold text-xs sm:text-sm">Activity logs will appear here when employee records are created, updated, deleted, or verified.</p>
+        <div className="bg-white border border-slate-200 rounded-xl p-12 text-center shadow-sm">
+          <AlertCircle className="w-8 h-8 text-slate-300 mx-auto mb-3" />
+          <h3 className="text-sm font-semibold text-slate-600 mb-1">No logs found</h3>
+          <p className="text-slate-400 text-xs">Activity appears here when employee records change.</p>
         </div>
       ) : (
-        <div className="bg-white border-[3px] md:border-[4px] border-[#0b1120] rounded-[1.25rem] sm:rounded-[2.5rem] overflow-hidden shadow-[4px_4px_0px_#0b1120] md:shadow-[12px_12px_0px_#0b1120]">
+        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
           <div className="overflow-x-auto w-full touch-pan-x">
-            <table className="w-full min-w-[650px] text-left">
-              <thead className="bg-gray-50 border-b-2 sm:border-b-[3px] border-gray-100 font-black text-xs sm:text-sm uppercase text-gray-400">
+            <table className="w-full min-w-[650px] text-left text-sm">
+              <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wide text-slate-500">
                 <tr>
-                  <th className="px-4 sm:px-6 py-3.5 sm:py-5">Timestamp</th>
-                  <th className="px-4 sm:px-6 py-3.5 sm:py-5">Actor</th>
-                  <th className="px-4 sm:px-6 py-3.5 sm:py-5">Action</th>
-                  <th className="px-4 sm:px-6 py-3.5 sm:py-5">Employee</th>
-                  <th className="px-4 sm:px-6 py-3.5 sm:py-5">Details</th>
+                  <th className="px-4 sm:px-5 py-3">Timestamp</th>
+                  <th className="px-4 sm:px-5 py-3">Actor</th>
+                  <th className="px-4 sm:px-5 py-3">Action</th>
+                  <th className="px-4 sm:px-5 py-3">Employee</th>
+                  <th className="px-4 sm:px-5 py-3">Details</th>
                 </tr>
               </thead>
-              <tbody className="divide-y-2 sm:divide-y-[3px] divide-gray-50 font-bold text-xs sm:text-sm">
+              <tbody className="divide-y divide-slate-100">
                 {filtered.map((log: any, i: number) => (
-                  <tr key={log.id || i} className="hover:bg-blue-50/30 transition-colors">
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-gray-400 text-xs font-mono whitespace-nowrap">
+                  <tr key={log.id || i} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-4 sm:px-5 py-3 text-slate-400 text-xs font-mono whitespace-nowrap">
                       {log.created_at ? new Date(log.created_at).toLocaleString('en-GB', {
                         day: '2-digit', month: '2-digit', year: 'numeric',
                         hour: '2-digit', minute: '2-digit'
                       }) : 'N/A'}
                     </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-gray-600 text-xs max-w-[200px] truncate" title={log.actor_email}>
+                    <td className="px-4 sm:px-5 py-3 text-slate-600 text-xs max-w-[200px] truncate" title={log.actor_email}>
                       {log.actor_email}
                     </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4">
-                      <span className={`inline-block px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-lg text-[9px] sm:text-[10px] font-black uppercase border ${actionColors[log.action_type] || 'bg-gray-100 text-gray-700 border-gray-200'}`}>
+                    <td className="px-4 sm:px-5 py-3">
+                      <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-medium uppercase border ${actionColors[log.action_type] || 'bg-slate-100 text-slate-700 border-slate-200'}`}>
                         {log.action_type}
                       </span>
                     </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4">
-                      <div className="text-[#0b1120] font-black">{log.employee_name || 'N/A'}</div>
-                      <div className="text-[10px] text-gray-400 font-mono">{log.employee_id}</div>
+                    <td className="px-4 sm:px-5 py-3">
+                      <div className="text-slate-900 font-medium">{log.employee_name || 'N/A'}</div>
+                      <div className="text-[10px] text-slate-400 font-mono">{log.employee_id}</div>
                     </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-gray-500 text-xs max-w-[300px]">
+                    <td className="px-4 sm:px-5 py-3 text-slate-500 text-xs max-w-[300px]">
                       {log.details}
                     </td>
                   </tr>
@@ -2559,28 +2586,28 @@ function BoxesManager({
   };
 
   return (
-    <div className="bg-white border-[3px] md:border-[4px] border-[#0b1120] rounded-[1.25rem] sm:rounded-[2.5rem] p-4 sm:p-8 md:p-12 shadow-[4px_4px_0px_#0b1120] md:shadow-[12px_12px_0px_#0b1120] space-y-6 sm:space-y-8">
-      <div className="border-b-2 sm:border-b-4 border-[#0b1120] pb-4 sm:pb-6">
-        <h2 className="text-2xl sm:text-3xl font-black text-[#0b1120] mb-1 sm:mb-2">Boxes</h2>
-        <p className="text-gray-500 font-bold text-xs sm:text-sm">
-          Add the exam boxes students choose after selecting a term, then assign courses into those boxes from course edit.
+    <div className="bg-white border border-slate-200 rounded-xl p-5 sm:p-8 shadow-sm space-y-6">
+      <div className="border-b border-slate-200 pb-4">
+        <h2 className="text-lg font-semibold text-slate-900 mb-1">Boxes</h2>
+        <p className="text-slate-500 text-sm">
+          Add exam boxes students choose after selecting a term, then assign courses into those boxes from course edit.
         </p>
       </div>
 
       {error && (
-        <div className="p-3.5 sm:p-4 bg-red-50 border-2 sm:border-[3px] border-red-500 text-red-700 rounded-xl sm:rounded-2xl font-bold flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
-          <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
+        <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{error}</span>
         </div>
       )}
       {success && (
-        <div className="p-3.5 sm:p-4 bg-green-50 border-2 sm:border-[3px] border-green-500 text-green-700 rounded-xl sm:rounded-2xl font-bold flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
-          <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
+        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg text-sm flex items-center gap-2">
+          <ShieldCheck className="w-4 h-4 shrink-0" />
           <span>{success}</span>
         </div>
       )}
 
-      <div className="flex flex-wrap gap-2 sm:gap-3 border-b-2 border-gray-100 pb-4 sm:pb-6">
+      <div className="flex flex-wrap gap-2 border-b border-slate-100 pb-4">
         {TERM_OPTIONS.map((term) => (
           <button
             key={term}
@@ -2590,10 +2617,10 @@ function BoxesManager({
               setError('');
               setSuccess('');
             }}
-            className={`px-4 sm:px-6 py-2 sm:py-3 rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm border-2 sm:border-[3px] border-[#0b1120] transition-all cursor-pointer ${
+            className={`px-3.5 py-2 rounded-lg text-sm font-medium border transition-colors cursor-pointer ${
               activeTerm === term
-                ? 'bg-[#0b1120] text-white shadow-[2px_2px_0px_#2563eb] sm:shadow-[4px_4px_0px_#2563eb]'
-                : 'bg-white text-[#0b1120] hover:bg-gray-50'
+                ? 'bg-slate-900 text-white border-slate-900'
+                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
             }`}
           >
             {term}
@@ -2601,30 +2628,30 @@ function BoxesManager({
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 sm:gap-8">
-        <div className="space-y-3 sm:space-y-4">
-          <h3 className="text-sm sm:text-lg font-black text-[#0b1120] uppercase tracking-wide">{activeTerm} Boxes</h3>
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6">
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold text-slate-800">{activeTerm} Boxes</h3>
           {boxesForActiveTerm.length === 0 ? (
-            <div className="p-6 sm:p-8 bg-gray-50 border-2 sm:border-[3px] border-dashed border-gray-200 rounded-xl sm:rounded-2xl text-center font-black text-gray-300 uppercase tracking-widest text-xs sm:text-sm">
+            <div className="p-8 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-center text-slate-400 text-sm">
               No boxes added
             </div>
           ) : (
-            <div className="space-y-2 sm:space-y-3">
+            <div className="space-y-2">
               {boxesForActiveTerm.map((box, index) => (
-                <div key={`${box}-${index}`} className="flex items-center gap-2 sm:gap-3">
+                <div key={`${box}-${index}`} className="flex items-center gap-2">
                   <input
                     type="text"
                     value={box}
                     onChange={(e) => updateBox(index, e.target.value)}
-                    className="flex-grow px-3.5 sm:px-5 py-2.5 sm:py-4 bg-gray-50 border-2 sm:border-[3px] border-[#0b1120] rounded-xl sm:rounded-2xl font-black text-xs sm:text-base text-[#0b1120] outline-none focus:bg-white"
+                    className="flex-grow px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 outline-none focus:bg-white focus:border-slate-400"
                   />
                   <button
                     type="button"
                     onClick={() => removeBox(box)}
-                    className="p-2.5 sm:p-4 text-red-500 bg-red-50 border-2 sm:border-[3px] border-red-500 rounded-xl sm:rounded-2xl hover:bg-red-500 hover:text-white transition-colors cursor-pointer"
+                    className="p-2.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                     title="Remove box"
                   >
-                    <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               ))}
@@ -2632,20 +2659,20 @@ function BoxesManager({
           )}
         </div>
 
-        <div className="bg-gray-50 border-2 sm:border-[3px] border-[#0b1120] rounded-xl sm:rounded-2xl p-4 sm:p-6 h-fit space-y-3 sm:space-y-4">
-          <h3 className="text-xs sm:text-sm font-black text-[#0b1120] uppercase tracking-wide">Add Box to {activeTerm}</h3>
-          <div className="space-y-2 sm:space-y-3">
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 h-fit space-y-3">
+          <h3 className="text-sm font-semibold text-slate-800">Add Box to {activeTerm}</h3>
+          <div className="space-y-2">
             <input
               type="text"
               value={newBoxName}
               placeholder="e.g. Quiz 1, End Term"
               onChange={(e) => setNewBoxName(e.target.value)}
-              className="w-full px-3.5 sm:px-4 py-2 sm:py-3 bg-white border-2 sm:border-[3px] border-[#0b1120] rounded-xl font-bold text-xs sm:text-sm text-[#0b1120] outline-none"
+              className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 outline-none focus:border-slate-400"
             />
             <button
               type="button"
               onClick={addBox}
-              className="w-full py-2.5 sm:py-3 bg-[#0b1120] text-white rounded-xl font-black text-xs sm:text-sm border-2 border-[#0b1120] shadow-[2px_2px_0px_#0b1120] sm:shadow-[3px_3px_0px_#0b1120] hover:translate-y-0.5 active:translate-y-1 transition-all cursor-pointer"
+              className="w-full py-2.5 bg-slate-900 text-white rounded-lg text-sm font-medium hover:bg-slate-800 transition-colors cursor-pointer"
             >
               + Add Box
             </button>
@@ -2654,7 +2681,7 @@ function BoxesManager({
             type="button"
             onClick={handleSaveBoxes}
             disabled={saving}
-            className="w-full py-3 sm:py-4 bg-[#10b981] text-[#0b1120] rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm border-2 sm:border-[3px] border-[#0b1120] shadow-[3px_3px_0px_#0b1120] sm:shadow-[4px_4px_0px_#0b1120] hover:translate-y-0.5 active:translate-y-1 transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {saving ? (
               <>
@@ -2726,56 +2753,56 @@ function SettingsManager() {
   const videoId = getYouTubeId(videoUrl);
 
   return (
-    <div className="space-y-6 sm:space-y-12">
+    <div className="space-y-4">
       {error && (
-        <div className="p-3.5 sm:p-4 bg-red-50 border-2 sm:border-[3px] border-red-500 text-red-700 rounded-xl sm:rounded-2xl font-bold flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
-          <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
+        <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{error}</span>
         </div>
       )}
       {success && (
-        <div className="p-3.5 sm:p-4 bg-green-50 border-2 sm:border-[3px] border-green-500 text-green-700 rounded-xl sm:rounded-2xl font-bold flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
-          <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
+        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg text-sm flex items-center gap-2">
+          <ShieldCheck className="w-4 h-4 shrink-0" />
           <span>{success}</span>
         </div>
       )}
 
       {loading ? (
-        <div className="flex items-center justify-center p-12 sm:p-20 text-gray-300 animate-pulse font-black text-sm sm:text-lg uppercase bg-white border-[3px] md:border-[4px] border-[#0b1120] rounded-[1.25rem] sm:rounded-[2.5rem] shadow-[4px_4px_0px_#0b1120] md:shadow-[12px_12px_0px_#0b1120]">
-          Loading System Settings...
+        <div className="flex items-center justify-center p-16 text-slate-400 text-sm font-medium bg-white border border-slate-200 rounded-xl shadow-sm">
+          Loading settings…
         </div>
       ) : (
-        <div className="bg-white border-[3px] md:border-[4px] border-[#0b1120] rounded-[1.25rem] sm:rounded-[2.5rem] p-4 sm:p-8 md:p-12 shadow-[4px_4px_0px_#0b1120] md:shadow-[12px_12px_0px_#0b1120] space-y-6 sm:space-y-8">
-          <div className="border-b-2 sm:border-b-4 border-[#0b1120] pb-4 sm:pb-6">
-            <h2 className="text-2xl sm:text-3xl font-black text-[#0b1120] mb-1 sm:mb-2">Homepage Video Modal</h2>
-            <p className="text-gray-500 font-bold text-xs sm:text-sm">
+        <div className="bg-white border border-slate-200 rounded-xl p-5 sm:p-8 shadow-sm space-y-6">
+          <div className="border-b border-slate-200 pb-4">
+            <h2 className="text-lg font-semibold text-slate-900 mb-1">Homepage Video Modal</h2>
+            <p className="text-slate-500 text-sm">
               Configure the YouTube video popup shown to homepage visitors.
             </p>
           </div>
 
-          <div className="space-y-4 sm:space-y-6">
-            <div className="space-y-1.5 sm:space-y-2">
-              <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-400 block">
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-slate-500 block">
                 YouTube Video URL
               </label>
               <input
                 type="text"
-                placeholder="e.g. https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+                placeholder="e.g. https://www.youtube.com/watch?v=…"
                 value={videoUrl}
                 onChange={(e) => setVideoUrl(e.target.value)}
-                className="w-full px-4 sm:px-6 py-2.5 sm:py-4 bg-gray-50 border-2 sm:border-[3px] border-[#0b1120] rounded-xl sm:rounded-2xl font-black text-sm sm:text-base text-[#0b1120] outline-none focus:bg-white transition-all placeholder:text-gray-300"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 outline-none focus:bg-white focus:border-slate-400 transition-colors placeholder:text-slate-400"
               />
-              <p className="text-[11px] sm:text-xs text-gray-400 font-bold">
-                Supports normal links, short links, or embed links. Clear the URL to disable the popup entirely.
+              <p className="text-xs text-slate-400">
+                Supports normal, short, or embed links. Clear the URL to disable the popup.
               </p>
             </div>
 
             {videoId ? (
-              <div className="space-y-1.5 sm:space-y-2">
-                <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-400 block">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-slate-500 block">
                   Player Preview
                 </label>
-                <div className="max-w-md aspect-video border-2 sm:border-[3px] border-[#0b1120] rounded-xl sm:rounded-2xl overflow-hidden bg-black shadow-[4px_4px_0px_#0b1120] sm:shadow-[6px_6px_0px_#0b1120]">
+                <div className="max-w-md aspect-video border border-slate-200 rounded-xl overflow-hidden bg-black">
                   <iframe
                     src={`https://www.youtube.com/embed/${videoId}`}
                     title="YouTube video player preview"
@@ -2787,25 +2814,25 @@ function SettingsManager() {
                 </div>
               </div>
             ) : videoUrl.trim() ? (
-              <div className="p-3.5 sm:p-4 bg-yellow-50 border-2 sm:border-[3px] border-yellow-500 text-yellow-700 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm">
-                ⚠️ Invalid YouTube URL. Preview not available. Please make sure the link is a valid YouTube video.
+              <div className="p-3 bg-amber-50 border border-amber-200 text-amber-700 rounded-lg text-sm">
+                Invalid YouTube URL. Preview not available.
               </div>
             ) : null}
 
-            <div className="pt-4 border-t-2 border-gray-100 flex justify-end">
+            <div className="pt-4 border-t border-slate-100 flex justify-end">
               <button
                 type="button"
                 onClick={handleSave}
                 disabled={saving}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3 sm:py-4 bg-blue-600 text-white rounded-xl sm:rounded-2xl font-black text-sm sm:text-base border-2 sm:border-[3px] border-[#0b1120] shadow-[3px_3px_0px_#0b1120] sm:shadow-[6px_6px_0px_#0b1120] hover:translate-y-0.5 active:translate-y-1 active:shadow-none transition-all cursor-pointer disabled:opacity-50"
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 text-white rounded-lg text-sm font-medium hover:bg-slate-800 transition-colors cursor-pointer disabled:opacity-50"
               >
                 {saving ? (
                   <>
-                    <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" /> Saving...
+                    <Loader2 className="w-4 h-4 animate-spin" /> Saving...
                   </>
                 ) : (
                   <>
-                    <Save className="w-4 h-4 sm:w-5 sm:h-5" /> Save Video Link
+                    <Save className="w-4 h-4" /> Save Video Link
                   </>
                 )}
               </button>

@@ -280,8 +280,13 @@ export default async function handler(req: any, res: any) {
         // Handle bundle-specific discount code
         if (bundle.bundleDiscountCode && codeToApply === String(bundle.bundleDiscountCode).trim().toUpperCase()) {
             const firstBundleCourse = bundleSubCourses[0] || {};
-            const bundleDiscountMode = (bundle.bundleDiscountMode || firstBundleCourse._bundleDiscountMode) === 'any' ? 'any' : 'all';
-            const rawMin = Number(bundle.bundleDiscountMinCourses || firstBundleCourse._bundleDiscountMinCourses || 3);
+            // Either source saying "any" wins — top-level DB default "all" used to mask nested saves
+            const bundleDiscountMode = (bundle.bundleDiscountMode === 'any' || firstBundleCourse._bundleDiscountMode === 'any') ? 'any' : 'all';
+            const rawMin = Number(
+              firstBundleCourse._bundleDiscountMode === 'any' && firstBundleCourse._bundleDiscountMinCourses != null
+                ? firstBundleCourse._bundleDiscountMinCourses
+                : (bundle.bundleDiscountMinCourses ?? firstBundleCourse._bundleDiscountMinCourses ?? 3)
+            );
             const normalizedMin = [1, 2, 3, 5].includes(rawMin) ? rawMin : 3;
             const requiredCount = bundleDiscountMode === 'any'
               ? Math.max(1, Math.min(normalizedMin, bundleSubCourses.length))

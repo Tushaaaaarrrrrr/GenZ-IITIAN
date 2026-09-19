@@ -148,95 +148,101 @@ export default function BlogsManager() {
   });
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
-        <div className="bg-white border-[4px] border-[#0b1120] rounded-[2rem] px-4 py-3 flex gap-3 items-center shadow-[6px_6px_0px_#0b1120] flex-grow">
-          <Search className="w-5 h-5 text-gray-400 shrink-0 ml-1" />
+      <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+        <div className="bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 flex gap-3 items-center flex-grow">
+          <Search className="w-4 h-4 text-slate-400 shrink-0" />
           <input
             type="text"
-            placeholder="Search blogs by title or category..."
+            placeholder="Search blogs by title or category…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full font-black outline-none text-base text-[#0b1120] placeholder:text-gray-300"
+            className="w-full outline-none text-sm text-slate-800 placeholder:text-slate-400"
           />
         </div>
         <button
           onClick={openCreate}
-          className="flex items-center justify-center gap-3 px-8 py-4 bg-[#10b981] text-[#0b1120] rounded-2xl font-black border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#0b1120] hover:translate-y-1 hover:shadow-none transition-all shrink-0"
+          className="inline-flex items-center justify-center gap-2 px-3.5 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors shrink-0"
         >
-          <Plus className="w-6 h-6" /> Create Blog
+          <Plus className="w-4 h-4" /> Create Blog
         </button>
       </div>
 
       {loading ? (
-        <div className="flex justify-center p-24 text-gray-300 animate-pulse font-black text-2xl uppercase tracking-widest">
-          Loading Blogs...
+        <div className="flex justify-center p-16 text-slate-400 text-sm font-medium">
+          Loading blogs…
         </div>
       ) : filtered.length === 0 ? (
-        <div className="bg-white border-[4px] border-dashed border-gray-200 rounded-[2rem] p-16 text-center">
-          <h3 className="text-2xl font-black text-[#0b1120] mb-2">No blogs yet</h3>
-          <p className="text-gray-500 font-bold">Click “Create Blog” to publish your first post. New posts use the same card UI as the public Blog page.</p>
+        <div className="bg-white border border-dashed border-slate-200 rounded-xl p-12 text-center">
+          <h3 className="text-sm font-semibold text-slate-800 mb-1">No blogs yet</h3>
+          <p className="text-slate-500 text-sm">Click Create Blog to publish your first post.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {filtered.map((blog) => (
-            <div
-              key={blog.id}
-              className="bg-white border-[4px] border-[#0b1120] rounded-[2rem] overflow-hidden shadow-[8px_8px_0px_#0b1120] flex flex-col"
-            >
-              <div className="relative aspect-video bg-[#0b1120] border-b-[4px] border-[#0b1120]">
-                {blog.image ? (
-                  <img src={blog.image} alt={blog.title} className="w-full h-full object-contain" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-500 font-black">No thumbnail</div>
-                )}
-                <span className="absolute top-3 left-3 px-3 py-1 bg-white text-[#0b1120] font-black text-xs rounded-full border-2 border-[#0b1120]">
-                  {blog.category}
-                </span>
-                <span
-                  className={`absolute top-3 right-3 px-3 py-1 font-black text-xs rounded-full border-2 border-[#0b1120] flex items-center gap-1 ${
-                    Number(blog.published) ? 'bg-[#10b981] text-white' : 'bg-amber-400 text-[#0b1120]'
-                  }`}
-                >
-                  {Number(blog.published) ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-                  {Number(blog.published) ? 'Published' : 'Draft'}
-                </span>
-              </div>
-              <div className="p-5 flex flex-col flex-grow">
-                <div className="flex items-center gap-3 text-xs font-bold text-gray-500 mb-2">
-                  <span>{blog.date}</span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-gray-300" />
-                  <span>{blog.read_time}</span>
-                </div>
-                <h3 className="text-lg font-black text-[#0b1120] leading-tight mb-4 line-clamp-2">{blog.title}</h3>
-                <div className="mt-auto flex items-center gap-3">
-                  <button
-                    onClick={() => openEdit(blog)}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#0b1120] text-white rounded-xl font-black text-sm border-[2px] border-[#0b1120] hover:bg-gray-800 transition-colors"
-                  >
-                    <Edit className="w-4 h-4" /> Edit
-                  </button>
-                  <a
-                    href={`/blog/${blog.slug || blog.id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center w-10 h-10 bg-white text-[#0b1120] rounded-xl border-[2px] border-[#0b1120] hover:bg-gray-50 transition-colors"
-                    title="View post"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </a>
-                  <button
-                    onClick={() => handleDelete(blog)}
-                    className="flex items-center justify-center w-10 h-10 bg-red-50 text-red-600 rounded-xl border-[2px] border-red-400 hover:bg-red-100 transition-colors"
-                    title="Delete post"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
+        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px] text-left text-sm">
+              <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th className="px-4 sm:px-5 py-3">Title</th>
+                  <th className="px-4 sm:px-5 py-3">Category</th>
+                  <th className="px-4 sm:px-5 py-3">Status</th>
+                  <th className="px-4 sm:px-5 py-3">Date</th>
+                  <th className="px-4 sm:px-5 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filtered.map((blog) => (
+                  <tr key={blog.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-4 sm:px-5 py-3.5">
+                      <div className="font-medium text-slate-900 line-clamp-1">{blog.title}</div>
+                      <div className="text-[11px] text-slate-400 font-mono mt-0.5">{blog.slug}</div>
+                    </td>
+                    <td className="px-4 sm:px-5 py-3.5">
+                      <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md text-[11px] font-medium">{blog.category}</span>
+                    </td>
+                    <td className="px-4 sm:px-5 py-3.5">
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium ${
+                        Number(blog.published) ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                      }`}>
+                        {Number(blog.published) ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                        {Number(blog.published) ? 'Published' : 'Draft'}
+                      </span>
+                    </td>
+                    <td className="px-4 sm:px-5 py-3.5 text-xs text-slate-500 whitespace-nowrap">
+                      {blog.date || '—'} · {blog.read_time || ''}
+                    </td>
+                    <td className="px-4 sm:px-5 py-3.5">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => openEdit(blog)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-900 text-white hover:bg-slate-800 transition-colors"
+                        >
+                          <Edit className="w-3.5 h-3.5" /> Edit
+                        </button>
+                        <a
+                          href={`/blog/${blog.slug || blog.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
+                          title="View post"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                        <button
+                          onClick={() => handleDelete(blog)}
+                          className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Delete post"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
