@@ -1,7 +1,7 @@
 import { useAuth } from '../context/AuthContext';
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import { supabase } from '../lib/supabase';
-import { LayoutDashboard, ShoppingBag, ScrollText, BookOpen, Plus, Search, Trash2, Edit, Save, X, Loader2, AlertCircle, User, Download, TrendingUp, TrendingDown, Users, ShieldCheck, CreditCard, RefreshCw, Gift, ArrowRight, Copy, Coins, Eye, Settings, ClipboardList, Boxes, ArrowLeft, Calendar } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, ScrollText, BookOpen, Plus, Search, Trash2, Edit, Save, X, Loader2, AlertCircle, User, Download, TrendingUp, TrendingDown, Users, ShieldCheck, CreditCard, RefreshCw, Gift, ArrowRight, Copy, Coins, Eye, Settings, ClipboardList, Boxes, ArrowLeft, Calendar, IndianRupee, UserX } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate, useLocation, NavLink } from 'react-router-dom';
 import { apiService } from '../lib/api';
@@ -61,9 +61,17 @@ export default function Manager() {
   const effectiveTab = validTabs.includes(activeTab) ? activeTab : 'users';
   const [data, setData] = useState<any>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'today' | 'yesterday' | 'lastweek' | '7days' | 'month' | 'not-purchased' | 'abandoned' | 'no-number' | 'all'>('all');
+  const [filter, setFilter] = useState<'today' | 'yesterday' | 'custom' | '7days' | 'month' | 'not-purchased' | 'abandoned' | 'no-number' | 'all'>('all');
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
   const [paymentSearch, setPaymentSearch] = useState('');
   const [userSearch, setUserSearch] = useState('');
+  const [paymentStats, setPaymentStats] = useState({
+    totalEarned: 0,
+    totalUsers: 0,
+    abandonedCount: 0,
+    potentialMoney: 0,
+  });
   const [editingCourse, setEditingCourse] = useState<any>(null);
   const [showAddCourse, setShowAddCourse] = useState(false);
   const [isBundle, setIsBundle] = useState(false);
@@ -277,11 +285,69 @@ export default function Manager() {
     setFilter('all');
     setPaymentSearch('');
     setUserSearch('');
+    setCustomFrom('');
+    setCustomTo('');
   }, [effectiveTab]);
 
   useEffect(() => {
     if (isManager) fetchData();
-  }, [effectiveTab, isManager, filter, paymentSearch, userSearch]);
+  }, [effectiveTab, isManager, filter, paymentSearch, userSearch, customFrom, customTo]);
+
+  useEffect(() => {
+    if (effectiveTab !== 'payments' || !isManager) return;
+
+    let cancelled = false;
+
+    const loadPaymentStats = async () => {
+      const statsFilter =
+        filter === 'today' || filter === 'yesterday' || filter === 'custom' || filter === 'all'
+          ? filter
+          : customFrom && customTo
+            ? 'custom'
+            : 'all';
+
+      if (statsFilter === 'custom' && (!customFrom || !customTo)) {
+        if (!cancelled) {
+          setPaymentStats({ totalEarned: 0, totalUsers: 0, abandonedCount: 0, potentialMoney: 0 });
+        }
+        return;
+      }
+
+      try {
+        const orders = await apiService.managerFetch(
+          'payments',
+          statsFilter,
+          '',
+          statsFilter === 'custom' ? customFrom : '',
+          statsFilter === 'custom' ? customTo : ''
+        );
+        if (cancelled || !Array.isArray(orders)) return;
+
+        const paid = orders.filter((o: any) => o.status === 'PAID');
+        const created = orders.filter((o: any) => o.status === 'CREATED');
+        const uniqueUsers = new Set(
+          orders.map((o: any) => (o.user_email || '').toLowerCase()).filter(Boolean)
+        );
+
+        setPaymentStats({
+          totalEarned: paid.reduce((sum: number, o: any) => sum + (Number(o.total_amount) || 0), 0),
+          totalUsers: uniqueUsers.size,
+          abandonedCount: created.length,
+          potentialMoney: created.reduce((sum: number, o: any) => sum + (Number(o.total_amount) || 0), 0),
+        });
+      } catch (err) {
+        console.error('Failed to load payment stats:', err);
+        if (!cancelled) {
+          setPaymentStats({ totalEarned: 0, totalUsers: 0, abandonedCount: 0, potentialMoney: 0 });
+        }
+      }
+    };
+
+    loadPaymentStats();
+    return () => {
+      cancelled = true;
+    };
+  }, [effectiveTab, isManager, filter, customFrom, customTo]);
 
   useEffect(() => {
     if ((showAddDiscount || editingDiscount) && discountOptions.length === 0) {
@@ -330,11 +396,21 @@ export default function Manager() {
         ]);
         setData(discountsData || []);
       } else if (effectiveTab === 'payments') {
-        const [paymentsData] = await Promise.all([
-          apiService.managerFetch('payments', filter, paymentSearch),
-          fetchDiscountOptions()
-        ]);
-        setData(paymentsData || []);
+        if (filter === 'custom' && (!customFrom || !customTo)) {
+          setData([]);
+        } else {
+          const [paymentsData] = await Promise.all([
+            apiService.managerFetch(
+              'payments',
+              filter,
+              paymentSearch,
+              filter === 'custom' ? customFrom : '',
+              filter === 'custom' ? customTo : ''
+            ),
+            fetchDiscountOptions()
+          ]);
+          setData(paymentsData || []);
+        }
       } else {
         const result = await apiService.managerFetch(effectiveTab, filter, effectiveTab === 'users' ? userSearch : paymentSearch);
         setData(result || []);
@@ -974,6 +1050,41 @@ export default function Manager() {
 
               {effectiveTab === 'payments' && (
                 <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+                    <div className="bg-white border-2 border-emerald-200 border-l-4 border-l-emerald-500 rounded-2xl p-4 shadow-sm">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[11px] font-bold uppercase tracking-wide text-emerald-700">Total Earned</span>
+                        <IndianRupee className="w-4 h-4 text-emerald-600" />
+                      </div>
+                      <div className="text-2xl font-bold text-slate-900">₹{paymentStats.totalEarned.toLocaleString('en-IN')}</div>
+                      <p className="mt-1 text-xs font-medium text-slate-500">Paid orders only</p>
+                    </div>
+                    <div className="bg-white border-2 border-blue-200 border-l-4 border-l-blue-500 rounded-2xl p-4 shadow-sm">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[11px] font-bold uppercase tracking-wide text-blue-700">Total Users</span>
+                        <Users className="w-4 h-4 text-blue-600" />
+                      </div>
+                      <div className="text-2xl font-bold text-slate-900">{paymentStats.totalUsers.toLocaleString('en-IN')}</div>
+                      <p className="mt-1 text-xs font-medium text-slate-500">Unique emails in range</p>
+                    </div>
+                    <div className="bg-white border-2 border-amber-200 border-l-4 border-l-amber-500 rounded-2xl p-4 shadow-sm">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[11px] font-bold uppercase tracking-wide text-amber-700">Abandoned</span>
+                        <UserX className="w-4 h-4 text-amber-600" />
+                      </div>
+                      <div className="text-2xl font-bold text-slate-900">{paymentStats.abandonedCount.toLocaleString('en-IN')}</div>
+                      <p className="mt-1 text-xs font-medium text-slate-500">Created checkouts</p>
+                    </div>
+                    <div className="bg-white border-2 border-rose-200 border-l-4 border-l-rose-500 rounded-2xl p-4 shadow-sm">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[11px] font-bold uppercase tracking-wide text-rose-700">Potential Money</span>
+                        <TrendingDown className="w-4 h-4 text-rose-600" />
+                      </div>
+                      <div className="text-2xl font-bold text-slate-900">₹{paymentStats.potentialMoney.toLocaleString('en-IN')}</div>
+                      <p className="mt-1 text-xs font-medium text-slate-500">From created (unpaid)</p>
+                    </div>
+                  </div>
+
                   <div className="flex flex-col lg:flex-row gap-3">
                     <div className="flex-grow bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 flex gap-3 items-center">
                       <Search className="w-4 h-4 text-slate-400 shrink-0" />
@@ -991,7 +1102,7 @@ export default function Manager() {
                         { id: 'all', label: 'All Time' },
                         { id: 'today', label: 'Today' },
                         { id: 'yesterday', label: 'Yesterday' },
-                        { id: 'lastweek', label: 'Last Week' },
+                        { id: 'custom', label: 'Custom' },
                         { id: 'not-purchased', label: 'Just Created' },
                         { id: 'abandoned', label: 'Abandoned' }
                       ].map((f) => (
@@ -1009,6 +1120,40 @@ export default function Manager() {
                       ))}
                     </div>
                   </div>
+
+                  {filter === 'custom' && (
+                    <div className="bg-white border border-slate-200 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-end gap-3 shadow-sm">
+                      <div className="flex items-center gap-2 text-slate-700 shrink-0 pb-1">
+                        <Calendar className="w-4 h-4" />
+                        <span className="text-xs font-bold uppercase tracking-wide">Date range</span>
+                      </div>
+                      <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <label className="block">
+                          <span className="block text-[11px] font-semibold text-slate-500 mb-1">From</span>
+                          <input
+                            type="date"
+                            value={customFrom}
+                            max={customTo || undefined}
+                            onChange={(e) => setCustomFrom(e.target.value)}
+                            className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm font-medium text-slate-900 outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="block text-[11px] font-semibold text-slate-500 mb-1">To</span>
+                          <input
+                            type="date"
+                            value={customTo}
+                            min={customFrom || undefined}
+                            onChange={(e) => setCustomTo(e.target.value)}
+                            className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm font-medium text-slate-900 outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400"
+                          />
+                        </label>
+                      </div>
+                      {(!customFrom || !customTo) && (
+                        <p className="text-xs font-medium text-amber-700 sm:pb-2">Select both dates to load stats & orders.</p>
+                      )}
+                    </div>
+                  )}
 
                   <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
                     <div className="overflow-x-auto w-full touch-pan-x">
@@ -1090,7 +1235,11 @@ export default function Manager() {
                             </tr>
                           ))}
                           {data.length === 0 && (
-                            <tr><td colSpan={6} className="px-5 py-16 text-center text-slate-400 text-sm">No payments found</td></tr>
+                            <tr><td colSpan={6} className="px-5 py-16 text-center text-slate-400 text-sm">
+                              {filter === 'custom' && (!customFrom || !customTo)
+                                ? 'Pick a from and to date to see payments'
+                                : 'No payments found'}
+                            </td></tr>
                           )}
                         </tbody>
                       </table>
@@ -2259,66 +2408,73 @@ export default function Manager() {
                   <span className="text-sm font-medium">Loading user data…</span>
                 </div>
               ) : (
-                <div className="space-y-8">
+                <div className="space-y-6">
                   {/* Stats */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
-                      <div className="text-[11px] font-medium text-blue-500 uppercase tracking-wide mb-1">Total Orders</div>
-                      <div className="text-2xl font-semibold text-blue-700">{selectedUserOrders.length}</div>
-                      <div className="mt-1 text-xs text-blue-800">
-                        Total Spent: ₹{selectedUserTotalSpent}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="p-5 bg-white rounded-2xl border-2 border-blue-200 shadow-sm border-l-4 border-l-blue-500">
+                      <div className="text-[11px] font-bold text-blue-600 uppercase tracking-wide mb-1">Total Orders</div>
+                      <div className="text-3xl font-bold text-slate-900">{selectedUserOrders.length}</div>
+                      <div className="mt-2 text-sm font-semibold text-slate-700">
+                        Total Spent: <span className="text-blue-700">₹{selectedUserTotalSpent}</span>
                       </div>
                     </div>
 
-                    <div className="p-4 bg-violet-50 rounded-xl border border-violet-100">
-                      <div className="text-[11px] font-medium text-violet-500 uppercase tracking-wide mb-1">Referrals Made</div>
-                      <div className="text-2xl font-semibold text-violet-700">{selectedUserReferrals.length}</div>
+                    <div className="p-5 bg-white rounded-2xl border-2 border-violet-200 shadow-sm border-l-4 border-l-violet-500">
+                      <div className="text-[11px] font-bold text-violet-600 uppercase tracking-wide mb-1">Referrals Made</div>
+                      <div className="text-3xl font-bold text-slate-900">{selectedUserReferrals.length}</div>
                       {selectedUserWallet && (
-                        <div className="mt-1 text-xs text-violet-800 font-mono">
-                          Code: {selectedUserWallet.referral_code}
+                        <div className="mt-2 text-sm font-semibold text-slate-700 font-mono">
+                          Code: <span className="text-violet-700">{selectedUserWallet.referral_code}</span>
                         </div>
                       )}
                     </div>
 
-                    <div className="p-4 bg-amber-50 rounded-xl border border-amber-100">
-                      <div className="text-[11px] font-medium text-amber-600 uppercase tracking-wide mb-1">Coin Wallet</div>
-                      <div className="text-2xl font-semibold text-amber-700 flex items-center gap-1.5">
-                        {selectedUserWallet?.wallet_balance || 0} <Coins className="w-4 h-4 text-amber-500" />
+                    <div className="p-5 bg-white rounded-2xl border-2 border-amber-200 shadow-sm border-l-4 border-l-amber-500">
+                      <div className="text-[11px] font-bold text-amber-700 uppercase tracking-wide mb-1">Coin Wallet</div>
+                      <div className="text-3xl font-bold text-slate-900 flex items-center gap-1.5">
+                        {selectedUserWallet?.wallet_balance || 0} <Coins className="w-5 h-5 text-amber-500" />
                       </div>
-                      <div className="mt-1 text-xs text-amber-800">
-                        Total Earned: {selectedUserReferrals.reduce((sum, r) => sum + (r.referrer_reward || 0), 0)}
+                      <div className="mt-2 text-sm font-semibold text-slate-700">
+                        Total Earned: <span className="text-amber-700">{selectedUserReferrals.reduce((sum, r) => sum + (r.referrer_reward || 0), 0)}</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Order history — full-width simple rows */}
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-                      <ShoppingBag className="w-4 h-4 text-slate-400" /> Order History
-                    </h4>
+                  {/* Order history */}
+                  <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div className="px-5 py-4 border-b border-slate-200 bg-slate-50">
+                      <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                        <ShoppingBag className="w-4 h-4 text-slate-600" /> Order History
+                      </h4>
+                    </div>
 
                     {selectedUserOrders.length === 0 ? (
-                      <p className="text-sm text-slate-400 py-6">No orders found.</p>
+                      <p className="text-sm text-slate-500 px-5 py-8">No orders found.</p>
                     ) : (
-                      <div className="divide-y divide-slate-100 border-t border-b border-slate-200">
-                        {selectedUserOrders.map(order => (
-                          <div key={order.order_id} className="py-3.5 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6">
-                            <div className="sm:w-28 shrink-0 text-xs text-slate-500 whitespace-nowrap">
+                      <div className="divide-y divide-slate-200">
+                        {selectedUserOrders.map((order, idx) => (
+                          <div
+                            key={order.order_id}
+                            className={`px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 ${idx % 2 === 1 ? 'bg-slate-50/80' : 'bg-white'}`}
+                          >
+                            <div className="sm:w-28 shrink-0 text-xs font-semibold text-slate-600 whitespace-nowrap">
                               {order.created_at ? new Date(order.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
                             </div>
-                            <div className="flex-1 min-w-0 flex flex-wrap gap-1">
+                            <div className="flex-1 min-w-0 flex flex-wrap gap-1.5">
                               {Array.isArray(order.course_ids) && order.course_ids.length > 0 ? order.course_ids.map((cid: string) => (
-                                <span key={cid} className="px-2 py-0.5 bg-slate-100 text-[11px] font-medium text-slate-600 rounded-md">
+                                <span key={cid} className="px-2.5 py-1 bg-white text-[11px] font-semibold text-slate-800 rounded-lg border border-slate-300 shadow-sm">
                                   {resolveCourseTitle(cid)}
                                 </span>
-                              )) : <span className="text-xs text-slate-400">—</span>}
+                              )) : <span className="text-xs font-medium text-slate-500">—</span>}
                             </div>
-                            <div className="sm:w-24 shrink-0 text-sm font-semibold text-slate-900 sm:text-right">
+                            <div className="sm:w-24 shrink-0 text-sm font-bold text-slate-900 sm:text-right">
                               ₹{order.total_amount}
                             </div>
                             <div className="sm:w-24 shrink-0 sm:text-right">
-                              <span className={`inline-block px-2 py-0.5 rounded-md text-[11px] font-medium uppercase ${
-                                order.status === 'PAID' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'
+                              <span className={`inline-block px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase border ${
+                                order.status === 'PAID'
+                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                  : 'bg-red-50 text-red-700 border-red-200'
                               }`}>
                                 {order.status}
                               </span>
@@ -2329,23 +2485,28 @@ export default function Manager() {
                     )}
                   </div>
 
-                  {/* Referrals — full width below orders */}
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-                      <Gift className="w-4 h-4 text-violet-400" /> Referral Activity
-                    </h4>
+                  {/* Referrals */}
+                  <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div className="px-5 py-4 border-b border-slate-200 bg-slate-50">
+                      <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                        <Gift className="w-4 h-4 text-violet-600" /> Referral Activity
+                      </h4>
+                    </div>
 
                     {selectedUserReferrals.length === 0 ? (
-                      <p className="text-sm text-slate-400 py-4">No referrals yet.</p>
+                      <p className="text-sm text-slate-500 px-5 py-8">No referrals yet.</p>
                     ) : (
-                      <div className="divide-y divide-slate-100 border-t border-b border-slate-200">
-                        {selectedUserReferrals.map(ref => (
-                          <div key={ref.id} className="py-3.5 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6">
-                            <div className="flex-1 min-w-0 text-sm text-slate-700 break-all">{ref.buyer_email}</div>
-                            <div className="sm:w-28 shrink-0 text-xs text-slate-500 whitespace-nowrap">
+                      <div className="divide-y divide-slate-200">
+                        {selectedUserReferrals.map((ref, idx) => (
+                          <div
+                            key={ref.id}
+                            className={`px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 ${idx % 2 === 1 ? 'bg-slate-50/80' : 'bg-white'}`}
+                          >
+                            <div className="flex-1 min-w-0 text-sm font-semibold text-slate-800 break-all">{ref.buyer_email}</div>
+                            <div className="sm:w-28 shrink-0 text-xs font-semibold text-slate-600 whitespace-nowrap">
                               {ref.created_at ? new Date(ref.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
                             </div>
-                            <div className="sm:w-24 shrink-0 text-sm font-semibold text-amber-600 sm:text-right">
+                            <div className="sm:w-24 shrink-0 text-sm font-bold text-amber-700 sm:text-right">
                               +{ref.referrer_reward}
                             </div>
                           </div>

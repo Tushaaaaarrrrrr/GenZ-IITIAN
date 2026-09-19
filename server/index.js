@@ -1631,7 +1631,7 @@ app.post('/api/log-payment-failure', async (req, res) => {
 
 app.get('/api/manager-fetch', authMiddleware, async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not initialized' });
-    const { tab, filter } = req.query;
+    const { tab, filter, from, to } = req.query;
 
     try {
         if (tab === 'employees') {
@@ -1709,7 +1709,8 @@ app.get('/api/manager-fetch', authMiddleware, async (req, res) => {
             }
             if (filter === 'abandoned') {
                 query = query.eq('status', 'CREATED');
-            } else if (filter === 'today') {
+            }
+            if (filter === 'today') {
                 const now = new Date();
                 const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
                 query = query.gte('created_at', startOfToday.toISOString());
@@ -1719,12 +1720,14 @@ app.get('/api/manager-fetch', authMiddleware, async (req, res) => {
                 const startOfYesterday = new Date(startOfToday);
                 startOfYesterday.setDate(startOfYesterday.getDate() - 1);
                 query = query.gte('created_at', startOfYesterday.toISOString()).lt('created_at', startOfToday.toISOString());
-            } else if (filter === 'lastweek') {
-                const now = new Date();
-                const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                const sevenDaysAgo = new Date(startOfToday);
-                sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-                query = query.gte('created_at', sevenDaysAgo.toISOString());
+            } else if (filter === 'custom' || (from && to)) {
+                if (from && to) {
+                    const start = new Date(`${from}T00:00:00`);
+                    const end = new Date(`${to}T23:59:59.999`);
+                    if (!Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime())) {
+                        query = query.gte('created_at', start.toISOString()).lte('created_at', end.toISOString());
+                    }
+                }
             }
             const { data, error } = await query;
             if (error) throw error;

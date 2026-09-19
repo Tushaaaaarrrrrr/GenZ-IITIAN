@@ -50,6 +50,8 @@ export default async function handler(req: any, res: any) {
 
   const tab = req.query.tab as string;
   const filter = (req.query.filter as string) || 'all';
+  const from = (req.query.from as string) || '';
+  const to = (req.query.to as string) || '';
   if (!tab) return res.status(400).json({ error: 'Tab is required' });
 
   const supabase_url = process.env.VITE_SUPABASE_URL;
@@ -168,29 +170,31 @@ export default async function handler(req: any, res: any) {
         query = query.or(searchTerms.join(','));
       }
 
-      if (filter !== 'all') {
-        if (filter === 'abandoned') {
-          query = query.eq('status', 'CREATED');
-        } else {
-          const now = new Date();
-          const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          
-          if (filter === 'today') {
-            query = query.gte('created_at', startOfToday.toISOString());
-          } else if (filter === 'yesterday') {
-            const startOfYesterday = new Date(startOfToday);
-            startOfYesterday.setDate(startOfYesterday.getDate() - 1);
-            query = query.gte('created_at', startOfYesterday.toISOString()).lt('created_at', startOfToday.toISOString());
-          } else if (filter === 'lastweek') {
-            const sevenDaysAgo = new Date(startOfToday);
-            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-            query = query.gte('created_at', sevenDaysAgo.toISOString());
-          } else if (filter === 'month') {
-            const thirtyDaysAgo = new Date(startOfToday);
-            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-            query = query.gte('created_at', thirtyDaysAgo.toISOString());
+      if (filter === 'abandoned') {
+        query = query.eq('status', 'CREATED');
+      }
+
+      const now = new Date();
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+      if (filter === 'today') {
+        query = query.gte('created_at', startOfToday.toISOString());
+      } else if (filter === 'yesterday') {
+        const startOfYesterday = new Date(startOfToday);
+        startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+        query = query.gte('created_at', startOfYesterday.toISOString()).lt('created_at', startOfToday.toISOString());
+      } else if (filter === 'custom' || (from && to)) {
+        if (from && to) {
+          const start = new Date(`${from}T00:00:00`);
+          const end = new Date(`${to}T23:59:59.999`);
+          if (!Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime())) {
+            query = query.gte('created_at', start.toISOString()).lte('created_at', end.toISOString());
           }
         }
+      } else if (filter === 'month') {
+        const thirtyDaysAgo = new Date(startOfToday);
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        query = query.gte('created_at', thirtyDaysAgo.toISOString());
       }
 
       const { data, error } = await query;

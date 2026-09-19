@@ -71,10 +71,13 @@ const attachProfilesToOrders = async (orders: any[]) => {
 
 export const apiService = {
   // 1. Manager Dashboard Data
-  managerFetch: async (tab: string, filter: string = 'all', search: string = '') => {
+  managerFetch: async (tab: string, filter: string = 'all', search: string = '', from: string = '', to: string = '') => {
     if (!isProduction) {
       const authHeaders = await getAuthHeaders();
-      const res = await fetch(`/api/manager-fetch?tab=${tab}&filter=${filter}&search=${encodeURIComponent(search)}`, {
+      const params = new URLSearchParams({ tab, filter, search });
+      if (from) params.set('from', from);
+      if (to) params.set('to', to);
+      const res = await fetch(`/api/manager-fetch?${params.toString()}`, {
         headers: { ...authHeaders },
       });
       if (!res.ok) {
@@ -196,29 +199,33 @@ export const apiService = {
             query = query.or(searchTerms.join(','));
           }
 
-          if (filter !== 'all') {
-            if (filter === 'abandoned') {
-              query = query.eq('status', 'CREATED');
-            } else {
-              const now = new Date();
-              const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-              
-              if (filter === 'today') {
-                query = query.gte('created_at', startOfToday.toISOString());
-              } else if (filter === 'yesterday') {
-                const startOfYesterday = new Date(startOfToday);
-                startOfYesterday.setDate(startOfYesterday.getDate() - 1);
-                query = query.gte('created_at', startOfYesterday.toISOString()).lt('created_at', startOfToday.toISOString());
-              } else if (filter === 'lastweek') {
-                const sevenDaysAgo = new Date(startOfToday);
-                sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-                query = query.gte('created_at', sevenDaysAgo.toISOString());
-              } else if (filter === 'month') {
-                const thirtyDaysAgo = new Date(startOfToday);
-                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-                query = query.gte('created_at', thirtyDaysAgo.toISOString());
+          if (filter === 'abandoned') {
+            query = query.eq('status', 'CREATED');
+          }
+
+          const now = new Date();
+          const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+          if (filter === 'today') {
+            query = query.gte('created_at', startOfToday.toISOString());
+          } else if (filter === 'yesterday') {
+            const startOfYesterday = new Date(startOfToday);
+            startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+            query = query.gte('created_at', startOfYesterday.toISOString()).lt('created_at', startOfToday.toISOString());
+          } else if (filter === 'custom' || (from && to)) {
+            const rangeFrom = from || '';
+            const rangeTo = to || '';
+            if (rangeFrom && rangeTo) {
+              const start = new Date(`${rangeFrom}T00:00:00`);
+              const end = new Date(`${rangeTo}T23:59:59.999`);
+              if (!Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime())) {
+                query = query.gte('created_at', start.toISOString()).lte('created_at', end.toISOString());
               }
             }
+          } else if (filter === 'month') {
+            const thirtyDaysAgo = new Date(startOfToday);
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            query = query.gte('created_at', thirtyDaysAgo.toISOString());
           }
 
           const { data, error } = await query;
