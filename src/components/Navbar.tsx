@@ -98,7 +98,7 @@ export default function Navbar() {
             <button 
               onClick={() => setConnectOpen(!connectOpen)}
               className={`flex items-center gap-1 relative font-bold text-[15px] transition-colors pb-1 ${
-                location.pathname.includes('/about') || location.pathname.includes('/contact') || location.pathname.includes('/newsletter')
+                location.pathname.includes('/about') || location.pathname.includes('/contact') || location.pathname.includes('/newsletter') || location.pathname.includes('/careers')
                   ? 'text-[#0b1120] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2.5px] after:bg-blue-600 after:rounded-full'
                   : 'text-gray-600 hover:text-[#0b1120]'
               }`}
@@ -111,10 +111,10 @@ export default function Navbar() {
                 <Link to="/contact" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">Contact Us</Link>
                 <a href="https://chat.whatsapp.com/Gi4D9yAd99p7q1XeVh0J1e" target="_blank" rel="noopener noreferrer" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">Community</a>
                 <Link to="/newsletter" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">Newsletter</Link>
+                <Link to="/careers" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">Careers</Link>
               </div>
             )}
           </div>
-          <NavLink to="/careers" className={navLinkClass}>Careers</NavLink>
         </div>
         <div className="flex items-center gap-3">
           {user ? (
@@ -215,14 +215,14 @@ export default function Navbar() {
             </button>
             {mobileConnectOpen && (
               <div className="flex flex-col gap-3 pl-4 pt-2 pb-2 border-l-2 border-gray-100 ml-2 mt-1">
-                <Link to="/about" className="text-sm font-bold text-gray-600 hover:text-blue-600">About Us</Link>
-                <Link to="/contact" className="text-sm font-bold text-gray-600 hover:text-blue-600">Contact Us</Link>
+                <Link to="/about" onClick={() => setMobileOpen(false)} className="text-sm font-bold text-gray-600 hover:text-blue-600">About Us</Link>
+                <Link to="/contact" onClick={() => setMobileOpen(false)} className="text-sm font-bold text-gray-600 hover:text-blue-600">Contact Us</Link>
                 <a href="https://chat.whatsapp.com/Gi4D9yAd99p7q1XeVh0J1e" target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-gray-600 hover:text-blue-600">Community</a>
-                <Link to="/newsletter" className="text-sm font-bold text-gray-600 hover:text-blue-600">Newsletter</Link>
+                <Link to="/newsletter" onClick={() => setMobileOpen(false)} className="text-sm font-bold text-gray-600 hover:text-blue-600">Newsletter</Link>
+                <Link to="/careers" onClick={() => setMobileOpen(false)} className="text-sm font-bold text-gray-600 hover:text-blue-600">Careers</Link>
               </div>
             )}
           </div>
-          <NavLink to="/careers" onClick={() => setMobileOpen(false)} className={mobileNavLinkClass}>Careers</NavLink>
           {user && (
             <NavLink to="/refer" onClick={() => setMobileOpen(false)} className={mobileNavLinkClass}>Refer & Earn</NavLink>
           )}

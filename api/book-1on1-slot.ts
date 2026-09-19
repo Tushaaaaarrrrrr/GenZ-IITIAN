@@ -22,7 +22,9 @@ export default async function handler(req: any, res: any) {
     return res.status(400).json({ error: 'Name and email are required' });
   }
 
-  console.log(`[1:1 Booking] Received slot request for ${name} (${email}) - ${slot_date} ${slot_time}`);
+  const normalizedEmail = String(email).trim().toLowerCase();
+
+  console.log(`[1:1 Booking] Received slot request for ${name} (${normalizedEmail}) - ${slot_date} ${slot_time}`);
 
   // 1. Supabase logging (if configured)
   const supabaseUrl = process.env.VITE_SUPABASE_URL;
@@ -31,10 +33,40 @@ export default async function handler(req: any, res: any) {
   if (supabaseUrl && serviceRole) {
     try {
       const supabase = createClient(supabaseUrl, serviceRole);
+
+      // Max 3 bookings per user per calendar day (IST)
+      const istDate = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Kolkata',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).format(new Date());
+      const dayStart = new Date(`${istDate}T00:00:00+05:30`).toISOString();
+      const dayEnd = new Date(`${istDate}T23:59:59.999+05:30`).toISOString();
+
+      const { count, error: countErr } = await supabase
+        .from('one_on_one_bookings')
+        .select('id', { count: 'exact', head: true })
+        .eq('email', normalizedEmail)
+        .gte('created_at', dayStart)
+        .lte('created_at', dayEnd)
+        .neq('status', 'CANCELLED');
+
+      if (!countErr && typeof count === 'number' && count >= 3) {
+        return res.status(429).json({
+          success: false,
+          code: 'DAILY_LIMIT',
+          error: 'You can book up to 3 sessions in one day. Please contact us for more help.',
+          contact: {
+            whatsapp: '+917970495447',
+            email: 'genziitian@gmail.com'
+          }
+        });
+      }
       
       // Attempt logging to activity_logs
       const { error: logErr } = await supabase.from('activity_logs').insert({
-        email,
+        email: normalizedEmail,
         action: '1ON1_SLOT_BOOKED',
         metadata: {
           name,
@@ -54,7 +86,7 @@ export default async function handler(req: any, res: any) {
       // Attempt to save to one_on_one_bookings table if it exists
       const { error: bookingErr } = await supabase.from('one_on_one_bookings').insert({
         name,
-        email,
+        email: normalizedEmail,
         phone,
         level,
         subjects,
@@ -81,7 +113,7 @@ export default async function handler(req: any, res: any) {
         body: JSON.stringify({
           type: 'one_on_one_booking',
           name,
-          email,
+          email: normalizedEmail,
           phone,
           level,
           subjects,
@@ -93,7 +125,7 @@ export default async function handler(req: any, res: any) {
           timestamp: new Date().toISOString()
         })
       });
-      console.log(`[1:1 Booking] Dispatched email webhook for ${email} with BCC genziitian@gmail.com`);
+      console.log(`[1:1 Booking] Dispatched email webhook for ${normalizedEmail} with BCC genziitian@gmail.com`);
     } catch (whErr: any) {
       console.error('[1:1 Booking] Webhook call error:', whErr.message);
     }
@@ -104,7 +136,7 @@ export default async function handler(req: any, res: any) {
     message: 'Slot successfully booked. Confirmation email dispatched.',
     details: {
       name,
-      email,
+      email: normalizedEmail,
       slot_date,
       slot_time,
       bcc

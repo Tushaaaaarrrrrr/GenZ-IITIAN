@@ -813,13 +813,63 @@ app.post('/api/book-1on1-slot', async (req, res) => {
             return res.status(400).json({ error: 'Mobile number must be a valid 10-digit number starting with 6, 7, 8, or 9' });
         }
 
+        const normalizedEmail = email.trim().toLowerCase();
+
+        // Max 3 bookings per user per calendar day (IST)
+        const istDate = new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'Asia/Kolkata',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        }).format(new Date());
+        const dayStart = new Date(`${istDate}T00:00:00+05:30`).toISOString();
+        const dayEnd = new Date(`${istDate}T23:59:59.999+05:30`).toISOString();
+
+        let dbCount = 0;
+        let memCount = 0;
+        if (supabase) {
+            const { count, error: countErr } = await supabase
+                .from('one_on_one_bookings')
+                .select('id', { count: 'exact', head: true })
+                .eq('email', normalizedEmail)
+                .gte('created_at', dayStart)
+                .lte('created_at', dayEnd)
+                .neq('status', 'CANCELLED');
+            if (!countErr && typeof count === 'number') {
+                dbCount = count;
+            }
+        }
+        for (const b of memory1on1Bookings.values()) {
+            if (
+                b.email === normalizedEmail &&
+                b.status !== 'CANCELLED' &&
+                b.created_at >= dayStart &&
+                b.created_at <= dayEnd
+            ) {
+                memCount += 1;
+            }
+        }
+        const todayCount = Math.max(dbCount, memCount);
+
+        if (todayCount >= 3) {
+            return res.status(429).json({
+                success: false,
+                code: 'DAILY_LIMIT',
+                error: 'You can book up to 3 sessions in one day. Please contact us for more help.',
+                contact: {
+                    whatsapp: '+917970495447',
+                    email: 'genziitian@gmail.com'
+                }
+            });
+        }
+
         console.log(`[1:1 Booking] Received slot booking: ${trimmedName} (${email}) on ${slot_date} at ${slot_time}`);
 
         const bookingId = crypto.randomUUID();
         const bookingRecord = {
             id: bookingId,
             name: trimmedName,
-            email: email.trim().toLowerCase(),
+            email: normalizedEmail,
             phone: validPhone,
             level: level || 'Foundation Level',
             subjects: Array.isArray(subjects) ? subjects.join(', ') : (subjects || 'General'),
