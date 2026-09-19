@@ -26,6 +26,7 @@ import Docs from './pages/Docs';
 import DocsDetail from './pages/DocsDetail';
 import GradedAssignment from './pages/GradedAssignment';
 import ToolsPage from './pages/tools/ToolsPage';
+import AccessPdf from './pages/AccessPdf';
 import Cart from './pages/Cart';
 import Profile from './pages/Profile';
 import Referral from './pages/Referral';
@@ -98,6 +99,7 @@ function AppContent() {
           <Route path="/tools/cgpa-calculator" element={<ToolsPage />} />
           <Route path="/tools/grade-predictor" element={<ToolsPage />} />
           <Route path="/tools/grading-scale" element={<ToolsPage />} />
+          <Route path="/access-pdf" element={<AccessPdf />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<BlogDetail />} />
           <Route path="/docs" element={<Docs />} />
