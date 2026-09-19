@@ -31,20 +31,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    let cancelled = false;
+
+    const init = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (cancelled) return;
       setUser(session?.user ?? null);
-      if (session?.user) syncProfile(session.user);
-      setLoading(false);
-    });
+      if (session?.user) {
+        await syncProfile(session.user);
+      }
+      if (!cancelled) setLoading(false);
+    };
+
+    init();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
-      if (session?.user) syncProfile(session.user);
-      else setProfile(null);
-      setLoading(false);
+      if (session?.user) {
+        // Keep loading true until profile is ready so manager role doesn't flicker
+        setLoading(true);
+        syncProfile(session.user).finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+      } else {
+        setProfile(null);
+        setLoading(false);
+      }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const syncProfile = async (u: User) => {

@@ -23,7 +23,7 @@ export default function ManagerFullPageSheet({
   onSave,
   saveLabel = 'Save changes',
   saving = false,
-  maxWidthClass = 'max-w-5xl',
+  maxWidthClass = 'max-w-7xl',
   children,
 }: ManagerFullPageSheetProps) {
   return (

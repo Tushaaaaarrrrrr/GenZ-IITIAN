@@ -234,8 +234,9 @@ export default function Manager() {
   };
 
   useEffect(() => {
-    if (!authLoading && !isManager) navigate('/');
-  }, [isManager, authLoading]);
+    if (authLoading) return;
+    if (!isManager) navigate('/');
+  }, [isManager, authLoading, navigate]);
 
   useEffect(() => {
     if (!isManager) return;
@@ -698,7 +699,21 @@ export default function Manager() {
   const paidSelectedUserOrders = selectedUserOrders.filter((order) => order.status === 'PAID');
   const selectedUserTotalSpent = paidSelectedUserOrders.reduce((sum, order) => sum + (Number(order.total_amount) || 0), 0);
 
-  if (authLoading || !isManager) return <div className="min-h-screen flex items-center justify-center font-black">ACCESS DENIED</div>;
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 text-sm font-medium">
+        Loading…
+      </div>
+    );
+  }
+
+  if (!isManager) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-700 text-sm font-semibold">
+        Access denied
+      </div>
+    );
+  }
 
   const availableBoxesForSelectedTerm = courseTerm === 'NONE' ? [] : (boxConfig[courseTerm] || []);
 
@@ -720,11 +735,18 @@ export default function Manager() {
       {/* Mobile Top Header & Navigation */}
       <div className="md:hidden bg-white border-b border-slate-200 sticky top-0 z-40">
         <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center text-sm font-semibold text-white">G</div>
-            <span className="font-semibold text-base text-slate-900 tracking-tight">Manager</span>
+          <div className="flex items-center gap-2.5 min-w-0">
+            <button
+              type="button"
+              onClick={() => navigate('/')}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100 shrink-0"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              Exit
+            </button>
+            <span className="font-semibold text-base text-slate-900 tracking-tight truncate">Manager</span>
           </div>
-          <span className="text-[10px] font-semibold uppercase tracking-wider bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md">
+          <span className="text-[10px] font-semibold uppercase tracking-wider bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md shrink-0">
             {effectiveTab}
           </span>
         </div>
@@ -751,7 +773,7 @@ export default function Manager() {
           <div className="w-9 h-9 bg-slate-900 rounded-lg flex items-center justify-center text-sm font-semibold text-white">G</div>
           <div className="min-w-0">
             <div className="font-semibold text-sm text-slate-900 truncate">GenZ Manager</div>
-            <div className="text-[11px] text-slate-400">Admin panel</div>
+            <div className="text-[11px] text-slate-400">Manager panel</div>
           </div>
         </div>
         
@@ -766,11 +788,20 @@ export default function Manager() {
                 ${isActive ? 'bg-slate-900 text-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'}
               `}
             >
-              <tab.icon className="w-4.5 h-4.5 shrink-0" />
+              <tab.icon className="w-4 h-4 shrink-0" />
               <span className="capitalize">{tab.id}</span>
             </NavLink>
           ))}
         </nav>
+
+        <button
+          type="button"
+          onClick={() => navigate('/')}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors border border-slate-200"
+        >
+          <ArrowLeft className="w-4 h-4 shrink-0" />
+          Back to site
+        </button>
       </aside>
 
       {/* Main Content */}
@@ -779,7 +810,7 @@ export default function Manager() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div>
               <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 capitalize tracking-tight">{effectiveTab}</h1>
-              <p className="text-sm text-slate-500 mt-0.5">Platform administration</p>
+              <p className="text-sm text-slate-500 mt-0.5">Manager panel</p>
             </div>
             <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
               {effectiveTab === 'users' && (
@@ -2030,7 +2061,7 @@ export default function Manager() {
         onClose={() => { setShowAddDiscount(false); setEditingDiscount(null); }}
         onSave={() => document.getElementById('discount-editor-save')?.click()}
         saveLabel="Save coupon"
-        maxWidthClass="max-w-3xl"
+        maxWidthClass="max-w-6xl"
       >
               <div className="space-y-6 bg-white border border-slate-200 rounded-2xl p-5 sm:p-7 shadow-sm">
                 <div>
@@ -2210,133 +2241,106 @@ export default function Manager() {
         onClose={() => setSelectedUser(null)}
         maxWidthClass="max-w-6xl"
       >
-
               {isLoadingUserDetails ? (
-                <div className="flex flex-col items-center justify-center py-24 text-gray-300 gap-4">
-                  <Loader2 className="w-12 h-12 animate-spin" />
-                  <span className="font-black text-xl uppercase tracking-widest">Loading User Data...</span>
+                <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
+                  <Loader2 className="w-8 h-8 animate-spin" />
+                  <span className="text-sm font-medium">Loading user data…</span>
                 </div>
               ) : (
                 <div className="space-y-8">
-                  
-                  {/* Stats Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="p-6 bg-blue-50 rounded-[2rem] border-[3px] border-blue-200">
-                      <div className="text-xs font-black text-blue-400 uppercase tracking-widest mb-2">Total Orders</div>
-                      <div className="text-4xl font-black text-blue-600">{selectedUserOrders.length}</div>
-                      <div className="mt-2 text-sm font-bold text-blue-800">
+                  {/* Stats */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
+                      <div className="text-[11px] font-medium text-blue-500 uppercase tracking-wide mb-1">Total Orders</div>
+                      <div className="text-2xl font-semibold text-blue-700">{selectedUserOrders.length}</div>
+                      <div className="mt-1 text-xs text-blue-800">
                         Total Spent: ₹{selectedUserTotalSpent}
                       </div>
                     </div>
 
-                    <div className="p-6 bg-purple-50 rounded-[2rem] border-[3px] border-purple-200">
-                      <div className="text-xs font-black text-purple-400 uppercase tracking-widest mb-2">Referrals Made</div>
-                      <div className="text-4xl font-black text-purple-600">{selectedUserReferrals.length}</div>
+                    <div className="p-4 bg-violet-50 rounded-xl border border-violet-100">
+                      <div className="text-[11px] font-medium text-violet-500 uppercase tracking-wide mb-1">Referrals Made</div>
+                      <div className="text-2xl font-semibold text-violet-700">{selectedUserReferrals.length}</div>
                       {selectedUserWallet && (
-                        <div className="mt-2 text-sm font-bold text-purple-800 font-mono">
+                        <div className="mt-1 text-xs text-violet-800 font-mono">
                           Code: {selectedUserWallet.referral_code}
                         </div>
                       )}
                     </div>
 
-                    <div className="p-6 bg-amber-50 rounded-[2rem] border-[3px] border-amber-200">
-                      <div className="text-xs font-black text-amber-400 uppercase tracking-widest mb-2">Coin Wallet</div>
-                      <div className="text-4xl font-black text-amber-600 flex items-center gap-2">
-                        {selectedUserWallet?.wallet_balance || 0} <Coins className="w-6 h-6 text-amber-500" />
+                    <div className="p-4 bg-amber-50 rounded-xl border border-amber-100">
+                      <div className="text-[11px] font-medium text-amber-600 uppercase tracking-wide mb-1">Coin Wallet</div>
+                      <div className="text-2xl font-semibold text-amber-700 flex items-center gap-1.5">
+                        {selectedUserWallet?.wallet_balance || 0} <Coins className="w-4 h-4 text-amber-500" />
                       </div>
-                      <div className="mt-2 text-sm font-bold text-amber-800">
+                      <div className="mt-1 text-xs text-amber-800">
                         Total Earned: {selectedUserReferrals.reduce((sum, r) => sum + (r.referrer_reward || 0), 0)}
                       </div>
                     </div>
                   </div>
 
-                  {/* Tables Grid */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {/* Orders */}
-                    <div className="space-y-4">
-                      <h4 className="font-black text-xl flex items-center gap-2">
-                        <ShoppingBag className="w-5 h-5 text-gray-400" /> Order History
-                      </h4>
-                      <div className="bg-white border-[3px] border-gray-200 rounded-3xl overflow-hidden">
-                        <div className="max-h-80 overflow-auto">
-                          <table className="w-full min-w-[560px] text-left text-sm">
-                            <thead className="bg-gray-50 sticky top-0 font-black text-xs uppercase text-gray-400">
-                              <tr>
-                                <th className="p-4">Date</th>
-                                <th className="p-4">Courses</th>
-                                <th className="p-4">Amount</th>
-                                <th className="p-4">Status</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y-2 divide-gray-100 font-bold">
-                              {selectedUserOrders.length === 0 ? (
-                                <tr><td colSpan={4} className="p-8 text-center text-gray-400">No orders found.</td></tr>
-                              ) : (
-                                selectedUserOrders.map(order => (
-                                  <tr key={order.order_id}>
-                                    <td className="p-4 text-gray-500 whitespace-nowrap">{new Date(order.created_at).toLocaleDateString()}</td>
-                                    <td className="p-4">
-                                      <div className="flex flex-wrap gap-1">
-                                        {Array.isArray(order.course_ids) ? order.course_ids.map((cid: string) => {
-                                          return (
-                                            <span key={cid} className="px-2 py-0.5 bg-gray-50 text-[10px] font-black text-gray-500 border border-gray-100 rounded">
-                                              {resolveCourseTitle(cid)}
-                                            </span>
-                                          );
-                                        }) : <span className="text-gray-400">-</span>}
-                                      </div>
-                                    </td>
-                                    <td className="p-4 font-black">₹{order.total_amount}</td>
-                                    <td className="p-4">
-                                      <span className={`px-2 py-1 rounded-md text-[10px] uppercase font-black ${order.status === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                        {order.status}
-                                      </span>
-                                    </td>
-                                  </tr>
-                                ))
-                              )}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    </div>
+                  {/* Order history — full-width simple rows */}
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+                      <ShoppingBag className="w-4 h-4 text-slate-400" /> Order History
+                    </h4>
 
-                    {/* Referrals */}
-                    <div className="space-y-4">
-                      <h4 className="font-black text-xl flex items-center gap-2">
-                        <Gift className="w-5 h-5 text-purple-400" /> Referral Activity
-                      </h4>
-                      <div className="bg-white border-[3px] border-purple-200 rounded-3xl overflow-hidden">
-                        <div className="max-h-80 overflow-auto">
-                          <table className="w-full min-w-[520px] text-left text-sm">
-                            <thead className="bg-purple-50 sticky top-0 font-black text-xs uppercase text-purple-400">
-                              <tr>
-                                <th className="p-4">Referred User</th>
-                                <th className="p-4">Date</th>
-                                <th className="p-4">Reward</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y-2 divide-purple-50 font-bold">
-                              {selectedUserReferrals.length === 0 ? (
-                                <tr><td colSpan={3} className="p-8 text-center text-purple-300">No referrals yet.</td></tr>
-                              ) : (
-                                selectedUserReferrals.map(ref => (
-                                  <tr key={ref.id}>
-                                    <td className="p-4 text-gray-600 truncate max-w-[150px]" title={ref.buyer_email}>
-                                      {ref.buyer_email}
-                                    </td>
-                                    <td className="p-4 text-gray-500">{new Date(ref.created_at).toLocaleDateString()}</td>
-                                    <td className="p-4 font-black text-amber-500">+{ref.referrer_reward}</td>
-                                  </tr>
-                                ))
-                              )}
-                            </tbody>
-                          </table>
-                        </div>
+                    {selectedUserOrders.length === 0 ? (
+                      <p className="text-sm text-slate-400 py-6">No orders found.</p>
+                    ) : (
+                      <div className="divide-y divide-slate-100 border-t border-b border-slate-200">
+                        {selectedUserOrders.map(order => (
+                          <div key={order.order_id} className="py-3.5 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6">
+                            <div className="sm:w-28 shrink-0 text-xs text-slate-500 whitespace-nowrap">
+                              {order.created_at ? new Date(order.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                            </div>
+                            <div className="flex-1 min-w-0 flex flex-wrap gap-1">
+                              {Array.isArray(order.course_ids) && order.course_ids.length > 0 ? order.course_ids.map((cid: string) => (
+                                <span key={cid} className="px-2 py-0.5 bg-slate-100 text-[11px] font-medium text-slate-600 rounded-md">
+                                  {resolveCourseTitle(cid)}
+                                </span>
+                              )) : <span className="text-xs text-slate-400">—</span>}
+                            </div>
+                            <div className="sm:w-24 shrink-0 text-sm font-semibold text-slate-900 sm:text-right">
+                              ₹{order.total_amount}
+                            </div>
+                            <div className="sm:w-24 shrink-0 sm:text-right">
+                              <span className={`inline-block px-2 py-0.5 rounded-md text-[11px] font-medium uppercase ${
+                                order.status === 'PAID' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'
+                              }`}>
+                                {order.status}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    </div>
+                    )}
                   </div>
 
+                  {/* Referrals — full width below orders */}
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+                      <Gift className="w-4 h-4 text-violet-400" /> Referral Activity
+                    </h4>
+
+                    {selectedUserReferrals.length === 0 ? (
+                      <p className="text-sm text-slate-400 py-4">No referrals yet.</p>
+                    ) : (
+                      <div className="divide-y divide-slate-100 border-t border-b border-slate-200">
+                        {selectedUserReferrals.map(ref => (
+                          <div key={ref.id} className="py-3.5 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6">
+                            <div className="flex-1 min-w-0 text-sm text-slate-700 break-all">{ref.buyer_email}</div>
+                            <div className="sm:w-28 shrink-0 text-xs text-slate-500 whitespace-nowrap">
+                              {ref.created_at ? new Date(ref.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                            </div>
+                            <div className="sm:w-24 shrink-0 text-sm font-semibold text-amber-600 sm:text-right">
+                              +{ref.referrer_reward}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
       </ManagerFullPageSheet>

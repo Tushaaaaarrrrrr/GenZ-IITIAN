@@ -464,13 +464,13 @@ export default function EmployeesManager() {
     const q = searchQuery.toLowerCase().trim();
     if (!q) return true;
     return (
-      emp.full_name.toLowerCase().includes(q) ||
-      emp.employee_id.toLowerCase().includes(q) ||
-      emp.department.toLowerCase().includes(q) ||
-      emp.role.toLowerCase().includes(q) ||
+      (emp.full_name || '').toLowerCase().includes(q) ||
+      (emp.employee_id || '').toLowerCase().includes(q) ||
+      (emp.department || '').toLowerCase().includes(q) ||
+      (emp.role || '').toLowerCase().includes(q) ||
       (emp.email && emp.email.toLowerCase().includes(q)) ||
       (emp.phone && emp.phone.includes(q)) ||
-      emp.status.toLowerCase().includes(q)
+      (emp.status || '').toLowerCase().includes(q)
     );
   });
 
@@ -574,15 +574,15 @@ export default function EmployeesManager() {
                     <td className="px-6 py-4.5 text-gray-600 font-mono text-xs">{emp.tenure}</td>
                     <td className="px-6 py-4.5">
                       <span className={`inline-block px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
-                        emp.status.toUpperCase() === 'ACTIVE' 
+                        (emp.status || '').toUpperCase() === 'ACTIVE' 
                           ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
-                          : emp.status.toUpperCase() === 'RESIGNED'
+                          : (emp.status || '').toUpperCase() === 'RESIGNED'
                           ? 'bg-orange-50 text-orange-700 border border-orange-100'
-                          : emp.status.toUpperCase() === 'REMOVED'
+                          : (emp.status || '').toUpperCase() === 'REMOVED'
                           ? 'bg-red-50 text-red-700 border border-red-100'
                           : 'bg-gray-100 text-gray-700 border border-gray-200'
                       }`}>
-                        {emp.status}
+                        {emp.status || 'UNKNOWN'}
                       </span>
                     </td>
                     <td className="px-6 py-4.5 text-right">
