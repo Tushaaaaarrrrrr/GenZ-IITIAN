@@ -6,6 +6,7 @@ import { saveReferralCookie } from './lib/referral';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import MobileNav from './components/mobile/MobileNav';
+import ErrorBoundary from './components/ErrorBoundary';
 import Home from './pages/Home';
 import Blog from './pages/Blog';
 import BlogDetail from './pages/BlogDetail';
@@ -148,7 +149,9 @@ export default function App() {
         <WelcomeModal />
         <Router>
           <ReferralCapture />
-          <AppContent />
+          <ErrorBoundary>
+            <AppContent />
+          </ErrorBoundary>
         </Router>
       </CartProvider>
     </AuthProvider>

@@ -156,7 +156,7 @@ export default function EmployeesManager() {
 
   const getNextEmployeeId = (role: string, name: string) => {
     const initial = name ? name.trim().charAt(0).toUpperCase() : 'X';
-    const roleLower = role.toLowerCase();
+    const roleLower = (role || '').toLowerCase();
     
     let prefix = 'GENZ-EMP';
     let suffix = '';
@@ -172,7 +172,7 @@ export default function EmployeesManager() {
     let maxNum = -1;
     const pattern = new RegExp(`^${prefix}-(\\d{4})`, 'i');
     
-    employees.forEach(emp => {
+    (Array.isArray(employees) ? employees : []).forEach(emp => {
       if (!emp?.employee_id) return;
       const match = emp.employee_id.match(pattern);
       if (match) {
@@ -625,167 +625,169 @@ export default function EmployeesManager() {
         saving={saving}
         maxWidthClass="max-w-4xl"
       >
-            <form id="employee-editor-form" onSubmit={handleSave} className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-7 shadow-sm space-y-6">
-              {errorMsg && (
-                <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-800 font-semibold flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-red-500" />
-                  <span>{errorMsg}</span>
-                </div>
-              )}
+        {editingEmployee && (
+          <form id="employee-editor-form" onSubmit={handleSave} className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-7 shadow-sm space-y-6">
+            {errorMsg && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-800 font-semibold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-red-500" />
+                <span>{errorMsg}</span>
+              </div>
+            )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
-                {/* Left Column */}
-                <div className="space-y-5">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-                      Full name *
-                    </label>
-                    <input 
-                      required 
-                      type="text" 
-                      value={editingEmployee?.full_name || ''}
-                      onChange={(e) => editingEmployee && setEditingEmployee({ ...editingEmployee, full_name: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-slate-400 outline-none font-medium text-sm transition-all text-slate-900 placeholder-slate-400" 
-                      placeholder="e.g. Raj Singh"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-                      Email address
-                    </label>
-                    <input 
-                      type="email" 
-                      value={editingEmployee?.email || ''}
-                      onChange={(e) => editingEmployee && setEditingEmployee({ ...editingEmployee, email: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-slate-400 outline-none font-medium text-sm transition-all text-slate-900 placeholder-slate-400" 
-                      placeholder="e.g. raj@genziitian.in"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-                      Department *
-                    </label>
-                    <input 
-                      required 
-                      type="text" 
-                      value={editingEmployee?.department || ''}
-                      onChange={(e) => editingEmployee && setEditingEmployee({ ...editingEmployee, department: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-slate-400 outline-none font-medium text-sm transition-all text-slate-900 placeholder-slate-400" 
-                      placeholder="e.g. Programming"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-                      Current status *
-                    </label>
-                    <select 
-                      value={(editingEmployee?.status || 'ACTIVE').toUpperCase()}
-                      onChange={(e) => editingEmployee && setEditingEmployee({ ...editingEmployee, status: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-slate-400 outline-none font-medium text-sm transition-all text-slate-900 bg-white"
-                    >
-                      {AVAILABLE_STATUSES.map(status => (
-                        <option key={status} value={status}>
-                          {status}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
+              {/* Left Column */}
+              <div className="space-y-5">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                    Full name *
+                  </label>
+                  <input 
+                    required 
+                    type="text" 
+                    value={editingEmployee.full_name || ''}
+                    onChange={(e) => setEditingEmployee({ ...editingEmployee, full_name: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-slate-400 outline-none font-medium text-sm transition-all text-slate-900 placeholder-slate-400" 
+                    placeholder="e.g. Raj Singh"
+                  />
                 </div>
 
-                {/* Right Column */}
-                <div className="space-y-5">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-                      Employee ID
-                    </label>
-                    <input 
-                      disabled 
-                      type="text" 
-                      value={editingEmployee ? (editingEmployee.id ? editingEmployee.employee_id : getNextEmployeeId(editingEmployee.role, editingEmployee.full_name)) : ''}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 outline-none font-mono font-semibold text-sm text-slate-400" 
-                    />
-                  </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                    Email address
+                  </label>
+                  <input 
+                    type="email" 
+                    value={editingEmployee.email || ''}
+                    onChange={(e) => setEditingEmployee({ ...editingEmployee, email: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-slate-400 outline-none font-medium text-sm transition-all text-slate-900 placeholder-slate-400" 
+                    placeholder="e.g. raj@genziitian.in"
+                  />
+                </div>
 
-                  <div>
-                    <label className="block text-xs font-black text-gray-500 uppercase tracking-wider mb-2">
-                      PHONE NUMBER
-                    </label>
-                    <input 
-                      type="text" 
-                      value={editingEmployee.phone || ''}
-                      onChange={(e) => setEditingEmployee({ ...editingEmployee, phone: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 outline-none font-semibold text-sm transition-all text-gray-800 placeholder-gray-400" 
-                      placeholder="e.g. +91 98765 43210"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                    Department *
+                  </label>
+                  <input 
+                    required 
+                    type="text" 
+                    value={editingEmployee.department || ''}
+                    onChange={(e) => setEditingEmployee({ ...editingEmployee, department: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-slate-400 outline-none font-medium text-sm transition-all text-slate-900 placeholder-slate-400" 
+                    placeholder="e.g. Programming"
+                  />
+                </div>
 
-                  <div>
-                    <label className="block text-xs font-black text-gray-500 uppercase tracking-wider mb-2">
-                      ROLE *
-                    </label>
-                    <select 
-                      value={editingEmployee.role}
-                      onChange={(e) => setEditingEmployee({ ...editingEmployee, role: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 outline-none font-semibold text-sm transition-all text-gray-800 bg-white"
-                    >
-                      {AVAILABLE_ROLES.map(role => (
-                        <option key={role} value={role}>
-                          {role}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Tenure Selection with calendar dates */}
-                  <div className="bg-gray-50/50 border border-gray-200 rounded-2xl p-4 space-y-4">
-                    <div className="text-xs font-black text-gray-500 uppercase tracking-wider">TENURE / DURATION</div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-[11px] font-bold text-gray-500 mb-1.5">START DATE *</label>
-                        <input 
-                          required
-                          type="date"
-                          value={startD}
-                          onChange={(e) => setStartD(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 focus:border-blue-500 outline-none font-semibold text-xs transition-all text-gray-800 bg-white"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-bold text-gray-500 mb-1.5">END DATE</label>
-                        <input 
-                          disabled={isPresent}
-                          required={!isPresent}
-                          type="date"
-                          value={endD}
-                          onChange={(e) => setEndD(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 focus:border-blue-500 outline-none font-semibold text-xs transition-all text-gray-800 bg-white disabled:bg-gray-100 disabled:text-gray-400"
-                        />
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 pt-1">
-                      <input 
-                        type="checkbox"
-                        id="is-present-checkbox"
-                        checked={isPresent}
-                        onChange={(e) => {
-                          setIsPresent(e.target.checked);
-                          if (e.target.checked) setEndD('');
-                        }}
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <label htmlFor="is-present-checkbox" className="text-xs text-gray-700 font-bold select-none cursor-pointer">
-                        Currently working here (Present)
-                      </label>
-                    </div>
-                  </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                    Current status *
+                  </label>
+                  <select 
+                    value={(editingEmployee.status || 'ACTIVE').toUpperCase()}
+                    onChange={(e) => setEditingEmployee({ ...editingEmployee, status: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-slate-400 outline-none font-medium text-sm transition-all text-slate-900 bg-white"
+                  >
+                    {AVAILABLE_STATUSES.map(status => (
+                      <option key={status} value={status}>
+                        {status}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
-              {/* Action buttons moved to full-page footer */}
-            </form>
+              {/* Right Column */}
+              <div className="space-y-5">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                    Employee ID
+                  </label>
+                  <input 
+                    disabled 
+                    type="text" 
+                    value={editingEmployee.id ? editingEmployee.employee_id : getNextEmployeeId(editingEmployee.role, editingEmployee.full_name)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 outline-none font-mono font-semibold text-sm text-slate-400" 
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                    Phone number
+                  </label>
+                  <input 
+                    type="text" 
+                    value={editingEmployee.phone || ''}
+                    onChange={(e) => setEditingEmployee({ ...editingEmployee, phone: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-slate-400 outline-none font-medium text-sm transition-all text-slate-900 placeholder-slate-400" 
+                    placeholder="e.g. +91 98765 43210"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                    Role *
+                  </label>
+                  <select 
+                    value={editingEmployee.role || 'Educator'}
+                    onChange={(e) => setEditingEmployee({ ...editingEmployee, role: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-slate-400 outline-none font-medium text-sm transition-all text-slate-900 bg-white"
+                  >
+                    {AVAILABLE_ROLES.map(role => (
+                      <option key={role} value={role}>
+                        {role}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Tenure Selection with calendar dates */}
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
+                  <div className="text-xs font-semibold text-slate-600">Tenure / duration</div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-500 mb-1.5">Start date *</label>
+                      <input 
+                        required
+                        type="date"
+                        value={startD}
+                        onChange={(e) => setStartD(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-slate-400 outline-none font-medium text-xs transition-all text-slate-900 bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-500 mb-1.5">End date</label>
+                      <input 
+                        disabled={isPresent}
+                        required={!isPresent}
+                        type="date"
+                        value={endD}
+                        onChange={(e) => setEndD(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-slate-400 outline-none font-medium text-xs transition-all text-slate-900 bg-white disabled:bg-slate-100 disabled:text-slate-400"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 pt-1">
+                    <input 
+                      type="checkbox"
+                      id="is-present-checkbox"
+                      checked={isPresent}
+                      onChange={(e) => {
+                        setIsPresent(e.target.checked);
+                        if (e.target.checked) setEndD('');
+                      }}
+                      className="w-4 h-4 text-slate-900 border-slate-300 rounded focus:ring-slate-500"
+                    />
+                    <label htmlFor="is-present-checkbox" className="text-xs text-slate-700 font-medium select-none cursor-pointer">
+                      Currently working here (Present)
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action buttons moved to full-page footer */}
+          </form>
+        )}
       </ManagerFullPageSheet>
 
       {/* Delete Confirmation Modal */}

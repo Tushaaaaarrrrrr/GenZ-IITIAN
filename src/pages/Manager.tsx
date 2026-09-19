@@ -8,6 +8,7 @@ import { apiService } from '../lib/api';
 import BlogsManager from '../components/manager/BlogsManager';
 import EmployeesManager from '../components/manager/EmployeesManager';
 import ManagerFullPageSheet from '../components/manager/ManagerFullPageSheet';
+import ErrorBoundary from '../components/ErrorBoundary';
 import { getYouTubeId } from '../utils/youtube';
 import { resolveBundleDiscountConfig } from '../utils/bundleDiscount';
 
@@ -49,8 +50,10 @@ export default function Manager() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Derive active tab from URL path
-  const activeTab = (location.pathname.split('/').pop() || 'users') as Tab;
+  // Derive active tab from URL path (handles trailing slashes cleanly)
+  const pathSegments = location.pathname.split('/').filter(Boolean);
+  const rawTab = pathSegments[pathSegments.length - 1];
+  const activeTab = (rawTab && rawTab !== 'manager' ? rawTab : 'users') as Tab;
   
   // Validate tab - if path is just /manager, it's users. If invalid, could redirect.
   const validTabs: Tab[] = ['users', 'courses', 'boxes', 'discounts', 'payments', 'referrals', 'blogs', 'settings', 'employees', 'logs'];
@@ -893,11 +896,12 @@ export default function Manager() {
           {loading ? (
             <div className="flex justify-center p-20 text-slate-400 text-sm font-medium">Loading…</div>
           ) : (
-            <div className="space-y-6">
+            <ErrorBoundary fallbackTitle="Manager View Error">
+              <div className="space-y-6">
 
-              {effectiveTab === 'blogs' && <BlogsManager />}
+                {effectiveTab === 'blogs' && <BlogsManager />}
 
-              {effectiveTab === 'employees' && <EmployeesManager />}
+                {effectiveTab === 'employees' && <EmployeesManager />}
 
               {effectiveTab === 'logs' && <LogsManager />}
 
@@ -1293,7 +1297,8 @@ export default function Manager() {
                 </div>
               )}
             </div>
-          )}
+          </ErrorBoundary>
+        )}
         </div>
       </div>
 
