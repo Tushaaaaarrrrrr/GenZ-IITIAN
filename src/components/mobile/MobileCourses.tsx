@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { RefreshCcw, GraduationCap, Star, Loader2, ChevronRight, BookOpen, Minus } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { CourseCardData } from '../CourseCard';
-import { FOUNDATION_SUB_TERMS, isCourseInSubTerm, getStagePrice } from '../../pages/Courses';
+import { FOUNDATION_SUB_TERMS, isCourseInSubTerm } from '../../pages/Courses';
 
 const DEFAULT_BOX_CONFIG: Record<string, string[]> = {
   Qualifier: ['Qualifier'],
@@ -128,9 +128,8 @@ export default function MobileCourses({
   const [courses, setCourses] = useState<CourseCardData[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // States for manager configurations
+  // Boxes configured in Manager > Boxes
   const [examVisibility, setExamVisibility] = useState<Record<string, string[]>>(DEFAULT_BOX_CONFIG);
-  const [stagePricing, setStagePricing] = useState<Record<string, any>>({});
 
   useEffect(() => {
     supabase
@@ -151,15 +150,6 @@ export default function MobileCourses({
       .then(({ data }) => {
         if (data) setExamVisibility({ ...DEFAULT_BOX_CONFIG, ...JSON.parse(data.value) });
       });
-
-    supabase
-      .from('settings')
-      .select('*')
-      .eq('key', 'stage_pricing')
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data) setStagePricing(JSON.parse(data.value));
-      });
   }, []);
 
   const filteredCourses = courses.filter((course) => {
@@ -174,26 +164,11 @@ export default function MobileCourses({
     return matchesTerm && matchesSubTerm && matchesStage;
   });
 
-  const rawBoxes = selectedTerm ? (examVisibility[selectedTerm] || DEFAULT_BOX_CONFIG[selectedTerm] || []) : [];
-  const currentPricingKey = (selectedTerm === 'Foundation' && selectedSubTerm)
-    ? `Foundation_${selectedSubTerm}`
-    : selectedTerm || '';
-  const currentPricingConfig = stagePricing[currentPricingKey] || (selectedTerm === 'Foundation' ? stagePricing['Foundation'] : null);
+  const activeBoxes = selectedTerm ? (examVisibility[selectedTerm] || DEFAULT_BOX_CONFIG[selectedTerm] || []) : [];
 
-  // If pricing is configured for this level/term, filter to only boxes where price > 0
-  const activeBoxes = rawBoxes.filter(stage => {
-    if (!currentPricingConfig) return true;
-    return getStagePrice(stage, currentPricingConfig) > 0;
-  });
-
-  const activeFoundationSubTerms = FOUNDATION_SUB_TERMS.filter(sub => {
-    const hasCourse = courses.some(c => c.term === 'Foundation' && isCourseInSubTerm(c, sub.id));
-    if (!hasCourse) return false;
-
-    const subPricing = stagePricing[`Foundation_${sub.id}`] || stagePricing['Foundation'];
-    const rawBoxes = examVisibility['Foundation'] || DEFAULT_BOX_CONFIG['Foundation'] || [];
-    return rawBoxes.some(box => getStagePrice(box, subPricing) > 0);
-  });
+  const activeFoundationSubTerms = FOUNDATION_SUB_TERMS.filter(sub =>
+    courses.some(c => c.term === 'Foundation' && isCourseInSubTerm(c, sub.id))
+  );
 
   const displaySubTerms = activeFoundationSubTerms.length > 0 
     ? activeFoundationSubTerms 
@@ -381,65 +356,6 @@ export default function MobileCourses({
           </div>
         ) : (
           <>
-            {/* Mobile Full Term Pricing Section */}
-            {selectedTerm && selectedExamStage === 'Full Term' && (() => {
-              const pricingConfig = currentPricingConfig || { quiz1: 0, quiz2: 0, endTerm: 0, fullTerm: 0, calculationMode: 'fixed', fixedTotal: 0 };
-              const quiz1Price = pricingConfig.quiz1 || 0;
-              const quiz2Price = pricingConfig.quiz2 || 0;
-              const endTermPrice = pricingConfig.endTerm || 0;
-              const isFixedMode = pricingConfig.calculationMode === 'fixed';
-              const finalPrice = isFixedMode ? (pricingConfig.fixedTotal || pricingConfig.fullTerm || 0) : (quiz1Price + quiz2Price + endTermPrice);
-              
-              const fullTermCourse = courses.find(c => c.term === selectedTerm && Array.isArray(c.exam_stages) && c.exam_stages.includes('Full Term'))
-                || courses.find(c => c.term === selectedTerm && Array.isArray(c.exam_stages) && c.exam_stages.includes('End Term'));
-
-              return (
-                <div className="bg-white border-[2.5px] border-[#0b1120] rounded-[20px] p-5 mb-6 shadow-[4px_4px_0px_#0b1120] space-y-4">
-                  <div className="text-center border-b-2 border-gray-100 pb-3">
-                    <span className="px-2.5 py-1 bg-blue-100 text-blue-700 text-[10px] font-black rounded-lg border border-blue-200 uppercase tracking-widest">
-                      Full Term Package
-                    </span>
-                    <h3 className="text-lg font-black text-[#0b1120] mt-2">Syllabus Package</h3>
-                    <p className="text-gray-400 font-bold text-xs mt-0.5">Complete syllabus coverage + mocks</p>
-                  </div>
-
-                  <div className="space-y-2.5">
-                    <div className="flex justify-between items-center text-xs font-bold text-gray-500">
-                      <span>Quiz 1 Prep Syllabus</span>
-                      <span className="font-black text-[#0b1120]">₹{quiz1Price}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs font-bold text-gray-500">
-                      <span>Quiz 2 Prep Syllabus</span>
-                      <span className="font-black text-[#0b1120]">₹{quiz2Price}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs font-bold text-gray-500 border-b border-dashed border-gray-100 pb-2.5">
-                      <span>End Term Final Mock Papers</span>
-                      <span className="font-black text-[#0b1120]">₹{endTermPrice}</span>
-                    </div>
-                    <div className="flex justify-between items-center pt-1">
-                      <span className="text-xs font-black text-[#0b1120] uppercase tracking-wide">Final Package Price</span>
-                      <span className="text-xl font-black text-[#0b1120]">₹{finalPrice}</span>
-                    </div>
-                  </div>
-
-                  {fullTermCourse ? (
-                    <div className="pt-1">
-                      <Link
-                        to={`/checkout/${fullTermCourse.id}`}
-                        className="w-full block text-center py-3.5 bg-[#15B981] text-[#0b1120] rounded-xl font-black text-sm border-[2.5px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
-                      >
-                        Unlock Full Term Package
-                      </Link>
-                    </div>
-                  ) : (
-                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-center text-[10px] font-bold text-gray-400">
-                      Full Term package checkout is currently offline.
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-
             {filteredCourses.length === 0 ? (
               <div className="bg-white border-[2.5px] border-[#0b1120] rounded-2xl p-6 text-center shadow-[4px_4px_0px_#FF2424]">
                 <h3 className="text-lg font-black text-[#0b1120] mb-1">No courses found</h3>
