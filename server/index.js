@@ -760,25 +760,36 @@ const memory1on1Bookings = new Map();
 
 // Helper to dispatch 1:1 webhook to Google Apps Script
 async function dispatch1on1Webhook(payload) {
-    const webhookUrl = process.env.ONE_ON_ONE_WEBHOOK_URL || process.env.WELCOME_WEBHOOK_URL || process.env.GOOGLE_SHEET_WEBHOOK_URL;
+    const webhookUrl = 
+        process.env.ONE_ON_ONE_WEBHOOK_URL || 
+        process.env.VITE_ONE_ON_ONE_WEBHOOK_URL ||
+        process.env.ONE_TO_ONE_WEBHOOK_URL ||
+        process.env.VITE_ONE_TO_ONE_WEBHOOK_URL ||
+        process.env.ONE_ON_ONE_APP_SCRIPT_URL ||
+        process.env.WELCOME_WEBHOOK_URL || 
+        process.env.GOOGLE_SHEET_WEBHOOK_URL ||
+        process.env.APP_SCRIPT_URL;
+
     if (!webhookUrl) {
-        console.warn('[1:1 Webhook] No webhook URL configured (ONE_ON_ONE_WEBHOOK_URL)');
+        console.warn('[1:1 Webhook] No webhook URL configured! Checked: ONE_ON_ONE_WEBHOOK_URL, ONE_TO_ONE_WEBHOOK_URL, WELCOME_WEBHOOK_URL, GOOGLE_SHEET_WEBHOOK_URL');
         return;
     }
     try {
+        console.log(`[1:1 Webhook] Dispatching ${payload.type} to ${webhookUrl.slice(0, 50)}...`);
         const res = await fetch(webhookUrl, {
             method: 'POST',
+            redirect: 'follow',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 ...payload,
-                bcc: 'genziitian@gmail.com',
+                bcc: 'genziitian@gmail.com, lkiitmng2428@gmail.com',
                 timestamp: new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
             })
         });
         const resText = await res.text();
-        console.log(`[1:1 Webhook] Dispatched ${payload.type} to webhook:`, resText.slice(0, 100));
+        console.log(`[1:1 Webhook] Response for ${payload.type}:`, resText.slice(0, 150));
     } catch (err) {
-        console.error('[1:1 Webhook] Error:', err.message);
+        console.error('[1:1 Webhook] Failed to dispatch:', err.message);
     }
 }
 
@@ -887,22 +898,30 @@ app.post('/api/book-1on1-slot', async (req, res) => {
 
         // 1. Supabase Activity Log & Table Entry
         if (supabase) {
-            const { error: logErr } = await supabase.from('activity_logs').insert({
-                email: bookingRecord.email,
-                action: '1ON1_SLOT_BOOKED',
-                metadata: {
-                    ...bookingRecord,
-                    bcc
-                }
-            });
-            if (logErr) console.warn('[1:1 Booking] activity_logs notice:', logErr.message);
+            try {
+                const { error: logErr } = await supabase.from('activity_logs').insert({
+                    email: bookingRecord.email,
+                    action: '1ON1_SLOT_BOOKED',
+                    metadata: {
+                        ...bookingRecord,
+                        bcc
+                    }
+                });
+                if (logErr) console.warn('[1:1 Booking] activity_logs notice:', logErr.message);
+            } catch (e) {
+                console.warn('[1:1 Booking] activity_logs notice:', e.message);
+            }
 
-            const { error: bookingErr } = await supabase.from('one_on_one_bookings').insert(bookingRecord);
-            if (bookingErr) console.warn('[1:1 Booking] one_on_one_bookings notice:', bookingErr.message);
+            try {
+                const { error: bookingErr } = await supabase.from('one_on_one_bookings').insert(bookingRecord);
+                if (bookingErr) console.warn('[1:1 Booking] one_on_one_bookings notice:', bookingErr.message);
+            } catch (e) {
+                console.warn('[1:1 Booking] one_on_one_bookings notice:', e.message);
+            }
         }
 
         // 2. Trigger Webhook for Booked Mail + BCC to genziitian@gmail.com
-        dispatch1on1Webhook({
+        await dispatch1on1Webhook({
             type: 'one_on_one_booking',
             ...bookingRecord
         });
@@ -930,28 +949,25 @@ app.get('/api/1on1-bookings', async (req, res) => {
                 query = query.eq('email', studentEmail);
             }
             const { data, error } = await query;
-            if (!error && data) {
+            if (!error && Array.isArray(data)) {
                 dbBookings = data;
             }
         }
 
-        // Merge with memory fallback
-        const memoryList = Array.from(memory1on1Bookings.values())
-            .filter(b => !studentEmail || b.email.toLowerCase() === studentEmail);
-
-        const seenIds = new Set(dbBookings.map(b => b.id));
-        const merged = [...dbBookings];
-        for (const item of memoryList) {
-            if (!seenIds.has(item.id)) {
-                merged.push(item);
-                seenIds.add(item.id);
+        // Merge with in-memory bookings
+        const combinedMap = new Map();
+        dbBookings.forEach(b => combinedMap.set(b.id, b));
+        memory1on1Bookings.forEach((b, id) => {
+            if (!studentEmail || b.email === studentEmail) {
+                combinedMap.set(id, b);
             }
-        }
+        });
 
-        res.json({ success: true, bookings: merged });
+        const sorted = Array.from(combinedMap.values()).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        res.json({ success: true, bookings: sorted });
     } catch (err) {
-        console.error('[1:1 Bookings GET] Error:', err);
-        res.status(500).json({ error: 'Failed to fetch bookings' });
+        console.error('[1:1 Get Bookings] Error:', err);
+        res.status(500).json({ error: 'Failed to fetch 1:1 bookings' });
     }
 });
 
@@ -972,11 +988,13 @@ app.post('/api/1on1-bookings/cancel', async (req, res) => {
                 .eq('id', id);
 
             if (booking) {
-                supabase.from('activity_logs').insert({
-                    email: booking.email,
-                    action: '1ON1_SLOT_CANCELLED',
-                    metadata: { id, reason, slot_date: booking.slot_date, slot_time: booking.slot_time }
-                }).catch(() => {});
+                try {
+                    await supabase.from('activity_logs').insert({
+                        email: booking.email,
+                        action: '1ON1_SLOT_CANCELLED',
+                        metadata: { id, reason, slot_date: booking.slot_date, slot_time: booking.slot_time }
+                    });
+                } catch (e) {}
             }
         }
 
@@ -986,7 +1004,7 @@ app.post('/api/1on1-bookings/cancel', async (req, res) => {
             memory1on1Bookings.set(id, booking);
 
             // Dispatch Cancellation Email to Student + BCC
-            dispatch1on1Webhook({
+            await dispatch1on1Webhook({
                 type: 'one_on_one_cancelled',
                 ...booking,
                 reason
@@ -1028,11 +1046,13 @@ app.post('/api/1on1-bookings/reschedule', async (req, res) => {
             }).eq('id', id);
 
             if (booking) {
-                supabase.from('activity_logs').insert({
-                    email: booking.email,
-                    action: '1ON1_SLOT_RESCHEDULED',
-                    metadata: { id, previous_slot_date, previous_slot_time, new_slot_date, new_slot_time }
-                }).catch(() => {});
+                try {
+                    await supabase.from('activity_logs').insert({
+                        email: booking.email,
+                        action: '1ON1_SLOT_RESCHEDULED',
+                        metadata: { id, previous_slot_date, previous_slot_time, new_slot_date, new_slot_time }
+                    });
+                } catch (e) {}
             }
         }
 
@@ -1045,11 +1065,14 @@ app.post('/api/1on1-bookings/reschedule', async (req, res) => {
             memory1on1Bookings.set(id, booking);
 
             // Dispatch Reschedule Email to Student + BCC
-            dispatch1on1Webhook({
+            await dispatch1on1Webhook({
                 type: 'one_on_one_rescheduled',
                 ...booking,
                 previous_slot_date,
-                previous_slot_time
+                previous_slot_time,
+                new_slot_date,
+                new_slot_time,
+                reason
             });
         }
 

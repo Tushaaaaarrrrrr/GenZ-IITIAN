@@ -104,11 +104,21 @@ export default async function handler(req: any, res: any) {
   }
 
   // 2. Trigger Google Apps Script / Webhook for Email sending with BCC
-  const webhookUrl = process.env.WELCOME_WEBHOOK_URL || process.env.GOOGLE_SHEET_WEBHOOK_URL;
+  const webhookUrl = 
+    process.env.ONE_ON_ONE_WEBHOOK_URL || 
+    process.env.VITE_ONE_ON_ONE_WEBHOOK_URL ||
+    process.env.ONE_TO_ONE_WEBHOOK_URL ||
+    process.env.VITE_ONE_TO_ONE_WEBHOOK_URL ||
+    process.env.ONE_ON_ONE_APP_SCRIPT_URL ||
+    process.env.WELCOME_WEBHOOK_URL || 
+    process.env.GOOGLE_SHEET_WEBHOOK_URL ||
+    process.env.APP_SCRIPT_URL;
+
   if (webhookUrl) {
     try {
-      await fetch(webhookUrl, {
+      const res = await fetch(webhookUrl, {
         method: 'POST',
+        redirect: 'follow',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: 'one_on_one_booking',
@@ -121,14 +131,17 @@ export default async function handler(req: any, res: any) {
           slot_time,
           plan,
           notes,
-          bcc: 'genziitian@gmail.com',
-          timestamp: new Date().toISOString()
+          bcc: 'genziitian@gmail.com, lkiitmng2428@gmail.com',
+          timestamp: new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
         })
       });
-      console.log(`[1:1 Booking] Dispatched email webhook for ${normalizedEmail} with BCC genziitian@gmail.com`);
+      const resText = await res.text();
+      console.log(`[1:1 Booking] Dispatched email webhook for ${normalizedEmail} with response:`, resText.slice(0, 100));
     } catch (whErr: any) {
       console.error('[1:1 Booking] Webhook call error:', whErr.message);
     }
+  } else {
+    console.warn('[1:1 Booking] No webhook URL configured! Checked: ONE_ON_ONE_WEBHOOK_URL, WELCOME_WEBHOOK_URL, GOOGLE_SHEET_WEBHOOK_URL');
   }
 
   return res.status(200).json({
