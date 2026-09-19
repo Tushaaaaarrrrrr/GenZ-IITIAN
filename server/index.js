@@ -887,17 +887,18 @@ app.post('/api/book-1on1-slot', async (req, res) => {
 
         // 1. Supabase Activity Log & Table Entry
         if (supabase) {
-            supabase.from('activity_logs').insert({
+            const { error: logErr } = await supabase.from('activity_logs').insert({
                 email: bookingRecord.email,
                 action: '1ON1_SLOT_BOOKED',
                 metadata: {
                     ...bookingRecord,
                     bcc
                 }
-            }).catch(err => console.warn('[1:1 Booking] activity_logs notice:', err.message));
+            });
+            if (logErr) console.warn('[1:1 Booking] activity_logs notice:', logErr.message);
 
-            supabase.from('one_on_one_bookings').insert(bookingRecord)
-                .catch(err => console.warn('[1:1 Booking] one_on_one_bookings notice:', err.message));
+            const { error: bookingErr } = await supabase.from('one_on_one_bookings').insert(bookingRecord);
+            if (bookingErr) console.warn('[1:1 Booking] one_on_one_bookings notice:', bookingErr.message);
         }
 
         // 2. Trigger Webhook for Booked Mail + BCC to genziitian@gmail.com
@@ -2193,6 +2194,7 @@ setInterval(async () => {
 }, 60 * 60 * 1000); // Run every 60 minutes
 
 app.listen(PORT, () => {
-    console.log(`\n  🔐 Admin Panel running at: http://localhost:${PORT}/admin`);
-    console.log(`  📡 API running at: http://localhost:${PORT}/api\n`);
+    const host = process.env.PUBLIC_HOST || process.env.HOST || 'localhost';
+    console.log(`\n  🔐 Admin Panel running on port ${PORT} (host: ${host})`);
+    console.log(`  📡 API running on port ${PORT}/api\n`);
 });
