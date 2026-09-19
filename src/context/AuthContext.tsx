@@ -34,28 +34,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let cancelled = false;
 
     const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (cancelled) return;
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        await syncProfile(session.user);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (cancelled) return;
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          await syncProfile(session.user);
+        } else {
+          setProfile(null);
+        }
+      } catch (err) {
+        console.error('Auth init failed:', err);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-      if (!cancelled) setLoading(false);
     };
 
     init();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      // Do not toggle the global loading gate on token refresh — that blanks Manager to white.
       setUser(session?.user ?? null);
       if (session?.user) {
-        // Keep loading true until profile is ready so manager role doesn't flicker
-        setLoading(true);
-        syncProfile(session.user).finally(() => {
-          if (!cancelled) setLoading(false);
-        });
+        syncProfile(session.user);
       } else {
         setProfile(null);
-        setLoading(false);
       }
     });
 

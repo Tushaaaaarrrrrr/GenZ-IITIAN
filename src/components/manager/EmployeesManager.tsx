@@ -173,6 +173,7 @@ export default function EmployeesManager() {
     const pattern = new RegExp(`^${prefix}-(\\d{4})`, 'i');
     
     employees.forEach(emp => {
+      if (!emp?.employee_id) return;
       const match = emp.employee_id.match(pattern);
       if (match) {
         const num = parseInt(match[1], 10);
@@ -203,7 +204,7 @@ export default function EmployeesManager() {
           loadLocalEmployees();
         }
       } else {
-        setEmployees(data || []);
+        setEmployees(Array.isArray(data) ? data.filter(Boolean) : []);
         setIsDemoMode(false);
       }
     } catch (err) {
@@ -219,7 +220,8 @@ export default function EmployeesManager() {
     const stored = localStorage.getItem('gzi_mock_employees');
     if (stored) {
       try {
-        setEmployees(JSON.parse(stored));
+        const parsed = JSON.parse(stored);
+        setEmployees(Array.isArray(parsed) ? parsed.filter(Boolean) : DEFAULT_EMPLOYEES);
       } catch (e) {
         setEmployees(DEFAULT_EMPLOYEES);
       }
@@ -290,13 +292,13 @@ export default function EmployeesManager() {
     setErrorMsg('');
     
     // Parse tenure dates into calendar selectors
-    const tenureParts = emp.tenure.split(' - ');
+    const tenureParts = String(emp.tenure || '').split(' - ');
     setStartD(parseDateToYmd(tenureParts[0] || ''));
     const present = (tenureParts[1] || '').toLowerCase() === 'present';
     setIsPresent(present);
     setEndD(present ? '' : parseDateToYmd(tenureParts[1] || ''));
 
-    setEditingEmployee({ ...emp });
+    setEditingEmployee({ ...emp, status: emp.status || 'ACTIVE' });
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -335,7 +337,7 @@ export default function EmployeesManager() {
       department: dept,
       role: editingEmployee.role,
       tenure: tenureStr,
-      status: editingEmployee.status.toUpperCase()
+      status: (editingEmployee.status || 'ACTIVE').toUpperCase()
     };
 
     try {
@@ -460,7 +462,8 @@ export default function EmployeesManager() {
     }
   };
 
-  const filtered = employees.filter((emp) => {
+  const filtered = (Array.isArray(employees) ? employees : []).filter((emp) => {
+    if (!emp || typeof emp !== 'object') return false;
     const q = searchQuery.toLowerCase().trim();
     if (!q) return true;
     return (
