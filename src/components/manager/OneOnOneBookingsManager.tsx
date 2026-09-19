@@ -16,7 +16,8 @@ import {
   MoreVertical,
   CalendarPlus,
   Loader2,
-  ExternalLink
+  ExternalLink,
+  ChevronDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -55,6 +56,16 @@ export default function OneOnOneBookingsManager() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+
+  // Active Dropdown state (row ID)
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+
+  // Mark Completed Confirmation Modal state
+  const [completeBooking, setCompleteBooking] = useState<Booking | null>(null);
+  const [completeNotes, setCompleteNotes] = useState('');
+
+  // Re-confirm Modal state
+  const [confirmBooking, setConfirmBooking] = useState<Booking | null>(null);
 
   // Reschedule Modal state
   const [rescheduleBooking, setRescheduleBooking] = useState<Booking | null>(null);
@@ -172,6 +183,18 @@ export default function OneOnOneBookingsManager() {
     }
   };
 
+  const submitComplete = async () => {
+    if (!completeBooking) return;
+    await handleUpdateStatus(completeBooking.id, 'COMPLETED', completeNotes);
+    setCompleteBooking(null);
+  };
+
+  const submitMarkConfirmed = async () => {
+    if (!confirmBooking) return;
+    await handleUpdateStatus(confirmBooking.id, 'CONFIRMED');
+    setConfirmBooking(null);
+  };
+
   // Filtered list
   const filteredBookings = bookings.filter(b => {
     const matchesStatus = statusFilter === 'ALL' || b.status === statusFilter;
@@ -196,23 +219,12 @@ export default function OneOnOneBookingsManager() {
 
   return (
     <div className="space-y-6">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border-2 border-slate-200 shadow-sm">
-        <div>
-          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-black uppercase tracking-wider mb-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            1:1 Personalised Teaching
-          </div>
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight">Student 1:1 Bookings</h2>
-          <p className="text-sm font-medium text-slate-500 mt-0.5">
-            Manage incoming consultation requests, reschedule slots, and monitor cancellation notifications.
-          </p>
-        </div>
-
+      {/* Top Action Bar */}
+      <div className="flex justify-end items-center">
         <button
           onClick={fetchBookings}
           disabled={loading}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer disabled:opacity-50"
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer disabled:opacity-50 shadow-xs"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           <span>Refresh Bookings</span>
@@ -286,7 +298,7 @@ export default function OneOnOneBookingsManager() {
             No 1:1 bookings found matching your filter.
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto min-h-[380px] pb-32">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-black uppercase tracking-wider">
                 <tr>
@@ -374,46 +386,103 @@ export default function OneOnOneBookingsManager() {
                         </span>
                       </td>
 
-                      {/* Actions */}
+                      {/* Actions Dropdown */}
                       <td className="py-4 px-4 text-right">
-                        <div className="inline-flex items-center gap-1.5">
-                          {/* Quick Reschedule */}
+                        <div className="relative inline-block text-left">
                           <button
-                            onClick={() => {
-                              setRescheduleBooking(booking);
-                              setNewDate(booking.slot_date || '');
-                              setNewSlot(booking.slot_time || TIME_SLOTS[0]);
-                              setRescheduleReason('');
-                            }}
+                            onClick={() => setOpenDropdownId(openDropdownId === booking.id ? null : booking.id)}
                             disabled={isActioning}
-                            className="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-lg font-bold text-[11px] transition-colors cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-800 hover:text-slate-950 border border-slate-300 hover:border-slate-400 rounded-xl font-bold text-xs transition-all shadow-xs cursor-pointer disabled:opacity-50"
                           >
-                            Reschedule
+                            <span>Actions</span>
+                            <ChevronDown className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-150 ${openDropdownId === booking.id ? 'rotate-180' : ''}`} />
                           </button>
 
-                          {/* Quick Status Toggle */}
-                          {booking.status !== 'COMPLETED' && booking.status !== 'CANCELLED' && (
-                            <button
-                              onClick={() => handleUpdateStatus(booking.id, 'COMPLETED')}
-                              disabled={isActioning}
-                              className="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-300 rounded-lg font-bold text-[11px] transition-colors cursor-pointer"
-                            >
-                              Done
-                            </button>
-                          )}
+                          {openDropdownId === booking.id && (
+                            <>
+                              {/* Invisible backdrop to dismiss dropdown */}
+                              <div
+                                className="fixed inset-0 z-30 cursor-default"
+                                onClick={() => setOpenDropdownId(null)}
+                              />
 
-                          {/* Cancel Button */}
-                          {booking.status !== 'CANCELLED' && (
-                            <button
-                              onClick={() => {
-                                setCancelBooking(booking);
-                                setCancelReason('');
-                              }}
-                              disabled={isActioning}
-                              className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-300 rounded-lg font-bold text-[11px] transition-colors cursor-pointer"
-                            >
-                              Cancel
-                            </button>
+                              <div className="absolute right-0 mt-1.5 w-52 bg-white rounded-xl shadow-xl border-2 border-slate-200 py-1.5 z-40 text-left divide-y divide-slate-100 animate-in fade-in zoom-in-95 duration-100">
+                                <div className="py-1">
+                                  {/* Action: Mark as Completed */}
+                                  {booking.status !== 'COMPLETED' && (
+                                    <button
+                                      onClick={() => {
+                                        setOpenDropdownId(null);
+                                        setCompleteBooking(booking);
+                                        setCompleteNotes('');
+                                      }}
+                                      className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer text-left"
+                                    >
+                                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                                      <div>
+                                        <div className="leading-tight">Mark as Done</div>
+                                        <div className="text-[10px] text-slate-400 font-normal">Session conducted</div>
+                                      </div>
+                                    </button>
+                                  )}
+
+                                  {/* Action: Reschedule */}
+                                  <button
+                                    onClick={() => {
+                                      setOpenDropdownId(null);
+                                      setRescheduleBooking(booking);
+                                      setNewDate(booking.slot_date || '');
+                                      setNewSlot(booking.slot_time || TIME_SLOTS[0]);
+                                      setRescheduleReason('');
+                                    }}
+                                    className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-amber-700 hover:bg-amber-50 transition-colors cursor-pointer text-left"
+                                  >
+                                    <RefreshCw className="w-4 h-4 text-amber-600 shrink-0" />
+                                    <div>
+                                      <div className="leading-tight">Reschedule Slot</div>
+                                      <div className="text-[10px] text-slate-400 font-normal">Change date or time</div>
+                                    </div>
+                                  </button>
+
+                                  {/* Action: Restore / Mark Confirmed */}
+                                  {booking.status !== 'CONFIRMED' && (
+                                    <button
+                                      onClick={() => {
+                                        setOpenDropdownId(null);
+                                        setConfirmBooking(booking);
+                                      }}
+                                      className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-blue-700 hover:bg-blue-50 transition-colors cursor-pointer text-left"
+                                    >
+                                      <Calendar className="w-4 h-4 text-blue-600 shrink-0" />
+                                      <div>
+                                        <div className="leading-tight">Mark as Confirmed</div>
+                                        <div className="text-[10px] text-slate-400 font-normal">Restore to upcoming</div>
+                                      </div>
+                                    </button>
+                                  )}
+                                </div>
+
+                                {/* Action: Cancel */}
+                                {booking.status !== 'CANCELLED' && (
+                                  <div className="py-1">
+                                    <button
+                                      onClick={() => {
+                                        setOpenDropdownId(null);
+                                        setCancelBooking(booking);
+                                        setCancelReason('');
+                                      }}
+                                      className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-red-600 hover:bg-red-50 transition-colors cursor-pointer text-left"
+                                    >
+                                      <XCircle className="w-4 h-4 text-red-600 shrink-0" />
+                                      <div>
+                                        <div className="leading-tight">Cancel Booking</div>
+                                        <div className="text-[10px] text-slate-400 font-normal">Cancel & notify student</div>
+                                      </div>
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </>
                           )}
                         </div>
                       </td>
@@ -525,7 +594,7 @@ export default function OneOnOneBookingsManager() {
                 <h3 className="text-lg font-black text-red-600 flex items-center gap-2">
                   <XCircle className="w-5 h-5 text-red-600" /> Cancel 1:1 Consultation
                 </h3>
-                <button onClick={() => setCancelBooking(null)} className="text-slate-400 hover:text-slate-600">✕</button>
+                <button onClick={() => setCancelBooking(null)} className="text-slate-400 hover:text-slate-600 cursor-pointer">✕</button>
               </div>
 
               <p className="text-xs text-slate-600 leading-relaxed font-medium">
@@ -551,16 +620,124 @@ export default function OneOnOneBookingsManager() {
                 <button
                   type="button"
                   onClick={() => setCancelBooking(null)}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold text-xs"
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold text-xs cursor-pointer"
                 >
                   Keep Booking
                 </button>
                 <button
                   type="button"
                   onClick={submitCancel}
-                  className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-black text-xs"
+                  disabled={actionLoadingId === cancelBooking.id}
+                  className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-black text-xs inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
-                  Confirm Cancellation
+                  {actionLoadingId === cancelBooking.id && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>Confirm Cancellation</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Mark Completed Confirmation Modal */}
+      <AnimatePresence>
+        {completeBooking && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl border-2 border-slate-900 shadow-2xl p-6 max-w-md w-full space-y-4"
+            >
+              <div className="flex items-center justify-between border-b pb-3">
+                <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600" /> Mark Session as Completed
+                </h3>
+                <button onClick={() => setCompleteBooking(null)} className="text-slate-400 hover:text-slate-600 cursor-pointer">✕</button>
+              </div>
+
+              <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                Confirm that this 1:1 consultation session has been successfully conducted:
+              </p>
+
+              <div className="text-xs text-slate-700 space-y-1.5 bg-emerald-50/60 p-3.5 rounded-xl border border-emerald-200 font-medium">
+                <div><strong>Student:</strong> {completeBooking.name} ({completeBooking.email})</div>
+                <div><strong>Scheduled Slot:</strong> {completeBooking.slot_date} at {completeBooking.slot_time}</div>
+                <div><strong>Subject(s):</strong> {completeBooking.subjects}</div>
+                <div><strong>WhatsApp:</strong> +91 {completeBooking.phone}</div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Session Summary / Remarks (Optional)</label>
+                <textarea
+                  rows={2}
+                  value={completeNotes}
+                  onChange={e => setCompleteNotes(e.target.value)}
+                  placeholder="e.g. Conducted call, cleared questions, discussed weekly schedule."
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-slate-500"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setCompleteBooking(null)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold text-xs cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={submitComplete}
+                  disabled={actionLoadingId === completeBooking.id}
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-black text-xs inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  {actionLoadingId === completeBooking.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                  <span>Yes, Mark Done</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Re-confirm Modal */}
+      <AnimatePresence>
+        {confirmBooking && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl border-2 border-slate-900 shadow-2xl p-6 max-w-md w-full space-y-4"
+            >
+              <div className="flex items-center justify-between border-b pb-3">
+                <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-blue-600" /> Mark as Confirmed (Active)
+                </h3>
+                <button onClick={() => setConfirmBooking(null)} className="text-slate-400 hover:text-slate-600 cursor-pointer">✕</button>
+              </div>
+
+              <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                Do you want to change the status of this booking for <strong>{confirmBooking.name}</strong> ({confirmBooking.slot_date} at {confirmBooking.slot_time}) back to <strong>CONFIRMED</strong>?
+              </p>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setConfirmBooking(null)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold text-xs cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={submitMarkConfirmed}
+                  disabled={actionLoadingId === confirmBooking.id}
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-black text-xs inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  {actionLoadingId === confirmBooking.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                  <span>Yes, Mark Confirmed</span>
                 </button>
               </div>
             </motion.div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Calendar, Clock, CheckCircle2, ArrowRight, ArrowLeft, Sparkles, MessageCircle, CalendarPlus, User, Mail, Phone, BookOpen, AlertCircle } from 'lucide-react';
+import { X, Calendar, Clock, CheckCircle2, ArrowRight, ArrowLeft, Sparkles, MessageCircle, CalendarPlus, User, Mail, Phone, BookOpen, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface BookingModalProps {
@@ -57,7 +57,7 @@ const CONFETTI_PARTICLES = Array.from({ length: 28 }, (_, i) => ({
 
 export default function BookingModal1on1({ isOpen, onClose, defaultPlan, defaultSubject }: BookingModalProps) {
   const { user, profile } = useAuth();
-  const [step, setStep] = useState<'details' | 'slot' | 'success' | 'limit'>('details');
+  const [step, setStep] = useState<'details' | 'slot' | 'loading' | 'success' | 'limit'>('details');
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -144,6 +144,8 @@ export default function BookingModal1on1({ isOpen, onClose, defaultPlan, default
   const handleConfirmBooking = async () => {
     setSubmitting(true);
     setErrorMessage('');
+    setStep('loading');
+    const startTs = Date.now();
 
     const finalSubjects = [...selectedSubjects];
     if (customSubject.trim() && !finalSubjects.includes(customSubject.trim())) {
@@ -186,6 +188,7 @@ export default function BookingModal1on1({ isOpen, onClose, defaultPlan, default
 
       if (!res.ok) {
         setSubmitting(false);
+        setStep('slot');
         setErrorMessage(data?.error || 'Could not book this slot. Please try again or contact us.');
         return;
       }
@@ -210,11 +213,18 @@ export default function BookingModal1on1({ isOpen, onClose, defaultPlan, default
         body: gParams
       }).catch(e => console.warn('Script fetch backup caught:', e));
 
+      // Guarantee smooth loading experience (at least 900ms)
+      const elapsed = Date.now() - startTs;
+      if (elapsed < 900) {
+        await new Promise(r => setTimeout(r, 900 - elapsed));
+      }
+
       setSubmitting(false);
       setStep('success');
     } catch (err: any) {
       console.error('Booking submission error:', err);
       setSubmitting(false);
+      setStep('slot');
       setErrorMessage('Something went wrong. Please try again or contact us on WhatsApp.');
     }
   };
@@ -540,6 +550,51 @@ export default function BookingModal1on1({ isOpen, onClose, defaultPlan, default
                   </div>
                 </div>
               </div>
+            )}
+
+            {/* STEP: Loading Screen */}
+            {step === 'loading' && (
+              <motion.div
+                className="py-10 sm:py-16 text-center space-y-6 max-w-md mx-auto"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.25 }}
+              >
+                {/* Animated Ring / Spinner */}
+                <div className="relative w-24 h-24 mx-auto flex items-center justify-center">
+                  <div className="absolute inset-0 rounded-full border-4 border-emerald-100 animate-pulse" />
+                  <div className="absolute inset-0 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin" />
+                  <div className="w-14 h-14 rounded-full bg-emerald-50 border-2 border-emerald-300 flex items-center justify-center text-emerald-600 shadow-inner">
+                    <Sparkles className="w-7 h-7 animate-bounce" />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="text-xl sm:text-2xl font-black text-[#0b1120] tracking-tight">
+                    Confirming Your 1:1 Slot...
+                  </h3>
+                  <p className="text-xs sm:text-sm text-gray-500 font-bold max-w-sm mx-auto">
+                    Please hold on while we secure your time and notify your dedicated mentor.
+                  </p>
+                </div>
+
+                {/* Progress Checklist Steps */}
+                <div className="bg-slate-50 border-2 border-slate-200 rounded-2xl p-4 text-left space-y-3 shadow-xs">
+                  <div className="flex items-center gap-2.5 text-xs font-bold text-emerald-700">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Slot selected: {selectedDate} ({selectedSlot})</span>
+                  </div>
+                  <div className="flex items-center gap-2.5 text-xs font-bold text-slate-800">
+                    <Loader2 className="w-4 h-4 text-blue-600 animate-spin shrink-0" />
+                    <span>Reserving consultation window & mentor...</span>
+                  </div>
+                  <div className="flex items-center gap-2.5 text-xs font-medium text-slate-500">
+                    <Clock className="w-4 h-4 text-slate-400 shrink-0" />
+                    <span>Dispatching confirmation email to {email}</span>
+                  </div>
+                </div>
+              </motion.div>
             )}
 
             {/* STEP 3: Thank You Screen */}
