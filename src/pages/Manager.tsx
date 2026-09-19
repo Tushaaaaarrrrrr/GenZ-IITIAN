@@ -2724,29 +2724,11 @@ function BoxesManager({
 }
 
 function SettingsManager() {
-  const [activeConfigTab, setActiveConfigTab] = useState<'Qualifier' | 'Re-attempt' | 'Foundation' | 'DIPLOMA'>('Foundation');
-  const [activeFoundationSubTab, setActiveFoundationSubTab] = useState<'Term 1' | 'Term 2'>('Term 1');
   const [videoUrl, setVideoUrl] = useState('');
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-
-  const [stagePricing, setStagePricing] = useState<Record<string, {
-    quiz1: number;
-    quiz2: number;
-    endTerm: number;
-    fullTerm: number;
-    calculationMode: 'sum' | 'fixed';
-    fixedTotal: number;
-  }>>({
-    Qualifier: { quiz1: 0, quiz2: 0, endTerm: 0, fullTerm: 0, calculationMode: 'fixed', fixedTotal: 499 },
-    'Re-attempt': { quiz1: 0, quiz2: 0, endTerm: 0, fullTerm: 0, calculationMode: 'fixed', fixedTotal: 499 },
-    Foundation: { quiz1: 299, quiz2: 399, endTerm: 499, fullTerm: 1199, calculationMode: 'fixed', fixedTotal: 999 },
-    'Foundation_Term 1': { quiz1: 299, quiz2: 299, endTerm: 899, fullTerm: 1499, calculationMode: 'fixed', fixedTotal: 1499 },
-    'Foundation_Term 2': { quiz1: 299, quiz2: 299, endTerm: 899, fullTerm: 1499, calculationMode: 'fixed', fixedTotal: 1499 },
-    DIPLOMA: { quiz1: 399, quiz2: 499, endTerm: 599, fullTerm: 1499, calculationMode: 'fixed', fixedTotal: 1299 }
-  });
 
   useEffect(() => {
     async function loadSettings() {
@@ -2761,17 +2743,6 @@ function SettingsManager() {
         if (videoError) throw videoError;
         if (videoData) {
           setVideoUrl(videoData.value);
-        }
-
-        const { data: priceData, error: priceError } = await supabase
-          .from('settings')
-          .select('*')
-          .eq('key', 'stage_pricing')
-          .maybeSingle();
-        
-        if (priceError) throw priceError;
-        if (priceData) {
-          setStagePricing(JSON.parse(priceData.value));
         }
       } catch (err: any) {
         console.error('Failed to load settings:', err);
@@ -2794,12 +2765,7 @@ function SettingsManager() {
         .upsert({ key: 'homepage_video_url', value: videoUrl.trim() });
       if (videoError) throw videoError;
 
-      const { error: priceError } = await supabase
-        .from('settings')
-        .upsert({ key: 'stage_pricing', value: JSON.stringify(stagePricing) });
-      if (priceError) throw priceError;
-
-      setSuccess('All configurations saved successfully!');
+      setSuccess('Video settings saved successfully!');
     } catch (err: any) {
       console.error('Failed to save settings:', err);
       setError(err.message || 'Failed to save settings');
@@ -2809,14 +2775,6 @@ function SettingsManager() {
   };
 
   const videoId = getYouTubeId(videoUrl);
-
-  const activePricingKey = activeConfigTab === 'Foundation'
-    ? `Foundation_${activeFoundationSubTab}`
-    : activeConfigTab;
-
-  const currentPrices = stagePricing[activePricingKey] 
-    || (activeConfigTab === 'Foundation' ? stagePricing['Foundation'] : null)
-    || { quiz1: 0, quiz2: 0, endTerm: 0, fullTerm: 0, calculationMode: 'fixed', fixedTotal: 0 };
 
   return (
     <div className="space-y-6 sm:space-y-12">
@@ -2838,235 +2796,73 @@ function SettingsManager() {
           Loading System Settings...
         </div>
       ) : (
-        <>
-          <div className="bg-white border-[3px] md:border-[4px] border-[#0b1120] rounded-[1.25rem] sm:rounded-[2.5rem] p-4 sm:p-8 md:p-12 shadow-[4px_4px_0px_#0b1120] md:shadow-[12px_12px_0px_#0b1120] space-y-6 sm:space-y-8">
-            <div className="border-b-2 sm:border-b-4 border-[#0b1120] pb-4 sm:pb-6">
-              <h2 className="text-2xl sm:text-3xl font-black text-[#0b1120] mb-1 sm:mb-2">Exam Pricing Controls</h2>
-              <p className="text-gray-500 font-bold text-xs sm:text-sm">
-                Configure stage prices and bundles. <span className="text-blue-600 font-black">If any exam price is 0 or left blank, that exam button will be hidden automatically on the courses page.</span>
-              </p>
-            </div>
-
-            <div className="space-y-3 sm:space-y-4 border-b-2 border-gray-100 pb-4 sm:pb-6">
-              <div className="flex flex-wrap gap-2 sm:gap-3">
-                {(['Qualifier', 'Re-attempt', 'Foundation', 'DIPLOMA'] as const).map((level) => (
-                  <button
-                    key={level}
-                    type="button"
-                    onClick={() => {
-                      setError('');
-                      setSuccess('');
-                      setActiveConfigTab(level);
-                    }}
-                    className={`px-4 sm:px-6 py-2 sm:py-3 rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm border-2 sm:border-[3px] border-[#0b1120] transition-all cursor-pointer ${
-                      activeConfigTab === level
-                        ? 'bg-[#0b1120] text-white shadow-[2px_2px_0px_#2563eb] sm:shadow-[4px_4px_0px_#2563eb]'
-                        : 'bg-white text-[#0b1120] hover:bg-gray-50'
-                    }`}
-                  >
-                    {level}
-                  </button>
-                ))}
-              </div>
-
-              {activeConfigTab === 'Foundation' && (
-                <div className="pt-2 flex flex-wrap items-center gap-2 sm:gap-3">
-                  <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-gray-400">Select Foundation Term:</span>
-                  {(['Term 1', 'Term 2'] as const).map((subTerm) => (
-                    <button
-                      key={subTerm}
-                      type="button"
-                      onClick={() => setActiveFoundationSubTab(subTerm)}
-                      className={`px-3.5 sm:px-5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl font-black text-[11px] sm:text-xs border-2 sm:border-[2.5px] border-[#0b1120] transition-all cursor-pointer ${
-                        activeFoundationSubTab === subTerm
-                          ? 'bg-blue-600 text-white shadow-[2px_2px_0px_#0b1120] sm:shadow-[3px_3px_0px_#0b1120]'
-                          : 'bg-gray-50 text-[#0b1120] hover:bg-white'
-                      }`}
-                    >
-                      {subTerm === 'Term 1' ? 'TERM 1 (Math 1, Eng 1, Stats 1, CT)' : 'TERM 2 (Math 2, Eng 2, Stats 2, Python)'}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-6 sm:space-y-8">
-              <div className="space-y-4 sm:space-y-6">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1">
-                  <h3 className="text-sm sm:text-lg font-black text-[#0b1120] uppercase tracking-wide">
-                    Stage Final Prices (₹) — {activeConfigTab === 'Foundation' ? `Foundation (${activeFoundationSubTab})` : activeConfigTab}
-                  </h3>
-                  <span className="text-[11px] sm:text-xs font-bold text-gray-400">Set 0 or leave empty to hide that exam button</span>
-                </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4">
-                  {(['quiz1', 'quiz2', 'endTerm', 'fullTerm'] as const).map((key) => {
-                    const label = key === 'quiz1' ? 'Quiz 1' : key === 'quiz2' ? 'Quiz 2' : key === 'endTerm' ? 'End Term' : 'Full Term';
-                    return (
-                      <div key={key} className="space-y-1.5 sm:space-y-2">
-                        <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-400 block">{label} Price</label>
-                        <input
-                          type="number"
-                          value={currentPrices[key] ?? ''}
-                          placeholder="0 (hidden)"
-                          onChange={(e) => {
-                            const val = e.target.value === '' ? 0 : parseInt(e.target.value) || 0;
-                            setStagePricing({
-                              ...stagePricing,
-                              [activePricingKey]: {
-                                ...currentPrices,
-                                [key]: val
-                              }
-                            });
-                          }}
-                          className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-gray-50 border-2 sm:border-[3px] border-[#0b1120] rounded-xl font-black text-sm sm:text-base text-[#0b1120] outline-none focus:bg-white"
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="space-y-4 sm:space-y-6 pt-4 sm:pt-6 border-t-2 border-dashed border-gray-100">
-                <h3 className="text-sm sm:text-lg font-black text-[#0b1120] uppercase tracking-wide">Full Term Total Calculation</h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                  <div className="space-y-1.5 sm:space-y-2">
-                    <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-400 block">Calculation Method</label>
-                    <select
-                      value={currentPrices.calculationMode || 'fixed'}
-                      onChange={(e) => {
-                        setStagePricing({
-                          ...stagePricing,
-                          [activePricingKey]: {
-                            ...currentPrices,
-                            calculationMode: e.target.value as 'sum' | 'fixed'
-                          }
-                        });
-                      }}
-                      className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-white border-2 sm:border-[3px] border-[#0b1120] rounded-xl font-black text-xs sm:text-base text-[#0b1120] outline-none"
-                    >
-                      <option value="fixed">Use Fixed Final Price</option>
-                      <option value="sum">Sum Stage Prices (Quiz 1 + Quiz 2 + End Term)</option>
-                    </select>
-                  </div>
-
-                  {currentPrices.calculationMode === 'fixed' && (
-                    <div className="space-y-1.5 sm:space-y-2">
-                      <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-400 block">Fixed Full Term Total Price (₹)</label>
-                      <input
-                        type="number"
-                        value={currentPrices.fixedTotal ?? ''}
-                        placeholder="0"
-                        onChange={(e) => {
-                          const val = e.target.value === '' ? 0 : parseInt(e.target.value) || 0;
-                          setStagePricing({
-                            ...stagePricing,
-                            [activePricingKey]: {
-                              ...currentPrices,
-                              fixedTotal: val
-                            }
-                          });
-                        }}
-                        className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-gray-50 border-2 sm:border-[3px] border-[#0b1120] rounded-xl font-black text-sm sm:text-base text-[#0b1120] outline-none focus:bg-white"
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Save Button for Exam Config */}
-              <div className="pt-4 sm:pt-6 border-t-2 border-gray-100 flex justify-end">
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="w-full sm:w-auto flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3 sm:py-4 bg-[#10b981] text-[#0b1120] rounded-xl sm:rounded-2xl font-black text-sm sm:text-base border-2 sm:border-[3px] border-[#0b1120] shadow-[3px_3px_0px_#0b1120] sm:shadow-[6px_6px_0px_#0b1120] hover:translate-y-0.5 active:translate-y-1 active:shadow-none transition-all cursor-pointer disabled:opacity-50"
-                >
-                  {saving ? (
-                    <>
-                      <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" /> Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4 sm:w-5 sm:h-5" /> Save Configuration
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
+        <div className="bg-white border-[3px] md:border-[4px] border-[#0b1120] rounded-[1.25rem] sm:rounded-[2.5rem] p-4 sm:p-8 md:p-12 shadow-[4px_4px_0px_#0b1120] md:shadow-[12px_12px_0px_#0b1120] space-y-6 sm:space-y-8">
+          <div className="border-b-2 sm:border-b-4 border-[#0b1120] pb-4 sm:pb-6">
+            <h2 className="text-2xl sm:text-3xl font-black text-[#0b1120] mb-1 sm:mb-2">Homepage Video Modal</h2>
+            <p className="text-gray-500 font-bold text-xs sm:text-sm">
+              Configure the YouTube video popup shown to homepage visitors.
+            </p>
           </div>
 
-          {/* 2. Global Video Settings Modal Card */}
-          <div className="bg-white border-[3px] md:border-[4px] border-[#0b1120] rounded-[1.25rem] sm:rounded-[2.5rem] p-4 sm:p-8 md:p-12 shadow-[4px_4px_0px_#0b1120] md:shadow-[12px_12px_0px_#0b1120] space-y-6 sm:space-y-8">
-            <div className="border-b-2 sm:border-b-4 border-[#0b1120] pb-4 sm:pb-6">
-              <h2 className="text-2xl sm:text-3xl font-black text-[#0b1120] mb-1 sm:mb-2">Homepage Video Modal</h2>
-              <p className="text-gray-500 font-bold text-xs sm:text-sm">
-                Configure the YouTube video popup shown to homepage visitors.
+          <div className="space-y-4 sm:space-y-6">
+            <div className="space-y-1.5 sm:space-y-2">
+              <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-400 block">
+                YouTube Video URL
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+                className="w-full px-4 sm:px-6 py-2.5 sm:py-4 bg-gray-50 border-2 sm:border-[3px] border-[#0b1120] rounded-xl sm:rounded-2xl font-black text-sm sm:text-base text-[#0b1120] outline-none focus:bg-white transition-all placeholder:text-gray-300"
+              />
+              <p className="text-[11px] sm:text-xs text-gray-400 font-bold">
+                Supports normal links, short links, or embed links. Clear the URL to disable the popup entirely.
               </p>
             </div>
 
-            <div className="space-y-4 sm:space-y-6">
+            {videoId ? (
               <div className="space-y-1.5 sm:space-y-2">
                 <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-400 block">
-                  YouTube Video URL
+                  Player Preview
                 </label>
-                <input
-                  type="text"
-                  placeholder="e.g. https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-                  value={videoUrl}
-                  onChange={(e) => setVideoUrl(e.target.value)}
-                  className="w-full px-4 sm:px-6 py-2.5 sm:py-4 bg-gray-50 border-2 sm:border-[3px] border-[#0b1120] rounded-xl sm:rounded-2xl font-black text-sm sm:text-base text-[#0b1120] outline-none focus:bg-white transition-all placeholder:text-gray-300"
-                />
-                <p className="text-[11px] sm:text-xs text-gray-400 font-bold">
-                  Supports normal links, short links, or embed links. Clear the URL to disable the popup entirely.
-                </p>
-              </div>
-
-              {/* Video Preview */}
-              {videoId ? (
-                <div className="space-y-1.5 sm:space-y-2">
-                  <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-400 block">
-                    Player Preview
-                  </label>
-                  <div className="max-w-md aspect-video border-2 sm:border-[3px] border-[#0b1120] rounded-xl sm:rounded-2xl overflow-hidden bg-black shadow-[4px_4px_0px_#0b1120] sm:shadow-[6px_6px_0px_#0b1120]">
-                    <iframe
-                      src={`https://www.youtube.com/embed/${videoId}`}
-                      title="YouTube video player preview"
-                      frameBorder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      allowFullScreen
-                      className="w-full h-full"
-                    ></iframe>
-                  </div>
+                <div className="max-w-md aspect-video border-2 sm:border-[3px] border-[#0b1120] rounded-xl sm:rounded-2xl overflow-hidden bg-black shadow-[4px_4px_0px_#0b1120] sm:shadow-[6px_6px_0px_#0b1120]">
+                  <iframe
+                    src={`https://www.youtube.com/embed/${videoId}`}
+                    title="YouTube video player preview"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    className="w-full h-full"
+                  ></iframe>
                 </div>
-              ) : videoUrl.trim() ? (
-                <div className="p-3.5 sm:p-4 bg-yellow-50 border-2 sm:border-[3px] border-yellow-500 text-yellow-700 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm">
-                  ⚠️ Invalid YouTube URL. Preview not available. Please make sure the link is a valid YouTube video.
-                </div>
-              ) : null}
-
-              <div className="pt-4 border-t-2 border-gray-100 flex justify-end">
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="w-full sm:w-auto flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3 sm:py-4 bg-blue-600 text-white rounded-xl sm:rounded-2xl font-black text-sm sm:text-base border-2 sm:border-[3px] border-[#0b1120] shadow-[3px_3px_0px_#0b1120] sm:shadow-[6px_6px_0px_#0b1120] hover:translate-y-0.5 active:translate-y-1 active:shadow-none transition-all cursor-pointer disabled:opacity-50"
-                >
-                  {saving ? (
-                    <>
-                      <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" /> Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4 sm:w-5 sm:h-5" /> Save Video Link
-                    </>
-                  )}
-                </button>
               </div>
+            ) : videoUrl.trim() ? (
+              <div className="p-3.5 sm:p-4 bg-yellow-50 border-2 sm:border-[3px] border-yellow-500 text-yellow-700 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm">
+                ⚠️ Invalid YouTube URL. Preview not available. Please make sure the link is a valid YouTube video.
+              </div>
+            ) : null}
+
+            <div className="pt-4 border-t-2 border-gray-100 flex justify-end">
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={saving}
+                className="w-full sm:w-auto flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3 sm:py-4 bg-blue-600 text-white rounded-xl sm:rounded-2xl font-black text-sm sm:text-base border-2 sm:border-[3px] border-[#0b1120] shadow-[3px_3px_0px_#0b1120] sm:shadow-[6px_6px_0px_#0b1120] hover:translate-y-0.5 active:translate-y-1 active:shadow-none transition-all cursor-pointer disabled:opacity-50"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" /> Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 sm:w-5 sm:h-5" /> Save Video Link
+                  </>
+                )}
+              </button>
             </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );
