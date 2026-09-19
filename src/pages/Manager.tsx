@@ -701,8 +701,9 @@ export default function Manager() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 text-sm font-medium">
-        Loading…
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 text-slate-500 text-sm font-medium gap-3">
+        <Loader2 className="w-5 h-5 animate-spin" />
+        Loading manager…
       </div>
     );
   }
