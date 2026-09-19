@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Plus, Edit, Trash2, Save, X, Loader2, Search, AlertCircle, Copy, Check, Database } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
+import ManagerFullPageSheet from './ManagerFullPageSheet';
 
 interface Employee {
   id?: string;
@@ -610,27 +611,20 @@ export default function EmployeesManager() {
         </div>
       )}
 
-      {/* Add / Edit Form Modal */}
-      {editingEmployee && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[150] flex items-start justify-center px-4 pt-12 pb-12 overflow-y-auto">
-          <div className="bg-white rounded-xl border-2 border-[#0b1120] max-w-4xl w-full overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-150">
-            {/* Modal Header */}
-            <div className="border-b-2 border-gray-100 px-6 py-5 flex items-center justify-between bg-gray-50/50">
-              <h3 className="text-lg font-black text-[#0b1120]">
-                {editingEmployee.id ? 'Edit Employee Record' : 'Add Employee Record'}
-              </h3>
-              <button 
-                onClick={() => setEditingEmployee(null)}
-                className="p-1 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Modal Form */}
-            <form onSubmit={handleSave} className="p-6 space-y-6">
+      {/* Add / Edit Form — full page */}
+      <ManagerFullPageSheet
+        open={!!editingEmployee}
+        title={editingEmployee?.id ? 'Edit employee' : 'Add employee'}
+        subtitle={editingEmployee?.full_name || 'Create or update an employee record'}
+        onClose={() => setEditingEmployee(null)}
+        onSave={() => (document.getElementById('employee-editor-form') as HTMLFormElement | null)?.requestSubmit()}
+        saveLabel="Save record"
+        saving={saving}
+        maxWidthClass="max-w-4xl"
+      >
+            <form id="employee-editor-form" onSubmit={handleSave} className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-7 shadow-sm space-y-6">
               {errorMsg && (
-                <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-800 font-bold flex items-center gap-2">
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-800 font-semibold flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 text-red-500" />
                   <span>{errorMsg}</span>
                 </div>
@@ -640,54 +634,54 @@ export default function EmployeesManager() {
                 {/* Left Column */}
                 <div className="space-y-5">
                   <div>
-                    <label className="block text-xs font-black text-gray-500 uppercase tracking-wider mb-2">
-                      FULL NAME *
+                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                      Full name *
                     </label>
                     <input 
                       required 
                       type="text" 
-                      value={editingEmployee.full_name}
-                      onChange={(e) => setEditingEmployee({ ...editingEmployee, full_name: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 outline-none font-semibold text-sm transition-all text-gray-800 placeholder-gray-400" 
+                      value={editingEmployee?.full_name || ''}
+                      onChange={(e) => editingEmployee && setEditingEmployee({ ...editingEmployee, full_name: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-slate-400 outline-none font-medium text-sm transition-all text-slate-900 placeholder-slate-400" 
                       placeholder="e.g. Raj Singh"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-black text-gray-500 uppercase tracking-wider mb-2">
-                      EMAIL ADDRESS
+                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                      Email address
                     </label>
                     <input 
                       type="email" 
-                      value={editingEmployee.email || ''}
-                      onChange={(e) => setEditingEmployee({ ...editingEmployee, email: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 outline-none font-semibold text-sm transition-all text-gray-800 placeholder-gray-400" 
+                      value={editingEmployee?.email || ''}
+                      onChange={(e) => editingEmployee && setEditingEmployee({ ...editingEmployee, email: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-slate-400 outline-none font-medium text-sm transition-all text-slate-900 placeholder-slate-400" 
                       placeholder="e.g. raj@genziitian.in"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-black text-gray-500 uppercase tracking-wider mb-2">
-                      DEPARTMENT *
+                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                      Department *
                     </label>
                     <input 
                       required 
                       type="text" 
-                      value={editingEmployee.department}
-                      onChange={(e) => setEditingEmployee({ ...editingEmployee, department: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 outline-none font-semibold text-sm transition-all text-gray-800 placeholder-gray-400" 
+                      value={editingEmployee?.department || ''}
+                      onChange={(e) => editingEmployee && setEditingEmployee({ ...editingEmployee, department: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-slate-400 outline-none font-medium text-sm transition-all text-slate-900 placeholder-slate-400" 
                       placeholder="e.g. Programming"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-black text-gray-500 uppercase tracking-wider mb-2">
-                      CURRENT STATUS *
+                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                      Current status *
                     </label>
                     <select 
-                      value={editingEmployee.status.toUpperCase()}
-                      onChange={(e) => setEditingEmployee({ ...editingEmployee, status: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 outline-none font-semibold text-sm transition-all text-gray-800 bg-white"
+                      value={(editingEmployee?.status || 'ACTIVE').toUpperCase()}
+                      onChange={(e) => editingEmployee && setEditingEmployee({ ...editingEmployee, status: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-slate-400 outline-none font-medium text-sm transition-all text-slate-900 bg-white"
                     >
                       {AVAILABLE_STATUSES.map(status => (
                         <option key={status} value={status}>
@@ -701,14 +695,14 @@ export default function EmployeesManager() {
                 {/* Right Column */}
                 <div className="space-y-5">
                   <div>
-                    <label className="block text-xs font-black text-gray-500 uppercase tracking-wider mb-2">
-                      EMPLOYEE ID
+                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                      Employee ID
                     </label>
                     <input 
                       disabled 
                       type="text" 
-                      value={editingEmployee.id ? editingEmployee.employee_id : getNextEmployeeId(editingEmployee.role, editingEmployee.full_name)}
-                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-gray-50 outline-none font-mono font-bold text-sm text-gray-400" 
+                      value={editingEmployee ? (editingEmployee.id ? editingEmployee.employee_id : getNextEmployeeId(editingEmployee.role, editingEmployee.full_name)) : ''}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 outline-none font-mono font-semibold text-sm text-slate-400" 
                     />
                   </div>
 
@@ -787,28 +781,9 @@ export default function EmployeesManager() {
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="border-t border-gray-100 pt-4 flex items-center justify-end gap-3">
-                <button 
-                  type="button"
-                  onClick={() => setEditingEmployee(null)}
-                  className="px-5 py-2.5 border-2 border-gray-200 hover:border-gray-300 text-gray-600 font-black text-sm rounded-xl transition-colors"
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit"
-                  disabled={saving}
-                  className="px-5 py-2.5 bg-blue-600 text-white border-2 border-blue-600 font-black text-sm rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-1.5"
-                >
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                  Save Record
-                </button>
-              </div>
+              {/* Action buttons moved to full-page footer */}
             </form>
-          </div>
-        </div>
-      )}
+      </ManagerFullPageSheet>
 
       {/* Delete Confirmation Modal */}
       {deleteTarget && (

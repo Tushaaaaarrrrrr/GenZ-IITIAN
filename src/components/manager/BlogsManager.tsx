@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
 import { Plus, Edit, Trash2, Save, X, Loader2, Eye, EyeOff, ExternalLink, Search } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import type { BlogPost } from '../../data/blogsData';
+import ManagerFullPageSheet, { managerFieldLabel, managerInputCls } from './ManagerFullPageSheet';
 
 type BlogRow = Partial<BlogPost> & { id?: number };
 
@@ -240,140 +240,116 @@ export default function BlogsManager() {
         </div>
       )}
 
-      {/* Editor modal */}
-      <AnimatePresence>
-        {editing && (
-          <div className="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-black/60 backdrop-blur-sm p-4 py-10">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 30 }}
-              className="bg-white border-[4px] border-[#0b1120] rounded-[2rem] shadow-[12px_12px_0px_#0b1120] w-full max-w-3xl"
-            >
-              <div className="flex items-center justify-between px-8 py-6 border-b-[3px] border-gray-100">
-                <h2 className="text-3xl font-black text-[#0b1120]">{editing.id ? 'Edit Blog' : 'Create Blog'}</h2>
-                <button onClick={() => setEditing(null)} className="w-10 h-10 flex items-center justify-center rounded-xl border-2 border-[#0b1120] hover:bg-gray-50">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="px-8 py-6 space-y-5">
+      {/* Blog editor — full page */}
+      <ManagerFullPageSheet
+        open={!!editing}
+        title={editing?.id ? 'Edit blog' : 'Create blog'}
+        subtitle={editing?.title || 'Write and publish a post'}
+        onClose={() => setEditing(null)}
+        onSave={handleSave}
+        saveLabel={editing?.id ? 'Save changes' : 'Publish blog'}
+        saving={saving}
+        maxWidthClass="max-w-3xl"
+      >
+              <div className="space-y-5 bg-white border border-slate-200 rounded-2xl p-5 sm:p-7 shadow-sm">
                 {error && (
-                  <div className="bg-red-50 border-2 border-red-300 text-red-700 rounded-xl px-4 py-3 font-bold text-sm">{error}</div>
+                  <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 font-semibold text-sm">{error}</div>
                 )}
 
                 <Field label="Title">
                   <input
-                    value={editing.title || ''}
+                    value={editing?.title || ''}
                     onChange={(e) => onTitleChange(e.target.value)}
                     placeholder="Eye-catching blog title"
-                    className={inputCls}
+                    className={managerInputCls}
                   />
                 </Field>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <Field label="Slug (URL)">
                     <input
-                      value={editing.slug || ''}
+                      value={editing?.slug || ''}
                       onChange={(e) => { setSlugTouched(true); setField('slug', slugify(e.target.value)); }}
                       placeholder="auto-generated-from-title"
-                      className={inputCls}
+                      className={managerInputCls}
                     />
                   </Field>
                   <Field label="Category">
                     <input
-                      value={editing.category || ''}
+                      value={editing?.category || ''}
                       onChange={(e) => setField('category', e.target.value)}
                       placeholder="e.g. IIT Madras BS Degree"
-                      className={inputCls}
+                      className={managerInputCls}
                     />
                   </Field>
                 </div>
 
                 <Field label="Thumbnail Image URL">
                   <input
-                    value={editing.image || ''}
+                    value={editing?.image || ''}
                     onChange={(e) => setField('image', e.target.value)}
                     placeholder="/Image/your-thumbnail.png or https://..."
-                    className={inputCls}
+                    className={managerInputCls}
                   />
                 </Field>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                   <Field label="Display Date">
-                    <input value={editing.date || ''} onChange={(e) => setField('date', e.target.value)} placeholder="May 15, 2026" className={inputCls} />
+                    <input value={editing?.date || ''} onChange={(e) => setField('date', e.target.value)} placeholder="May 15, 2026" className={managerInputCls} />
                   </Field>
                   <Field label="Read Time">
-                    <input value={editing.read_time || ''} onChange={(e) => setField('read_time', e.target.value)} placeholder="7 min read" className={inputCls} />
+                    <input value={editing?.read_time || ''} onChange={(e) => setField('read_time', e.target.value)} placeholder="7 min read" className={managerInputCls} />
                   </Field>
                   <Field label="Status">
                     <button
                       type="button"
-                      onClick={() => setField('published', Number(editing.published) ? 0 : 1)}
-                      className={`w-full flex items-center justify-center gap-2 rounded-xl border-[2px] border-[#0b1120] px-4 py-3 font-black text-sm ${
-                        Number(editing.published) ? 'bg-[#10b981] text-white' : 'bg-amber-400 text-[#0b1120]'
+                      onClick={() => setField('published', Number(editing?.published) ? 0 : 1)}
+                      className={`w-full flex items-center justify-center gap-2 rounded-xl border px-4 py-2.5 font-semibold text-sm ${
+                        Number(editing?.published) ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-amber-100 text-amber-900 border-amber-200'
                       }`}
                     >
-                      {Number(editing.published) ? <><Eye className="w-4 h-4" /> Published</> : <><EyeOff className="w-4 h-4" /> Draft</>}
+                      {Number(editing?.published) ? <><Eye className="w-4 h-4" /> Published</> : <><EyeOff className="w-4 h-4" /> Draft</>}
                     </button>
                   </Field>
                 </div>
 
                 <Field label="Content (HTML)">
                   <textarea
-                    value={editing.content || ''}
+                    value={editing?.content || ''}
                     onChange={(e) => setField('content', e.target.value)}
                     rows={12}
                     placeholder="<p>Write your post using HTML. Use <h2> for sections, <a href> for links, <strong> for emphasis.</p>"
-                    className={`${inputCls} font-mono text-sm leading-relaxed resize-y`}
+                    className={`${managerInputCls} font-mono text-sm leading-relaxed resize-y`}
                   />
-                  <p className="text-xs font-bold text-gray-400 mt-1">
+                  <p className="text-xs text-slate-400 mt-1">
                     Tip: paste HTML. <code>&lt;h2&gt;</code> headings, <code>&lt;p&gt;</code> paragraphs and <code>&lt;a&gt;</code> links are styled automatically on the live post.
                   </p>
                 </Field>
 
-                <div className="border-t-[3px] border-gray-100 pt-5 space-y-5">
-                  <h3 className="text-sm font-black uppercase tracking-wider text-gray-400">SEO (optional)</h3>
+                <div className="border-t border-slate-100 pt-5 space-y-5">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">SEO (optional)</h3>
                   <Field label="SEO Title">
-                    <input value={editing.seo_title || ''} onChange={(e) => setField('seo_title', e.target.value)} className={inputCls} />
+                    <input value={editing?.seo_title || ''} onChange={(e) => setField('seo_title', e.target.value)} className={managerInputCls} />
                   </Field>
                   <Field label="SEO Description">
-                    <textarea value={editing.seo_description || ''} onChange={(e) => setField('seo_description', e.target.value)} rows={2} className={`${inputCls} resize-y`} />
+                    <textarea value={editing?.seo_description || ''} onChange={(e) => setField('seo_description', e.target.value)} rows={2} className={`${managerInputCls} resize-y`} />
                   </Field>
                   <Field label="SEO Keywords (comma separated)">
-                    <input value={editing.seo_keywords || ''} onChange={(e) => setField('seo_keywords', e.target.value)} className={inputCls} />
+                    <input value={editing?.seo_keywords || ''} onChange={(e) => setField('seo_keywords', e.target.value)} className={managerInputCls} />
                   </Field>
                 </div>
               </div>
-
-              <div className="flex items-center justify-end gap-4 px-8 py-6 border-t-[3px] border-gray-100">
-                <button onClick={() => setEditing(null)} className="px-6 py-3 rounded-xl border-[2px] border-[#0b1120] font-black hover:bg-gray-50">
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="flex items-center gap-2 px-8 py-3 bg-[#10b981] text-[#0b1120] rounded-xl font-black border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] hover:translate-y-1 hover:shadow-none transition-all disabled:opacity-60"
-                >
-                  {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                  {editing.id ? 'Save Changes' : 'Publish Blog'}
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      </ManagerFullPageSheet>
     </div>
   );
 }
 
-const inputCls =
-  'w-full rounded-xl border-[2px] border-[#0b1120] bg-white px-4 py-3 font-bold text-[#0b1120] text-sm placeholder:text-gray-300 placeholder:font-medium focus:outline-none focus:ring-2 focus:ring-[#10b981]';
+const inputCls = managerInputCls;
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="block">
-      <span className="block text-xs font-black uppercase tracking-wider text-gray-500 mb-2">{label}</span>
+      <span className={managerFieldLabel}>{label}</span>
       {children}
     </label>
   );

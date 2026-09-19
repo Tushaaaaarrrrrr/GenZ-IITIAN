@@ -138,7 +138,7 @@ export default function MobileCourses({
       .order('isPinned', { ascending: false })
       .order('created_at', { ascending: false })
       .then(({ data }) => {
-        setCourses(data || []);
+        setCourses((data || []).filter((course: any) => course.active !== false));
         setLoading(false);
       });
 

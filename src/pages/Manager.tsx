@@ -1,12 +1,13 @@
 import { useAuth } from '../context/AuthContext';
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import { supabase } from '../lib/supabase';
-import { LayoutDashboard, ShoppingBag, ScrollText, BookOpen, Plus, Search, Trash2, Edit, Save, X, Loader2, AlertCircle, User, Download, TrendingUp, TrendingDown, Users, ShieldCheck, CreditCard, RefreshCw, Gift, ArrowRight, Copy, Coins, Eye, Settings, ClipboardList, Boxes } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, ScrollText, BookOpen, Plus, Search, Trash2, Edit, Save, X, Loader2, AlertCircle, User, Download, TrendingUp, TrendingDown, Users, ShieldCheck, CreditCard, RefreshCw, Gift, ArrowRight, Copy, Coins, Eye, Settings, ClipboardList, Boxes, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate, useLocation, NavLink } from 'react-router-dom';
 import { apiService } from '../lib/api';
 import BlogsManager from '../components/manager/BlogsManager';
 import EmployeesManager from '../components/manager/EmployeesManager';
+import ManagerFullPageSheet from '../components/manager/ManagerFullPageSheet';
 import { getYouTubeId } from '../utils/youtube';
 
 
@@ -515,6 +516,7 @@ export default function Manager() {
         description: course.subtitle, // subtitle maps to description in DB for now
         price: parseInt(course.price as string),
         isPinned: course.isPinned || false,
+        active: course.active !== false,
         class_type: course.class_type || 'recorded',
         learn: [],
         who: '',
@@ -1061,11 +1063,16 @@ export default function Manager() {
               {effectiveTab === 'courses' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
                   {data.map((course) => (
-                    <div key={course.id} className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] p-8 shadow-[10px_10px_0px_#0b1120] flex flex-col hover:shadow-[10px_10px_0px_#10b981] transition-all">
+                    <div key={course.id} className={`bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] p-8 shadow-[10px_10px_0px_#0b1120] flex flex-col hover:shadow-[10px_10px_0px_#10b981] transition-all ${course.active === false ? 'opacity-70' : ''}`}>
                       <div className="w-full aspect-video bg-gray-100 rounded-2xl border-2 border-[#0b1120] mb-6 overflow-hidden">
                         <img src={course.image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=800'} className="w-full h-full object-cover" />
                       </div>
                       <h3 className="text-2xl font-black text-[#0b1120] mb-2">{course.name}</h3>
+                      {course.active === false && (
+                        <div className="mb-3 inline-flex items-center gap-1.5 px-3 py-1 bg-red-50 border-2 border-red-200 rounded-lg text-[10px] font-black text-red-600 uppercase tracking-wider">
+                          Disabled — hidden from users
+                        </div>
+                      )}
                       <div className="text-3xl font-black text-[#10b981] mb-6">
                         {course.discountPrice ? (
                           <><span className="text-sm text-gray-400 line-through mr-2">₹{course.price}</span>₹{course.discountPrice}</>
@@ -1230,29 +1237,17 @@ export default function Manager() {
         </div>
       </div>
 
-      {/* Course Modal */}
-      <AnimatePresence>
-        {(showAddCourse || editingCourse) && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-2.5 sm:p-6 lg:p-12">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { setShowAddCourse(false); setEditingCourse(null); }} className="absolute inset-0 bg-[#0b1120]/60 backdrop-blur-md" />
-            <motion.div 
-              initial={{ scale: 0.9, y: 30 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 30 }}
-              className="relative bg-white border-[3px] md:border-[6px] border-[#0b1120] rounded-[1.5rem] sm:rounded-[2.5rem] md:rounded-[3.5rem] p-4 sm:p-8 lg:p-16 w-full max-w-7xl shadow-[8px_8px_0px_#0b1120] md:shadow-[20px_20px_0px_#0b1120] overflow-y-auto max-h-[92vh]"
-            >
-              <div className="flex items-center justify-between mb-6 sm:mb-8">
-                <h2 className="text-xl sm:text-3xl font-black text-[#0b1120] flex items-center gap-3">
-                  {editingCourse ? 'Update Course' : 'Create Course'}
-                </h2>
-                <button
-                  type="button"
-                  onClick={() => { setShowAddCourse(false); setEditingCourse(null); }}
-                  className="w-10 h-10 rounded-full border-2 border-[#0b1120] flex items-center justify-center hover:bg-gray-100 transition-colors shadow-[2px_2px_0px_#0b1120]"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-10">
+      {/* Course Editor — full page */}
+      <ManagerFullPageSheet
+        open={!!(showAddCourse || editingCourse)}
+        title={editingCourse ? 'Edit course' : 'Create course'}
+        subtitle={editingCourse?.name || 'Fill in the details below, then save'}
+        onClose={() => { setShowAddCourse(false); setEditingCourse(null); }}
+        onSave={() => document.getElementById('course-editor-save')?.click()}
+        saveLabel="Save changes"
+        maxWidthClass="max-w-6xl"
+      >
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 <div className="space-y-6">
                   <div>
                     <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Course Name</label>
@@ -1352,13 +1347,29 @@ export default function Manager() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
+                      <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Visibility</label>
+                      <select
+                        id="c-active"
+                        defaultValue={editingCourse?.active === false ? 'false' : 'true'}
+                        className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-black focus:ring-[6px] ring-blue-100 outline-none bg-white"
+                      >
+                        <option value="true">Enabled — visible to users</option>
+                        <option value="false">Disabled — hidden from users</option>
+                      </select>
+                      <p className="mt-2 text-[11px] font-bold text-gray-400">
+                        Disable during maintenance so the course disappears from the courses page.
+                      </p>
+                    </div>
+                    <div>
                       <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Pinned?</label>
                       <select id="c-pinned" defaultValue={editingCourse?.isPinned ? 'true' : 'false'} className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-black focus:ring-[6px] ring-blue-100 outline-none bg-white">
                         <option value="false">Regular</option>
                         <option value="true">Pinned</option>
                       </select>
                     </div>
-                    <div>
+                  </div>
+
+                  <div>
                       <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Course Marketing Tag</label>
                       <select value={courseCategory} onChange={(e) => setCourseCategory(e.target.value as 'QUALIFIER' | 'LIVE' | 'RECORDED' | 'NONE')} className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-black focus:ring-[6px] ring-blue-100 outline-none bg-white">
                         <option value="NONE">None</option>
@@ -1366,7 +1377,6 @@ export default function Manager() {
                         <option value="LIVE">📺 Live</option>
                         <option value="RECORDED">📹 Recorded</option>
                       </select>
-                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1874,8 +1884,9 @@ export default function Manager() {
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-6 mt-8 sm:mt-16">
+              <div className="hidden">
                 <button 
+                  id="course-editor-save"
                   onClick={() => {
                     const rawId = (document.getElementById('c-id') as HTMLInputElement)?.value || editingCourse?.id;
                     const id = sanitizeCourseId(rawId);
@@ -1896,6 +1907,7 @@ export default function Manager() {
                     }
 
                     const isPinned = (document.getElementById('c-pinned') as HTMLSelectElement)?.value === 'true';
+                    const active = (document.getElementById('c-active') as HTMLSelectElement)?.value !== 'false';
                     const category = (document.getElementById('c-category') as HTMLInputElement).value;
                     const class_type = (document.getElementById('c-class-type') as HTMLSelectElement)?.value || 'recorded';
 
@@ -1956,7 +1968,7 @@ export default function Manager() {
                     }
 
                     handleCourseAction({ 
-                      id, previousId: editingCourse?.id, name, price, isPinned, subtitle,
+                      id, previousId: editingCourse?.id, name, price, isPinned, active, subtitle,
                       cohortContent,
                       category,
                       class_type,
@@ -1976,45 +1988,21 @@ export default function Manager() {
                       exam_stages: selectedExamStages,
                     });
                   }}
-                  className="flex-grow py-3.5 sm:py-5 bg-[#10b981] text-[#0b1120] rounded-xl sm:rounded-2xl font-black text-sm sm:text-lg border-2 sm:border-[4px] border-[#0b1120] flex items-center justify-center gap-2 sm:gap-3 shadow-[4px_4px_0px_#0b1120] sm:shadow-[8px_8px_0px_#0b1120] hover:translate-y-0.5 active:translate-y-1 active:shadow-none transition-all cursor-pointer"
-                >
-                  <Save className="w-5 h-5 sm:w-6 sm:h-6" /> Confirm Changes
-                </button>
-                <button 
-                  onClick={() => { setShowAddCourse(false); setEditingCourse(null); }} 
-                  className="px-6 sm:px-10 py-3.5 sm:py-5 bg-white text-[#0b1120] rounded-xl sm:rounded-2xl font-black text-sm sm:text-base border-2 sm:border-[4px] border-[#0b1120] hover:bg-gray-50 flex items-center justify-center cursor-pointer shadow-[2px_2px_0px_#0b1120] sm:shadow-none"
-                >
-                  Abort
-                </button>
+                />
               </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      </ManagerFullPageSheet>
 
-      {/* Discount Modal */}
-      <AnimatePresence>
-        {(showAddDiscount || editingDiscount) && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-2.5 sm:p-6 lg:p-12">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { setShowAddDiscount(false); setEditingDiscount(null); }} className="absolute inset-0 bg-[#0b1120]/60 backdrop-blur-md" />
-            <motion.div 
-              initial={{ scale: 0.9, y: 30 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 30 }}
-              className="relative bg-white border-[3px] md:border-[6px] border-[#0b1120] rounded-[1.5rem] sm:rounded-[2.5rem] md:rounded-[3rem] p-4 sm:p-6 lg:p-10 w-full max-w-4xl max-h-[92vh] overflow-y-auto shadow-[8px_8px_0px_#0b1120] md:shadow-[20px_20px_0px_#0b1120]"
-            >
-              <div className="flex items-center justify-between mb-6 sm:mb-8">
-                <h2 className="text-xl sm:text-2xl font-black text-[#0b1120] flex items-center gap-3">
-                  {editingDiscount ? 'Update Coupon' : 'Create Coupon'}
-                </h2>
-                <button
-                  type="button"
-                  onClick={() => { setShowAddDiscount(false); setEditingDiscount(null); }}
-                  className="w-10 h-10 rounded-full border-2 border-[#0b1120] flex items-center justify-center hover:bg-gray-100 transition-colors shadow-[2px_2px_0px_#0b1120]"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="space-y-6">
+      {/* Discount Editor — full page */}
+      <ManagerFullPageSheet
+        open={!!(showAddDiscount || editingDiscount)}
+        title={editingDiscount ? 'Edit coupon' : 'Create coupon'}
+        subtitle={editingDiscount?.code || 'Configure discount rules and limits'}
+        onClose={() => { setShowAddDiscount(false); setEditingDiscount(null); }}
+        onSave={() => document.getElementById('discount-editor-save')?.click()}
+        saveLabel="Save coupon"
+        maxWidthClass="max-w-3xl"
+      >
+              <div className="space-y-6 bg-white border border-slate-200 rounded-2xl p-5 sm:p-7 shadow-sm">
                 <div>
                   <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Coupon Code*</label>
                   <input type="text" defaultValue={editingDiscount?.code} id="d-code" placeholder="e.g. WELCOME100" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-black text-xl uppercase focus:ring-[6px] ring-purple-100 outline-none" />
@@ -2129,8 +2117,9 @@ export default function Manager() {
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-6 mt-8 sm:mt-12">
+              <div className="hidden">
                 <button 
+                  id="discount-editor-save"
                   onClick={() => {
                     const code = (document.getElementById('d-code') as HTMLInputElement).value;
                     const discount_value = (document.getElementById('d-value') as HTMLInputElement).value;
@@ -2179,55 +2168,19 @@ export default function Manager() {
                       discountEmails
                     });
                   }}
-                  className="flex-grow py-3.5 sm:py-5 bg-purple-500 text-white rounded-xl sm:rounded-2xl font-black text-sm sm:text-lg border-2 sm:border-[4px] border-[#0b1120] flex items-center justify-center gap-2 sm:gap-3 shadow-[4px_4px_0px_#0b1120] sm:shadow-[8px_8px_0px_#0b1120] hover:translate-y-0.5 active:translate-y-1 active:shadow-none hover:bg-purple-600 transition-colors cursor-pointer"
-                >
-                  <Save className="w-5 h-5 sm:w-6 sm:h-6" /> Confirm Changes
-                </button>
-                <button 
-                  onClick={() => { setShowAddDiscount(false); setEditingDiscount(null); }} 
-                  className="px-6 sm:px-10 py-3.5 sm:py-5 bg-white text-[#0b1120] rounded-xl sm:rounded-2xl font-black text-sm sm:text-base border-2 sm:border-[4px] border-[#0b1120] hover:bg-gray-50 flex items-center justify-center cursor-pointer shadow-[2px_2px_0px_#0b1120] sm:shadow-none"
-                >
-                  Abort
-                </button>
+                />
               </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      </ManagerFullPageSheet>
 
-      {/* USER DETAILS MODAL */}
-      <AnimatePresence>
-        {selectedUser && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex items-start justify-center p-2.5 sm:p-6 overflow-y-auto">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white border-[3px] md:border-[4px] border-[#0b1120] rounded-[1.5rem] sm:rounded-[2rem] lg:rounded-[2.5rem] p-4 sm:p-6 lg:p-8 w-full max-w-7xl max-h-[94vh] overflow-y-auto shadow-[6px_6px_0px_#0b1120] lg:shadow-[16px_16px_0px_#0b1120] my-2 sm:my-3"
-            >
-              <div className="flex justify-between items-start gap-3 sm:gap-4 border-b-2 sm:border-b-[3px] border-gray-100 pb-4 sm:pb-6 mb-6 sm:mb-8">
-                <div className="min-w-0">
-                  <h3 className="text-lg sm:text-xl font-black text-[#0b1120] flex items-center gap-2 sm:gap-3 min-w-0">
-                    <User className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500 shrink-0" />
-                    <span className="break-all">{selectedUser.name || 'Anonymous User'}</span>
-                  </h3>
-                  <p className="text-gray-500 font-bold mt-1 sm:mt-2 flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-1 text-xs sm:text-sm">
-                    <span className="break-all">{selectedUser.email}</span>
-                    <span className="font-mono">{selectedUser.phone || 'No phone number'}</span>
-                    {selectedUser.created_at && (
-                      <span className="text-gray-400">
-                         Joined: {new Date(selectedUser.created_at).toLocaleDateString()}
-                      </span>
-                    )}
-                  </p>
-                </div>
-                <button 
-                  onClick={() => setSelectedUser(null)} 
-                  className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-full border-2 sm:border-[3px] border-[#0b1120] flex items-center justify-center hover:bg-gray-100 transition-colors shadow-[2px_2px_0px_#0b1120] sm:shadow-[4px_4px_0px_#0b1120]"
-                >
-                  <X className="w-5 h-5 sm:w-6 sm:h-6 text-[#0b1120]" />
-                </button>
-              </div>
+      {/* User details — full page */}
+      <ManagerFullPageSheet
+        open={!!selectedUser}
+        title={selectedUser?.name || 'Anonymous user'}
+        subtitle={[selectedUser?.email, selectedUser?.phone].filter(Boolean).join(' · ')}
+        onClose={() => setSelectedUser(null)}
+        hideFooter
+        maxWidthClass="max-w-6xl"
+      >
 
               {isLoadingUserDetails ? (
                 <div className="flex flex-col items-center justify-center py-24 text-gray-300 gap-4">
@@ -2357,10 +2310,7 @@ export default function Manager() {
 
                 </div>
               )}
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      </ManagerFullPageSheet>
 
     </div>
   );

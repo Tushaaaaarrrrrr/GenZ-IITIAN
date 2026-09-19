@@ -47,7 +47,7 @@ export default function CourseDetail() {
       .eq('id', id)
       .single();
 
-    if (error || !data) {
+    if (error || !data || data.active === false) {
       console.error('Course not found:', error);
       navigate('/courses');
       return;

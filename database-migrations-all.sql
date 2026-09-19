@@ -23,6 +23,10 @@ CREATE INDEX IF NOT EXISTS idx_courses_category ON public.courses("courseCategor
 ALTER TABLE public.courses
 ADD COLUMN IF NOT EXISTS "pricing_banner_text" TEXT DEFAULT NULL;
 
+-- 4. Ensure active column exists for enable/disable visibility on the courses page
+ALTER TABLE public.courses
+ADD COLUMN IF NOT EXISTS "active" BOOLEAN DEFAULT true;
+
 -- ========================================================================
 -- MIGRATIONS COMPLETE
 -- ========================================================================

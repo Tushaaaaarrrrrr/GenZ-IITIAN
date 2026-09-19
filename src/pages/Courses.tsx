@@ -178,7 +178,7 @@ export default function Courses() {
         .select('*')
         .order('isPinned', { ascending: false })
         .order('created_at', { ascending: false });
-      setCourses(coursesData || []);
+      setCourses((coursesData || []).filter((course: any) => course.active !== false));
 
       // Fetch boxes config
       const { data: visData } = await supabase.from('settings').select('*').eq('key', 'exam_visibility').maybeSingle();

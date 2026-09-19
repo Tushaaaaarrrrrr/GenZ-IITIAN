@@ -210,6 +210,10 @@ export default function CourseSelection() {
     try {
       const { data, error } = await supabase.from('courses').select('*').eq('id', courseLookupId).single();
       if (error) throw error;
+      if (data.active === false) {
+        navigate('/courses');
+        return;
+      }
       setCourse(data);
 
       // Auto-select behavior:
@@ -517,12 +521,46 @@ export default function CourseSelection() {
     setCoinsError('');
   };
 
-  // Re-calculate discount if course selection changes
+  // Keep bundle discount when selection still meets minimum (N or more); recalculate savings.
+  // Only clear when selection drops below the required count (or a non-bundle code was used).
   useEffect(() => {
-    if (appliedDiscountCode) {
-       removeDiscount(); // Clear discount if sub-courses change to be safe
+    if (!appliedDiscountCode || !course) return;
+
+    const isBundleCode =
+      course.isBundle &&
+      course.bundleDiscountCode &&
+      appliedDiscountCode.toUpperCase() === String(course.bundleDiscountCode).toUpperCase();
+
+    if (isBundleCode) {
+      const firstBundleCourse = Array.isArray(course.bundleCourses) ? course.bundleCourses[0] : null;
+      const mode = (course.bundleDiscountMode || firstBundleCourse?._bundleDiscountMode) === 'any' ? 'any' : 'all';
+      const requiredCountRaw = mode === 'any'
+        ? Number(course.bundleDiscountMinCourses || firstBundleCourse?._bundleDiscountMinCourses || 3)
+        : Number(course.bundleCourses?.length || 0);
+      const requiredCount = Math.max(
+        1,
+        Math.min(requiredCountRaw, Number(course.bundleCourses?.length || requiredCountRaw || 1))
+      );
+      const stillEligible = selectedCourses.length >= requiredCount;
+
+      if (!stillEligible) {
+        setAppliedDiscountCode(null);
+        setDiscountAmount(0);
+        return;
+      }
+
+      const rawTotal = course.bundleCourses
+        .filter((bc: SubCourse) => selectedCourses.includes(bc.courseId))
+        .reduce((sum: number, bc: SubCourse) => sum + bc.price, 0);
+      const bundlePrice = Number(course.bundleDiscountPrice || rawTotal);
+      setDiscountAmount(Math.max(rawTotal - bundlePrice, 0));
+      return;
     }
-  }, [selectedCourses, course]);
+
+    // Non-bundle codes: selection changed, force re-apply
+    setAppliedDiscountCode(null);
+    setDiscountAmount(0);
+  }, [selectedCourses, course, appliedDiscountCode]);
 
   useEffect(() => {
     const total = calculateTotal();
@@ -935,7 +973,7 @@ export default function CourseSelection() {
                                           ? "🎉 Bundle Price Unlocked!" 
                                           : (bundleDiscountMode === 'all'
                                               ? `Select All ${course.bundleCourses.length} Courses to Save ₹${course.bundleCourses.reduce((s: any, b: any) => s + b.price, 0) - (course.bundleDiscountPrice || 0)}`
-                                              : `Select Any ${bundleDiscountRequiredCount} Courses to Unlock Bundle Discount`
+                                              : `Select at least ${bundleDiscountRequiredCount} Courses to Unlock Bundle Discount`
                                             )
                                       }
                                   </div>

@@ -111,7 +111,7 @@ export default function Home() {
       .select('*')
       .order('isPinned', { ascending: false })
       .order('created_at', { ascending: false });
-    setCourses(data || []);
+    setCourses((data || []).filter((course: any) => course.active !== false));
     setLoading(false);
   };
 
