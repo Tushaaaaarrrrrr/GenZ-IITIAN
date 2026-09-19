@@ -164,8 +164,8 @@ export default function Profile() {
           </div>
         </section>
 
-        {/* 1:1 Personal Teaching Bookings (Only visible to managers during testing phase; hidden if 0 bookings) */}
-        {isManager && user?.email && <StudentOneOnOneBookings email={user.email} />}
+        {/* 1:1 Personal Teaching Bookings (Rendered for students with active bookings; hidden if 0 bookings) */}
+        {user?.email && <StudentOneOnOneBookings email={user.email} />}
 
         {/* Enrolled Courses */}
         <section className="space-y-4 md:space-y-6">

@@ -170,19 +170,17 @@ export default function Home() {
               </a>
             </div>
 
-            {/* 1:1 Personalised Teaching Promotion Button (Only for manager during testing) */}
-            {isManager && (
-              <div className="mt-6">
-                <Link 
-                  to="/one-to-one"
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-50 border-2 border-emerald-500 text-emerald-900 hover:bg-emerald-100 font-black text-xs sm:text-sm shadow-[3px_3px_0px_#059669] active:translate-y-0.5 transition-all"
-                >
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                  <span>Need personalised attention? Check our 1:1 Batch</span>
-                  <ChevronRight className="w-4 h-4 text-emerald-600" />
-                </Link>
-              </div>
-            )}
+            {/* 1:1 Personalised Teaching Promotion Button */}
+            <div className="mt-6">
+              <Link 
+                to="/one-to-one"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-50 border-2 border-emerald-500 text-emerald-900 hover:bg-emerald-100 font-black text-xs sm:text-sm shadow-[3px_3px_0px_#059669] active:translate-y-0.5 transition-all"
+              >
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>Need personalised attention? Check our 1:1 Batch</span>
+                <ChevronRight className="w-4 h-4 text-emerald-600" />
+              </Link>
+            </div>
           </div>
 
           {/* Graphic/Animation Area */}

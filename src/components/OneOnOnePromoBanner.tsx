@@ -9,11 +9,7 @@ interface PromoProps {
 }
 
 export default function OneOnOnePromoBanner({ variant = 'inline', className = '' }: PromoProps) {
-  const { isManager } = useAuth();
   const [dismissed, setDismissed] = useState(false);
-
-  // While testing, only show 1:1 promo banner/pill to managers
-  if (!isManager) return null;
 
   useEffect(() => {
     const isDismissed = sessionStorage.getItem('dismiss_1on1_promo');
