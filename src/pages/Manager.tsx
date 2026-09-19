@@ -2178,7 +2178,6 @@ export default function Manager() {
         title={selectedUser?.name || 'Anonymous user'}
         subtitle={[selectedUser?.email, selectedUser?.phone].filter(Boolean).join(' · ')}
         onClose={() => setSelectedUser(null)}
-        hideFooter
         maxWidthClass="max-w-6xl"
       >
 

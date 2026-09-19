@@ -9,12 +9,9 @@ type ManagerFullPageSheetProps = {
   onClose: () => void;
   onSave?: () => void;
   saveLabel?: string;
-  saveId?: string;
   saving?: boolean;
-  hideFooter?: boolean;
   maxWidthClass?: string;
   children: ReactNode;
-  footerExtra?: ReactNode;
 };
 
 /** Full-page editor sheet used across Manager forms (replaces cramped modals). */
@@ -25,12 +22,9 @@ export default function ManagerFullPageSheet({
   onClose,
   onSave,
   saveLabel = 'Save changes',
-  saveId,
   saving = false,
-  hideFooter = false,
   maxWidthClass = 'max-w-5xl',
   children,
-  footerExtra,
 }: ManagerFullPageSheetProps) {
   return (
     <AnimatePresence>
@@ -80,35 +74,10 @@ export default function ManagerFullPageSheet({
           </header>
 
           <div className="flex-1 overflow-y-auto">
-            <div className={`mx-auto px-4 sm:px-8 py-6 sm:py-8 ${hideFooter ? 'pb-8' : 'pb-28'} ${maxWidthClass}`}>
+            <div className={`mx-auto px-4 sm:px-8 py-6 sm:py-8 pb-10 ${maxWidthClass}`}>
               {children}
             </div>
           </div>
-
-          {!hideFooter && (onSave || footerExtra) && (
-            <footer className="shrink-0 bg-white border-t border-slate-200 px-4 sm:px-8 py-3.5 flex flex-col sm:flex-row gap-2.5 sm:gap-3 sticky bottom-0 z-20">
-              {onSave && (
-                <button
-                  type="button"
-                  id={saveId}
-                  onClick={onSave}
-                  disabled={saving}
-                  className="flex-grow py-3 bg-slate-900 text-white rounded-xl text-sm font-semibold flex items-center justify-center gap-2 hover:bg-slate-800 transition-colors disabled:opacity-60"
-                >
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                  {saveLabel}
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-6 py-3 bg-white text-slate-700 rounded-xl text-sm font-semibold border border-slate-200 hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-              {footerExtra}
-            </footer>
-          )}
         </motion.div>
       )}
     </AnimatePresence>

@@ -5,6 +5,19 @@
   --font-sans: "Montserrat", ui-sans-serif, system-ui, sans-serif;
 }
 
+@layer base {
+  /* Hide native number input spinner arrows everywhere */
+  input[type='number'] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+  input[type='number']::-webkit-outer-spin-button,
+  input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+}
+
 @layer utilities {
   /* Hide scrollbars on horizontal/inner scroll regions (used by Resources tabs + mobile screens) */
   .hide-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
