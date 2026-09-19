@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { docsData, DocEntry, ContentBlock, DocItem } from '../data/docsData';
+import ErrorPage from '../components/ErrorPage';
 
 function ContentRenderer({ blocks }: { blocks: ContentBlock[] }) {
   return (
@@ -220,12 +221,13 @@ export default function DocsDetail() {
 
   if (!doc) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-4xl font-black text-[#0b1120] mb-4">Doc Not Found</h1>
-          <Link to="/docs" className="text-[#10b981] font-bold hover:underline">← Back to Documentation</Link>
-        </div>
-      </div>
+      <ErrorPage
+        code={404}
+        title="Doc Not Found"
+        description="This documentation page doesn't exist or may have been moved."
+        homeHref="/docs"
+        homeLabel="Back to Documentation"
+      />
     );
   }
 

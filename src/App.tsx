@@ -38,6 +38,13 @@ import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentFailed from './pages/PaymentFailed';
 import Menu from './pages/Menu';
 import Ecosystem from './pages/Ecosystem';
+import {
+  Unauthorized,
+  Forbidden,
+  NotFound,
+  ServerError,
+  ServiceUnavailable,
+} from './pages/errors';
 import LoginModal from './components/LoginModal';
 import WelcomeModal from './components/WelcomeModal';
 
@@ -107,6 +114,17 @@ function AppContent() {
           <Route path="/refund" element={<RefundPolicy />} />
           <Route path="/payment-success" element={<PaymentSuccess />} />
           <Route path="/payment-failed" element={<PaymentFailed />} />
+          {/* Error pages */}
+          <Route path="/401" element={<Unauthorized />} />
+          <Route path="/403" element={<Forbidden />} />
+          <Route path="/404" element={<NotFound />} />
+          <Route path="/500" element={<ServerError />} />
+          <Route path="/503" element={<ServiceUnavailable />} />
+          <Route path="/error/401" element={<Unauthorized />} />
+          <Route path="/error/403" element={<Forbidden />} />
+          <Route path="/error/404" element={<NotFound />} />
+          <Route path="/error/500" element={<ServerError />} />
+          <Route path="/error/503" element={<ServiceUnavailable />} />
           {/* pSEO catch-all — must be last */}
           <Route path="/*" element={<SEOPage />} />
         </Routes>
@@ -157,4 +175,3 @@ export default function App() {
     </AuthProvider>
   );
 }
-

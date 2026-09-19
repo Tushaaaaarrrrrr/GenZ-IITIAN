@@ -5,8 +5,9 @@ import { motion } from 'motion/react';
 import {
     BookOpen, ArrowRight, ChevronDown, ChevronUp,
     ExternalLink, Clock, Tag, Layers, TrendingUp,
-    Star, Sparkles, FileText, MapPin, Users, ArrowLeft
+    Star, Sparkles, FileText, MapPin, Users
 } from 'lucide-react';
+import ErrorPage from '../components/ErrorPage';
 
 interface Section {
     heading: string;
@@ -138,7 +139,15 @@ export default function SEOPage() {
     const colors = page ? (playbookColors[page.playbook_type] || playbookColors.glossary) : playbookColors.glossary;
 
     if (loading) return <LoadingSkeleton />;
-    if (error || !page) return <NotFound />;
+    if (error || !page) {
+        return (
+            <ErrorPage
+                code={404}
+                title="Page Not Found"
+                description="The page you're looking for doesn't exist or hasn't been published yet."
+            />
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -441,24 +450,6 @@ function LoadingSkeleton() {
                         </div>
                     ))}
                 </div>
-            </div>
-        </div>
-    );
-}
-
-function NotFound() {
-    return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-            <div className="text-center max-w-md">
-                <div className="text-6xl mb-4">🔍</div>
-                <h1 className="text-2xl font-bold text-gray-900 mb-2">Page Not Found</h1>
-                <p className="text-gray-600 mb-6">The page you're looking for doesn't exist or hasn't been published yet.</p>
-                <Link
-                    to="/"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors"
-                >
-                    <ArrowLeft className="w-4 h-4" /> Back to Home
-                </Link>
             </div>
         </div>
     );

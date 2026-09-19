@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { ChevronLeft, Share, Clock, Tag } from 'lucide-react';
 import { fallbackBlogs, BlogPost } from '../data/blogsData';
 import { supabase } from '../lib/supabase';
+import ErrorPage from '../components/ErrorPage';
 
 interface Widget {
     id: number;
@@ -164,16 +165,13 @@ export default function BlogDetail() {
 
     if (error || !blog) {
         return (
-            <div className="min-h-screen bg-white flex items-center justify-center">
-                <div className="text-center max-w-md mx-auto px-6">
-                    <div className="text-6xl mb-6">📄</div>
-                    <h1 className="text-3xl font-black text-[#0b1120] mb-4">Blog Post Not Found</h1>
-                    <p className="text-gray-600 font-medium mb-8">The article you're looking for doesn't exist or has been removed.</p>
-                    <Link to="/blog" className="inline-flex items-center gap-2 px-6 py-3 bg-[#10b981] text-white rounded-xl font-bold border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[8px_8px_0px_#0b1120] transition-all">
-                        <ChevronLeft className="w-4 h-4" /> Back to Blog
-                    </Link>
-                </div>
-            </div>
+            <ErrorPage
+                code={404}
+                title="Blog Post Not Found"
+                description="The article you're looking for doesn't exist or has been removed."
+                homeHref="/blog"
+                homeLabel="Back to Blog"
+            />
         );
     }
 
