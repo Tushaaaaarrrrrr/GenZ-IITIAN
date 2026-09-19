@@ -6,6 +6,8 @@ import CourseCard, { CourseCardData } from '../components/CourseCard';
 import HeroAnimation from '../components/HeroAnimation';
 import HiringSection from '../components/HiringSection';
 import MobileHome from '../components/mobile/MobileHome';
+import OneOnOnePromoBanner from '../components/OneOnOnePromoBanner';
+import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { BlogPost, fallbackBlogs } from '../data/blogsData';
 import { getYouTubeId } from '../utils/youtube';
@@ -45,6 +47,7 @@ const COMPARISON_FEATURES: { feature: string; yt: boolean; others: boolean }[] =
 ];
 
 export default function Home() {
+  const { isManager } = useAuth();
   const [courses, setCourses] = useState<CourseCardData[]>([]);
   const [loading, setLoading] = useState(true);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>(fallbackBlogs);
@@ -166,6 +169,20 @@ export default function Home() {
                 YouTube
               </a>
             </div>
+
+            {/* 1:1 Personalised Teaching Promotion Button (Only for manager during testing) */}
+            {isManager && (
+              <div className="mt-6">
+                <Link 
+                  to="/one-to-one"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-50 border-2 border-emerald-500 text-emerald-900 hover:bg-emerald-100 font-black text-xs sm:text-sm shadow-[3px_3px_0px_#059669] active:translate-y-0.5 transition-all"
+                >
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span>Need personalised attention? Check our 1:1 Batch</span>
+                  <ChevronRight className="w-4 h-4 text-emerald-600" />
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Graphic/Animation Area */}
@@ -699,6 +716,9 @@ export default function Home() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Floating 1:1 Personalised Teaching Notification Pill */}
+      <OneOnOnePromoBanner variant="floating" />
 
     </div>
   );

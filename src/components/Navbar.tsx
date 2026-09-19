@@ -64,6 +64,16 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-8">
           <NavLink to="/" end className={navLinkClass}>Home</NavLink>
           <NavLink to="/courses" className={navLinkClass}>Courses</NavLink>
+          {isManager && (
+            <NavLink to="/one-to-one" className={navLinkClass}>
+              <span className="flex items-center gap-1.5">
+                1:1 Teaching
+                <span className="px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black border border-emerald-300">
+                  1:1
+                </span>
+              </span>
+            </NavLink>
+          )}
           <div className="relative" ref={resourcesMenuRef}>
             <button 
               onClick={() => setResourcesOpen(!resourcesOpen)}
@@ -174,6 +184,14 @@ export default function Navbar() {
         <div className="md:hidden bg-white border-t border-gray-200 px-6 py-6 flex flex-col gap-4">
           <NavLink to="/" end onClick={() => setMobileOpen(false)} className={mobileNavLinkClass}>Home</NavLink>
           <NavLink to="/courses" onClick={() => setMobileOpen(false)} className={mobileNavLinkClass}>Courses</NavLink>
+          {isManager && (
+            <NavLink to="/one-to-one" onClick={() => setMobileOpen(false)} className={mobileNavLinkClass}>
+              <span className="flex items-center justify-between">
+                <span>1:1 Teaching (Personalised)</span>
+                <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-black">1:1</span>
+              </span>
+            </NavLink>
+          )}
           <div className="flex flex-col">
             <button 
               onClick={() => setMobileResourcesOpen(!mobileResourcesOpen)}

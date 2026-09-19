@@ -4,6 +4,7 @@ import { Search, Loader2, RefreshCcw, BookOpen, GraduationCap } from 'lucide-rea
 import { supabase } from '../lib/supabase';
 import CourseCard, { CourseCardData } from '../components/CourseCard';
 import MobileCourses from '../components/mobile/MobileCourses';
+import OneOnOnePromoBanner from '../components/OneOnOnePromoBanner';
 import { useSearchParams } from 'react-router-dom';
 
 const DEFAULT_BOX_CONFIG: Record<string, string[]> = {
@@ -300,6 +301,11 @@ export default function Courses() {
             </h1>
           </motion.div>
 
+          {/* 1:1 Promo Banner */}
+          <div className="max-w-5xl mx-auto mb-8 text-left">
+            <OneOnOnePromoBanner variant="inline" />
+          </div>
+
           {/* At least 2 boxes per row on mobile (grid-cols-2), responsive on desktop */}
           <div className={`grid grid-cols-2 ${displayTerms.length === 4 ? 'md:grid-cols-4' : displayTerms.length === 3 ? 'md:grid-cols-3' : displayTerms.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-1'} gap-3.5 md:gap-8 text-center md:text-left max-w-5xl mx-auto`}>
             {displayTerms.map((term, index) => {
@@ -545,8 +551,13 @@ export default function Courses() {
     />
 
     <div className="hidden md:block min-h-screen bg-white">
+      {/* 1:1 Personalised Teaching Notification */}
+      <div className="max-w-7xl mx-auto px-6 pt-6">
+        <OneOnOnePromoBanner variant="inline" />
+      </div>
+
       {/* Exam Selector Tabs Header */}
-      <div className="max-w-7xl mx-auto px-6 pt-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b-2 border-gray-100 pb-6">
+      <div className="max-w-7xl mx-auto px-6 pt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b-2 border-gray-100 pb-6">
         {/* Exam Tabs directly on the left */}
         <div className="flex flex-wrap items-center gap-3">
           {selectedTerm && !loading && activeBoxes.length > 1 ? (

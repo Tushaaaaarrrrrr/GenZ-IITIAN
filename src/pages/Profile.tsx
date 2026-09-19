@@ -5,9 +5,10 @@ import { User, Mail, Calendar, ShoppingBag, LogOut, Loader2, Book, ExternalLink 
 import { motion } from 'motion/react';
 import { apiService } from '../lib/api';
 import { Link } from 'react-router-dom';
+import StudentOneOnOneBookings from '../components/profile/StudentOneOnOneBookings';
 
 export default function Profile() {
-  const { user, profile, signOut, loading: authLoading } = useAuth();
+  const { user, profile, signOut, isManager, loading: authLoading } = useAuth();
   const [orders, setOrders] = useState<any[]>([]);
   const [courseCatalog, setCourseCatalog] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -162,6 +163,9 @@ export default function Profile() {
             </button>
           </div>
         </section>
+
+        {/* 1:1 Personal Teaching Bookings (Only visible to managers during testing phase; hidden if 0 bookings) */}
+        {isManager && user?.email && <StudentOneOnOneBookings email={user.email} />}
 
         {/* Enrolled Courses */}
         <section className="space-y-4 md:space-y-6">

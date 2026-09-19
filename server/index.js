@@ -755,6 +755,298 @@ app.post('/api/welcome-email', async (req, res) => {
     }
 });
 
+// In-memory cache fallback for 1:1 bookings
+const memory1on1Bookings = new Map();
+
+// Helper to dispatch 1:1 webhook to Google Apps Script
+async function dispatch1on1Webhook(payload) {
+    const webhookUrl = process.env.ONE_ON_ONE_WEBHOOK_URL || process.env.WELCOME_WEBHOOK_URL || process.env.GOOGLE_SHEET_WEBHOOK_URL;
+    if (!webhookUrl) {
+        console.warn('[1:1 Webhook] No webhook URL configured (ONE_ON_ONE_WEBHOOK_URL)');
+        return;
+    }
+    try {
+        const res = await fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                ...payload,
+                bcc: 'genziitian@gmail.com',
+                timestamp: new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+            })
+        });
+        const resText = await res.text();
+        console.log(`[1:1 Webhook] Dispatched ${payload.type} to webhook:`, resText.slice(0, 100));
+    } catch (err) {
+        console.error('[1:1 Webhook] Error:', err.message);
+    }
+}
+
+// 1:1 PERSONALISED TEACHING SLOT BOOKING
+app.post('/api/book-1on1-slot', async (req, res) => {
+    try {
+        const {
+            name,
+            email,
+            phone,
+            level,
+            subjects,
+            slot_date,
+            slot_time,
+            plan,
+            notes,
+            bcc = 'genziitian@gmail.com'
+        } = req.body || {};
+
+        if (!email || !name) {
+            return res.status(400).json({ error: 'Name and email are required' });
+        }
+
+        const trimmedName = String(name).trim();
+        if (trimmedName.length > 20) {
+            return res.status(400).json({ error: 'Name cannot exceed 20 characters' });
+        }
+
+        const digitsOnly = String(phone || '').replace(/\D/g, '');
+        const validPhone = digitsOnly.length === 12 && digitsOnly.startsWith('91') ? digitsOnly.slice(2) : digitsOnly;
+        if (!/^[6-9]\d{9}$/.test(validPhone)) {
+            return res.status(400).json({ error: 'Mobile number must be a valid 10-digit number starting with 6, 7, 8, or 9' });
+        }
+
+        console.log(`[1:1 Booking] Received slot booking: ${trimmedName} (${email}) on ${slot_date} at ${slot_time}`);
+
+        const bookingId = crypto.randomUUID();
+        const bookingRecord = {
+            id: bookingId,
+            name: trimmedName,
+            email: email.trim().toLowerCase(),
+            phone: validPhone,
+            level: level || 'Foundation Level',
+            subjects: Array.isArray(subjects) ? subjects.join(', ') : (subjects || 'General'),
+            slot_date: slot_date || 'Upcoming',
+            slot_time: slot_time || '15-min consultation',
+            plan: plan || '1:1 Personalised Teaching',
+            notes: notes || '',
+            status: 'CONFIRMED',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        };
+
+        // Cache in memory fallback
+        memory1on1Bookings.set(bookingId, bookingRecord);
+
+        // 1. Supabase Activity Log & Table Entry
+        if (supabase) {
+            supabase.from('activity_logs').insert({
+                email: bookingRecord.email,
+                action: '1ON1_SLOT_BOOKED',
+                metadata: {
+                    ...bookingRecord,
+                    bcc
+                }
+            }).catch(err => console.warn('[1:1 Booking] activity_logs notice:', err.message));
+
+            supabase.from('one_on_one_bookings').insert(bookingRecord)
+                .catch(err => console.warn('[1:1 Booking] one_on_one_bookings notice:', err.message));
+        }
+
+        // 2. Trigger Webhook for Booked Mail + BCC to genziitian@gmail.com
+        dispatch1on1Webhook({
+            type: 'one_on_one_booking',
+            ...bookingRecord
+        });
+
+        res.json({
+            success: true,
+            message: '1:1 Slot booked successfully. Confirmation email sent.',
+            booking: bookingRecord
+        });
+    } catch (err) {
+        console.error('[1:1 Booking] Error:', err);
+        res.status(500).json({ error: 'Internal server error processing booking' });
+    }
+});
+
+// GET 1:1 BOOKINGS (For Manager or Student Profile)
+app.get('/api/1on1-bookings', async (req, res) => {
+    try {
+        const studentEmail = req.query.email ? String(req.query.email).trim().toLowerCase() : null;
+
+        let dbBookings = [];
+        if (supabase) {
+            let query = supabase.from('one_on_one_bookings').select('*').order('created_at', { ascending: false });
+            if (studentEmail) {
+                query = query.eq('email', studentEmail);
+            }
+            const { data, error } = await query;
+            if (!error && data) {
+                dbBookings = data;
+            }
+        }
+
+        // Merge with memory fallback
+        const memoryList = Array.from(memory1on1Bookings.values())
+            .filter(b => !studentEmail || b.email.toLowerCase() === studentEmail);
+
+        const seenIds = new Set(dbBookings.map(b => b.id));
+        const merged = [...dbBookings];
+        for (const item of memoryList) {
+            if (!seenIds.has(item.id)) {
+                merged.push(item);
+                seenIds.add(item.id);
+            }
+        }
+
+        res.json({ success: true, bookings: merged });
+    } catch (err) {
+        console.error('[1:1 Bookings GET] Error:', err);
+        res.status(500).json({ error: 'Failed to fetch bookings' });
+    }
+});
+
+// CANCEL 1:1 BOOKING (By Student or Manager)
+app.post('/api/1on1-bookings/cancel', async (req, res) => {
+    try {
+        const { id, email, reason = 'Cancelled by student' } = req.body || {};
+        if (!id) return res.status(400).json({ error: 'Booking ID is required' });
+
+        let booking = memory1on1Bookings.get(id);
+
+        if (supabase) {
+            const { data } = await supabase.from('one_on_one_bookings').select('*').eq('id', id).maybeSingle();
+            if (data) booking = data;
+
+            await supabase.from('one_on_one_bookings')
+                .update({ status: 'CANCELLED', notes: reason, updated_at: new Date().toISOString() })
+                .eq('id', id);
+
+            if (booking) {
+                supabase.from('activity_logs').insert({
+                    email: booking.email,
+                    action: '1ON1_SLOT_CANCELLED',
+                    metadata: { id, reason, slot_date: booking.slot_date, slot_time: booking.slot_time }
+                }).catch(() => {});
+            }
+        }
+
+        if (booking) {
+            booking.status = 'CANCELLED';
+            booking.notes = reason;
+            memory1on1Bookings.set(id, booking);
+
+            // Dispatch Cancellation Email to Student + BCC
+            dispatch1on1Webhook({
+                type: 'one_on_one_cancelled',
+                ...booking,
+                reason
+            });
+        }
+
+        res.json({ success: true, message: 'Booking cancelled successfully. Cancellation email sent.' });
+    } catch (err) {
+        console.error('[1:1 Cancel] Error:', err);
+        res.status(500).json({ error: 'Failed to cancel booking' });
+    }
+});
+
+// RESCHEDULE 1:1 BOOKING (By Student or Manager)
+app.post('/api/1on1-bookings/reschedule', async (req, res) => {
+    try {
+        const { id, new_slot_date, new_slot_time, reason = 'Rescheduled' } = req.body || {};
+        if (!id || !new_slot_date || !new_slot_time) {
+            return res.status(400).json({ error: 'Booking ID, new date, and new slot time are required' });
+        }
+
+        let booking = memory1on1Bookings.get(id);
+        let previous_slot_date = '';
+        let previous_slot_time = '';
+
+        if (supabase) {
+            const { data } = await supabase.from('one_on_one_bookings').select('*').eq('id', id).maybeSingle();
+            if (data) {
+                booking = data;
+                previous_slot_date = data.slot_date;
+                previous_slot_time = data.slot_time;
+            }
+
+            await supabase.from('one_on_one_bookings').update({
+                slot_date: new_slot_date,
+                slot_time: new_slot_time,
+                status: 'RESCHEDULED',
+                updated_at: new Date().toISOString()
+            }).eq('id', id);
+
+            if (booking) {
+                supabase.from('activity_logs').insert({
+                    email: booking.email,
+                    action: '1ON1_SLOT_RESCHEDULED',
+                    metadata: { id, previous_slot_date, previous_slot_time, new_slot_date, new_slot_time }
+                }).catch(() => {});
+            }
+        }
+
+        if (booking) {
+            previous_slot_date = previous_slot_date || booking.slot_date;
+            previous_slot_time = previous_slot_time || booking.slot_time;
+            booking.slot_date = new_slot_date;
+            booking.slot_time = new_slot_time;
+            booking.status = 'RESCHEDULED';
+            memory1on1Bookings.set(id, booking);
+
+            // Dispatch Reschedule Email to Student + BCC
+            dispatch1on1Webhook({
+                type: 'one_on_one_rescheduled',
+                ...booking,
+                previous_slot_date,
+                previous_slot_time
+            });
+        }
+
+        res.json({ success: true, message: 'Booking rescheduled successfully. Confirmation email sent.' });
+    } catch (err) {
+        console.error('[1:1 Reschedule] Error:', err);
+        res.status(500).json({ error: 'Failed to reschedule booking' });
+    }
+});
+
+// UPDATE 1:1 BOOKING STATUS (By Manager)
+app.post('/api/1on1-bookings/update-status', async (req, res) => {
+    try {
+        const { id, status, notes = '' } = req.body || {};
+        if (!id || !status) return res.status(400).json({ error: 'ID and status are required' });
+
+        let booking = memory1on1Bookings.get(id);
+
+        if (supabase) {
+            const { data } = await supabase.from('one_on_one_bookings').select('*').eq('id', id).maybeSingle();
+            if (data) booking = data;
+
+            await supabase.from('one_on_one_bookings').update({
+                status,
+                notes: notes || undefined,
+                updated_at: new Date().toISOString()
+            }).eq('id', id);
+        }
+
+        if (booking) {
+            booking.status = status;
+            if (notes) booking.notes = notes;
+            memory1on1Bookings.set(id, booking);
+
+            if (status === 'CANCELLED') {
+                dispatch1on1Webhook({ type: 'one_on_one_cancelled', ...booking, reason: notes || 'Cancelled by manager' });
+            } else if (status === 'RESCHEDULED') {
+                dispatch1on1Webhook({ type: 'one_on_one_rescheduled', ...booking });
+            }
+        }
+
+        res.json({ success: true, message: `Booking status updated to ${status}` });
+    } catch (err) {
+        console.error('[1:1 Update Status] Error:', err);
+        res.status(500).json({ error: 'Failed to update status' });
+    }
+});
+
 // AUTO-ENROLL NEW USERS
 app.post('/api/auto-enroll', async (req, res) => {
     try {

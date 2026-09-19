@@ -19,6 +19,76 @@ function doPost(e) {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
     sheet.appendRow([timestamp, email, name, type]);
 
+    if (type === 'one_on_one_booking' && email) {
+      const studentName = name || 'Student';
+      const slotDate = data.slot_date || 'Upcoming';
+      const slotTime = data.slot_time || '15-min consultation';
+      const subjectList = data.subjects || 'Selected Subjects';
+      const phoneNum = data.phone || 'N/A';
+      const notesText = data.notes || 'None';
+
+      const bookingHtml = `<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>1:1 Slot Confirmed - GenZ IITian</title></head>
+<body style="margin:0; padding:0; background-color:#eef3fd; font-family:Arial, sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#eef3fd; padding:24px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" align="center" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:580px; margin:0 auto; background:#ffffff; border:2px solid #0b1120; border-radius:16px; overflow:hidden; box-shadow: 6px 6px 0px #0b1120;">
+          <tr>
+            <td style="background:#070d19; padding:28px 24px; text-align:left;">
+              <p style="margin:0 0 6px; font-size:12px; font-weight:700; color:#10b981; text-transform:uppercase; letter-spacing:1px;">● Personalised Teaching 1:1</p>
+              <h1 style="margin:0; font-size:24px; font-weight:800; color:#ffffff;">Your 1:1 Consultation is Confirmed! 🎯</h1>
+              <p style="margin:8px 0 0; font-size:13px; color:#94a3b8;">One student. One tutor. Tailored to your syllabus.</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:24px 28px; background:#ffffff;">
+              <p style="margin:0 0 14px; font-size:15px; font-weight:700; color:#0b1120;">Hey ${studentName} 👋,</p>
+              <p style="margin:0 0 16px; font-size:14px; color:#475569; line-height:1.6;">
+                We have received and confirmed your 15-minute 1:1 teaching consultation. Our team is matching you with a senior tutor who knows your subjects inside out.
+              </p>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f8fafc; border:2px solid #0b1120; border-radius:12px; margin-bottom:20px;">
+                <tr>
+                  <td style="padding:16px 20px;">
+                    <p style="margin:0 0 8px; font-size:13px; color:#0b1120;"><strong>📅 Date:</strong> ${slotDate}</p>
+                    <p style="margin:0 0 8px; font-size:13px; color:#0b1120;"><strong>⏰ Time Window:</strong> ${slotTime} (15 mins)</p>
+                    <p style="margin:0 0 8px; font-size:13px; color:#0b1120;"><strong>📚 Subjects:</strong> ${subjectList}</p>
+                    <p style="margin:0 0 8px; font-size:13px; color:#0b1120;"><strong>📱 Phone:</strong> ${phoneNum}</p>
+                    <p style="margin:0; font-size:13px; color:#0b1120;"><strong>📝 Notes:</strong> ${notesText}</p>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:0 0 16px; font-size:14px; color:#475569; line-height:1.6;">
+                Our senior tutor or coordinator will connect with you on WhatsApp / call at your selected slot. If you have any urgent doubts, reach out directly:
+              </p>
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
+                <tr>
+                  <td>
+                    <a href="https://wa.me/917970495447" style="display:inline-block; background:#10b981; color:#ffffff; font-weight:800; font-size:13px; padding:10px 20px; border-radius:8px; text-decoration:none; border:2px solid #0b1120;">💬 Chat on WhatsApp</a>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:0; font-size:12px; color:#64748b;">Rooting for your success,<br><strong style="color:#0b1120;">Team GenZ IITian</strong></p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+      MailApp.sendEmail({
+        to: email,
+        bcc: "genziitian@gmail.com",
+        subject: "Confirmed: Your 1:1 Personalised Teaching Slot 🎯 - GenZ IITian",
+        htmlBody: bookingHtml,
+        name: "GenZ IITIAN 1:1 Support"
+      });
+      return ContentService.createTextOutput(JSON.stringify({ status: '1on1_confirmed' })).setMimeType(ContentService.MimeType.JSON);
+    }
+
     if (type === 'welcome' && email) {
       const studentName = name || 'Student';
       // ... Welcome Email HTML ...

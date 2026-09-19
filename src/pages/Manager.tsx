@@ -1,19 +1,20 @@
 import { useAuth } from '../context/AuthContext';
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import { supabase } from '../lib/supabase';
-import { LayoutDashboard, ShoppingBag, ScrollText, BookOpen, Plus, Search, Trash2, Edit, Save, X, Loader2, AlertCircle, User, Download, TrendingUp, TrendingDown, Users, ShieldCheck, CreditCard, RefreshCw, Gift, ArrowRight, Copy, Coins, Eye, Settings, ClipboardList, Boxes, ArrowLeft } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, ScrollText, BookOpen, Plus, Search, Trash2, Edit, Save, X, Loader2, AlertCircle, User, Download, TrendingUp, TrendingDown, Users, ShieldCheck, CreditCard, RefreshCw, Gift, ArrowRight, Copy, Coins, Eye, Settings, ClipboardList, Boxes, ArrowLeft, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate, useLocation, NavLink } from 'react-router-dom';
 import { apiService } from '../lib/api';
 import BlogsManager from '../components/manager/BlogsManager';
 import EmployeesManager from '../components/manager/EmployeesManager';
+import OneOnOneBookingsManager from '../components/manager/OneOnOneBookingsManager';
 import ManagerFullPageSheet from '../components/manager/ManagerFullPageSheet';
 import ErrorBoundary from '../components/ErrorBoundary';
 import { getYouTubeId } from '../utils/youtube';
 import { resolveBundleDiscountConfig } from '../utils/bundleDiscount';
 
 
-type Tab = 'users' | 'courses' | 'boxes' | 'discounts' | 'payments' | 'catalog' | 'referrals' | 'blogs' | 'settings' | 'employees' | 'logs';
+type Tab = 'users' | 'courses' | 'boxes' | 'discounts' | 'payments' | 'catalog' | 'referrals' | 'blogs' | 'settings' | 'employees' | 'logs' | '1on1';
 type CourseTerm = 'Re-attempt' | 'Foundation' | 'DIPLOMA' | 'Qualifier';
 
 const TERM_OPTIONS: CourseTerm[] = ['Qualifier', 'Re-attempt', 'Foundation', 'DIPLOMA'];
@@ -56,7 +57,7 @@ export default function Manager() {
   const activeTab = (rawTab && rawTab !== 'manager' ? rawTab : 'users') as Tab;
   
   // Validate tab - if path is just /manager, it's users. If invalid, could redirect.
-  const validTabs: Tab[] = ['users', 'courses', 'boxes', 'discounts', 'payments', 'referrals', 'blogs', 'settings', 'employees', 'logs'];
+  const validTabs: Tab[] = ['users', '1on1', 'courses', 'boxes', 'discounts', 'payments', 'referrals', 'blogs', 'settings', 'employees', 'logs'];
   const effectiveTab = validTabs.includes(activeTab) ? activeTab : 'users';
   const [data, setData] = useState<any>([]);
   const [loading, setLoading] = useState(true);
@@ -722,16 +723,17 @@ export default function Manager() {
   const availableBoxesForSelectedTerm = courseTerm === 'NONE' ? [] : (boxConfig[courseTerm] || []);
 
   const managerTabs = [
-    { id: 'users', icon: User, path: '/manager/users' },
-    { id: 'employees', icon: ShieldCheck, path: '/manager/employees' },
-    { id: 'logs', icon: ClipboardList, path: '/manager/logs' },
-    { id: 'courses', icon: BookOpen, path: '/manager/courses' },
-    { id: 'boxes', icon: Boxes, path: '/manager/boxes' },
-    { id: 'discounts', icon: ShoppingBag, path: '/manager/discounts' },
-    { id: 'payments', icon: CreditCard, path: '/manager/payments' },
-    { id: 'referrals', icon: Gift, path: '/manager/referrals' },
-    { id: 'blogs', icon: ScrollText, path: '/manager/blogs' },
-    { id: 'settings', icon: Settings, path: '/manager/settings' }
+    { id: 'users', label: 'Users', icon: User, path: '/manager/users' },
+    { id: '1on1', label: '1:1 Bookings', icon: Calendar, path: '/manager/1on1' },
+    { id: 'employees', label: 'Employees', icon: ShieldCheck, path: '/manager/employees' },
+    { id: 'logs', label: 'Logs', icon: ClipboardList, path: '/manager/logs' },
+    { id: 'courses', label: 'Courses', icon: BookOpen, path: '/manager/courses' },
+    { id: 'boxes', label: 'Boxes', icon: Boxes, path: '/manager/boxes' },
+    { id: 'discounts', label: 'Discounts', icon: ShoppingBag, path: '/manager/discounts' },
+    { id: 'payments', label: 'Payments', icon: CreditCard, path: '/manager/payments' },
+    { id: 'referrals', label: 'Referrals', icon: Gift, path: '/manager/referrals' },
+    { id: 'blogs', label: 'Blogs', icon: ScrollText, path: '/manager/blogs' },
+    { id: 'settings', label: 'Settings', icon: Settings, path: '/manager/settings' }
   ];
 
   return (
@@ -751,7 +753,7 @@ export default function Manager() {
             <span className="font-semibold text-base text-slate-900 tracking-tight truncate">Manager</span>
           </div>
           <span className="text-[10px] font-semibold uppercase tracking-wider bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md shrink-0">
-            {effectiveTab}
+            {effectiveTab === '1on1' ? '1:1 Bookings' : effectiveTab}
           </span>
         </div>
         <nav className="flex gap-1 overflow-x-auto no-scrollbar py-2 px-3 border-t border-slate-100">
@@ -765,7 +767,7 @@ export default function Manager() {
               `}
             >
               <tab.icon className="w-3.5 h-3.5" />
-              <span className="capitalize">{tab.id}</span>
+              <span>{tab.label || tab.id}</span>
             </NavLink>
           ))}
         </nav>
@@ -793,7 +795,7 @@ export default function Manager() {
               `}
             >
               <tab.icon className="w-4 h-4 shrink-0" />
-              <span className="capitalize">{tab.id}</span>
+              <span>{tab.label || tab.id}</span>
             </NavLink>
           ))}
         </nav>
@@ -813,7 +815,9 @@ export default function Manager() {
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 capitalize tracking-tight">{effectiveTab}</h1>
+              <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 capitalize tracking-tight">
+                {effectiveTab === '1on1' ? '1:1 Bookings' : effectiveTab}
+              </h1>
               <p className="text-sm text-slate-500 mt-0.5">Manager panel</p>
             </div>
             <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
@@ -898,6 +902,8 @@ export default function Manager() {
           ) : (
             <ErrorBoundary fallbackTitle="Manager View Error">
               <div className="space-y-6">
+
+                {effectiveTab === '1on1' && <OneOnOneBookingsManager />}
 
                 {effectiveTab === 'blogs' && <BlogsManager />}
 

@@ -15,5 +15,7 @@ if (!supabaseUrl || !supabaseServiceKey) {
   console.error('❌ Supabase environment variables are missing! Migration might fail.');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseServiceKey);
+export const supabase = (supabaseUrl && supabaseServiceKey) 
+  ? createClient(supabaseUrl, supabaseServiceKey) 
+  : null;
 export default supabase;

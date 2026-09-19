@@ -38,6 +38,7 @@ import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentFailed from './pages/PaymentFailed';
 import Menu from './pages/Menu';
 import Ecosystem from './pages/Ecosystem';
+import OneOnOne from './pages/OneOnOne';
 import {
   Unauthorized,
   Forbidden,
@@ -74,6 +75,7 @@ function AppContent() {
   const isCheckoutPage = location.pathname.startsWith('/checkout/');
   const isCoursesPage = location.pathname === '/courses';
   const isManagerPage = location.pathname.startsWith('/manager');
+  const isOneOnOnePage = location.pathname === '/one-to-one' || location.pathname === '/1-on-1';
 
   return (
     <div className="min-h-screen bg-white text-[#0b1120] font-sans selection:bg-blue-100 flex flex-col">
@@ -83,6 +85,8 @@ function AppContent() {
       <main className={`flex-grow ${isCheckoutPage || isManagerPage ? '' : 'pb-24 md:pb-0'}`}>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/one-to-one" element={<OneOnOne />} />
+          <Route path="/1-on-1" element={<OneOnOne />} />
           <Route path="/menu" element={<Menu />} />
           <Route path="/ecosystem" element={<Ecosystem />} />
           <Route path="/courses" element={<Courses />} />
@@ -130,7 +134,7 @@ function AppContent() {
         </Routes>
       </main>
       {/* Footer is hidden on mobile — the bottom-nav Menu tab covers all links there */}
-      {!isCheckoutPage && !isCoursesPage && !isManagerPage && (
+      {!isCheckoutPage && !isCoursesPage && !isManagerPage && !isOneOnOnePage && (
         <div className="hidden md:block">
           <Footer />
         </div>
@@ -175,3 +179,4 @@ export default function App() {
     </AuthProvider>
   );
 }
+

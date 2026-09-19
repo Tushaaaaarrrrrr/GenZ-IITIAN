@@ -4,7 +4,7 @@ import {
   Gift, LayoutDashboard, ShieldCheck,
   Mail, Info, Phone, Briefcase, Shield, FileText, RotateCcw,
   Instagram, Youtube, Linkedin, MessageCircle, LogIn, LogOut,
-  ChevronRight, ArrowUpRight, User as UserIcon,
+  ChevronRight, ArrowUpRight, User as UserIcon, UserCheck,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useAuth } from '../context/AuthContext';
@@ -83,6 +83,9 @@ export default function Menu() {
 
         <Group label="EXPLORE">
           <MenuRow Icon={BookOpen} tint="#E7EEFF" glyph="#2563EB" label="Courses" to="/courses" />
+          {isManager && (
+            <MenuRow Icon={UserCheck} tint="#D1FAE5" glyph="#059669" label="1:1 Personalised Teaching" to="/one-to-one" />
+          )}
           <MenuRow Icon={FolderOpen} tint="#E4F7EE" glyph="#0E9E6A" label="Resources (PYQs & Notes)" to="/resources" />
           <MenuRow Icon={ListChecks} tint="#FEF1DF" glyph="#FF7A00" label="Syllabus" to="/syllabus" />
           <MenuRow Icon={ClipboardList} tint="#FBE3EE" glyph="#EC1E79" label="Graded Assignment" to="/graded-assignment" />
