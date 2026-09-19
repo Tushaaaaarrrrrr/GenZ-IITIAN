@@ -70,7 +70,7 @@ export default function Profile() {
     }
 
     // 4. Format hyphenated/underscored IDs cleanly (e.g. QUALIFIER-CRASH-COURSE -> Qualifier Crash Course)
-    if (cid.includes('-') || cid.includes('_')) {
+    if (cid && typeof cid === 'string' && (cid.includes('-') || cid.includes('_'))) {
       return cid.replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     }
 

@@ -173,13 +173,13 @@ export default function SEOPage() {
                                     <span>/</span>
                                 </>
                             )}
-                            <span className="text-white/90">{page.playbook_type.replace('_', ' ')}</span>
+                            <span className="text-white/90">{page.playbook_type ? String(page.playbook_type).replace('_', ' ') : ''}</span>
                         </div>
 
                         {/* Playbook Badge */}
                         <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-sm text-sm font-medium mb-4">
-                            {playbookIcons[page.playbook_type]}
-                            {page.playbook_type.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                            {page.playbook_type && playbookIcons[page.playbook_type]}
+                            {page.playbook_type ? String(page.playbook_type).replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase()) : ''}
                         </span>
 
                         <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mb-4 tracking-tight">
@@ -383,7 +383,7 @@ export default function SEOPage() {
                                                     className="block group"
                                                 >
                                                     <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium mb-1 ${playbookColors[rp.playbook_type]?.bg || 'bg-gray-100'} ${playbookColors[rp.playbook_type]?.text || 'text-gray-700'}`}>
-                                                        {rp.playbook_type.replace('_', ' ')}
+                                                        {rp.playbook_type ? String(rp.playbook_type).replace('_', ' ') : ''}
                                                     </span>
                                                     <p className="text-sm text-gray-700 group-hover:text-blue-600 transition-colors font-medium line-clamp-2">
                                                         {rp.title}
@@ -419,7 +419,7 @@ export default function SEOPage() {
                         {related.slice(0, 4).map((rp, i) => (
                             <Link key={i} to={`/${rp.slug}`} className="block p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
                                 <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium mb-2 ${playbookColors[rp.playbook_type]?.bg || 'bg-gray-100'} ${playbookColors[rp.playbook_type]?.text || 'text-gray-700'}`}>
-                                    {rp.playbook_type.replace('_', ' ')}
+                                    {rp.playbook_type ? String(rp.playbook_type).replace('_', ' ') : ''}
                                 </span>
                                 <p className="text-sm font-medium text-gray-800">{rp.title}</p>
                             </Link>

@@ -8,6 +8,7 @@ import ManagerFullPageSheet, { managerFieldLabel, managerInputCls } from './Mana
 type BlogRow = Partial<BlogPost> & { id?: number };
 
 function slugify(value: string) {
+  if (!value || typeof value !== 'string') return '';
   return value
     .toLowerCase()
     .trim()

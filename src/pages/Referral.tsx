@@ -302,7 +302,7 @@ export default function Referral() {
                     {referralHistory.map((tx) => (
                       <tr key={tx.id} className="hover:bg-purple-50/50 transition-colors">
                         <td className="px-6 py-4 text-sm text-gray-600">
-                          {tx.buyer_email.replace(/(.{3}).+(@.+)/, '$1***$2')}
+                          {tx.buyer_email ? String(tx.buyer_email).replace(/(.{3}).+(@.+)/, '$1***$2') : 'Anonymous'}
                         </td>
                         <td className="px-6 py-4">
                           <span className="text-green-600 font-black text-sm">+{tx.referrer_reward} Coins</span>

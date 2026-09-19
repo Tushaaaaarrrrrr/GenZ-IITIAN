@@ -30,6 +30,7 @@ function getBundleDiscountConfig(course: any): { mode: 'all' | 'any'; minCourses
 }
 
 function sanitizeCourseId(value: string) {
+  if (!value || typeof value !== 'string') return '';
   return value
     .toLowerCase()
     .trim()
@@ -281,7 +282,9 @@ export default function Manager() {
   }, [isManager]);
 
   useEffect(() => {
-    // Reset filter when switching tabs so stale filters don't corrupt new tab's query
+    // Reset filter and clear stale data when switching tabs so stale data from previous tab doesn't get rendered
+    setData([]);
+    setLoading(true);
     setFilter('all');
     setPaymentSearch('');
     setUserSearch('');
@@ -368,7 +371,7 @@ export default function Manager() {
   };
 
   const fetchData = async () => {
-    if (effectiveTab === 'blogs' || effectiveTab === 'settings' || effectiveTab === 'logs' || effectiveTab === 'boxes' || effectiveTab === 'employees') {
+    if (effectiveTab === 'blogs' || effectiveTab === 'settings' || effectiveTab === 'logs' || effectiveTab === 'boxes' || effectiveTab === 'employees' || effectiveTab === '1on1') {
       setLoading(false);
       return;
     }
@@ -447,8 +450,8 @@ export default function Manager() {
     link.click();
   };
   
-  const resolveCourseTitle = (cid: string): string => {
-    if (!cid) return '';
+  const resolveCourseTitle = (cid: any): string => {
+    if (!cid || typeof cid !== 'string') return '';
     for (const course of courseCatalog) {
       if (Array.isArray(course.bundleCourses)) {
         const matchedBc = course.bundleCourses.find((bc: any) => 
@@ -481,16 +484,16 @@ export default function Manager() {
     
     const headers = ['Order ID', 'Name', 'Email', 'Phone', 'Courses', 'Amount', 'Status', 'Date'];
     const rows = data.map(order => [
-      order.order_id || '',
-      order.user_name || '',
-      order.user_email || '',
-      order.user_phone || '',
-      Array.isArray(order.course_ids) 
-        ? order.course_ids.map(id => resolveCourseTitle(id)).join('; ') 
+      order?.order_id || '',
+      order?.user_name || '',
+      order?.user_email || '',
+      order?.user_phone || '',
+      Array.isArray(order?.course_ids) 
+        ? order.course_ids.map((id: any) => resolveCourseTitle(id)).filter(Boolean).join('; ') 
         : '',
-      order.total_amount || 0,
-      order.status || '',
-      order.created_at ? new Date(order.created_at).toISOString() : ''
+      order?.total_amount || 0,
+      order?.status || '',
+      order?.created_at ? new Date(order.created_at).toISOString() : ''
     ]);
 
     const csvContent = [
@@ -1169,57 +1172,60 @@ export default function Manager() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                          {data.map((order: any) => (
+                          {Array.isArray(data) && data.map((order: any, idx: number) => (
                             <tr 
-                              key={order.order_id} 
+                              key={order?.order_id || order?.id || idx} 
                               onClick={() => fetchUserDetails({
-                                email: order.user_email,
-                                name: order.user_name || order.user_email,
-                                phone: order.user_phone,
-                                created_at: order.user_joined_at
+                                email: order?.user_email,
+                                name: order?.user_name || order?.user_email,
+                                phone: order?.user_phone,
+                                created_at: order?.user_joined_at
                               })}
                               className="hover:bg-slate-50 transition-colors cursor-pointer group"
                             >
                               <td className="px-4 sm:px-5 py-3.5">
                                 <div className="flex items-center gap-2">
                                   <div className="font-medium text-slate-900 group-hover:text-blue-600 transition-colors break-all">
-                                    {order.user_name || order.user_email || 'Unknown User'}
+                                    {order?.user_name || order?.user_email || 'Unknown User'}
                                   </div>
                                   <ArrowRight className="w-3.5 h-3.5 text-transparent group-hover:text-blue-600 transition-colors shrink-0" />
                                 </div>
                                 <div className="mt-1 space-y-0.5 text-[11px] text-slate-400">
-                                  <div className="break-all">{order.user_email || 'No email'}</div>
-                                  <div className="font-mono">{order.user_phone || 'No phone'}</div>
-                                  <div className="font-mono">{order.order_id}</div>
+                                  <div className="break-all">{order?.user_email || 'No email'}</div>
+                                  <div className="font-mono">{order?.user_phone || 'No phone'}</div>
+                                  <div className="font-mono">{order?.order_id || ''}</div>
                                 </div>
                               </td>
                               <td className="px-4 sm:px-5 py-3.5">
                                 <div className="flex flex-wrap gap-1">
-                                  {Array.isArray(order.course_ids) ? order.course_ids.map((cid: string) => {
+                                  {Array.isArray(order?.course_ids) ? order.course_ids.map((cid: any, cIdx: number) => {
+                                    if (!cid) return null;
                                     return (
-                                      <span key={cid} className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-md text-[11px] font-medium max-w-full break-all">
+                                      <span key={cIdx} className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-md text-[11px] font-medium max-w-full break-all">
                                         {resolveCourseTitle(cid)}
                                       </span>
                                     );
                                   }) : <span className="text-slate-400">No courses</span>}
                                 </div>
                               </td>
-                              <td className="px-4 sm:px-5 py-3.5 font-semibold text-emerald-600">₹{order.total_amount}</td>
+                              <td className="px-4 sm:px-5 py-3.5 font-semibold text-emerald-600">₹{order?.total_amount ?? 0}</td>
                               <td className="px-4 sm:px-5 py-3.5">
                                 <span className={`px-2 py-0.5 rounded-md text-[11px] font-medium uppercase ${
-                                  order.status === 'PAID' ? 'bg-emerald-50 text-emerald-700' :
-                                  order.status === 'FAILED' ? 'bg-red-50 text-red-700' :
-                                  order.status === 'NOT_PURCHASED' ? 'bg-slate-100 text-slate-500' :
+                                  order?.status === 'PAID' ? 'bg-emerald-50 text-emerald-700' :
+                                  order?.status === 'FAILED' ? 'bg-red-50 text-red-700' :
+                                  order?.status === 'NOT_PURCHASED' ? 'bg-slate-100 text-slate-500' :
                                   'bg-amber-50 text-amber-700'
                                 }`}>
-                                  {order.status.replace('_', ' ')}
+                                  {typeof order?.status === 'string'
+                                    ? order.status.replace('_', ' ')
+                                    : (order?.status ? String(order.status) : 'PENDING')}
                                 </span>
                               </td>
                               <td className="px-4 sm:px-5 py-3.5 text-xs text-slate-500 whitespace-nowrap">
-                                {order.created_at ? new Date(order.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}
+                                {order?.created_at ? new Date(order.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}
                               </td>
                               <td className="px-4 sm:px-5 py-3.5 text-right">
-                                {!order.order_id.startsWith('LEAD_') && (
+                                {order?.order_id && !String(order.order_id).startsWith('LEAD_') && (
                                   <button 
                                     onClick={(e) => {
                                       e.stopPropagation();
