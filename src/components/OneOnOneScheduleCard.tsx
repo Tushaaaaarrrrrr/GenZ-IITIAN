@@ -23,7 +23,8 @@ export default function OneOnOneScheduleCard({ className = '' }: { className?: s
           className="absolute -top-4 -left-3 sm:-left-5 z-20 bg-white border-2 border-[#0b1120] rounded-full px-3 py-1 shadow-[3px_3px_0px_#0b1120] flex items-center gap-1.5 text-[11px] font-black text-[#0b1120]"
         >
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span>✨ 1:1 Live Whiteboard</span>
+          <Sparkles className="w-3 h-3 text-amber-400 fill-amber-400" />
+          <span>ARNAB -Foundation student-</span>
         </motion.div>
 
         {/* Outer Emerald Container (Photo 1) */}
@@ -60,7 +61,7 @@ export default function OneOnOneScheduleCard({ className = '' }: { className?: s
               </motion.div>
             </div>
 
-            {/* Row 1: Maths 2 — Integration */}
+            {/* Row 1: MATH 1 */}
             <motion.div
               whileHover={{ scale: 1.025, x: 3 }}
               transition={{ type: "spring", stiffness: 400, damping: 17 }}
@@ -68,10 +69,7 @@ export default function OneOnOneScheduleCard({ className = '' }: { className?: s
             >
               <div>
                 <span className="font-black text-[#0b1120] text-sm sm:text-base leading-snug block">
-                  Maths 2 —
-                </span>
-                <span className="font-black text-[#0b1120] text-sm sm:text-base leading-snug block">
-                  Integration
+                  MATH 1
                 </span>
               </div>
               <div className="text-right">
@@ -84,7 +82,7 @@ export default function OneOnOneScheduleCard({ className = '' }: { className?: s
               </div>
             </motion.div>
 
-            {/* Row 2: Stats 2 — Hypothesis tests (Active Green Tint with Animated Pulse) */}
+            {/* Row 2: STATS 1 - POINT BI-SERIAL CO. (Active Green Tint with Animated Pulse) */}
             <motion.div
               whileHover={{ scale: 1.025, x: 3 }}
               transition={{ type: "spring", stiffness: 400, damping: 17 }}
@@ -99,10 +97,10 @@ export default function OneOnOneScheduleCard({ className = '' }: { className?: s
 
               <div className="relative z-10">
                 <span className="font-black text-[#0b1120] text-sm sm:text-base leading-snug block">
-                  Stats 2 —
+                  STATS 1 -
                 </span>
                 <span className="font-black text-[#0b1120] text-sm sm:text-base leading-snug block">
-                  Hypothesis tests
+                  POINT BI-SERIAL CO.
                 </span>
               </div>
               <div className="text-right relative z-10">
@@ -115,7 +113,7 @@ export default function OneOnOneScheduleCard({ className = '' }: { className?: s
               </div>
             </motion.div>
 
-            {/* Row 3: Re-teach: Bayes (Dashed Border Card) */}
+            {/* Row 3: RE-TEACH : DICT & PYQS (Dashed Border Card) */}
             <motion.div
               whileHover={{ scale: 1.025, x: 3 }}
               transition={{ type: "spring", stiffness: 400, damping: 17 }}
@@ -123,10 +121,10 @@ export default function OneOnOneScheduleCard({ className = '' }: { className?: s
             >
               <div>
                 <span className="font-extrabold text-gray-500 text-sm sm:text-base leading-snug block">
-                  Re-teach:
+                  RE-TEACH :
                 </span>
                 <span className="font-extrabold text-gray-500 text-sm sm:text-base leading-snug block">
-                  Bayes
+                  DICT & PYQS
                 </span>
               </div>
               <div className="text-right">
