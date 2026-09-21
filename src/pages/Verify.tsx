@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
-import { Printer, CheckCircle2, AlertCircle, Search, ShieldCheck, X, ChevronDown, ChevronUp, LogIn, User } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Printer, CheckCircle2, AlertCircle, Search, ShieldCheck, X, ChevronDown, ChevronUp, LogIn, User, FileText } from 'lucide-react';
 
 interface Employee {
   employee_id: string;
@@ -68,6 +69,7 @@ export default function Verify() {
   // Guidelines Collapsible State
   const [dataIntegrityOpen, setDataIntegrityOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
+  const [policyOpen, setPolicyOpen] = useState(false);
 
   // Print style injection
   useEffect(() => {
@@ -244,6 +246,23 @@ export default function Verify() {
             <p className="text-gray-600 font-medium text-lg leading-relaxed">
               The trusted source for verifying employment and internship records issued by Gen-Z IITian. Results are generated directly from official company records.
             </p>
+
+            {/* Policy acceptance notice — an issued Employee ID is documented acceptance */}
+            <div className="bg-[#0b1120] text-white rounded-2xl p-6 space-y-3">
+              <div className="flex items-center gap-2 text-xs font-black tracking-widest uppercase text-emerald-300">
+                <FileText className="w-4 h-4" /> Employee Policy
+              </div>
+              <p className="text-white/80 font-medium text-sm leading-relaxed">
+                By generating an Employee ID, you agree to the Gen-Z IITian Employee Policy. Acceptance of your first
+                payment from Gen-Z IITian constitutes legal acceptance of those terms.
+              </p>
+              <Link
+                to="/employee/policy"
+                className="inline-flex items-center gap-1.5 text-sm font-black text-emerald-300 hover:text-emerald-200 transition-colors"
+              >
+                Read the Employee Policy →
+              </Link>
+            </div>
           </div>
 
           {/* Right Column: Verification Form */}
@@ -404,7 +423,7 @@ export default function Verify() {
 
         {/* Verification Guidelines (Hidden when printing) */}
         <div className="max-w-4xl mx-auto pt-6 no-print text-left">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Card 1: Data Integrity */}
             <div className="bg-white border-2 border-gray-200 rounded-2xl overflow-hidden shadow-sm">
               <button 
@@ -437,6 +456,30 @@ export default function Verify() {
               {supportOpen && (
                 <div className="px-6 pb-6 text-sm text-gray-500 font-bold leading-relaxed border-t border-gray-100 pt-4 animate-in fade-in slide-in-from-top-2 duration-200">
                   Found an issue with the verification result? Email <a href="mailto:help@genziitian.in" className="text-blue-600 hover:underline">help@genziitian.in</a> with the relevant Employee ID and supporting documentation. Our HR team will investigate and respond accordingly.
+                </div>
+              )}
+            </div>
+
+            {/* Card 3: Employee Policy */}
+            <div className="bg-white border-2 border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+              <button
+                onClick={() => setPolicyOpen(!policyOpen)}
+                className="w-full p-6 flex items-center justify-between font-bold text-gray-800 text-left hover:bg-gray-50/50 transition-colors"
+              >
+                <span className="text-xs font-black text-[#0b1120] uppercase tracking-wider flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-[#0b1120]" /> Employee Policy
+                </span>
+                {policyOpen ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+              </button>
+              {policyOpen && (
+                <div className="px-6 pb-6 text-sm text-gray-500 font-bold leading-relaxed border-t border-gray-100 pt-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                  Every Employee ID issued by Gen-Z IITian is governed by the Employee Policy. Generation of an Employee
+                  ID, and acceptance of any payment from Gen-Z IITian, each constitute documented acceptance of that
+                  policy.{' '}
+                  <Link to="/employee/policy" className="text-blue-600 hover:underline">
+                    Read the full policy
+                  </Link>
+                  .
                 </div>
               )}
             </div>
