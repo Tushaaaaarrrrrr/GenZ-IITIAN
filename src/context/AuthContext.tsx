@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { usePostHog } from '@posthog/react';
 import { supabase } from '../lib/supabase';
 import { User } from '@supabase/supabase-js';
 
@@ -24,6 +25,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const MANAGER_EMAILS = ['laxmikant.p@genziitian.com', 'genziitian@gmail.com', 'lkiitmng2428@gmail.com'];
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const posthog = usePostHog();
+  const hadIdentifiedUser = useRef(false);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
@@ -67,6 +70,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    if (!posthog) return;
+    if (user) {
+      hadIdentifiedUser.current = true;
+      posthog.identify(user.id, {
+        email: user.email,
+        name: user.user_metadata?.full_name || user.email?.split('@')[0],
+      });
+      return;
+    }
+    if (hadIdentifiedUser.current) {
+      hadIdentifiedUser.current = false;
+      posthog.reset();
+    }
+  }, [posthog, user?.id, user?.email]);
 
   const syncProfile = async (u: User) => {
     try {
@@ -140,6 +159,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
+    posthog?.reset();
+    hadIdentifiedUser.current = false;
     await supabase.auth.signOut();
     window.location.href = '/';
   };
