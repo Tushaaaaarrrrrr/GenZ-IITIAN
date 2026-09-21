@@ -6,6 +6,7 @@ type Section = {
   intro?: string;
   points?: string[];
   outro?: string;
+  tone?: 'danger';
 };
 
 const SECTIONS: Section[] = [
@@ -189,6 +190,21 @@ const SECTIONS: Section[] = [
       'The Company will consider the facts, severity, evidence and applicable contractual/legal requirements before taking disciplinary or legal action.',
   },
   {
+    no: '16A',
+    title: 'Compensation for Breach',
+    tone: 'danger',
+    intro:
+      "Where an employee commits a material breach of this policy \u2014 including breach of confidentiality, misuse of Company Materials or student data, diversion of students, leads or business opportunities, unauthorized competing activity, or departure without serving the applicable notice period \u2014 the employee shall be liable to compensate Gen-Z IITian in a sum equal to three (3) months of the employee's last drawn compensation.",
+    points: [
+      "The parties agree that loss arising from such a breach is difficult to quantify precisely, and that a sum equal to three (3) months of last drawn compensation is a genuine pre-estimate of the loss Gen-Z IITian would suffer, and not a penalty.",
+      'This amount is the maximum recoverable under this clause. Gen-Z IITian may claim the whole or any part of it, and a court or competent authority may award such reasonable compensation as it considers appropriate, not exceeding this amount.',
+      'This clause is in addition to, and not in substitution for, the remedies in Section 16, including injunctive relief, recovery of Company property and any other remedy available in law or under the applicable agreement.',
+      'Any recovery shall be made as a claim against the employee. Nothing in this clause authorizes a deduction from wages that is not permitted by applicable law, and any set-off against dues shall be made only where lawful and contractually permitted.',
+    ],
+    outro:
+      'This clause shall be enforced only to the extent permitted by applicable law, including Section 74 of the Indian Contract Act, 1872, and shall be read down to the minimum extent necessary rather than treated as void.',
+  },
+  {
     no: '17',
     title: 'Reporting and Investigation',
     points: [
@@ -287,25 +303,52 @@ export default function EmployeePolicy() {
           </section>
 
           {SECTIONS.map((section) => (
-            <section key={section.no}>
-              <h2 className="text-2xl font-black text-[#0b1120] mb-4 flex items-center gap-3">
-                <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#eef2ff] text-[#0b1120] text-sm">
+            <section
+              key={section.no}
+              className={
+                section.tone === 'danger'
+                  ? 'p-8 bg-red-50 border-[3px] border-red-100 rounded-[2rem]'
+                  : undefined
+              }
+            >
+              <h2
+                className={`text-2xl font-black mb-4 flex items-center gap-3 ${
+                  section.tone === 'danger' ? 'text-red-600' : 'text-[#0b1120]'
+                }`}
+              >
+                <span
+                  className={`flex items-center justify-center w-8 h-8 rounded-lg text-sm shrink-0 px-1 ${
+                    section.tone === 'danger'
+                      ? 'bg-white text-red-600 shadow-sm'
+                      : 'bg-[#eef2ff] text-[#0b1120]'
+                  }`}
+                >
                   {section.no}
                 </span>
                 {section.title}
               </h2>
-              {section.intro && <p className="mb-4">{section.intro}</p>}
+              {section.intro && (
+                <p className={`mb-4 ${section.tone === 'danger' ? 'text-gray-700 font-bold' : ''}`}>
+                  {section.intro}
+                </p>
+              )}
               {section.points && (
-                <ul className="space-y-3 mb-4">
+                <ul className={`space-y-3 mb-4 ${section.tone === 'danger' ? 'text-gray-700' : ''}`}>
                   {section.points.map((point, i) => (
                     <li key={i} className="flex gap-3">
-                      <span className="mt-2.5 w-1.5 h-1.5 rounded-full bg-[#10b981] shrink-0"></span>
+                      <span
+                        className={`mt-2.5 w-1.5 h-1.5 rounded-full shrink-0 ${
+                          section.tone === 'danger' ? 'bg-red-400' : 'bg-[#10b981]'
+                        }`}
+                      ></span>
                       <span>{point}</span>
                     </li>
                   ))}
                 </ul>
               )}
-              {section.outro && <p>{section.outro}</p>}
+              {section.outro && (
+                <p className={section.tone === 'danger' ? 'text-gray-700' : undefined}>{section.outro}</p>
+              )}
             </section>
           ))}
 
@@ -331,6 +374,10 @@ export default function EmployeePolicy() {
               <p>
                 I understand that the specific terms applicable to my role may also be set out in my offer letter,
                 employment/engagement agreement or other written document.
+              </p>
+              <p>
+                I understand that a material breach of this policy may render me liable to compensate Gen-Z IITian in a
+                sum of up to three (3) months of my last drawn compensation, as set out in Section 16A.
               </p>
               <p className="font-black text-[#0b1120]">
                 I understand that holding a Gen-Z IITian Employee ID constitutes my formal acceptance of this policy,
