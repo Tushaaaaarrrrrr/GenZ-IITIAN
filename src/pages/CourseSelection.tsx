@@ -520,8 +520,15 @@ export default function CourseSelection() {
   };
 
   // Keep bundle discount when selection still meets minimum (N or more); recalculate savings.
-  // Only clear when selection drops below the required count (or a non-bundle code was used).
+  // Only clear non-bundle codes when the course selection actually changes — not when
+  // the code is first applied (appliedDiscountCode is in deps, which used to wipe it instantly).
+  const selectionKey = selectedCourses.slice().sort().join('|');
+  const prevSelectionKeyRef = useRef(selectionKey);
+
   useEffect(() => {
+    const selectionChanged = prevSelectionKeyRef.current !== selectionKey;
+    prevSelectionKeyRef.current = selectionKey;
+
     if (!appliedDiscountCode || !course) return;
 
     const isBundleCode =
@@ -554,10 +561,11 @@ export default function CourseSelection() {
       return;
     }
 
-    // Non-bundle codes: selection changed, force re-apply
-    setAppliedDiscountCode(null);
-    setDiscountAmount(0);
-  }, [selectedCourses, course, appliedDiscountCode]);
+    if (selectionChanged) {
+      setAppliedDiscountCode(null);
+      setDiscountAmount(0);
+    }
+  }, [selectedCourses, course, appliedDiscountCode, selectionKey]);
 
   useEffect(() => {
     const total = calculateTotal();
