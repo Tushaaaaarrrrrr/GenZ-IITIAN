@@ -939,40 +939,45 @@ app.post('/api/book-1on1-slot', async (req, res) => {
         memory1on1Bookings.set(bookingId, bookingRecord);
         saveBookingsToFile();
 
-        // 1. Supabase Activity Log & Table Entry
-        if (supabase) {
-            try {
-                const { error: logErr } = await supabase.from('activity_logs').insert({
-                    email: bookingRecord.email,
-                    action: '1ON1_SLOT_BOOKED',
-                    metadata: {
-                        ...bookingRecord,
-                        bcc
-                    }
-                });
-                if (logErr) console.warn('[1:1 Booking] activity_logs notice:', logErr.message);
-            } catch (e) {
-                console.warn('[1:1 Booking] activity_logs notice:', e.message);
-            }
-
-            try {
-                const { error: bookingErr } = await supabase.from('one_on_one_bookings').insert(bookingRecord);
-                if (bookingErr) console.warn('[1:1 Booking] one_on_one_bookings notice:', bookingErr.message);
-            } catch (e) {
-                console.warn('[1:1 Booking] one_on_one_bookings notice:', e.message);
-            }
-        }
-
-        // 2. Trigger Webhook for Booked Mail + BCC to genziitian@gmail.com
-        await dispatch1on1Webhook({
-            type: 'one_on_one_booking',
-            ...bookingRecord
-        });
-
+        // Confirm the student immediately. Email + remote sync run after the response.
         res.json({
             success: true,
-            message: '1:1 Slot booked successfully. Confirmation email sent.',
+            message: '1:1 Slot booked successfully. Confirmation email is on its way.',
             booking: bookingRecord
+        });
+
+        setImmediate(() => {
+            (async () => {
+                if (supabase) {
+                    try {
+                        const { error: logErr } = await supabase.from('activity_logs').insert({
+                            email: bookingRecord.email,
+                            action: '1ON1_SLOT_BOOKED',
+                            metadata: {
+                                ...bookingRecord,
+                                bcc
+                            }
+                        });
+                        if (logErr) console.warn('[1:1 Booking] activity_logs notice:', logErr.message);
+                    } catch (e) {
+                        console.warn('[1:1 Booking] activity_logs notice:', e.message);
+                    }
+
+                    try {
+                        const { error: bookingErr } = await supabase.from('one_on_one_bookings').insert(bookingRecord);
+                        if (bookingErr) console.warn('[1:1 Booking] one_on_one_bookings notice:', bookingErr.message);
+                    } catch (e) {
+                        console.warn('[1:1 Booking] one_on_one_bookings notice:', e.message);
+                    }
+                }
+
+                await dispatch1on1Webhook({
+                    type: 'one_on_one_booking',
+                    ...bookingRecord
+                });
+            })().catch((err) => {
+                console.error('[1:1 Booking] Background sync/email failed:', err?.message || err);
+            });
         });
     } catch (err) {
         console.error('[1:1 Booking] Error:', err);
