@@ -145,7 +145,6 @@ export default function BookingModal1on1({ isOpen, onClose, defaultPlan, default
     setSubmitting(true);
     setErrorMessage('');
     setStep('loading');
-    const startTs = Date.now();
 
     const finalSubjects = [...selectedSubjects];
     if (customSubject.trim() && !finalSubjects.includes(customSubject.trim())) {
@@ -212,12 +211,6 @@ export default function BookingModal1on1({ isOpen, onClose, defaultPlan, default
         mode: 'no-cors',
         body: gParams
       }).catch(e => console.warn('Script fetch backup caught:', e));
-
-      // Guarantee smooth loading experience (at least 900ms)
-      const elapsed = Date.now() - startTs;
-      if (elapsed < 900) {
-        await new Promise(r => setTimeout(r, 900 - elapsed));
-      }
 
       setSubmitting(false);
       setStep('success');
@@ -575,7 +568,7 @@ export default function BookingModal1on1({ isOpen, onClose, defaultPlan, default
                     Confirming Your 1:1 Slot...
                   </h3>
                   <p className="text-xs sm:text-sm text-gray-500 font-bold max-w-sm mx-auto">
-                    Please hold on while we secure your time and notify your dedicated mentor.
+                    Locking your slot now. Email and mentor notify will go out right after.
                   </p>
                 </div>
 
@@ -587,11 +580,11 @@ export default function BookingModal1on1({ isOpen, onClose, defaultPlan, default
                   </div>
                   <div className="flex items-center gap-2.5 text-xs font-bold text-slate-800">
                     <Loader2 className="w-4 h-4 text-blue-600 animate-spin shrink-0" />
-                    <span>Reserving consultation window & mentor...</span>
+                    <span>Confirming your booking...</span>
                   </div>
                   <div className="flex items-center gap-2.5 text-xs font-medium text-slate-500">
                     <Clock className="w-4 h-4 text-slate-400 shrink-0" />
-                    <span>Dispatching confirmation email to {email}</span>
+                    <span>Confirmation email to {email} will send next</span>
                   </div>
                 </div>
               </motion.div>
@@ -710,7 +703,7 @@ export default function BookingModal1on1({ isOpen, onClose, defaultPlan, default
                     Your Slot is Confirmed! 🎉
                   </h3>
                   <p className="text-gray-600 font-bold text-sm mt-2 max-w-md mx-auto">
-                    We’ve reserved your 15-minute 1:1 call. An automated confirmation email has been dispatched to{' '}
+                    We’ve reserved your 15-minute 1:1 call. A confirmation email is on its way to{' '}
                     <span className="text-[#0b1120] underline">{email}</span>.
                   </p>
                 </motion.div>
@@ -820,7 +813,7 @@ export default function BookingModal1on1({ isOpen, onClose, defaultPlan, default
                 className="flex-1 py-3.5 bg-[#10b981] hover:bg-[#059669] text-white rounded-xl font-black text-base border-[2.5px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] active:translate-y-0.5 active:shadow-[2px_2px_0px_#0b1120] transition-all flex items-center justify-center gap-2 disabled:opacity-60"
               >
                 {submitting ? (
-                  <span>Reserving Slot & Sending Email...</span>
+                  <span>Confirming your slot...</span>
                 ) : (
                   <>
                     <span>Confirm 15-Min Free Slot</span>
