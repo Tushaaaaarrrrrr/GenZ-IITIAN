@@ -1,8 +1,27 @@
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
-import { User as UserIcon, LogOut, LayoutDashboard, Gift, ChevronDown, ChevronUp } from 'lucide-react';
+import { User as UserIcon, LogOut, LayoutDashboard, Gift, ChevronDown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+
+const RESOURCE_LINKS = [
+  { to: '/resources', label: 'PYQs & Notes' },
+  { to: '/syllabus', label: 'Syllabus' },
+  { to: '/graded-assignment', label: 'Graded Assignment' },
+  { to: '/tools/cgpa-calculator', label: 'CGPA Calculator' },
+  { to: '/tools/grade-predictor', label: 'Grade Predictor' },
+  { to: '/blog', label: 'Blog' },
+];
+
+const CONNECT_LINKS = [
+  { to: '/about', label: 'About Us' },
+  { to: '/contact', label: 'Contact Us' },
+  { href: 'https://chat.whatsapp.com/Gi4D9yAd99p7q1XeVh0J1e', label: 'Community' },
+  { to: '/newsletter', label: 'Newsletter' },
+  { to: '/careers', label: 'Careers' },
+];
+
+type DesktopMenu = 'resources' | 'connect' | null;
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -11,10 +30,14 @@ export default function Navbar() {
   const [mobileResourcesOpen, setMobileResourcesOpen] = useState(false);
   const [connectOpen, setConnectOpen] = useState(false);
   const [mobileConnectOpen, setMobileConnectOpen] = useState(false);
+  const [desktopMenu, setDesktopMenu] = useState<DesktopMenu>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const resourcesMenuRef = useRef<HTMLDivElement>(null);
   const connectMenuRef = useRef<HTMLDivElement>(null);
+  const megaMenuRef = useRef<HTMLDivElement>(null);
+  const closeTimer = useRef<number | null>(null);
   const location = useLocation();
+  const isHome = location.pathname === '/';
   
   const { user, profile, signIn, signOut, isManager, openLoginModal } = useAuth();
   const { cart } = useCart();
@@ -30,6 +53,14 @@ export default function Navbar() {
       if (connectMenuRef.current && !connectMenuRef.current.contains(e.target as Node)) {
         setConnectOpen(false);
       }
+      if (
+        megaMenuRef.current &&
+        !megaMenuRef.current.contains(e.target as Node) &&
+        !resourcesMenuRef.current?.contains(e.target as Node) &&
+        !connectMenuRef.current?.contains(e.target as Node)
+      ) {
+        setDesktopMenu(null);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -41,8 +72,23 @@ export default function Navbar() {
     setMobileResourcesOpen(false);
     setConnectOpen(false);
     setMobileConnectOpen(false);
+    setDesktopMenu(null);
     setMobileOpen(false);
   }, [location.pathname]);
+
+  const openDesktopMenu = (menu: DesktopMenu) => {
+    if (closeTimer.current) window.clearTimeout(closeTimer.current);
+    setDesktopMenu(menu);
+    setResourcesOpen(false);
+    setConnectOpen(false);
+  };
+
+  const scheduleCloseDesktopMenu = () => {
+    if (closeTimer.current) window.clearTimeout(closeTimer.current);
+    closeTimer.current = window.setTimeout(() => setDesktopMenu(null), 160);
+  };
+
+  const megaLinks = desktopMenu === 'resources' ? RESOURCE_LINKS : CONNECT_LINKS;
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     `relative font-bold text-[15px] transition-colors pb-1 ${
@@ -55,7 +101,7 @@ export default function Navbar() {
     `py-2 font-bold text-base transition-colors ${isActive ? 'text-blue-600' : 'text-gray-700 hover:text-[#0b1120]'}`;
 
   return (
-    <nav className="border-b border-gray-200 bg-white sticky top-0 z-[100]">
+    <nav className="relative border-b border-gray-200 bg-white sticky top-0 z-[100]">
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-1">
           <span className="font-black text-2xl tracking-tight text-[#0b1120]">Gen-Z</span>
@@ -72,46 +118,59 @@ export default function Navbar() {
               </span>
             </span>
           </NavLink>
-          <div className="relative" ref={resourcesMenuRef}>
+          <div
+            className="relative"
+            ref={resourcesMenuRef}
+            onMouseEnter={() => isHome && openDesktopMenu('resources')}
+            onMouseLeave={() => isHome && scheduleCloseDesktopMenu()}
+          >
             <button 
-              onClick={() => setResourcesOpen(!resourcesOpen)}
+              onClick={() => isHome
+                ? setDesktopMenu(desktopMenu === 'resources' ? null : 'resources')
+                : setResourcesOpen(!resourcesOpen)}
               className={`flex items-center gap-1 relative font-bold text-[15px] transition-colors pb-1 ${
                 location.pathname.includes('/resources') || location.pathname.includes('/docs') || location.pathname.includes('/graded-assignment') || location.pathname.includes('/blog') || location.pathname.includes('/tools')
                   ? 'text-[#0b1120] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2.5px] after:bg-blue-600 after:rounded-full'
                   : 'text-gray-600 hover:text-[#0b1120]'
               }`}
             >
-              Resources <ChevronDown className={`w-4 h-4 transition-transform ${resourcesOpen ? 'rotate-180' : ''}`} />
+              Resources <ChevronDown className={`w-4 h-4 transition-transform ${(isHome ? desktopMenu === 'resources' : resourcesOpen) ? 'rotate-180' : ''}`} />
             </button>
-            {resourcesOpen && (
+            {!isHome && resourcesOpen && (
               <div className="absolute top-full left-0 mt-3 w-48 bg-white border-[3px] border-[#0b1120] rounded-xl shadow-[6px_6px_0px_#0b1120] py-2 z-50">
-                <Link to="/resources" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">PYQs & Notes</Link>
-                <Link to="/syllabus" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">Syllabus</Link>
-                <Link to="/graded-assignment" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">Graded Assignment</Link>
-                <Link to="/tools/cgpa-calculator" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">CGPA Calculator</Link>
-                <Link to="/tools/grade-predictor" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">Grade Predictor</Link>
-                <Link to="/blog" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">Blog</Link>
+                {RESOURCE_LINKS.map((item) => (
+                  <Link key={item.to} to={item.to} className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">{item.label}</Link>
+                ))}
               </div>
             )}
           </div>
-          <div className="relative" ref={connectMenuRef}>
+          <div
+            className="relative"
+            ref={connectMenuRef}
+            onMouseEnter={() => isHome && openDesktopMenu('connect')}
+            onMouseLeave={() => isHome && scheduleCloseDesktopMenu()}
+          >
             <button 
-              onClick={() => setConnectOpen(!connectOpen)}
+              onClick={() => isHome
+                ? setDesktopMenu(desktopMenu === 'connect' ? null : 'connect')
+                : setConnectOpen(!connectOpen)}
               className={`flex items-center gap-1 relative font-bold text-[15px] transition-colors pb-1 ${
                 location.pathname.includes('/about') || location.pathname.includes('/contact') || location.pathname.includes('/newsletter') || location.pathname.includes('/careers')
                   ? 'text-[#0b1120] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2.5px] after:bg-blue-600 after:rounded-full'
                   : 'text-gray-600 hover:text-[#0b1120]'
               }`}
             >
-              Connect <ChevronDown className={`w-4 h-4 transition-transform ${connectOpen ? 'rotate-180' : ''}`} />
+              Connect <ChevronDown className={`w-4 h-4 transition-transform ${(isHome ? desktopMenu === 'connect' : connectOpen) ? 'rotate-180' : ''}`} />
             </button>
-            {connectOpen && (
+            {!isHome && connectOpen && (
               <div className="absolute top-full left-0 mt-3 w-48 bg-white border-[3px] border-[#0b1120] rounded-xl shadow-[6px_6px_0px_#0b1120] py-2 z-50">
-                <Link to="/about" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">About Us</Link>
-                <Link to="/contact" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">Contact Us</Link>
-                <a href="https://chat.whatsapp.com/Gi4D9yAd99p7q1XeVh0J1e" target="_blank" rel="noopener noreferrer" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">Community</a>
-                <Link to="/newsletter" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">Newsletter</Link>
-                <Link to="/careers" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">Careers</Link>
+                {CONNECT_LINKS.map((item) => (
+                  item.href ? (
+                    <a key={item.label} href={item.href} target="_blank" rel="noopener noreferrer" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">{item.label}</a>
+                  ) : (
+                    <Link key={item.to} to={item.to!} className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">{item.label}</Link>
+                  )
+                ))}
               </div>
             )}
           </div>
@@ -176,6 +235,31 @@ export default function Navbar() {
           </button>
         </div>
       </div>
+
+      {isHome && desktopMenu && (
+        <div
+          ref={megaMenuRef}
+          onMouseEnter={() => openDesktopMenu(desktopMenu)}
+          onMouseLeave={scheduleCloseDesktopMenu}
+          className="hidden md:block absolute inset-x-0 top-full z-[110] bg-white border-b-[3px] border-[#0b1120] shadow-[0_12px_28px_rgba(11,17,32,0.12)]"
+        >
+          <div className="max-w-7xl mx-auto px-6 py-5">
+            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">
+              {desktopMenu === 'resources' ? 'Resources' : 'Connect'}
+            </p>
+            <div className={`grid gap-3 ${desktopMenu === 'resources' ? 'grid-cols-3 lg:grid-cols-6' : 'grid-cols-3 lg:grid-cols-5'}`}>
+              {megaLinks.map((item) => {
+                const className = "flex items-center justify-center min-h-[72px] px-3 py-4 text-center text-sm font-black text-[#0b1120] bg-gray-50 border-[2.5px] border-[#0b1120] rounded-xl shadow-[3px_3px_0px_#0b1120] hover:bg-blue-50 hover:text-blue-600 transition-colors";
+                return item.href ? (
+                  <a key={item.label} href={item.href} target="_blank" rel="noopener noreferrer" className={className}>{item.label}</a>
+                ) : (
+                  <Link key={item.to} to={item.to!} className={className}>{item.label}</Link>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Mobile menu */}
       {mobileOpen && (

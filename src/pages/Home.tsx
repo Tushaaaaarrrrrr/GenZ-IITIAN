@@ -172,7 +172,7 @@ export default function Home() {
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-50 border-2 border-emerald-500 text-emerald-900 hover:bg-emerald-100 font-black text-xs sm:text-sm shadow-[3px_3px_0px_#059669] active:translate-y-0.5 transition-all"
               >
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>Need personalised attention? Check our 1:1 Batch</span>
+                <span>Need personalised attention?</span>
                 <ChevronRight className="w-4 h-4 text-emerald-600" />
               </Link>
             </div>

@@ -295,9 +295,9 @@ export default function Courses() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="mb-8 md:mb-12"
+            className="mb-5 md:mb-12"
           >
-            <h1 className="text-3xl md:text-5xl font-black text-[#0b1120] leading-tight tracking-tight">
+            <h1 className="text-xl sm:text-3xl md:text-5xl font-black text-[#0b1120] leading-tight tracking-tight">
               Please Select Your <span className="text-blue-600">Term</span>
             </h1>
           </motion.div>
