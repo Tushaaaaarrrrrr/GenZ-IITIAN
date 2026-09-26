@@ -84,7 +84,7 @@ function AppContent() {
     <div className="min-h-screen bg-white text-[#0b1120] font-sans selection:bg-blue-100 flex flex-col">
       <ScrollToTop />
       {!isManagerPage && <Navbar />}
-      {!isManagerPage && <SaleTicker />}
+      {location.pathname === '/' && <SaleTicker />}
       {/* pb on mobile clears the fixed bottom tab bar; removed on checkout + manager */}
       <main className={`flex-grow ${isCheckoutPage || isManagerPage ? '' : 'pb-24 md:pb-0'}`}>
         <Routes>
