@@ -1,654 +1,681 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  GraduationCap, 
-  Award, 
-  BookOpen, 
-  CheckCircle2, 
-  ChevronRight, 
-  Users,
-  Star,
-  ArrowLeft,
-  Loader2,
+import {
+  Check,
+  ChevronDown,
+  ChevronRight,
   Calendar,
-  Layers,
   Languages,
-  X
+  Loader2,
+  Share2,
+  Star,
+  X,
+  LayoutDashboard,
+  BookOpen,
+  MessageCircle,
+  ClipboardList,
+  Video,
+  LineChart,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { getCheckoutPath } from '../utils/courseRouting';
+import { getYouTubeId } from '../utils/youtube';
 import StickyEnrollBanner from '../components/StickyEnrollBanner';
+import {
+  COURSE_PAGE_SETTINGS_KEY,
+  batchFeaturesFor,
+  faqFor,
+  includedPointsFor,
+  parseCoursePageSettings,
+  reviewsForCourse,
+  videoForCourse,
+  type FeedbackNote,
+} from '../data/coursePage';
 
 function formatCourseDate(date: string) {
   return new Date(date).toLocaleDateString('en-GB', {
     day: 'numeric',
     month: 'short',
-    year: 'numeric'
+    year: 'numeric',
   });
 }
 
+function textLines(value?: string | null) {
+  if (!value) return [];
+  return value.split('\n').map((line) => line.trim()).filter(Boolean);
+}
 
+function subjectsFor(course: any): string[] {
+  if (course.isBundle && Array.isArray(course.bundleCourses) && course.bundleCourses.length > 0) {
+    return course.bundleCourses
+      .map((item: any) => item.courseName)
+      .filter((name: string) => Boolean(name));
+  }
+
+  const tags: string[] = Array.isArray(course.tags) ? course.tags : [];
+  const has = (label: string) => tags.some((tag) => tag.toLowerCase() === label);
+  const term1 = has('term 1');
+  const term2 = has('term 2');
+  if (course.term === 'Foundation' || term1 || term2) {
+    const first = ['Mathematics 1', 'Statistics 1', 'English 1', 'Computational Thinking'];
+    const second = ['Mathematics 2', 'Statistics 2', 'English 2', 'Programming in Python'];
+    if (term1 && term2) return [...first, ...second];
+    if (term2) return second;
+    if (term1) return first;
+  }
+
+  return course.subject ? [course.subject] : [];
+}
+
+const PORTAL = [
+  {
+    title: 'Class replays',
+    detail: 'The session stays available so you can watch it again while revising.',
+    icon: Video,
+    tint: 'bg-sky-50 text-sky-700',
+  },
+  {
+    title: 'Notes and sheets',
+    detail: 'Class notes and practice files sit with the lesson, not in a separate drive.',
+    icon: BookOpen,
+    tint: 'bg-violet-50 text-violet-700',
+  },
+  {
+    title: 'Your dashboard',
+    detail: 'Timetable, class links, and the batch you bought are on one login.',
+    icon: LayoutDashboard,
+    tint: 'bg-emerald-50 text-emerald-700',
+  },
+  {
+    title: 'What you finished',
+    detail: 'See which classes and practice sets are still open.',
+    icon: LineChart,
+    tint: 'bg-amber-50 text-amber-700',
+  },
+  {
+    title: 'Doubt desk',
+    detail: 'Subject questions go to a mentor hour instead of a public comment pile.',
+    icon: MessageCircle,
+    tint: 'bg-rose-50 text-rose-700',
+  },
+  {
+    title: 'Practice room',
+    detail: 'Topic sets and their discussion, before the quiz week.',
+    icon: ClipboardList,
+    tint: 'bg-indigo-50 text-indigo-700',
+  },
+];
 
 export default function CourseDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [course, setCourse] = useState<any>(null);
+  const [reviews, setReviews] = useState<FeedbackNote[]>([]);
+  const [videoUrl, setVideoUrl] = useState('');
   const [loading, setLoading] = useState(true);
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [activeTab, setActiveTab] = useState('features');
+  const [copied, setCopied] = useState(false);
   const enrollRef = useRef<HTMLAnchorElement>(null);
 
   useEffect(() => {
-    fetchCourse();
-  }, [id]);
+    let cancelled = false;
 
-  const fetchCourse = async () => {
-    const { data, error } = await supabase
-      .from('courses')
-      .select('*')
-      .eq('id', id)
-      .single();
+    async function load() {
+      try {
+      setLoading(true);
+      const { data, error } = await supabase.from('courses').select('*').eq('id', id).single();
+      let settingsValue: string | null = null;
+      try {
+        const settingsRes = await supabase
+          .from('settings')
+          .select('value')
+          .eq('key', COURSE_PAGE_SETTINGS_KEY)
+          .maybeSingle();
+        settingsValue = settingsRes.data?.value ?? null;
+      } catch {
+        settingsValue = null;
+      }
 
-    if (error || !data || data.active === false) {
-      console.error('Course not found:', error);
-      navigate('/courses');
-      return;
+      if (cancelled) return;
+      if (error || !data || data.active === false) {
+        navigate('/courses');
+        return;
+      }
+
+      const settings = parseCoursePageSettings(settingsValue);
+      setCourse(data);
+      setReviews(reviewsForCourse(settings, data.id));
+      setVideoUrl(videoForCourse(settings, data.id));
+      setLoading(false);
+      } catch {
+        if (!cancelled) navigate('/courses');
+      }
     }
-    setCourse(data);
-    setLoading(false);
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, navigate]);
+
+  const sectionIds = ['features', 'subjects', 'about', 'details', 'schedule', 'desk', 'access', 'notes', 'questions'];
+
+  useEffect(() => {
+    if (!course) return;
+    const nodes = sectionIds
+      .map((sectionId) => document.getElementById(sectionId))
+      .filter((node): node is HTMLElement => Boolean(node));
+    if (nodes.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (visible?.target?.id) setActiveTab(visible.target.id);
+      },
+      { rootMargin: '-20% 0px -60% 0px', threshold: [0.15, 0.4] }
+    );
+    nodes.forEach((node) => observer.observe(node));
+    return () => observer.disconnect();
+  }, [course]);
+
+  if (loading || !course) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#f6f7f9]">
+        <Loader2 className="animate-spin w-8 h-8 text-slate-800" />
+      </div>
+    );
+  }
+
+  const salePrice = Number(course.discountPrice || course.price || 0);
+  const listPrice = Number(course.price || 0);
+  const hasDiscount = Boolean(course.discountPrice) && listPrice > salePrice;
+  const saved = hasDiscount ? listPrice - salePrice : 0;
+  const offPercent = hasDiscount ? Math.round((saved / listPrice) * 100) : 0;
+  const checkoutPath = getCheckoutPath({ id: String(course.id), name: course.name });
+  const features = batchFeaturesFor(course);
+  const subjects = subjectsFor(course);
+  const customIncluded = textLines(course.cohortContent);
+  const included = customIncluded.length > 0 ? customIncluded : includedPointsFor(course);
+  const learn: string[] = Array.isArray(course.learn) ? course.learn.filter(Boolean) : [];
+  const faqs = faqFor(course, formatCourseDate);
+  const videoId = getYouTubeId(videoUrl);
+  const tags: string[] = Array.isArray(course.tags) ? course.tags.filter((tag: string) => !['Term 1', 'Term 2', 'TERM 1', 'TERM 2'].includes(tag)) : [];
+  const categoryLabel = course.courseCategory && course.courseCategory !== 'NONE'
+    ? course.courseCategory.charAt(0) + course.courseCategory.slice(1).toLowerCase()
+    : course.class_type === 'live' ? 'Live' : 'Recorded';
+
+  const tabs = [
+    { id: 'features', label: 'Features' },
+    ...(subjects.length ? [{ id: 'subjects', label: 'Subjects' }] : []),
+    { id: 'about', label: 'About' },
+    { id: 'details', label: 'Details' },
+    { id: 'schedule', label: 'Schedule' },
+    { id: 'desk', label: 'Dashboard' },
+    { id: 'access', label: 'Class access' },
+    ...(reviews.length ? [{ id: 'notes', label: 'Reviews' }] : []),
+    { id: 'questions', label: 'FAQs' },
+  ];
+
+  const share = async () => {
+    const url = window.location.href;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: course.name, url });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1600);
+    } catch {
+      /* dismissed share sheet */
+    }
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin w-12 h-12 text-[#0b1120]" /></div>;
+  const jump = (sectionId: string) => {
+    setActiveTab(sectionId);
+    document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   return (
-    <div className="min-h-screen bg-white pb-24 md:pb-24">
-      {/* Hero Header */}
-      <div className="bg-[#0b1120] text-white pt-20 pb-8 px-4 md:pt-24 md:pb-12 md:px-6 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500 rounded-full blur-[120px] translate-x-1/2 -translate-y-1/2"></div>
-        </div>
-
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center relative z-10">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-          >
+    <div className="min-h-screen bg-[#f5f6f8] text-slate-900 pb-28">
+      <header className="bg-white border-b border-slate-200">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <nav className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500 mb-3">
+                <Link to="/courses" className="hover:text-slate-900">Courses</Link>
+                {course.subject && (
+                  <>
+                    <ChevronRight className="w-3 h-3" />
+                    <span>{course.subject}</span>
+                  </>
+                )}
+                <ChevronRight className="w-3 h-3" />
+                <span className="text-slate-700 truncate max-w-[14rem] sm:max-w-md">{course.name}</span>
+              </nav>
+              <h1 className="text-[1.65rem] sm:text-[2rem] leading-tight font-semibold tracking-tight text-slate-950">
+                {course.name}
+              </h1>
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-slate-600">
+                <span>For IIT Madras BS learners</span>
+                {course.startDate && (
+                  <span className="inline-flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                    Starts {formatCourseDate(course.startDate)}
+                  </span>
+                )}
+                {course.endDate && (
+                  <span>Ends {formatCourseDate(course.endDate)}</span>
+                )}
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-700">
+                  <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                  Rated 4.9/5
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-700">
+                  <Languages className="w-3 h-3 text-slate-500" />
+                  Hinglish
+                </span>
+                {tags.slice(0, 2).map((tag) => (
+                  <span key={tag} className="rounded-full bg-amber-50 text-amber-800 px-2.5 py-1 text-xs">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
             <button
               type="button"
-              onClick={() => navigate(-1)}
-              className="inline-flex items-center gap-2 text-sm md:text-base text-gray-400 hover:text-white font-bold mb-5 md:mb-8 transition-colors cursor-pointer"
+              onClick={share}
+              className="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 hover:bg-slate-50"
             >
-              <ArrowLeft className="w-4 h-4" /> Back to Courses
+              <Share2 className="w-3.5 h-3.5" />
+              {copied ? 'Copied' : 'Share'}
             </button>
-            
-            <div className="flex gap-2 mb-4 md:mb-6">
-              {course.subject && (
-                <span className="px-4 py-1 bg-yellow-400/20 text-yellow-400 border border-yellow-400/50 rounded-full text-xs font-black uppercase tracking-wider">
-                  {course.subject}
-                </span>
-              )}
-              {course.isBundle && (
-                <span className="px-4 py-1 bg-purple-500/20 text-purple-400 border border-purple-500/50 rounded-full text-xs font-black uppercase tracking-wider flex items-center gap-2">
-                  <Layers className="w-3 h-3" /> Bundle
-                </span>
-              )}
-            </div>
+          </div>
+        </div>
+        <div className="sticky top-20 z-30 bg-white/95 backdrop-blur border-t border-slate-100">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 flex gap-5 overflow-x-auto text-sm">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => jump(tab.id)}
+                className={`shrink-0 py-3 border-b-2 transition-colors ${
+                  activeTab === tab.id
+                    ? 'border-slate-900 text-slate-900 font-medium'
+                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </header>
 
-            <h1 className="text-2xl sm:text-3xl md:text-5xl font-black mb-3 md:mb-4 leading-tight">
-              {course.name}
-            </h1>
-            
-            <p className="text-sm sm:text-base md:text-lg text-gray-400 font-bold mb-5 md:mb-8 leading-relaxed">
-              {course.description}
-            </p>
-
-            <div className="flex flex-wrap gap-4 sm:gap-8 md:gap-12">
-              <div className="flex items-center gap-2 md:gap-3">
-                <Users className="w-5 h-5 md:w-7 md:h-7 text-[#10b981]" />
-                <div className="leading-none">
-                  <div className="text-xl md:text-3xl font-black text-white">500+</div>
-                  <div className="text-[10px] md:text-xs text-gray-400 font-black uppercase tracking-wide mt-1 md:mt-2">Students</div>
-                </div>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6 items-start">
+        <aside className="order-1 lg:order-2 lg:sticky lg:top-36">
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+            {course.image && (
+              <div className="aspect-[16/9] bg-slate-100">
+                <img src={course.image} alt="" className="w-full h-full object-cover" />
               </div>
-              <div className="flex items-center gap-2 md:gap-3">
-                <Star className="w-5 h-5 md:w-7 md:h-7 text-yellow-400 fill-yellow-400" />
-                <div className="leading-none">
-                  <div className="text-xl md:text-3xl font-black text-white">4.9</div>
-                  <div className="text-[10px] md:text-xs text-gray-400 font-black uppercase tracking-wide mt-1 md:mt-2">Rating</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 md:gap-3">
-                <Award className="w-5 h-5 md:w-7 md:h-7 text-blue-400" />
-                <div className="leading-none">
-                  <div className="text-xl md:text-3xl font-black text-white">95%</div>
-                  <div className="text-[10px] md:text-xs text-gray-400 font-black uppercase tracking-wide mt-1 md:mt-2">Success</div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="relative lg:block"
-          >
-            <div className="bg-white border-[3px] md:border-[4px] border-[#0b1120] rounded-3xl md:rounded-[2.5rem] p-4 md:p-6 shadow-[6px_6px_0px_#10b981] md:shadow-[8px_8px_0px_#10b981] text-[#0b1120] relative">
-              <div className="absolute -top-4 right-4 bg-red-500 text-white font-black px-4 py-1.5 rounded-xl border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] text-sm tracking-widest uppercase rotate-6 animate-pulse z-10">
-                SALE IS LIVE!
-              </div>
-              <div className="text-xs font-black uppercase tracking-widest text-red-500 mb-2 flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></div>
-                Special Offer Price
-              </div>
-              <div className="flex items-baseline gap-3 md:gap-4 mb-4 md:mb-6">
-                <div className="text-3xl md:text-4xl font-black">₹{course.discountPrice || course.price}</div>
-                {course.discountPrice && (
-                  <div className="text-lg md:text-2xl font-black text-gray-400 line-through">₹{course.price}</div>
-                )}
-              </div>
-              
-              <div className="space-y-3 mb-8">
-                <div className="font-black text-gray-400 text-sm uppercase tracking-widest border-b-2 border-gray-100 pb-2">Includes</div>
-                <div className="flex items-center gap-3 font-bold text-gray-600 text-sm">
-                  <CheckCircle2 className="w-5 h-5 text-green-500" /> Access till End Term
-                </div>
-                <div className="flex items-center gap-3 font-bold text-gray-600 text-sm">
-                  <Languages className="w-5 h-5 text-purple-500" /> Language: Hinglish
-                </div>
-                {course.courseCategory && course.courseCategory !== 'NONE' && (
-                  <div className="flex items-center gap-3 font-bold text-gray-600 text-sm">
-                    <span className={`text-lg ${
-                      course.courseCategory === 'QUALIFIER' ? 'text-blue-600' :
-                      course.courseCategory === 'LIVE' ? 'text-purple-600' :
-                      course.courseCategory === 'RECORDED' ? 'text-orange-600' :
-                      'text-gray-600'
-                    }`}>
-                      {course.courseCategory === 'QUALIFIER' && '🎯'} {course.courseCategory === 'LIVE' && '📺'} {course.courseCategory === 'RECORDED' && '📹'}
-                    </span>
-                    <span className="font-black">{course.courseCategory}</span>
+            )}
+            <div className="p-4">
+              <div className="flex items-end justify-between gap-3">
+                <div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-[1.7rem] font-semibold tracking-tight">₹{salePrice}</span>
+                    {hasDiscount && (
+                      <span className="text-sm text-slate-400 line-through">₹{listPrice}</span>
+                    )}
                   </div>
+                  {hasDiscount && (
+                    <p className="text-xs text-emerald-700 mt-0.5">You save ₹{saved}</p>
+                  )}
+                </div>
+                {hasDiscount && (
+                  <span className="rounded-md bg-emerald-600 text-white text-[11px] font-medium px-2 py-1">
+                    {offPercent}% off
+                  </span>
                 )}
+              </div>
+
+              <dl className="mt-4 space-y-2.5 text-sm text-slate-600">
+                <div className="flex gap-2">
+                  <dt className="text-slate-400 w-16 shrink-0">Batch</dt>
+                  <dd>{categoryLabel}{course.subject ? ` · ${course.subject}` : ''}</dd>
+                </div>
                 {course.startDate && (
-                  <div className="flex items-center gap-3 font-bold text-gray-600 text-sm">
-                    <Calendar className="w-5 h-5 text-blue-500" /> Class starting from: {formatCourseDate(course.startDate)}
+                  <div className="flex gap-2">
+                    <dt className="text-slate-400 w-16 shrink-0">Starts</dt>
+                    <dd>{formatCourseDate(course.startDate)}</dd>
                   </div>
                 )}
                 {course.endDate && (
-                  <div className="flex items-center gap-3 font-bold text-gray-600 text-sm">
-                    <Calendar className="w-5 h-5 text-red-500" /> Class ends on: {formatCourseDate(course.endDate)}
+                  <div className="flex gap-2">
+                    <dt className="text-slate-400 w-16 shrink-0">Ends</dt>
+                    <dd>{formatCourseDate(course.endDate)}</dd>
                   </div>
                 )}
-              </div>
+                <div className="flex gap-2">
+                  <dt className="text-slate-400 w-16 shrink-0">Language</dt>
+                  <dd>Hinglish</dd>
+                </div>
+              </dl>
 
-              <div className="flex flex-col gap-4">
-                <Link
-                  ref={enrollRef}
-                  to={getCheckoutPath({ id: String(course.id), name: course.name })}
-                  className="w-full py-3.5 md:py-5 bg-[#0b1120] text-white rounded-2xl font-black text-base md:text-xl border-2 border-[#0b1120] hover:bg-white hover:text-[#0b1120] transition-all flex items-center justify-center gap-2 shadow-[4px_4px_0px_#0b1120] md:shadow-[6px_6px_0px_#0b1120] active:translate-y-1 active:shadow-none text-center"
-                >
-                  Enroll Now <ChevronRight className="w-6 h-6" />
-                </Link>
-              </div>
+              <Link
+                ref={enrollRef}
+                to={checkoutPath}
+                className="mt-4 flex w-full items-center justify-center gap-1 rounded-lg bg-slate-950 text-white text-sm font-medium py-3 hover:bg-slate-800"
+              >
+                Continue enrollment <ChevronRight className="w-4 h-4" />
+              </Link>
+              <p className="mt-2 text-center text-[11px] text-slate-400">
+                Coupons are applied on the next step.
+              </p>
             </div>
-          </motion.div>
+          </div>
+        </aside>
+
+        <div className="order-2 lg:order-1 space-y-4">
+          <section id="features" className="scroll-mt-36 bg-white border border-slate-200 rounded-2xl p-5 sm:p-6">
+            <h2 className="text-base font-semibold text-slate-950">In this batch</h2>
+            <div className="mt-4 grid sm:grid-cols-2 gap-3">
+              {features.primary.map((feature) => (
+                <div key={feature.title} className="rounded-xl border border-slate-200 px-3.5 py-3">
+                  <div className="flex items-start gap-2.5">
+                    <Star className="w-3.5 h-3.5 mt-0.5 text-amber-500 fill-amber-400 shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">{feature.title}</p>
+                      <p className="text-xs text-slate-500 mt-1 leading-relaxed">{feature.detail}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {moreOpen && (
+              <div className="mt-3 grid sm:grid-cols-2 gap-3">
+                {features.more.map((feature) => (
+                  <div key={feature.title} className="rounded-xl border border-slate-200 px-3.5 py-3">
+                    <p className="text-sm font-medium text-slate-900">{feature.title}</p>
+                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">{feature.detail}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => setMoreOpen((open) => !open)}
+              className="mt-3 w-full rounded-lg border border-slate-200 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
+            >
+              {moreOpen ? 'Show fewer' : 'More in this batch'}
+            </button>
+          </section>
+
+          {subjects.length > 0 && (
+            <section id="subjects" className="scroll-mt-36 bg-white border border-slate-200 rounded-2xl p-5 sm:p-6">
+              <h2 className="text-base font-semibold text-slate-950">Subjects in this batch</h2>
+              <div className="mt-4 grid sm:grid-cols-2 gap-2.5">
+                {subjects.map((subject) => (
+                  <div key={subject} className="rounded-xl border border-slate-200 px-3.5 py-3 text-sm text-slate-800">
+                    {subject}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          <section id="about" className="scroll-mt-36 bg-white border border-slate-200 rounded-2xl p-5 sm:p-6">
+            <h2 className="text-base font-semibold text-slate-950">About this batch</h2>
+            {course.description && (
+              <p className="mt-3 text-sm text-slate-600 leading-relaxed">{course.description}</p>
+            )}
+            <ul className="mt-4 space-y-2.5">
+              {(course.startDate || course.endDate) && (
+                <AboutRow>
+                  Runs {course.startDate ? formatCourseDate(course.startDate) : 'on the posted timetable'}
+                  {course.endDate ? ` to ${formatCourseDate(course.endDate)}` : ''}.
+                </AboutRow>
+              )}
+              {course.startDate && <AboutRow>First class date: {formatCourseDate(course.startDate)}.</AboutRow>}
+              <AboutRow>
+                {course.endDate
+                  ? `Dashboard access is listed through ${formatCourseDate(course.endDate)}.`
+                  : 'Dashboard access stays with the batch through its exam window.'}
+              </AboutRow>
+              <AboutRow>
+                {course.courseCategory === 'LIVE' || course.class_type === 'live'
+                  ? 'Mode: online live classes, with the recording kept afterwards.'
+                  : course.courseCategory === 'RECORDED' || course.class_type === 'recorded'
+                    ? 'Mode: online recordings, plus a scheduled doubt hour.'
+                    : 'Mode: online classes on the student dashboard.'}
+              </AboutRow>
+              <AboutRow>Language in class: Hinglish.</AboutRow>
+              {course.who && <AboutRow>{course.who}</AboutRow>}
+            </ul>
+            {learn.length > 0 && (
+              <div className="mt-5 pt-4 border-t border-slate-100">
+                <p className="text-sm font-medium text-slate-900 mb-2">What the classes cover</p>
+                <ul className="space-y-2">
+                  {learn.map((item) => (
+                    <li key={item} className="flex gap-2 text-sm text-slate-600">
+                      <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {course.courseCategory === 'QUALIFIER' && (
+              <button
+                type="button"
+                onClick={() => setIsTermsModalOpen(true)}
+                className="mt-4 text-sm text-slate-900 underline underline-offset-4"
+              >
+                Offer terms for this qualifier batch
+              </button>
+            )}
+          </section>
+
+          <section id="details" className="scroll-mt-36 bg-white border border-slate-200 rounded-2xl p-5 sm:p-6">
+            <h2 className="text-base font-semibold text-slate-950">Included with enrollment</h2>
+            <ul className="mt-3 divide-y divide-slate-100">
+              {included.map((point) => (
+                <li key={point} className="flex gap-2.5 py-3 text-sm text-slate-600 leading-relaxed">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span>{point.replace(/^[✅✓•\-]\s*/, '')}</span>
+                </li>
+              ))}
+            </ul>
+            {course.outcomes && (
+              <p className="mt-2 text-sm text-slate-600 leading-relaxed">{course.outcomes}</p>
+            )}
+          </section>
+
+          <section id="schedule" className="scroll-mt-36 bg-white border border-slate-200 rounded-2xl p-5 sm:p-6">
+            <h2 className="text-base font-semibold text-slate-950">Batch schedule</h2>
+            {course.startDate || course.endDate ? (
+              <dl className="mt-3 grid sm:grid-cols-2 gap-3 text-sm">
+                {course.startDate && (
+                  <div className="rounded-xl bg-slate-50 px-3.5 py-3">
+                    <dt className="text-xs text-slate-500">Starts</dt>
+                    <dd className="mt-1 text-slate-900">{formatCourseDate(course.startDate)}</dd>
+                  </div>
+                )}
+                {course.endDate && (
+                  <div className="rounded-xl bg-slate-50 px-3.5 py-3">
+                    <dt className="text-xs text-slate-500">Ends</dt>
+                    <dd className="mt-1 text-slate-900">{formatCourseDate(course.endDate)}</dd>
+                  </div>
+                )}
+              </dl>
+            ) : null}
+            <p className="mt-3 text-sm text-slate-500 leading-relaxed">
+              The day-wise class list is shared on the dashboard after enrollment.
+            </p>
+          </section>
+
+          <section id="desk" className="scroll-mt-36 bg-white border border-slate-200 rounded-2xl p-5 sm:p-6">
+            <h2 className="text-base font-semibold text-slate-950">On your dashboard</h2>
+            <p className="mt-1 text-sm text-slate-500">class.genziitian.in, after this batch is on your account.</p>
+            <div className="mt-4 grid sm:grid-cols-2 gap-3">
+              {PORTAL.map((item) => (
+                <div key={item.title} className="rounded-xl border border-slate-200 p-3.5">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${item.tint}`}>
+                    <item.icon className="w-4 h-4" />
+                  </div>
+                  <p className="mt-2.5 text-sm font-medium text-slate-900">{item.title}</p>
+                  <p className="mt-1 text-xs text-slate-500 leading-relaxed">{item.detail}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section id="access" className="scroll-mt-36 bg-white border border-slate-200 rounded-2xl p-5 sm:p-6">
+            <h2 className="text-base font-semibold text-slate-950">How to use this batch</h2>
+            <p className="mt-1 text-sm text-slate-500">Join a class, open notes, and find the tools after you enroll.</p>
+            {videoId ? (
+              <div className="mt-4 aspect-video rounded-xl overflow-hidden bg-slate-950">
+                <iframe
+                  className="w-full h-full"
+                  src={`https://www.youtube.com/embed/${videoId}`}
+                  title="How to use your Gen-Z IITian batch"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+            ) : (
+              <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center">
+                <p className="text-sm text-slate-600">The walkthrough plays here once a YouTube link is added for this course.</p>
+                <a
+                  href="https://class.genziitian.in"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block mt-3 text-sm text-slate-900 underline underline-offset-4"
+                >
+                  Open the class dashboard
+                </a>
+              </div>
+            )}
+            <p className="mt-3 text-xs text-slate-500">
+              If a class link does not open, write to{' '}
+              <a href="mailto:help@genziitian.in" className="text-slate-800 underline underline-offset-2">help@genziitian.in</a>.
+            </p>
+          </section>
+
+          {reviews.length > 0 && (
+            <section id="notes" className="scroll-mt-36 bg-white border border-slate-200 rounded-2xl p-5 sm:p-6">
+              <h2 className="text-base font-semibold text-slate-950">From students in similar batches</h2>
+              <div className="mt-4 grid sm:grid-cols-2 gap-3">
+                {reviews.map((review) => (
+                  <figure key={review.id} className="rounded-xl border border-slate-200 p-3.5">
+                    <div className="flex gap-0.5 text-amber-400">
+                      {Array.from({ length: review.rating || 5 }).map((_, index) => (
+                        <Star key={index} className="w-3 h-3 fill-current" />
+                      ))}
+                    </div>
+                    <blockquote className="mt-2 text-sm text-slate-700 leading-relaxed">“{review.text}”</blockquote>
+                    <figcaption className="mt-3 text-xs text-slate-500">
+                      <span className="text-slate-800 font-medium">{review.name}</span>
+                      <span> · {review.role}</span>
+                    </figcaption>
+                  </figure>
+                ))}
+              </div>
+            </section>
+          )}
+
+          <section id="questions" className="scroll-mt-36 bg-white border border-slate-200 rounded-2xl p-5 sm:p-6">
+            <h2 className="text-base font-semibold text-slate-950">Common questions</h2>
+            <div className="mt-2 divide-y divide-slate-100">
+              {faqs.map((item, index) => {
+                const open = openFaq === index;
+                return (
+                  <div key={item.q}>
+                    <button
+                      type="button"
+                      onClick={() => setOpenFaq(open ? null : index)}
+                      className="w-full flex items-center justify-between gap-4 py-3.5 text-left text-sm text-slate-800"
+                    >
+                      {item.q}
+                      <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+                    </button>
+                    {open && <p className="pb-3.5 text-sm text-slate-500 leading-relaxed">{item.a}</p>}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
         </div>
       </div>
 
-      {/* Course Content */}
-      <section className="py-10 px-4 md:py-16 md:px-6 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
-        <div className="lg:col-span-2 space-y-8 md:space-y-12">
-          {/* Bundle Content */}
-          {course.isBundle && course.bundleCourses?.length > 0 && (
-            <div>
-              <h2 className="text-xl md:text-3xl font-black text-[#0b1120] mb-5 md:mb-8 flex items-center gap-3 md:gap-4">
-                <div className="w-10 h-10 md:w-12 md:h-12 bg-purple-100 rounded-2xl flex items-center justify-center text-purple-600 border-2 border-[#0b1120]">
-                  <Layers className="w-6 h-6" />
-                </div>
-                Included in this Bundle
-              </h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {course.bundleCourses.map((bc: any, idx: number) => (
-                  <div key={idx} className="p-3 bg-white border-2 border-[#0b1120] rounded-xl font-bold flex items-center gap-2 shadow-[3px_3px_0px_#0b1120] text-sm">
-                    <CheckCircle2 className="w-4 h-4 text-purple-600 shrink-0" />
-                    <span className="line-clamp-2">{bc.courseName}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Who is this for? */}
-          {course.who && (
-            <div>
-              <h2 className="text-xl md:text-3xl font-black text-[#0b1120] mb-4 md:mb-6 flex items-center gap-3 md:gap-4">
-                <div className="w-10 h-10 md:w-12 md:h-12 bg-red-100 rounded-2xl flex items-center justify-center text-red-600 border-2 border-[#0b1120]">
-                  <Users className="w-6 h-6" />
-                </div>
-                Who is this for?
-              </h2>
-              <div className="bg-gray-50 border-[3px] border-[#0b1120] rounded-3xl p-5 md:p-8 text-sm md:text-base font-bold text-gray-600 leading-relaxed shadow-[6px_6px_0px_#0b1120]">
-                {course.who}
-              </div>
-            </div>
-          )}
-
-          {/* What you'll learn */}
-          {course.learn?.length > 0 && (
-            <div>
-              <h2 className="text-xl md:text-3xl font-black text-[#0b1120] mb-5 md:mb-8 flex items-center gap-3 md:gap-4">
-                <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-2xl flex items-center justify-center text-blue-600 border-2 border-[#0b1120]">
-                  <BookOpen className="w-6 h-6" />
-                </div>
-                What you'll learn
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {course.learn.map((item: string) => (
-                  <div key={item} className="p-4 md:p-5 bg-white border-2 border-[#0b1120] rounded-2xl text-sm md:text-base font-bold flex items-start gap-3 md:gap-4 shadow-[4px_4px_0px_#0b1120]">
-                    <CheckCircle2 className="w-6 h-6 text-blue-600 mt-0.5 shrink-0" />
-                    {item}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {course.cohortContent && (
-            <div>
-              <div className="text-center mb-5 md:mb-8">
-                <h2 className="text-xl sm:text-2xl lg:text-4xl font-black text-[#0b1120] mb-2 md:mb-3 leading-tight">What You Get in the Cohort</h2>
-                <p className="text-sm md:text-base font-bold text-gray-500 max-w-3xl mx-auto">
-                  Everything you need to master {course.name} with confidence.
-                </p>
-              </div>
-
-              <div className="bg-white border-[3px] border-[#0b1120] rounded-3xl md:rounded-[2rem] p-4 sm:p-6 lg:p-10 font-bold text-[#0b1120] leading-relaxed shadow-[6px_6px_0px_#10b981] md:shadow-[8px_8px_0px_#10b981] whitespace-pre-wrap text-sm md:text-base lg:text-lg">
-                {course.cohortContent}
-              </div>
-            </div>
-          )}
-
-          {/* Comparison Cards Section */}
-          <div className="mt-12 space-y-8">
-            <div className="text-center">
-              <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-[#0b1120] mb-2 md:mb-3">Compare Our Batches</h2>
-              <p className="text-sm md:text-base font-bold text-gray-500 max-w-2xl mx-auto">
-                Choose the perfect format that fits your learning style, schedule, and goals.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Live Batch Card */}
-              <div className="bg-white border-[3px] border-[#0b1120] rounded-[2rem] p-6 shadow-[6px_6px_0px_#8b5cf6] flex flex-col justify-between relative group hover:-translate-y-1 transition-transform duration-200">
-                <div>
-                  <div className="inline-block px-3 py-1 bg-purple-100 text-purple-700 border-2 border-[#0b1120] rounded-full text-xs font-black uppercase tracking-wider mb-4">
-                    📺 Live Batch
-                  </div>
-                  <h3 className="text-xl font-black text-[#0b1120] mb-4">Interactive Learning</h3>
-                  
-                  <ul className="space-y-3 mb-6">
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
-                      <CheckCircle2 className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
-                      <span>Daily live classes</span>
-                    </li>
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
-                      <CheckCircle2 className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
-                      <span>Access to all lecture recordings</span>
-                    </li>
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
-                      <CheckCircle2 className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
-                      <span>PYQ & GA live-solving sessions</span>
-                    </li>
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
-                      <CheckCircle2 className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
-                      <span>Weekly live doubt-solving sessions</span>
-                    </li>
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
-                      <CheckCircle2 className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
-                      <span>Live mentorship sessions</span>
-                    </li>
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
-                      <CheckCircle2 className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
-                      <span>Full syllabus-focused preparation</span>
-                    </li>
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
-                      <CheckCircle2 className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
-                      <span>Practice test discussions</span>
-                    </li>
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
-                      <CheckCircle2 className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
-                      <span>Study anytime, anywhere</span>
-                    </li>
-                  </ul>
-                </div>
-
-                <div className="mt-auto pt-4 border-t-2 border-dashed border-gray-100">
-                  <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-3 text-center">
-                    <span className="text-[11px] font-black text-purple-700 uppercase tracking-wider block">
-                      🔥 BEST FOR STANDALONE STUDENTS
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Recorded Batch Card */}
-              <div className="bg-white border-[3px] border-[#0b1120] rounded-[2rem] p-6 shadow-[6px_6px_0px_#f97316] flex flex-col justify-between relative group hover:-translate-y-1 transition-transform duration-200">
-                <div>
-                  <div className="inline-block px-3 py-1 bg-orange-100 text-orange-700 border-2 border-[#0b1120] rounded-full text-xs font-black uppercase tracking-wider mb-4">
-                    📹 Recorded Batch
-                  </div>
-                  <h3 className="text-xl font-black text-[#0b1120] mb-4">Self-Paced Study</h3>
-                  
-                  <ul className="space-y-3 mb-6">
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
-                      <CheckCircle2 className="w-4 h-4 text-orange-600 shrink-0 mt-0.5" />
-                      <span>Access to all lecture recordings</span>
-                    </li>
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
-                      <CheckCircle2 className="w-4 h-4 text-orange-600 shrink-0 mt-0.5" />
-                      <span>PYQ & GA Recorded sessions</span>
-                    </li>
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
-                      <CheckCircle2 className="w-4 h-4 text-orange-600 shrink-0 mt-0.5" />
-                      <span>Weekly live doubt-solving sessions</span>
-                    </li>
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
-                      <CheckCircle2 className="w-4 h-4 text-orange-600 shrink-0 mt-0.5" />
-                      <span>Full syllabus-focused preparation</span>
-                    </li>
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
-                      <CheckCircle2 className="w-4 h-4 text-orange-600 shrink-0 mt-0.5" />
-                      <span>Practice test discussions</span>
-                    </li>
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
-                      <CheckCircle2 className="w-4 h-4 text-orange-600 shrink-0 mt-0.5" />
-                      <span>Study anytime, anywhere</span>
-                    </li>
-                  </ul>
-                </div>
-                
-                <div className="mt-auto pt-4 border-t-2 border-dashed border-gray-100">
-                  <div className="bg-orange-50 border-2 border-orange-200 rounded-xl p-3 text-center">
-                    <span className="text-[11px] font-black text-orange-700 uppercase tracking-wider block">
-                      🔥 BEST FOR DUAL DEGREE & WORKING PROFESSIONALS
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Qualifier Batch Card */}
-              <div className="bg-[#f0fdfa] border-[3px] border-[#0b1120] rounded-[2rem] p-6 shadow-[6px_6px_0px_#10b981] flex flex-col justify-between relative group hover:-translate-y-1 transition-transform duration-200">
-                <div className="absolute -top-3 right-4 bg-emerald-500 text-white font-black px-3 py-1 rounded-lg border-2 border-[#0b1120] text-[10px] tracking-wide uppercase rotate-3 shadow-[2px_2px_0px_#0b1120]">
-                  Risk Free
-                </div>
-
-                <div>
-                  <div className="inline-block px-3 py-1 bg-emerald-100 text-emerald-700 border-2 border-[#0b1120] rounded-full text-xs font-black uppercase tracking-wider mb-4">
-                    🎯 CHAMPION Batch
-                  </div>
-                  <h3 className="text-xl font-black text-[#0b1120] mb-2">Only for Qualifiers</h3>
-                  <p className="text-[11px] font-black text-emerald-600 uppercase tracking-widest mb-4">Guaranteed Success</p>
-                  
-                  <ul className="space-y-3 mb-6">
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                      <span>Daily live classes</span>
-                    </li>
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                      <span>Access to all lecture recordings</span>
-                    </li>
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                      <span>PYQ & GA live-solving sessions</span>
-                    </li>
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                      <span>Weekly live doubt-solving sessions</span>
-                    </li>
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                      <span>Full syllabus-focused preparation</span>
-                    </li>
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                      <span>Practice test discussions & solutions</span>
-                    </li>
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                      <span>Study anytime, anywhere</span>
-                    </li>
-                    <li className="flex items-start gap-2 text-sm font-black text-blue-600">
-                      <Star className="w-4 h-4 text-blue-500 fill-blue-500 shrink-0 mt-0.5" />
-                      <span>Best Test series for free</span>
-                    </li>
-                  </ul>
-                </div>
-                
-                <div className="mt-auto pt-4 border-t-2 border-dashed border-emerald-200">
-                  <div className="bg-emerald-50 border-2 border-emerald-200 rounded-xl p-3 text-center mb-2">
-                    <span className="text-[11px] font-black text-emerald-700 uppercase tracking-wider block">
-                      💎 FULL REFUND IF NOT QUALIFIED
-                    </span>
-                  </div>
-                  <button 
-                    onClick={() => setIsTermsModalOpen(true)}
-                    className="w-full text-center text-xs font-black text-blue-600 hover:text-blue-800 underline decoration-2 cursor-pointer transition-colors block"
-                  >
-                    *Terms and conditions apply
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Learning Outcomes */}
-          {course.outcomes && (
-            <div>
-              <h2 className="text-xl md:text-3xl font-black text-[#0b1120] mb-4 md:mb-6 flex items-center gap-3 md:gap-4">
-                <div className="w-10 h-10 md:w-12 md:h-12 bg-green-100 rounded-2xl flex items-center justify-center text-green-600 border-2 border-[#0b1120]">
-                  <Award className="w-6 h-6" />
-                </div>
-                Outcomes
-              </h2>
-              <div className="bg-[#0b1120] text-white rounded-3xl p-5 md:p-8 lg:p-12 text-sm md:text-base font-bold leading-relaxed shadow-[8px_8px_0px_#10b981] md:shadow-[10px_10px_0px_#10b981]">
-                {course.outcomes}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Sidebar instructor info */}
-        <div className="lg:col-span-1">
-          <div className="sticky top-24 space-y-6">
-            {/* Dynamic Content Cards Based on Course Category */}
-            {course.courseCategory === 'QUALIFIER' && (
-              <>
-                <div className="bg-white border-[3px] border-[#0b1120] rounded-3xl p-8 shadow-[8px_8px_0px_#0b1120]">
-                  <div className="flex items-center gap-3 mb-6">
-                    <span className="text-3xl">🎯</span>
-                    <h3 className="text-xl font-black text-[#0b1120]">Qualifier Prep</h3>
-                  </div>
-                  <p className="text-sm font-bold text-gray-600 leading-relaxed">
-                    Master the fundamentals with intensive qualifier-focused Content . Comprehensive coverage of all major topics with practice tests and doubt resolution.
-                  </p>
-                </div>
-                <div className="bg-white border-[3px] border-[#0b1120] rounded-3xl p-8 shadow-[8px_8px_0px_#10b981]">
-                  <div className="flex items-center gap-3 mb-6">
-                    <span className="text-3xl">✅</span>
-                    <h3 className="text-xl font-black text-[#0b1120]">What You Get</h3>
-                  </div>
-                  <ul className="text-sm font-bold text-gray-600 space-y-2">
-                    <li>✓ Complete qualifier Week 1- 4 syllabus coverage</li>
-                    <li>✓ Topic-wise mock tests and test series</li>
-                    <li>✓ 1-on-1 GUIDANCE</li>
-                    <li>✓ Daily live classes</li>
-                  </ul>
-                </div>
-              </>
-            )}
-            
-            {course.courseCategory === 'LIVE' && (
-              <>
-                <div className="bg-white border-[3px] border-[#0b1120] rounded-3xl p-8 shadow-[8px_8px_0px_#0b1120]">
-                  <div className="flex items-center gap-3 mb-6">
-                    <span className="text-3xl">📺</span>
-                    <h3 className="text-xl font-black text-[#0b1120]">Live Sessions</h3>
-                  </div>
-                  <p className="text-sm font-bold text-gray-600 leading-relaxed">
-                    Interactive daily live classes with real-time Q&A. Connect directly with instructors and peers. Ask doubts instantly and get clarifications on the spot.
-                  </p>
-                </div>
-                <div className="bg-white border-[3px] border-[#0b1120] rounded-3xl p-8 shadow-[8px_8px_0px_#10b981]">
-                  <div className="flex items-center gap-3 mb-6">
-                    <span className="text-3xl">⚡</span>
-                    <h3 className="text-xl font-black text-[#0b1120]">Live Features</h3>
-                  </div>
-                  <ul className="text-sm font-bold text-gray-600 space-y-2">
-                    <li>✓ Instant doubt solving in live class</li>
-                    <li>✓ all lectures recordings available</li>
-                    <li>✓ and more..</li>
-                  </ul>
-                </div>
-              </>
-            )}
-            
-            {course.courseCategory === 'RECORDED' && (
-              <>
-                <div className="bg-white border-[3px] border-[#0b1120] rounded-3xl p-8 shadow-[8px_8px_0px_#0b1120]">
-                  <div className="flex items-center gap-3 mb-6">
-                    <span className="text-3xl">📹</span>
-                    <h3 className="text-xl font-black text-[#0b1120]">Self-Paced Learning</h3>
-                  </div>
-                  <p className="text-sm font-bold text-gray-600 leading-relaxed">
-                    Learn at your own pace with pre recorded video lessons. Rewatch, pause, and learn every concept without time pressure.
-                  </p>
-                </div>
-                <div className="bg-white border-[3px] border-[#0b1120] rounded-3xl p-8 shadow-[8px_8px_0px_#10b981]">
-                  <div className="flex items-center gap-3 mb-6">
-                    <span className="text-3xl">🎓</span>
-                    <h3 className="text-xl font-black text-[#0b1120]">Recorded Benefits</h3>
-                  </div>
-                  <ul className="text-sm font-bold text-gray-600 space-y-2">
-                    <li>✓ No time bound</li>
-                    <li>✓ Watch anytime, anywhere</li>
-                    <li>✓ HD quality videos</li>
-                    <li>✓ Weekly live doubt session</li>
-                    <li>✓ Downloadable resources</li>
-                  </ul>
-                </div>
-              </>
-            )}
-
-            {/* GENz IITian Card - Always Visible */}
-            <div className="bg-white border-[3px] border-[#0b1120] rounded-3xl p-8 shadow-[8px_8px_0px_#0b1120]">
-              <h3 className="text-xl font-black text-[#0b1120] mb-6 border-b-2 border-gray-100 pb-4">GENz IITian</h3>
-              <div className="mb-6">
-                <div>
-                  <div className="font-black text-[#0b1120]">Learn from IITM BS Seniors</div>
-                  <div className="text-xs font-bold text-blue-600 uppercase">Real Guidance</div>
-                </div>
-              </div>
-              <p className="text-sm font-bold text-gray-500 leading-relaxed">
-                No boring lectures - just real guidance from seniors who&apos;ve been through it. Understand concepts deeply, avoid common mistakes, and level up your prep the right way.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Terms & Conditions Modal */}
       <AnimatePresence>
         {isTermsModalOpen && (
-          <div className="fixed inset-0 z-[210] flex items-center justify-center p-6 text-[#0b1120]">
-            {/* Backdrop */}
+          <div className="fixed inset-0 z-[210] flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsTermsModalOpen(false)}
-              className="absolute inset-0 bg-[#0b1120]/70 backdrop-blur-md"
+              className="absolute inset-0 bg-slate-950/50"
             />
-
-            {/* Modal Card */}
             <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] w-full max-w-2xl p-6 md:p-8 relative shadow-[12px_12px_0px_#10b981] overflow-hidden max-h-[85vh] flex flex-col z-10"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 12 }}
+              className="relative bg-white rounded-2xl w-full max-w-lg max-h-[85vh] flex flex-col shadow-xl"
             >
-              {/* Close Button */}
-              <button
-                onClick={() => setIsTermsModalOpen(false)}
-                className="absolute top-6 right-6 p-2 bg-gray-50 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all border-2 border-[#0b1120] shadow-[2px_2px_0px_#0b1120] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] z-20 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-
-              {/* Header */}
-              <div className="border-b-4 border-[#0b1120] pb-4 mb-6 pr-12 text-left">
-                <span className="inline-block px-3 py-1 bg-yellow-100 text-yellow-800 border-2 border-[#0b1120] rounded-full text-xs font-black uppercase tracking-wider mb-2">
-                  📜 Official Policy
-                </span>
-                <h2 className="text-2xl md:text-3xl font-black leading-tight text-[#0b1120]">
-                  Qualifier Champion Batch <br />
-                  <span className="text-[#3b82f6]">Terms & Conditions</span>
-                </h2>
-              </div>
-
-              {/* Scrollable Content */}
-              <div className="overflow-y-auto space-y-4 pr-2 font-bold text-gray-700 leading-relaxed text-sm scrollbar-thin text-left">
-                <p>
-                  Students who ENROLL in Qualify Champion Batch will be eligible for a full refund or free reattempt support, provided all the conditions below are fulfilled.
-                </p>
-
+              <div className="flex items-start justify-between gap-4 px-5 py-4 border-b border-slate-100">
                 <div>
-                  <h3 className="text-base font-black text-[#0b1120] mt-4 mb-2">Eligibility Criteria</h3>
-                  <ul className="list-disc pl-5 space-y-2">
-                    <li>You must attend at least 80% of live classes.</li>
-                    <li>Weekly tests will be conducted based on the topics taught in class. You must score the minimum required marks in these tests.</li>
-                    <li>You must regularly share your GA marks/progress with the team. and Be eligible for GIVING QUALIFIER exam offline</li>
-                  </ul>
+                  <p className="text-xs text-slate-500">Qualifier batch</p>
+                  <h2 className="text-lg font-semibold text-slate-950">Offer terms</h2>
                 </div>
-
-                <div>
-                  <h3 className="text-base font-black text-[#0b1120] mt-4 mb-2">What We Provide</h3>
-                  <p className="mb-2">We are committed to giving you:</p>
-                  <ul className="list-disc pl-5 space-y-2">
-                    <li>Complete academic support</li>
-                    <li>Live classes and study resources</li>
-                    <li>Weekly practice and evaluation</li>
-                    <li>Premium guidance and mentorship</li>
-                    <li>1-to-1 mentorship to help you choose the best strategy and action plan for your preparation</li>
-                  </ul>
-                </div>
-
-                <p className="mt-4">
-                  We will provide everything needed from our side. In return, we expect dedication, discipline, and focus from yours.
-                </p>
-
-                <p className="mt-4">
-                  That’s all — maintain:
-                </p>
-                
-                <ul className="list-disc pl-5 space-y-2">
-                  <li>80% attendance</li>
-                  <li>Weekly test qualification</li>
-                  <li>Active participation and seriousness toward studies</li>
-                </ul>
-
-                <p className="mt-4 font-black text-[#0b1120]">
-                  Thank you.
-                </p>
-              </div>
-
-              {/* Modal Footer */}
-              <div className="pt-4 mt-6 border-t-2 border-gray-100 flex justify-end">
                 <button
+                  type="button"
                   onClick={() => setIsTermsModalOpen(false)}
-                  className="px-6 py-3 bg-[#0b1120] text-white rounded-xl font-black text-sm border-2 border-[#0b1120] hover:bg-[#10b981] hover:border-[#10b981] transition-all shadow-[4px_4px_0px_#3b82f6] active:shadow-none active:translate-x-[2px] active:translate-y-[2px] cursor-pointer"
+                  className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100"
                 >
-                  I Understand
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="overflow-y-auto px-5 py-4 space-y-3 text-sm text-slate-600 leading-relaxed">
+                <p>
+                  Students who enroll in the qualifier champion batch can be considered for a full refund or a free reattempt, if every condition below is met.
+                </p>
+                <div>
+                  <h3 className="text-sm font-medium text-slate-900 mb-1">What you need to do</h3>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>Attend at least 80% of the live classes.</li>
+                    <li>Score the minimum required marks in the weekly tests held on topics taught in class.</li>
+                    <li>Share graded-assignment marks with the team, and be eligible to sit the qualifier exam offline.</li>
+                  </ul>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-slate-900 mb-1">What the batch includes</h3>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>Subject support for the qualifier window</li>
+                    <li>Live classes and the study files for those classes</li>
+                    <li>Weekly practice and a look at how you did</li>
+                    <li>Mentor time, including a 1:1 on how to plan the attempt</li>
+                  </ul>
+                </div>
+                <p>The batch holds up its side when attendance, weekly tests, and steady work are in place.</p>
+              </div>
+              <div className="px-5 py-3 border-t border-slate-100 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setIsTermsModalOpen(false)}
+                  className="rounded-lg bg-slate-950 text-white text-sm px-4 py-2"
+                >
+                  Close
                 </button>
               </div>
             </motion.div>
@@ -658,13 +685,22 @@ export default function CourseDetail() {
 
       <StickyEnrollBanner
         courseName={course.name}
-        price={Number(course.discountPrice || course.price)}
-        originalPrice={course.discountPrice ? Number(course.price) : null}
-        href={getCheckoutPath({ id: String(course.id), name: course.name })}
+        price={salePrice}
+        originalPrice={hasDiscount ? listPrice : null}
+        href={checkoutPath}
         watchRef={enrollRef}
         watchKey={course.id}
         aboveMobileNav
       />
     </div>
+  );
+}
+
+function AboutRow({ children }: { children: ReactNode }) {
+  return (
+    <li className="flex gap-2.5 text-sm text-slate-600 leading-relaxed">
+      <Star className="w-3.5 h-3.5 mt-0.5 text-amber-500 fill-amber-400 shrink-0" />
+      <span>{children}</span>
+    </li>
   );
 }
