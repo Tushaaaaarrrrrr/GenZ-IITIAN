@@ -26,9 +26,7 @@ type DesktopMenu = 'resources' | 'connect' | null;
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [resourcesOpen, setResourcesOpen] = useState(false);
   const [mobileResourcesOpen, setMobileResourcesOpen] = useState(false);
-  const [connectOpen, setConnectOpen] = useState(false);
   const [mobileConnectOpen, setMobileConnectOpen] = useState(false);
   const [desktopMenu, setDesktopMenu] = useState<DesktopMenu>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -37,7 +35,6 @@ export default function Navbar() {
   const megaMenuRef = useRef<HTMLDivElement>(null);
   const closeTimer = useRef<number | null>(null);
   const location = useLocation();
-  const isHome = location.pathname === '/';
   
   const { user, profile, signIn, signOut, isManager, openLoginModal } = useAuth();
   const { cart } = useCart();
@@ -46,12 +43,6 @@ export default function Navbar() {
     const handleClickOutside = (e: MouseEvent) => {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
         setUserMenuOpen(false);
-      }
-      if (resourcesMenuRef.current && !resourcesMenuRef.current.contains(e.target as Node)) {
-        setResourcesOpen(false);
-      }
-      if (connectMenuRef.current && !connectMenuRef.current.contains(e.target as Node)) {
-        setConnectOpen(false);
       }
       if (
         megaMenuRef.current &&
@@ -68,9 +59,7 @@ export default function Navbar() {
 
   // Close menus on route change
   useEffect(() => {
-    setResourcesOpen(false);
     setMobileResourcesOpen(false);
-    setConnectOpen(false);
     setMobileConnectOpen(false);
     setDesktopMenu(null);
     setMobileOpen(false);
@@ -79,8 +68,6 @@ export default function Navbar() {
   const openDesktopMenu = (menu: DesktopMenu) => {
     if (closeTimer.current) window.clearTimeout(closeTimer.current);
     setDesktopMenu(menu);
-    setResourcesOpen(false);
-    setConnectOpen(false);
   };
 
   const scheduleCloseDesktopMenu = () => {
@@ -121,58 +108,36 @@ export default function Navbar() {
           <div
             className="relative"
             ref={resourcesMenuRef}
-            onMouseEnter={() => isHome && openDesktopMenu('resources')}
-            onMouseLeave={() => isHome && scheduleCloseDesktopMenu()}
+            onMouseEnter={() => openDesktopMenu('resources')}
+            onMouseLeave={scheduleCloseDesktopMenu}
           >
             <button 
-              onClick={() => isHome
-                ? setDesktopMenu(desktopMenu === 'resources' ? null : 'resources')
-                : setResourcesOpen(!resourcesOpen)}
+              onClick={() => setDesktopMenu(desktopMenu === 'resources' ? null : 'resources')}
               className={`flex items-center gap-1 relative font-bold text-[15px] transition-colors pb-1 ${
                 location.pathname.includes('/resources') || location.pathname.includes('/docs') || location.pathname.includes('/graded-assignment') || location.pathname.includes('/blog') || location.pathname.includes('/tools')
                   ? 'text-[#0b1120] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2.5px] after:bg-blue-600 after:rounded-full'
                   : 'text-gray-600 hover:text-[#0b1120]'
               }`}
             >
-              Resources <ChevronDown className={`w-4 h-4 transition-transform ${(isHome ? desktopMenu === 'resources' : resourcesOpen) ? 'rotate-180' : ''}`} />
+              Resources <ChevronDown className={`w-4 h-4 transition-transform ${desktopMenu === 'resources' ? 'rotate-180' : ''}`} />
             </button>
-            {!isHome && resourcesOpen && (
-              <div className="absolute top-full left-0 mt-3 w-48 bg-white border-[3px] border-[#0b1120] rounded-xl shadow-[6px_6px_0px_#0b1120] py-2 z-50">
-                {RESOURCE_LINKS.map((item) => (
-                  <Link key={item.to} to={item.to} className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">{item.label}</Link>
-                ))}
-              </div>
-            )}
           </div>
           <div
             className="relative"
             ref={connectMenuRef}
-            onMouseEnter={() => isHome && openDesktopMenu('connect')}
-            onMouseLeave={() => isHome && scheduleCloseDesktopMenu()}
+            onMouseEnter={() => openDesktopMenu('connect')}
+            onMouseLeave={scheduleCloseDesktopMenu}
           >
             <button 
-              onClick={() => isHome
-                ? setDesktopMenu(desktopMenu === 'connect' ? null : 'connect')
-                : setConnectOpen(!connectOpen)}
+              onClick={() => setDesktopMenu(desktopMenu === 'connect' ? null : 'connect')}
               className={`flex items-center gap-1 relative font-bold text-[15px] transition-colors pb-1 ${
                 location.pathname.includes('/about') || location.pathname.includes('/contact') || location.pathname.includes('/newsletter') || location.pathname.includes('/careers')
                   ? 'text-[#0b1120] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2.5px] after:bg-blue-600 after:rounded-full'
                   : 'text-gray-600 hover:text-[#0b1120]'
               }`}
             >
-              Connect <ChevronDown className={`w-4 h-4 transition-transform ${(isHome ? desktopMenu === 'connect' : connectOpen) ? 'rotate-180' : ''}`} />
+              Connect <ChevronDown className={`w-4 h-4 transition-transform ${desktopMenu === 'connect' ? 'rotate-180' : ''}`} />
             </button>
-            {!isHome && connectOpen && (
-              <div className="absolute top-full left-0 mt-3 w-48 bg-white border-[3px] border-[#0b1120] rounded-xl shadow-[6px_6px_0px_#0b1120] py-2 z-50">
-                {CONNECT_LINKS.map((item) => (
-                  item.href ? (
-                    <a key={item.label} href={item.href} target="_blank" rel="noopener noreferrer" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">{item.label}</a>
-                  ) : (
-                    <Link key={item.to} to={item.to!} className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">{item.label}</Link>
-                  )
-                ))}
-              </div>
-            )}
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -236,7 +201,7 @@ export default function Navbar() {
         </div>
       </div>
 
-      {isHome && desktopMenu && (
+      {desktopMenu && (
         <div
           ref={megaMenuRef}
           onMouseEnter={() => openDesktopMenu(desktopMenu)}
