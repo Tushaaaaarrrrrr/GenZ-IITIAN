@@ -1,18 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { Search, Loader2, RefreshCcw, BookOpen, GraduationCap } from 'lucide-react';
-import { supabase } from '../lib/supabase';
 import CourseCard, { CourseCardData } from '../components/CourseCard';
 import MobileCourses from '../components/mobile/MobileCourses';
 import OneOnOnePromoBanner from '../components/OneOnOnePromoBanner';
 import { useSearchParams } from 'react-router-dom';
+import { DEFAULT_EXAM_VISIBILITY, getCachedCoursesCatalog, loadCoursesCatalog } from '../lib/coursesList';
 
-const DEFAULT_BOX_CONFIG: Record<string, string[]> = {
-  Qualifier: ['Qualifier'],
-  'Re-attempt': ['Re-attempt'],
-  Foundation: ['Quiz 1', 'Quiz 2', 'End Term', 'Full Term'],
-  DIPLOMA: ['Quiz 1', 'Quiz 2', 'End Term', 'Full Term']
-};
+const DEFAULT_BOX_CONFIG = DEFAULT_EXAM_VISIBILITY;
 
 export const FOUNDATION_SUB_TERMS = [
   {
@@ -104,8 +99,10 @@ export function isCourseInSubTerm(course: CourseCardData, subTerm: string): bool
 }
 
 export default function Courses() {
-  const [courses, setCourses] = useState<CourseCardData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cached = getCachedCoursesCatalog();
+  const [courses, setCourses] = useState<CourseCardData[]>(cached?.courses ?? []);
+  const [loading, setLoading] = useState(!cached);
+  const [loadError, setLoadError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   
   // URL search params manage filter state for step-by-step browser back history and course navigation memory
@@ -115,8 +112,8 @@ export default function Courses() {
   const selectedExamStage = searchParams.get('exam') || null;
 
   // Boxes configured in Manager > Boxes
-  const [examVisibility, setExamVisibility] = useState<Record<string, string[]>>(DEFAULT_BOX_CONFIG);
-  const [boxesLoaded, setBoxesLoaded] = useState(false);
+  const [examVisibility, setExamVisibility] = useState<Record<string, string[]>>(cached?.examVisibility ?? DEFAULT_BOX_CONFIG);
+  const [boxesLoaded, setBoxesLoaded] = useState(!!cached);
 
   useEffect(() => {
     fetchCourses();
@@ -172,26 +169,15 @@ export default function Courses() {
 
   const fetchCourses = async () => {
     try {
-      setLoading(true);
-      // Fetch courses
-      const { data: coursesData } = await supabase
-        .from('courses')
-        .select('*')
-        .order('isPinned', { ascending: false })
-        .order('created_at', { ascending: false });
-      setCourses((coursesData || []).filter((course: any) => course.active !== false));
-
-      // Fetch boxes config
-      const { data: visData } = await supabase.from('settings').select('*').eq('key', 'exam_visibility').maybeSingle();
-      if (visData) {
-        setExamVisibility({
-          ...DEFAULT_BOX_CONFIG,
-          ...JSON.parse(visData.value)
-        });
-      }
+      if (!getCachedCoursesCatalog()) setLoading(true);
+      setLoadError('');
+      const catalog = await loadCoursesCatalog();
+      setCourses(catalog.courses);
+      setExamVisibility(catalog.examVisibility);
       setBoxesLoaded(true);
     } catch (err) {
       console.error('Failed to load courses & settings:', err);
+      setLoadError('Could not load courses. Check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -280,6 +266,21 @@ export default function Courses() {
       <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center py-20 px-6">
         <Loader2 className="w-12 h-12 animate-spin text-[#0b1120] mb-4" />
         <span className="font-black text-gray-400">Loading courses...</span>
+      </div>
+    );
+  }
+
+  if (loadError && courses.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center py-20 px-6 text-center">
+        <p className="font-black text-[#0b1120] mb-4">{loadError}</p>
+        <button
+          type="button"
+          onClick={fetchCourses}
+          className="px-5 py-3 bg-[#0b1120] text-white rounded-xl font-black text-sm border-2 border-[#0b1120]"
+        >
+          Try again
+        </button>
       </div>
     );
   }

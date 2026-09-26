@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles, ArrowRight, X, UserCheck } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { ArrowRight, X } from 'lucide-react';
 
 interface PromoProps {
   variant?: 'inline' | 'floating' | 'banner';
@@ -31,29 +30,14 @@ export default function OneOnOnePromoBanner({ variant = 'inline', className = ''
   if (variant === 'inline') {
     return (
       <div className={`w-full ${className}`}>
-        <div className="relative overflow-hidden bg-gradient-to-r from-[#070d19] via-[#0b1b33] to-[#0e271f] border-[3px] border-[#0b1120] rounded-2xl p-4 sm:p-5 shadow-[6px_6px_0px_#0b1120] flex flex-col sm:flex-row items-center justify-between gap-4 text-white">
-          <div className="flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shrink-0">
-              <UserCheck className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-black uppercase tracking-wider text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-500/30">
-                  1:1 BATCH
-                </span>
-                <span className="text-xs text-gray-300 font-bold hidden sm:inline">
-                  One Student. One Tutor.
-                </span>
-              </div>
-              <p className="text-sm sm:text-base font-black text-white mt-1">
-                Need personalised attention? Check our 1:1 Batch
-              </p>
-            </div>
-          </div>
+        <div className="relative overflow-hidden bg-gradient-to-r from-[#070d19] via-[#0b1b33] to-[#0e271f] border-[3px] border-[#0b1120] rounded-2xl px-4 py-3.5 sm:px-5 sm:py-4 shadow-[6px_6px_0px_#0b1120] flex items-center justify-between gap-3 sm:gap-6 text-white">
+          <p className="min-w-0 text-left text-sm sm:text-base font-black text-white leading-snug">
+            Need personalised attention? Check our 1:1 Batch
+          </p>
 
           <Link
             to="/one-to-one"
-            className="w-full sm:w-auto px-5 py-2.5 bg-[#10b981] hover:bg-[#059669] text-white rounded-xl font-black text-xs sm:text-sm border-2 border-white/20 shadow-[2px_2px_0px_#ffffff] flex items-center justify-center gap-1.5 transition-all text-nowrap"
+            className="shrink-0 px-3.5 sm:px-5 py-2.5 bg-[#10b981] hover:bg-[#059669] text-white rounded-xl font-black text-[11px] sm:text-sm border-2 border-white/20 shadow-[2px_2px_0px_#ffffff] flex items-center justify-center gap-1.5 transition-all whitespace-nowrap"
           >
             <span>Explore 1:1 Teaching</span>
             <ArrowRight className="w-4 h-4" />
