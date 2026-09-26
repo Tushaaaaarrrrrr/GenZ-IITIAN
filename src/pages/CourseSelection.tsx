@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 import { apiService } from '../lib/api';
 import { validateReferralCode, getReferralProfile } from '../lib/referral';
 import { useAuth } from '../context/AuthContext';
-import { Check, Loader2, ShieldCheck, AlertCircle, User, UserCheck, CreditCard, ArrowRight, BookOpen, Copy, CheckCheck, Coins } from 'lucide-react';
+import { Check, Loader2, ShieldCheck, AlertCircle, User, UserCheck, CreditCard, ArrowRight, BookOpen, Copy, CheckCheck } from 'lucide-react';
 import { validateCouponForCheckout } from '../utils/coupons';
 import { resolveBundleDiscountConfig } from '../utils/bundleDiscount';
 
@@ -512,7 +512,8 @@ export default function CourseSelection() {
 
     const afterDiscounts = Math.max(total - discountAmount - referralDiscount, 0);
     const maxCoins = Math.min(MAX_COINS_PER_ORDER, walletBalance, afterDiscounts - 1); // max 50, actual balance, keep cart ≥ ₹1
-    const applied = Math.min(Math.max(coinsToApply, 0), Math.max(maxCoins, 0));
+    const applied = Math.max(maxCoins, 0);
+    setCoinsToApply(applied);
     setCoinsApplied(applied);
   };
 
@@ -837,30 +838,30 @@ export default function CourseSelection() {
       </AnimatePresence>
 
       <div className="max-w-6xl mx-auto">
-        <div className="mb-4 text-center">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black mb-2 tracking-tight">Complete <span className="text-blue-600">Enrollment</span></h1>
-            <p className="text-xs lg:text-sm text-gray-500 font-bold mx-auto italic max-w-md sm:max-w-none px-2 sm:px-0">You're just one step away from joining {course.name}. Follow the steps below.</p>
+        <div className="mb-3 md:mb-4 text-center">
+            <h1 className="text-xl sm:text-3xl lg:text-4xl font-black mb-1.5 md:mb-2 tracking-tight">Complete <span className="text-blue-600">Enrollment</span></h1>
+            <p className="text-[11px] sm:text-xs lg:text-sm text-gray-500 font-bold mx-auto italic max-w-md sm:max-w-none px-2 sm:px-0 leading-snug">You're just one step away from joining {course.name}. Follow the steps below.</p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 mb-4 md:mb-6">
             <button 
               onClick={() => { setStep('profile'); setShowProfilePrompt(false); }}
-              className={`flex flex-col items-center gap-2 p-3 lg:p-4 rounded-xl border-[4px] transition-all w-full text-left ${step === 'profile' ? 'bg-blue-600 border-[#0b1120] text-white shadow-[4px_4px_0px_#0b1120]' : 'bg-green-50 border-green-200 text-green-700 cursor-pointer hover:bg-green-100'}`}
+              className={`flex flex-col items-center gap-1.5 md:gap-2 p-2.5 md:p-3 lg:p-4 rounded-xl border-[3px] md:border-[4px] transition-all w-full text-left ${step === 'profile' ? 'bg-blue-600 border-[#0b1120] text-white shadow-[3px_3px_0px_#0b1120] md:shadow-[4px_4px_0px_#0b1120]' : 'bg-green-50 border-green-200 text-green-700 cursor-pointer hover:bg-green-100'}`}
             >
-                <User className="w-6 h-6" />
-                <span className="font-black text-[10px] md:text-sm uppercase tracking-wider">Step 1: Profile</span>
+                <User className="w-4 h-4 md:w-6 md:h-6" />
+                <span className="font-black text-[9px] md:text-sm uppercase tracking-wider">Step 1: Profile</span>
             </button>
             <button 
               disabled={!profileData.name || !profileData.gender || !profileData.phone}
               onClick={() => setStep('selection')}
-              className={`flex flex-col items-center gap-2 p-3 lg:p-4 rounded-xl border-[4px] transition-all w-full text-left ${step === 'selection' ? 'bg-blue-600 border-[#0b1120] text-white shadow-[4px_4px_0px_#0b1120]' : 'bg-white border-gray-200 text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed'}`}
+              className={`flex flex-col items-center gap-1.5 md:gap-2 p-2.5 md:p-3 lg:p-4 rounded-xl border-[3px] md:border-[4px] transition-all w-full text-left ${step === 'selection' ? 'bg-blue-600 border-[#0b1120] text-white shadow-[3px_3px_0px_#0b1120] md:shadow-[4px_4px_0px_#0b1120]' : 'bg-white border-gray-200 text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed'}`}
             >
-                <BookOpen className="w-6 h-6" />
-                <span className="font-black text-[10px] md:text-sm uppercase tracking-wider">Step 2: Checkout</span>
+                <BookOpen className="w-4 h-4 md:w-6 md:h-6" />
+                <span className="font-black text-[9px] md:text-sm uppercase tracking-wider">Step 2: Checkout</span>
             </button>
-            <div className="col-span-2 md:col-span-2 bg-white border-2 border-dashed border-gray-300 rounded-xl p-3 lg:p-4 flex items-center justify-center border-[#0b1120]/10">
-                <div className="flex items-center gap-2 text-gray-500 font-black text-xs sm:text-sm lg:text-base">
-                    <ShieldCheck className="w-6 h-6" />
+            <div className="col-span-2 md:col-span-2 bg-white border-2 border-dashed border-gray-300 rounded-xl p-2.5 md:p-3 lg:p-4 flex items-center justify-center border-[#0b1120]/10">
+                <div className="flex items-center gap-1.5 md:gap-2 text-gray-500 font-black text-[10px] sm:text-sm lg:text-base">
+                    <ShieldCheck className="w-4 h-4 md:w-6 md:h-6" />
                     Secure Checkout by Razorpay
                 </div>
             </div>
@@ -873,27 +874,27 @@ export default function CourseSelection() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="max-w-4xl mx-auto bg-white border-[4px] border-[#0b1120] rounded-2xl p-6 lg:p-10 shadow-[12px_12px_0px_#10b981] text-center"
+              className="max-w-4xl mx-auto bg-white border-[3px] md:border-[4px] border-[#0b1120] rounded-2xl p-4 sm:p-6 lg:p-10 shadow-[8px_8px_0px_#10b981] md:shadow-[12px_12px_0px_#10b981] text-center"
             >
-              <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center border-2 border-[#0b1120] mx-auto mb-6">
-                <UserCheck className="w-8 h-8 text-green-600" />
+              <div className="w-11 h-11 md:w-16 md:h-16 bg-green-100 rounded-xl md:rounded-2xl flex items-center justify-center border-2 border-[#0b1120] mx-auto mb-3 md:mb-6">
+                <UserCheck className="w-5 h-5 md:w-8 md:h-8 text-green-600" />
               </div>
-              <h2 className="text-3xl font-black text-[#0b1120] mb-3">Welcome Back!</h2>
-              <p className="text-lg text-gray-500 font-bold mb-8">
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-[#0b1120] mb-2 md:mb-3">Welcome Back!</h2>
+              <p className="text-sm md:text-lg text-gray-500 font-bold mb-5 md:mb-8 leading-snug">
                 We found your profile: <span className="text-[#0b1120]">{profileData.name}</span> ({profileData.phone}). <br />
                 Would you like to use these details for your enrollment?
               </p>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 md:gap-4">
                 <button
                   onClick={() => setShowProfilePrompt(false)}
-                  className="py-4 bg-[#0b1120] text-white rounded-2xl font-black text-lg border-2 border-[#0b1120] shadow-[5px_5px_0px_#3b82f6] hover:translate-y-1 hover:shadow-none transition-all"
+                  className="py-2.5 md:py-4 bg-[#0b1120] text-white rounded-xl md:rounded-2xl font-black text-sm md:text-lg border-2 border-[#0b1120] shadow-[4px_4px_0px_#3b82f6] md:shadow-[5px_5px_0px_#3b82f6] hover:translate-y-1 hover:shadow-none transition-all"
                 >
                   Yes, Continue
                 </button>
                 <button
                   onClick={() => { setShowProfilePrompt(false); setStep('profile'); }}
-                  className="py-4 bg-white text-[#0b1120] rounded-2xl font-black text-lg border-[3px] border-[#0b1120] hover:bg-gray-50 transition-all"
+                  className="py-2.5 md:py-4 bg-white text-[#0b1120] rounded-xl md:rounded-2xl font-black text-sm md:text-lg border-[3px] border-[#0b1120] hover:bg-gray-50 transition-all"
                 >
                   No, Update Details
                 </button>
@@ -905,22 +906,22 @@ export default function CourseSelection() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="max-w-4xl mx-auto bg-white border-[4px] border-[#0b1120] rounded-2xl p-6 lg:p-10 shadow-[8px_8px_0px_#10b981]"
+              className="max-w-4xl mx-auto bg-white border-[3px] md:border-[4px] border-[#0b1120] rounded-2xl p-4 sm:p-6 lg:p-10 shadow-[8px_8px_0px_#10b981]"
             >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center border-2 border-[#0b1120]">
-                    <UserCheck className="w-5 h-5 text-blue-600" />
+              <div className="flex items-center gap-2.5 md:gap-3 mb-4 md:mb-6">
+                <div className="w-9 h-9 md:w-10 md:h-10 bg-blue-100 rounded-lg flex items-center justify-center border-2 border-[#0b1120]">
+                    <UserCheck className="w-4 h-4 md:w-5 md:h-5 text-blue-600" />
                 </div>
                 <div>
-                    <h2 className="text-xl font-black text-[#0b1120]">Complete Your Profile</h2>
-                    <p className="font-bold text-gray-500 text-xs">We need these details for your Registration</p>
+                    <h2 className="text-base md:text-xl font-black text-[#0b1120]">Complete Your Profile</h2>
+                    <p className="font-bold text-gray-500 text-[11px] md:text-xs">We need these details for your Registration</p>
                 </div>
               </div>
 
-              <form onSubmit={handleProfileSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+              <form onSubmit={handleProfileSubmit} className="space-y-4 md:space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-6">
                   <div>
-                    <label className="block text-[12px] font-black text-[#0b1120] uppercase mb-1.5">Your Full Name</label>
+                    <label className="block text-[10px] md:text-[12px] font-black text-[#0b1120] uppercase mb-1 md:mb-1.5">Your Full Name</label>
                     <input 
                       required
                       maxLength={20}
@@ -930,12 +931,12 @@ export default function CourseSelection() {
                         setProfileData({...profileData, name: val});
                       }}
                       placeholder="Enter your name"
-                      className="w-full px-4 py-2.5 bg-gray-50 border-[3px] border-[#0b1120] rounded-xl font-black text-base focus:bg-white focus:shadow-[4px_4px_0px_#3b82f6] transition-all outline-none"
+                      className="w-full px-3 md:px-4 py-2 md:py-2.5 bg-gray-50 border-[2.5px] md:border-[3px] border-[#0b1120] rounded-xl font-black text-sm md:text-base focus:bg-white focus:shadow-[4px_4px_0px_#3b82f6] transition-all outline-none"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[12px] font-black text-[#0b1120] uppercase mb-1.5">Phone Number (WhatsApp)</label>
+                    <label className="block text-[10px] md:text-[12px] font-black text-[#0b1120] uppercase mb-1 md:mb-1.5">Phone Number (WhatsApp)</label>
                     <input 
                       required
                       type="tel"
@@ -946,20 +947,20 @@ export default function CourseSelection() {
                         setProfileData({...profileData, phone: val});
                       }}
                       placeholder="e.g. 9876543210"
-                      className="w-full px-4 py-2.5 bg-gray-50 border-[3px] border-[#0b1120] rounded-xl font-black text-base focus:bg-white focus:shadow-[4px_4px_0px_#3b82f6] transition-all outline-none"
+                      className="w-full px-3 md:px-4 py-2 md:py-2.5 bg-gray-50 border-[2.5px] md:border-[3px] border-[#0b1120] rounded-xl font-black text-sm md:text-base focus:bg-white focus:shadow-[4px_4px_0px_#3b82f6] transition-all outline-none"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[12px] font-black text-[#0b1120] uppercase mb-1.5">Gender</label>
-                  <div className="grid grid-cols-2 gap-3">
+                  <label className="block text-[10px] md:text-[12px] font-black text-[#0b1120] uppercase mb-1 md:mb-1.5">Gender</label>
+                  <div className="grid grid-cols-2 gap-2 md:gap-3">
                     {['MALE', 'FEMALE'].map(g => (
                       <button
                         key={g}
                         type="button"
                         onClick={() => setProfileData({...profileData, gender: g})}
-                        className={`py-2.5 rounded-xl border-[3px] font-black text-base transition-all ${profileData.gender === g ? 'bg-[#0b1120] text-white border-[#0b1120] shadow-[3px_3px_0px_#3b82f6]' : 'bg-white text-[#0b1120] border-gray-100 hover:border-[#0b1120]'}`}
+                        className={`py-2 md:py-2.5 rounded-xl border-[2.5px] md:border-[3px] font-black text-sm md:text-base transition-all ${profileData.gender === g ? 'bg-[#0b1120] text-white border-[#0b1120] shadow-[2px_2px_0px_#3b82f6] md:shadow-[3px_3px_0px_#3b82f6]' : 'bg-white text-[#0b1120] border-gray-100 hover:border-[#0b1120]'}`}
                       >
                         {g}
                       </button>
@@ -967,21 +968,21 @@ export default function CourseSelection() {
                   </div>
                 </div>
 
-                <div className="p-4 bg-amber-50 border-2 border-amber-200 rounded-2xl flex gap-3 items-start">
-                    <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                    <p className="text-amber-800 font-bold text-xs leading-relaxed">
-                        Course access will be granted to <span className="font-black underline text-[10px]">{user?.email}</span>. Please ensure this is correct.
+                <div className="p-3 md:p-4 bg-amber-50 border-2 border-amber-200 rounded-xl md:rounded-2xl flex gap-2 md:gap-3 items-start">
+                    <AlertCircle className="w-4 h-4 md:w-5 md:h-5 text-amber-600 shrink-0 mt-0.5" />
+                    <p className="text-amber-800 font-bold text-[11px] md:text-xs leading-snug md:leading-relaxed">
+                        Course access will be granted to <span className="font-black underline text-[10px] break-all">{user?.email}</span>. Please ensure this is correct.
                     </p>
                 </div>
 
                 <button
                   type="submit"
                   disabled={isProcessing}
-                  className="w-full py-3.5 bg-[#0b1120] text-white rounded-xl font-black text-lg border-2 border-[#0b1120] shadow-[5px_5px_0px_#3b82f6] hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                  className="w-full py-2.5 md:py-3.5 bg-[#0b1120] text-white rounded-xl font-black text-sm md:text-lg border-2 border-[#0b1120] shadow-[4px_4px_0px_#3b82f6] md:shadow-[5px_5px_0px_#3b82f6] hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center gap-2 md:gap-3 disabled:opacity-50"
                 >
-                  {isProcessing ? <Loader2 className="animate-spin w-5 h-5" /> : <>Continue to Payment <ArrowRight className="w-5 h-5" /></>}
+                  {isProcessing ? <Loader2 className="animate-spin w-4 h-4 md:w-5 md:h-5" /> : <>Continue to Payment <ArrowRight className="w-4 h-4 md:w-5 md:h-5" /></>}
                 </button>
-                <p className="mt-4 text-center text-[10px] font-bold text-gray-400 uppercase tracking-tight">
+                <p className="mt-2 md:mt-4 text-center text-[9px] md:text-[10px] font-bold text-gray-400 uppercase tracking-tight">
                   By continuing, you agree to the <Link to="/terms" className="underline hover:text-blue-600 transition-colors">Terms & Conditions</Link> and <Link to="/refund" className="underline hover:text-blue-600 transition-colors">Refund Policy</Link>.
                 </p>
               </form>
@@ -1234,8 +1235,8 @@ export default function CourseSelection() {
               </div>
 
               <div ref={summaryRef} className="lg:col-span-5 scroll-mt-24">
-                <div className="bg-white border-[3px] border-[#0b1120] rounded-2xl p-5 shadow-[8px_8px_0px_#10b981] sticky top-24">
-                    <h3 className="text-lg font-black text-[#0b1120] mb-4 border-b-2 border-gray-100 pb-2.5">Enrollment Summary</h3>
+                <div className="bg-white border-[3px] border-[#0b1120] rounded-2xl p-4 md:p-5 shadow-[8px_8px_0px_#10b981] sticky top-24">
+                    <h3 className="text-base md:text-lg font-black text-[#0b1120] mb-3 md:mb-4 border-b-2 border-gray-100 pb-2 md:pb-2.5">Enrollment Summary</h3>
                     
                     <div className="space-y-3 mb-6">
                         {course.isBundle && (
@@ -1294,45 +1295,28 @@ export default function CourseSelection() {
                         {/* ---- WALLET / COINS ---- */}
                         {user && walletBalance > 0 && (
                           <div className="py-2 border-b border-gray-100 mb-4">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Coins className="w-4 h-4 text-amber-500" />
-                              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Wallet: {walletBalance} Coins (₹{walletBalance})</span>
-                            </div>
                             {coinsApplied === 0 ? (
-                              <div className="space-y-1">
-                                <div className="flex gap-2">
-                                  <input
-                                    type="text" inputMode="decimal"
-                                    min={0}
-                                    max={Math.min(MAX_COINS_PER_ORDER, walletBalance, Math.max(calculateTotal() - discountAmount - referralDiscount - 1, 0))}
-                                    placeholder={`Max ${Math.min(MAX_COINS_PER_ORDER, walletBalance, Math.max(calculateTotal() - discountAmount - referralDiscount - 1, 0))}`}
-                                    value={coinsToApply || ''}
-                                    onChange={(e) => {
-                                      setCoinsToApply(parseInt(e.target.value) || 0);
-                                      setCoinsError('');
-                                    }}
-                                    className="flex-grow px-3 py-2 bg-amber-50 border-2 border-amber-200 rounded-lg font-black text-sm outline-none focus:border-amber-500"
-                                  />
-                                  <button
-                                    onClick={handleApplyCoins}
-                                    disabled={coinsToApply <= 0}
-                                    className="px-4 py-2 bg-amber-500 text-white rounded-lg font-black text-xs hover:bg-amber-600 transition-colors disabled:opacity-50"
-                                  >
-                                    USE
-                                  </button>
-                                </div>
-                                {coinsError && <p className="text-red-500 font-bold text-[10px] uppercase">{coinsError}</p>}
-                                <p className="text-[10px] font-bold text-gray-400">Max 50 coins per order. 1 Coin = ₹1</p>
+                              <div className="flex items-center justify-between gap-3">
+                                <span className="text-xs md:text-sm font-black text-[#0b1120]">
+                                  Wallet - ₹{walletBalance}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={handleApplyCoins}
+                                  className="shrink-0 px-3 py-1.5 bg-amber-500 text-white rounded-lg font-black text-[11px] md:text-xs hover:bg-amber-600 transition-colors"
+                                >
+                                  Use balance
+                                </button>
                               </div>
                             ) : (
-                              <div className="p-3 bg-amber-50 border-2 border-amber-200 rounded-lg flex items-center justify-between">
-                                <div>
-                                  <div className="text-[10px] font-black text-amber-600 uppercase">Coins Applied!</div>
-                                  <div className="text-sm font-black text-[#0b1120]">{coinsApplied} Coins = ₹{coinsApplied} off</div>
-                                </div>
-                                <button onClick={removeCoins} className="text-[10px] font-black text-red-500 hover:underline uppercase">Remove</button>
+                              <div className="flex items-center justify-between gap-3">
+                                <span className="text-xs md:text-sm font-black text-[#0b1120]">
+                                  Wallet - ₹{coinsApplied} used
+                                </span>
+                                <button type="button" onClick={removeCoins} className="text-[10px] font-black text-red-500 hover:underline uppercase">Remove</button>
                               </div>
                             )}
+                            {coinsError && <p className="text-red-500 font-bold text-[10px] uppercase mt-1.5">{coinsError}</p>}
                           </div>
                         )}
 
