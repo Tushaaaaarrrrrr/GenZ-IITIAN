@@ -13,6 +13,14 @@
   .gz-img-ph {
     background: repeating-linear-gradient(135deg, #e9ecf4 0 10px, #f3f5fa 10px 20px);
   }
+  .sale-ticker-track {
+    animation: sale-ticker-ltr 22s linear infinite;
+  }
+}
+
+@keyframes sale-ticker-ltr {
+  from { transform: translateX(-50%); }
+  to { transform: translateX(0); }
 }
 
 @layer components {

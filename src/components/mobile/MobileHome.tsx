@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ChevronRight, Sparkles, Play } from 'lucide-react';
+import { ChevronRight, Play } from 'lucide-react';
 
 const ECO_TAGS = [
   'Daily Live', 'Recorded', 'Weekly Mock Test', 'Live Doubts',
@@ -51,12 +51,7 @@ export default function MobileHome() {
   return (
     <div className="md:hidden">
       <div className="px-4 pt-5 pb-2">
-        <div className="inline-flex items-center gap-1.5 bg-[#E7EEFF] border-2 border-[#0b1120] rounded-full px-3.5 py-1.5 shadow-[2px_2px_0px_#0b1120]">
-          <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-          <span className="text-[11px] font-black tracking-wide text-blue-700">SEPT TERM BATCHES ARE LIVE!</span>
-        </div>
-
-        <h1 className="mt-4 font-black text-[38px] leading-[1.02] text-[#0b1120]">Welcome to</h1>
+        <h1 className="font-black text-[38px] leading-[1.02] text-[#0b1120]">Welcome to</h1>
         <h1 className="font-black text-[38px] leading-[1.02] text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500">Gen-Z IITian</h1>
 
         <p className="mt-3.5 text-[15px] leading-relaxed text-gray-500 font-medium">

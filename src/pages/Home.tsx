@@ -130,11 +130,6 @@ export default function Home() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 sm:gap-16 items-center">
           {/* Text Content */}
           <div className="relative z-10 flex flex-col items-start">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-100 text-blue-600 font-black tracking-widest uppercase text-xs sm:text-sm rounded-full border-2 border-blue-500 mb-5 sm:mb-6 shadow-[3px_3px_0px_#2563eb]">
-              <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
-              ✨ Sept Term Batches are LIVE!
-            </div>
-
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight mb-4 sm:mb-6 text-[#0b1120]">
               Welcome to <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500">
