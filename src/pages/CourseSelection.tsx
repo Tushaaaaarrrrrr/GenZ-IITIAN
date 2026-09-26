@@ -19,6 +19,7 @@ interface SubCourse {
 }
 
 import { CheckCircle2, Star, Quote } from 'lucide-react';
+import StickyEnrollBanner from '../components/StickyEnrollBanner';
 
 // Batch descriptions shown on the Qualifier checkout (prices come from the
 // manager's pricing options; these are the per-plan feature lists).
@@ -102,6 +103,8 @@ export default function CourseSelection() {
   const [selectedPricingTier, setSelectedPricingTier] = useState<number | null>(null);
   const [overriddenPrice, setOverriddenPrice] = useState<number | null>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
+  const enrollCtaRef = useRef<HTMLButtonElement>(null);
+  const coursesPickerRef = useRef<HTMLDivElement>(null);
 
   // 🔄 Auto-recovery for mobile users:
   // If the page reloads after a mobile redirect payment, check if any order was successfully PAID
@@ -762,6 +765,25 @@ export default function CourseSelection() {
   const isQualifier = course?.courseCategory === 'QUALIFIER';
   const hasPricingPlans = !!(course?.isFixedBundle && course?.pricing_options && course.pricing_options.length > 0);
   const goToSummary = () => summaryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const listTotal = calculateTotal();
+  const grandTotal = Math.max(
+    listTotal - (discountAmount || 0) - (referralDiscount || 0) - (coinsApplied || 0),
+    1
+  );
+  const needsCoursePick = selectedCourses.length === 0;
+  const needsPlanPick = isTierSelectionRequired() && !getSelectedPricingOption();
+  const enrollLabel = needsCoursePick ? 'Select a Course' : needsPlanPick ? 'Select a Plan' : 'Enroll Now';
+  const onBannerEnroll = () => {
+    if (needsCoursePick) {
+      coursesPickerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    if (needsPlanPick) {
+      document.getElementById('checkout-plans')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    handlePayment();
+  };
   const selectPricingPlan = (idx: number) => {
     setSelectedPricingTier(idx);
     // Let the continue button render, then scroll user down to checkout summary
@@ -769,7 +791,7 @@ export default function CourseSelection() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-8 sm:pt-16 pb-10 px-4 sm:px-6 text-[#0b1120]">
+    <div className="min-h-screen bg-gray-50 pt-8 sm:pt-16 pb-28 px-4 sm:px-6 text-[#0b1120]">
       <AnimatePresence>
         {isProcessing && (
           <motion.div
@@ -969,7 +991,7 @@ export default function CourseSelection() {
               key="selection"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className={`space-y-6 ${hasPricingPlans ? 'pb-24 lg:pb-0' : ''}`}
+              className="space-y-6"
             >
               {course.isBundle && hasBundleDiscount && (
                   <div className={`p-3 md:p-5 rounded-3xl border-[4px] transition-all duration-500 shadow-[8px_8px_0px_#0b1120] ${isBundleDiscountEligible ? 'bg-green-50 border-[#10b981]' : 'bg-blue-50 border-[#0b1120]'}`}>
@@ -1051,7 +1073,7 @@ export default function CourseSelection() {
               )}
 
               {hasPricingPlans && (
-                <div className="space-y-4 mb-8">
+                <div id="checkout-plans" className="space-y-4 mb-8 scroll-mt-24">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center border-2 border-[#0b1120] shadow-[2px_2px_0px_#0b1120]">
                       <CreditCard className="w-4 h-4 text-white" />
@@ -1167,7 +1189,7 @@ export default function CourseSelection() {
               )}
 
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                <div className="lg:col-span-7 space-y-6">
+                <div ref={coursesPickerRef} className="lg:col-span-7 space-y-6 scroll-mt-24">
                   <div className="bg-white border-[3px] border-[#0b1120] rounded-2xl p-5 shadow-[8px_8px_0px_#0b1120]">
                       <h2 className="text-xl font-black text-[#0b1120] mb-4">{!course.isBundle || course.isFixedBundle ? 'Course Package' : 'Select Your Courses'}</h2>
                     
@@ -1344,6 +1366,7 @@ export default function CourseSelection() {
                     </div>
 
                     <button
+                        ref={enrollCtaRef}
                         onClick={handlePayment}
                         disabled={isProcessing || selectedCourses.length === 0 || (isTierSelectionRequired() && !getSelectedPricingOption())}
                         className="w-full py-3.5 bg-[#10b981] text-[#0b1120] rounded-xl font-black text-lg border-[3px] border-[#0b1120] shadow-[5px_5px_0px_#0b1120] hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:grayscale"
@@ -1364,19 +1387,6 @@ export default function CourseSelection() {
               </div>
             </div>
 
-            {/* Mobile sticky continue bar — any multi-plan course */}
-            {hasPricingPlans && getSelectedPricingOption() && (
-              <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t-[3px] border-[#0b1120] p-3">
-                <button
-                  type="button"
-                  onClick={goToSummary}
-                  className="w-full flex items-center justify-between gap-3 px-4 py-3.5 bg-[#10b981] text-[#0b1120] rounded-xl font-black border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] active:translate-y-0.5 active:shadow-[1px_1px_0px_#0b1120] transition-all"
-                >
-                  <span className="truncate uppercase tracking-tight">Continue with {getSelectedPricingOption()?.name}</span>
-                  <span className="flex items-center gap-1.5 shrink-0">₹{getSelectedPricingOption()?.price} <ArrowRight className="w-4 h-4" /></span>
-                </button>
-              </div>
-            )}
             </motion.div>
           )}
         </AnimatePresence>
@@ -1429,6 +1439,19 @@ export default function CourseSelection() {
             </div>
         </div>
       </div>
+
+      {step === 'selection' && !showProfilePrompt && (
+        <StickyEnrollBanner
+          courseName={course.name}
+          price={grandTotal}
+          originalPrice={listTotal > grandTotal ? listTotal : null}
+          watchRef={enrollCtaRef}
+          watchKey={`${selectedCourses.join(',')}:${selectedPricingTier ?? 'none'}`}
+          onClick={onBannerEnroll}
+          label={enrollLabel}
+          busy={isProcessing}
+        />
+      )}
     </div>
   );
 }

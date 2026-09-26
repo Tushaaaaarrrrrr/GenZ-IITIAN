@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { getCheckoutPath } from '../utils/courseRouting';
+import StickyEnrollBanner from '../components/StickyEnrollBanner';
 
 function formatCourseDate(date: string) {
   return new Date(date).toLocaleDateString('en-GB', {
@@ -35,6 +36,7 @@ export default function CourseDetail() {
   const [course, setCourse] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
+  const enrollRef = useRef<HTMLAnchorElement>(null);
 
   useEffect(() => {
     fetchCourse();
@@ -59,14 +61,14 @@ export default function CourseDetail() {
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin w-12 h-12 text-[#0b1120]" /></div>;
 
   return (
-    <div className="min-h-screen bg-white pb-20">
+    <div className="min-h-screen bg-white pb-24 md:pb-24">
       {/* Hero Header */}
-      <div className="bg-[#0b1120] text-white pt-24 pb-12 px-6 relative overflow-hidden">
+      <div className="bg-[#0b1120] text-white pt-20 pb-8 px-4 md:pt-24 md:pb-12 md:px-6 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500 rounded-full blur-[120px] translate-x-1/2 -translate-y-1/2"></div>
         </div>
 
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center relative z-10">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center relative z-10">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -74,12 +76,12 @@ export default function CourseDetail() {
             <button
               type="button"
               onClick={() => navigate(-1)}
-              className="inline-flex items-center gap-2 text-gray-400 hover:text-white font-bold mb-8 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-2 text-sm md:text-base text-gray-400 hover:text-white font-bold mb-5 md:mb-8 transition-colors cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4" /> Back to Courses
             </button>
             
-            <div className="flex gap-3 mb-6">
+            <div className="flex gap-2 mb-4 md:mb-6">
               {course.subject && (
                 <span className="px-4 py-1 bg-yellow-400/20 text-yellow-400 border border-yellow-400/50 rounded-full text-xs font-black uppercase tracking-wider">
                   {course.subject}
@@ -92,34 +94,34 @@ export default function CourseDetail() {
               )}
             </div>
 
-            <h1 className="text-3xl md:text-5xl font-black mb-4 leading-tight">
+            <h1 className="text-2xl sm:text-3xl md:text-5xl font-black mb-3 md:mb-4 leading-tight">
               {course.name}
             </h1>
             
-            <p className="text-lg text-gray-400 font-bold mb-8 leading-relaxed">
+            <p className="text-sm sm:text-base md:text-lg text-gray-400 font-bold mb-5 md:mb-8 leading-relaxed">
               {course.description}
             </p>
 
-            <div className="flex flex-wrap gap-8 md:gap-12">
-              <div className="flex items-center gap-3">
-                <Users className="w-7 h-7 text-[#10b981]" />
+            <div className="flex flex-wrap gap-4 sm:gap-8 md:gap-12">
+              <div className="flex items-center gap-2 md:gap-3">
+                <Users className="w-5 h-5 md:w-7 md:h-7 text-[#10b981]" />
                 <div className="leading-none">
-                  <div className="text-3xl font-black text-white">500+</div>
-                  <div className="text-gray-400 font-black uppercase tracking-wide mt-2">Students</div>
+                  <div className="text-xl md:text-3xl font-black text-white">500+</div>
+                  <div className="text-[10px] md:text-xs text-gray-400 font-black uppercase tracking-wide mt-1 md:mt-2">Students</div>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <Star className="w-7 h-7 text-yellow-400 fill-yellow-400" />
+              <div className="flex items-center gap-2 md:gap-3">
+                <Star className="w-5 h-5 md:w-7 md:h-7 text-yellow-400 fill-yellow-400" />
                 <div className="leading-none">
-                  <div className="text-3xl font-black text-white">4.9</div>
-                  <div className="text-gray-400 font-black uppercase tracking-wide mt-2">Rating</div>
+                  <div className="text-xl md:text-3xl font-black text-white">4.9</div>
+                  <div className="text-[10px] md:text-xs text-gray-400 font-black uppercase tracking-wide mt-1 md:mt-2">Rating</div>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <Award className="w-7 h-7 text-blue-400" />
+              <div className="flex items-center gap-2 md:gap-3">
+                <Award className="w-5 h-5 md:w-7 md:h-7 text-blue-400" />
                 <div className="leading-none">
-                  <div className="text-3xl font-black text-white">95%</div>
-                  <div className="text-gray-400 font-black uppercase tracking-wide mt-2">Success</div>
+                  <div className="text-xl md:text-3xl font-black text-white">95%</div>
+                  <div className="text-[10px] md:text-xs text-gray-400 font-black uppercase tracking-wide mt-1 md:mt-2">Success</div>
                 </div>
               </div>
             </div>
@@ -130,7 +132,7 @@ export default function CourseDetail() {
             animate={{ opacity: 1, scale: 1 }}
             className="relative lg:block"
           >
-            <div className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] p-6 shadow-[8px_8px_0px_#10b981] text-[#0b1120] relative">
+            <div className="bg-white border-[3px] md:border-[4px] border-[#0b1120] rounded-3xl md:rounded-[2.5rem] p-4 md:p-6 shadow-[6px_6px_0px_#10b981] md:shadow-[8px_8px_0px_#10b981] text-[#0b1120] relative">
               <div className="absolute -top-4 right-4 bg-red-500 text-white font-black px-4 py-1.5 rounded-xl border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] text-sm tracking-widest uppercase rotate-6 animate-pulse z-10">
                 SALE IS LIVE!
               </div>
@@ -138,10 +140,10 @@ export default function CourseDetail() {
                 <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></div>
                 Special Offer Price
               </div>
-              <div className="flex items-baseline gap-4 mb-6">
-                <div className="text-4xl font-black">₹{course.discountPrice || course.price}</div>
+              <div className="flex items-baseline gap-3 md:gap-4 mb-4 md:mb-6">
+                <div className="text-3xl md:text-4xl font-black">₹{course.discountPrice || course.price}</div>
                 {course.discountPrice && (
-                  <div className="text-2xl font-black text-gray-400 line-through">₹{course.price}</div>
+                  <div className="text-lg md:text-2xl font-black text-gray-400 line-through">₹{course.price}</div>
                 )}
               </div>
               
@@ -179,9 +181,10 @@ export default function CourseDetail() {
               </div>
 
               <div className="flex flex-col gap-4">
-                <Link 
+                <Link
+                  ref={enrollRef}
                   to={getCheckoutPath({ id: String(course.id), name: course.name })}
-                  className="w-full py-5 bg-[#0b1120] text-white rounded-2xl font-black text-xl border-2 border-[#0b1120] hover:bg-white hover:text-[#0b1120] transition-all flex items-center justify-center gap-2 shadow-[6px_6px_0px_#0b1120] active:translate-y-1 active:shadow-none text-center"
+                  className="w-full py-3.5 md:py-5 bg-[#0b1120] text-white rounded-2xl font-black text-base md:text-xl border-2 border-[#0b1120] hover:bg-white hover:text-[#0b1120] transition-all flex items-center justify-center gap-2 shadow-[4px_4px_0px_#0b1120] md:shadow-[6px_6px_0px_#0b1120] active:translate-y-1 active:shadow-none text-center"
                 >
                   Enroll Now <ChevronRight className="w-6 h-6" />
                 </Link>
@@ -192,13 +195,13 @@ export default function CourseDetail() {
       </div>
 
       {/* Course Content */}
-      <section className="py-16 px-6 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-12">
-        <div className="lg:col-span-2 space-y-12">
+      <section className="py-10 px-4 md:py-16 md:px-6 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
+        <div className="lg:col-span-2 space-y-8 md:space-y-12">
           {/* Bundle Content */}
           {course.isBundle && course.bundleCourses?.length > 0 && (
             <div>
-              <h2 className="text-3xl font-black text-[#0b1120] mb-8 flex items-center gap-4">
-                <div className="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center text-purple-600 border-2 border-[#0b1120]">
+              <h2 className="text-xl md:text-3xl font-black text-[#0b1120] mb-5 md:mb-8 flex items-center gap-3 md:gap-4">
+                <div className="w-10 h-10 md:w-12 md:h-12 bg-purple-100 rounded-2xl flex items-center justify-center text-purple-600 border-2 border-[#0b1120]">
                   <Layers className="w-6 h-6" />
                 </div>
                 Included in this Bundle
@@ -217,13 +220,13 @@ export default function CourseDetail() {
           {/* Who is this for? */}
           {course.who && (
             <div>
-              <h2 className="text-3xl font-black text-[#0b1120] mb-6 flex items-center gap-4">
-                <div className="w-12 h-12 bg-red-100 rounded-2xl flex items-center justify-center text-red-600 border-2 border-[#0b1120]">
+              <h2 className="text-xl md:text-3xl font-black text-[#0b1120] mb-4 md:mb-6 flex items-center gap-3 md:gap-4">
+                <div className="w-10 h-10 md:w-12 md:h-12 bg-red-100 rounded-2xl flex items-center justify-center text-red-600 border-2 border-[#0b1120]">
                   <Users className="w-6 h-6" />
                 </div>
                 Who is this for?
               </h2>
-              <div className="bg-gray-50 border-[3px] border-[#0b1120] rounded-3xl p-8 font-bold text-gray-600 leading-relaxed shadow-[6px_6px_0px_#0b1120]">
+              <div className="bg-gray-50 border-[3px] border-[#0b1120] rounded-3xl p-5 md:p-8 text-sm md:text-base font-bold text-gray-600 leading-relaxed shadow-[6px_6px_0px_#0b1120]">
                 {course.who}
               </div>
             </div>
@@ -232,15 +235,15 @@ export default function CourseDetail() {
           {/* What you'll learn */}
           {course.learn?.length > 0 && (
             <div>
-              <h2 className="text-3xl font-black text-[#0b1120] mb-8 flex items-center gap-4">
-                <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center text-blue-600 border-2 border-[#0b1120]">
+              <h2 className="text-xl md:text-3xl font-black text-[#0b1120] mb-5 md:mb-8 flex items-center gap-3 md:gap-4">
+                <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-2xl flex items-center justify-center text-blue-600 border-2 border-[#0b1120]">
                   <BookOpen className="w-6 h-6" />
                 </div>
                 What you'll learn
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {course.learn.map((item: string) => (
-                  <div key={item} className="p-5 bg-white border-2 border-[#0b1120] rounded-2xl font-bold flex items-start gap-4 shadow-[4px_4px_0px_#0b1120]">
+                  <div key={item} className="p-4 md:p-5 bg-white border-2 border-[#0b1120] rounded-2xl text-sm md:text-base font-bold flex items-start gap-3 md:gap-4 shadow-[4px_4px_0px_#0b1120]">
                     <CheckCircle2 className="w-6 h-6 text-blue-600 mt-0.5 shrink-0" />
                     {item}
                   </div>
@@ -251,14 +254,14 @@ export default function CourseDetail() {
 
           {course.cohortContent && (
             <div>
-              <div className="text-center mb-8">
-                <h2 className="text-3xl lg:text-4xl font-black text-[#0b1120] mb-3">What You Get in the Cohort</h2>
-                <p className="text-base font-bold text-gray-500 max-w-3xl mx-auto">
+              <div className="text-center mb-5 md:mb-8">
+                <h2 className="text-xl sm:text-2xl lg:text-4xl font-black text-[#0b1120] mb-2 md:mb-3 leading-tight">What You Get in the Cohort</h2>
+                <p className="text-sm md:text-base font-bold text-gray-500 max-w-3xl mx-auto">
                   Everything you need to master {course.name} with confidence.
                 </p>
               </div>
 
-              <div className="bg-white border-[3px] border-[#0b1120] rounded-[2rem] p-8 lg:p-10 font-bold text-[#0b1120] leading-relaxed shadow-[8px_8px_0px_#10b981] whitespace-pre-wrap text-lg">
+              <div className="bg-white border-[3px] border-[#0b1120] rounded-3xl md:rounded-[2rem] p-4 sm:p-6 lg:p-10 font-bold text-[#0b1120] leading-relaxed shadow-[6px_6px_0px_#10b981] md:shadow-[8px_8px_0px_#10b981] whitespace-pre-wrap text-sm md:text-base lg:text-lg">
                 {course.cohortContent}
               </div>
             </div>
@@ -267,8 +270,8 @@ export default function CourseDetail() {
           {/* Comparison Cards Section */}
           <div className="mt-12 space-y-8">
             <div className="text-center">
-              <h2 className="text-3xl font-black text-[#0b1120] mb-3">Compare Our Batches</h2>
-              <p className="text-base font-bold text-gray-500 max-w-2xl mx-auto">
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-[#0b1120] mb-2 md:mb-3">Compare Our Batches</h2>
+              <p className="text-sm md:text-base font-bold text-gray-500 max-w-2xl mx-auto">
                 Choose the perfect format that fits your learning style, schedule, and goals.
               </p>
             </div>
@@ -441,13 +444,13 @@ export default function CourseDetail() {
           {/* Learning Outcomes */}
           {course.outcomes && (
             <div>
-              <h2 className="text-3xl font-black text-[#0b1120] mb-6 flex items-center gap-4">
-                <div className="w-12 h-12 bg-green-100 rounded-2xl flex items-center justify-center text-green-600 border-2 border-[#0b1120]">
+              <h2 className="text-xl md:text-3xl font-black text-[#0b1120] mb-4 md:mb-6 flex items-center gap-3 md:gap-4">
+                <div className="w-10 h-10 md:w-12 md:h-12 bg-green-100 rounded-2xl flex items-center justify-center text-green-600 border-2 border-[#0b1120]">
                   <Award className="w-6 h-6" />
                 </div>
                 Outcomes
               </h2>
-              <div className="bg-[#0b1120] text-white rounded-3xl p-8 lg:p-12 font-bold leading-relaxed shadow-[10px_10px_0px_#10b981]">
+              <div className="bg-[#0b1120] text-white rounded-3xl p-5 md:p-8 lg:p-12 text-sm md:text-base font-bold leading-relaxed shadow-[8px_8px_0px_#10b981] md:shadow-[10px_10px_0px_#10b981]">
                 {course.outcomes}
               </div>
             </div>
@@ -652,6 +655,16 @@ export default function CourseDetail() {
           </div>
         )}
       </AnimatePresence>
+
+      <StickyEnrollBanner
+        courseName={course.name}
+        price={Number(course.discountPrice || course.price)}
+        originalPrice={course.discountPrice ? Number(course.price) : null}
+        href={getCheckoutPath({ id: String(course.id), name: course.name })}
+        watchRef={enrollRef}
+        watchKey={course.id}
+        aboveMobileNav
+      />
     </div>
   );
 }
