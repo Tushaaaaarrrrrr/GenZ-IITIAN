@@ -1,7 +1,7 @@
 import { useAuth } from '../context/AuthContext';
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import { supabase } from '../lib/supabase';
-import { LayoutDashboard, ShoppingBag, ScrollText, BookOpen, Plus, Search, Trash2, Edit, Save, X, Loader2, AlertCircle, User, Download, TrendingUp, TrendingDown, Users, ShieldCheck, CreditCard, RefreshCw, Gift, ArrowRight, Copy, Coins, Eye, Settings, ClipboardList, Boxes, ArrowLeft, Calendar, IndianRupee, UserX } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, ScrollText, BookOpen, Plus, Search, Trash2, Edit, Save, X, Loader2, AlertCircle, User, Download, TrendingUp, TrendingDown, Users, ShieldCheck, CreditCard, RefreshCw, Gift, ArrowRight, Copy, Coins, Eye, Settings, ClipboardList, Boxes, ArrowLeft, Calendar, IndianRupee, UserX, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate, useLocation, NavLink } from 'react-router-dom';
 import { apiService } from '../lib/api';
@@ -101,6 +101,7 @@ export default function Manager() {
   const [selectedReviewIds, setSelectedReviewIds] = useState<string[]>(DEFAULT_FEEDBACK_BANK.slice(0, 3).map((note) => note.id));
   const [accessVideoUrl, setAccessVideoUrl] = useState('');
   const [coursePageTheme, setCoursePageTheme] = useState<CoursePageTheme>('old');
+  const [showCourseThemeSection, setShowCourseThemeSection] = useState(false);
   const [draftReview, setDraftReview] = useState({ name: '', role: '', text: '' });
 
   // Discount Coupons state
@@ -196,6 +197,7 @@ export default function Manager() {
       setCourseFoundationTerm('Term 1');
       setSelectedExamStages([]);
       setCoursePageTheme('old');
+      setShowCourseThemeSection(false);
       setAccessVideoUrl('');
     }
   }, [editingCourse, showAddCourse]);
@@ -1596,108 +1598,147 @@ export default function Manager() {
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mb-2">These lines show under “Included with enrollment” on the course page. One point per line.</p>
                     <textarea defaultValue={editingCourse?.cohortContent || ''} id="c-cohort" placeholder="e.g.&#10;✅ Live doubt-solving sessions every week&#10;✅ Structured notes + PYQs&#10;✅ Mock tests before every quiz&#10;..." className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none h-48 leading-relaxed" />
                   </div>
-                  <div className="p-5 border-[3px] border-[#0b1120] rounded-2xl space-y-4 bg-slate-50">
-                    <div>
-                      <label className="block text-sm font-black text-[#0b1120] uppercase mb-1">Course Page Design Theme</label>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mb-2">Select the design layout for this course page. Default is Classic.</p>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <button
-                          type="button"
-                          onClick={() => setCoursePageTheme('old')}
-                          className={`p-3 rounded-xl border-2 font-bold text-left transition-all cursor-pointer ${
-                            coursePageTheme === 'old'
-                              ? 'border-[#0b1120] bg-white shadow-[3px_3px_0px_#0b1120]'
-                              : 'border-slate-200 bg-white/60 text-gray-500 hover:border-slate-300'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between text-xs font-black text-[#0b1120] uppercase">
-                            <span>Classic (Old)</span>
-                            {coursePageTheme === 'old' && <span className="bg-emerald-100 text-emerald-800 text-[9px] px-1.5 py-0.5 rounded font-black">Default</span>}
+                  <div className="border-[3px] border-[#0b1120] rounded-2xl bg-slate-50 overflow-hidden shadow-[4px_4px_0px_#0b1120]">
+                    <button
+                      type="button"
+                      onClick={() => setShowCourseThemeSection(!showCourseThemeSection)}
+                      className="w-full p-4 flex items-center justify-between text-left hover:bg-slate-100 transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-white border-2 border-[#0b1120] flex items-center justify-center font-black text-lg shadow-[2px_2px_0px_#0b1120] shrink-0">
+                          🎨
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-black text-[#0b1120] uppercase tracking-tight">
+                              Course Page Design & Theme
+                            </span>
+                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${
+                              coursePageTheme === 'new'
+                                ? 'bg-blue-600 text-white border-blue-700'
+                                : 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                            }`}>
+                              {coursePageTheme === 'new' ? 'Modern Theme ON' : 'Classic (Old) Default'}
+                            </span>
                           </div>
-                          <p className="text-[11px] text-gray-500 font-medium mt-1 leading-snug">Brutalist layout with batch comparison cards, outcomes, and stats</p>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setCoursePageTheme('new')}
-                          className={`p-3 rounded-xl border-2 font-bold text-left transition-all cursor-pointer ${
-                            coursePageTheme === 'new'
-                              ? 'border-[#0b1120] bg-white shadow-[3px_3px_0px_#0b1120]'
-                              : 'border-slate-200 bg-white/60 text-gray-500 hover:border-slate-300'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between text-xs font-black text-[#0b1120] uppercase">
-                            <span>Modern Redesign (New)</span>
-                            {coursePageTheme === 'new' && <span className="bg-blue-100 text-blue-800 text-[9px] px-1.5 py-0.5 rounded font-black">Active</span>}
+                          <p className="text-[11px] font-bold text-gray-500 mt-0.5">
+                            {coursePageTheme === 'new'
+                              ? 'Modern redesign active · Click to configure theme, video, or feedback reviews'
+                              : 'Default Classic theme · Click to expand and turn ON Modern Redesign'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 font-black text-xs text-[#0b1120] bg-white border-2 border-[#0b1120] px-3 py-1.5 rounded-xl shadow-[2px_2px_0px_#0b1120] shrink-0">
+                        <span>{showCourseThemeSection ? 'Collapse' : 'Customize Theme'}</span>
+                        <ChevronDown className={`w-4 h-4 transition-transform ${showCourseThemeSection ? 'rotate-180' : ''}`} />
+                      </div>
+                    </button>
+
+                    {showCourseThemeSection && (
+                      <div className="p-5 border-t-[3px] border-[#0b1120] space-y-4 bg-slate-50">
+                        <div>
+                          <label className="block text-sm font-black text-[#0b1120] uppercase mb-1">Course Page Design Theme</label>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mb-2">Default is Classic. Only manager can turn ON the Modern Redesign.</p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <button
+                              type="button"
+                              onClick={() => setCoursePageTheme('old')}
+                              className={`p-3 rounded-xl border-2 font-bold text-left transition-all cursor-pointer ${
+                                coursePageTheme === 'old'
+                                  ? 'border-[#0b1120] bg-white shadow-[3px_3px_0px_#0b1120]'
+                                  : 'border-slate-200 bg-white/60 text-gray-500 hover:border-slate-300'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between text-xs font-black text-[#0b1120] uppercase">
+                                <span>Classic (Old)</span>
+                                {coursePageTheme === 'old' && <span className="bg-emerald-100 text-emerald-800 text-[9px] px-1.5 py-0.5 rounded font-black">Default Active</span>}
+                              </div>
+                              <p className="text-[11px] text-gray-500 font-medium mt-1 leading-snug">Brutalist layout with batch comparison cards, outcomes, and stats</p>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setCoursePageTheme('new')}
+                              className={`p-3 rounded-xl border-2 font-bold text-left transition-all cursor-pointer ${
+                                coursePageTheme === 'new'
+                                  ? 'border-[#0b1120] bg-white shadow-[3px_3px_0px_#0b1120]'
+                                  : 'border-slate-200 bg-white/60 text-gray-500 hover:border-slate-300'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between text-xs font-black text-[#0b1120] uppercase">
+                                <span>Modern Redesign (New)</span>
+                                {coursePageTheme === 'new' && <span className="bg-blue-100 text-blue-800 text-[9px] px-1.5 py-0.5 rounded font-black">Turned ON</span>}
+                              </div>
+                              <p className="text-[11px] text-gray-500 font-medium mt-1 leading-snug">Modern tabs layout with video spotlight, feedback reviews, and clean FAQ</p>
+                            </button>
                           </div>
-                          <p className="text-[11px] text-gray-500 font-medium mt-1 leading-snug">Modern tabs layout with video spotlight, feedback reviews, and clean FAQ</p>
-                        </button>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-black text-[#0b1120] uppercase mb-1">Course page video</label>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mb-2">YouTube link for “How to use this batch”. Students can play it on the course page.</p>
+                          <input
+                            type="url"
+                            value={accessVideoUrl}
+                            onChange={(e) => setAccessVideoUrl(e.target.value)}
+                            placeholder="https://www.youtube.com/watch?v=..."
+                            className="w-full px-4 py-3 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none bg-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-black text-[#0b1120] uppercase mb-1">Feedback bank</label>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mb-3">Tick the notes that should show on this course. Add a new one if it is not in the bank yet.</p>
+                          <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
+                            {feedbackBank.map((note) => {
+                              const checked = selectedReviewIds.includes(note.id);
+                              return (
+                                <label key={note.id} className={`flex gap-3 p-3 rounded-xl border-2 cursor-pointer ${checked ? 'border-blue-500 bg-white' : 'border-slate-200 bg-white'}`}>
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    onChange={() => {
+                                      setSelectedReviewIds((current) =>
+                                        checked ? current.filter((reviewId) => reviewId !== note.id) : [...current, note.id]
+                                      );
+                                    }}
+                                    className="mt-1 w-4 h-4 accent-blue-600"
+                                  />
+                                  <span>
+                                    <span className="block text-sm font-black text-[#0b1120]">{note.name} <span className="font-bold text-gray-400">· {note.role}</span></span>
+                                    <span className="block text-xs font-bold text-gray-500 mt-1">{note.text}</span>
+                                  </span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <input
+                              value={draftReview.name}
+                              onChange={(e) => setDraftReview((current) => ({ ...current, name: e.target.value }))}
+                              placeholder="Student name"
+                              className="px-4 py-3 border-2 border-slate-200 rounded-xl font-bold outline-none bg-white"
+                            />
+                            <input
+                              value={draftReview.role}
+                              onChange={(e) => setDraftReview((current) => ({ ...current, role: e.target.value }))}
+                              placeholder="Batch, e.g. Maths 1"
+                              className="px-4 py-3 border-2 border-slate-200 rounded-xl font-bold outline-none bg-white"
+                            />
+                            <textarea
+                              value={draftReview.text}
+                              onChange={(e) => setDraftReview((current) => ({ ...current, text: e.target.value }))}
+                              placeholder="What they said"
+                              className="sm:col-span-2 px-4 py-3 border-2 border-slate-200 rounded-xl font-bold outline-none bg-white h-20"
+                            />
+                            <button
+                              type="button"
+                              onClick={addDraftReview}
+                              className="sm:col-span-2 py-3 rounded-xl border-2 border-[#0b1120] font-black text-sm bg-white hover:bg-slate-100"
+                            >
+                              Add to feedback bank
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-black text-[#0b1120] uppercase mb-1">Course page video</label>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mb-2">YouTube link for “How to use this batch”. Students can play it on the course page.</p>
-                      <input
-                        type="url"
-                        value={accessVideoUrl}
-                        onChange={(e) => setAccessVideoUrl(e.target.value)}
-                        placeholder="https://www.youtube.com/watch?v=..."
-                        className="w-full px-4 py-3 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none bg-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-black text-[#0b1120] uppercase mb-1">Feedback bank</label>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mb-3">Tick the notes that should show on this course. Add a new one if it is not in the bank yet.</p>
-                      <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
-                        {feedbackBank.map((note) => {
-                          const checked = selectedReviewIds.includes(note.id);
-                          return (
-                            <label key={note.id} className={`flex gap-3 p-3 rounded-xl border-2 cursor-pointer ${checked ? 'border-blue-500 bg-white' : 'border-slate-200 bg-white'}`}>
-                              <input
-                                type="checkbox"
-                                checked={checked}
-                                onChange={() => {
-                                  setSelectedReviewIds((current) =>
-                                    checked ? current.filter((reviewId) => reviewId !== note.id) : [...current, note.id]
-                                  );
-                                }}
-                                className="mt-1 w-4 h-4 accent-blue-600"
-                              />
-                              <span>
-                                <span className="block text-sm font-black text-[#0b1120]">{note.name} <span className="font-bold text-gray-400">· {note.role}</span></span>
-                                <span className="block text-xs font-bold text-gray-500 mt-1">{note.text}</span>
-                              </span>
-                            </label>
-                          );
-                        })}
-                      </div>
-                      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        <input
-                          value={draftReview.name}
-                          onChange={(e) => setDraftReview((current) => ({ ...current, name: e.target.value }))}
-                          placeholder="Student name"
-                          className="px-4 py-3 border-2 border-slate-200 rounded-xl font-bold outline-none bg-white"
-                        />
-                        <input
-                          value={draftReview.role}
-                          onChange={(e) => setDraftReview((current) => ({ ...current, role: e.target.value }))}
-                          placeholder="Batch, e.g. Maths 1"
-                          className="px-4 py-3 border-2 border-slate-200 rounded-xl font-bold outline-none bg-white"
-                        />
-                        <textarea
-                          value={draftReview.text}
-                          onChange={(e) => setDraftReview((current) => ({ ...current, text: e.target.value }))}
-                          placeholder="What they said"
-                          className="sm:col-span-2 px-4 py-3 border-2 border-slate-200 rounded-xl font-bold outline-none bg-white h-20"
-                        />
-                        <button
-                          type="button"
-                          onClick={addDraftReview}
-                          className="sm:col-span-2 py-3 rounded-xl border-2 border-[#0b1120] font-black text-sm bg-white hover:bg-slate-100"
-                        >
-                          Add to feedback bank
-                        </button>
-                      </div>
-                    </div>
+                    )}
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
