@@ -17,6 +17,7 @@ import {
   DEFAULT_FEEDBACK_BANK,
   parseCoursePageSettings,
   type CoursePageSettings,
+  type CoursePageTheme,
   type FeedbackNote,
 } from '../data/coursePage';
 
@@ -99,6 +100,7 @@ export default function Manager() {
   const [feedbackBank, setFeedbackBank] = useState<FeedbackNote[]>(DEFAULT_FEEDBACK_BANK);
   const [selectedReviewIds, setSelectedReviewIds] = useState<string[]>(DEFAULT_FEEDBACK_BANK.slice(0, 3).map((note) => note.id));
   const [accessVideoUrl, setAccessVideoUrl] = useState('');
+  const [coursePageTheme, setCoursePageTheme] = useState<CoursePageTheme>('old');
   const [draftReview, setDraftReview] = useState({ name: '', role: '', text: '' });
 
   // Discount Coupons state
@@ -193,6 +195,8 @@ export default function Manager() {
       setCourseTerm('NONE');
       setCourseFoundationTerm('Term 1');
       setSelectedExamStages([]);
+      setCoursePageTheme('old');
+      setAccessVideoUrl('');
     }
   }, [editingCourse, showAddCourse]);
 
@@ -217,6 +221,7 @@ export default function Manager() {
           : settings.bank.slice(0, 3).map((note) => note.id)
       );
       setAccessVideoUrl(saved?.videoUrl || settings.defaultVideoUrl || '');
+      setCoursePageTheme(saved?.theme === 'new' ? 'new' : 'old');
     }
 
     loadCoursePage();
@@ -260,6 +265,7 @@ export default function Manager() {
         [courseId]: {
           videoUrl: accessVideoUrl.trim(),
           reviewIds: selectedReviewIds,
+          theme: coursePageTheme,
         },
       },
     };
@@ -1591,6 +1597,42 @@ export default function Manager() {
                     <textarea defaultValue={editingCourse?.cohortContent || ''} id="c-cohort" placeholder="e.g.&#10;✅ Live doubt-solving sessions every week&#10;✅ Structured notes + PYQs&#10;✅ Mock tests before every quiz&#10;..." className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none h-48 leading-relaxed" />
                   </div>
                   <div className="p-5 border-[3px] border-[#0b1120] rounded-2xl space-y-4 bg-slate-50">
+                    <div>
+                      <label className="block text-sm font-black text-[#0b1120] uppercase mb-1">Course Page Design Theme</label>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mb-2">Select the design layout for this course page. Default is Classic.</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setCoursePageTheme('old')}
+                          className={`p-3 rounded-xl border-2 font-bold text-left transition-all cursor-pointer ${
+                            coursePageTheme === 'old'
+                              ? 'border-[#0b1120] bg-white shadow-[3px_3px_0px_#0b1120]'
+                              : 'border-slate-200 bg-white/60 text-gray-500 hover:border-slate-300'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between text-xs font-black text-[#0b1120] uppercase">
+                            <span>Classic (Old)</span>
+                            {coursePageTheme === 'old' && <span className="bg-emerald-100 text-emerald-800 text-[9px] px-1.5 py-0.5 rounded font-black">Default</span>}
+                          </div>
+                          <p className="text-[11px] text-gray-500 font-medium mt-1 leading-snug">Brutalist layout with batch comparison cards, outcomes, and stats</p>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCoursePageTheme('new')}
+                          className={`p-3 rounded-xl border-2 font-bold text-left transition-all cursor-pointer ${
+                            coursePageTheme === 'new'
+                              ? 'border-[#0b1120] bg-white shadow-[3px_3px_0px_#0b1120]'
+                              : 'border-slate-200 bg-white/60 text-gray-500 hover:border-slate-300'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between text-xs font-black text-[#0b1120] uppercase">
+                            <span>Modern Redesign (New)</span>
+                            {coursePageTheme === 'new' && <span className="bg-blue-100 text-blue-800 text-[9px] px-1.5 py-0.5 rounded font-black">Active</span>}
+                          </div>
+                          <p className="text-[11px] text-gray-500 font-medium mt-1 leading-snug">Modern tabs layout with video spotlight, feedback reviews, and clean FAQ</p>
+                        </button>
+                      </div>
+                    </div>
                     <div>
                       <label className="block text-sm font-black text-[#0b1120] uppercase mb-1">Course page video</label>
                       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mb-2">YouTube link for “How to use this batch”. Students can play it on the course page.</p>

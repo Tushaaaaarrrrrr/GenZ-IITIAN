@@ -1,4 +1,8 @@
+import { supabase } from '../lib/supabase';
+
 export const COURSE_PAGE_SETTINGS_KEY = 'course_page_content';
+
+export type CoursePageTheme = 'old' | 'new';
 
 export type FeedbackNote = {
   id: string;
@@ -11,6 +15,7 @@ export type FeedbackNote = {
 export type CoursePageChoice = {
   videoUrl?: string;
   reviewIds?: string[];
+  theme?: CoursePageTheme;
 };
 
 export type CoursePageSettings = {
@@ -100,6 +105,7 @@ export function parseCoursePageSettings(raw: string | null | undefined): CourseP
           reviewIds: Array.isArray(choice.reviewIds)
             ? choice.reviewIds.filter((reviewId) => typeof reviewId === 'string')
             : [],
+          theme: choice.theme === 'new' ? 'new' : 'old',
         };
       });
     }
@@ -112,6 +118,40 @@ export function parseCoursePageSettings(raw: string | null | undefined): CourseP
   } catch {
     return empty;
   }
+}
+
+export function themeForCourse(
+  settings: CoursePageSettings,
+  courseId: string,
+  course?: any
+): CoursePageTheme {
+  if (course?.design_theme === 'new' || course?.theme === 'new') return 'new';
+  if (course?.design_theme === 'old' || course?.theme === 'old') return 'old';
+  const chosen = settings.courses[courseId]?.theme;
+  return chosen === 'new' ? 'new' : 'old';
+}
+
+export async function updateCourseTheme(courseId: string, theme: CoursePageTheme) {
+  const { data } = await supabase
+    .from('settings')
+    .select('value')
+    .eq('key', COURSE_PAGE_SETTINGS_KEY)
+    .maybeSingle();
+  const current = parseCoursePageSettings(data?.value);
+  const next: CoursePageSettings = {
+    ...current,
+    courses: {
+      ...current.courses,
+      [courseId]: {
+        ...(current.courses[courseId] || {}),
+        theme,
+      },
+    },
+  };
+  const { error } = await supabase
+    .from('settings')
+    .upsert({ key: COURSE_PAGE_SETTINGS_KEY, value: JSON.stringify(next) });
+  return { error, next };
 }
 
 export function reviewsForCourse(settings: CoursePageSettings, courseId: string) {
