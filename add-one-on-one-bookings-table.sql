@@ -14,9 +14,15 @@ CREATE TABLE IF NOT EXISTS public.one_on_one_bookings (
     slot_time TEXT,
     plan TEXT DEFAULT '1:1 Personalised Teaching',
     notes TEXT,
+    user_notes TEXT,
+    manager_notes TEXT,
     status TEXT DEFAULT 'CONFIRMED',
     created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now())
 );
+
+-- Migration for existing tables:
+ALTER TABLE public.one_on_one_bookings ADD COLUMN IF NOT EXISTS user_notes TEXT;
+ALTER TABLE public.one_on_one_bookings ADD COLUMN IF NOT EXISTS manager_notes TEXT;
 
 -- Index for searching and filtering
 CREATE INDEX IF NOT EXISTS idx_1on1_bookings_email ON public.one_on_one_bookings(email);

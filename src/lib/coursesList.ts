@@ -72,7 +72,7 @@ export async function loadCoursesCatalog(): Promise<CoursesCatalog> {
     if (coursesError) throw coursesError;
 
     const catalog: CachedCatalog = {
-      courses: (coursesData || []) as CourseCardData[],
+      courses: (coursesData || []) as unknown as CourseCardData[],
       examVisibility: parseExamVisibility(visData?.value),
       fetchedAt: Date.now(),
     };
