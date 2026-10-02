@@ -794,6 +794,43 @@ function saveBookingsToFile() {
 // Initial load on server start
 loadBookingsFromFile();
 
+// --- JOB APPLICATIONS PERSISTENCE ---
+const APPLICATIONS_FILE = path.join(__dirname, 'data', 'job_applications.json');
+const memoryJobApplications = new Map();
+
+function loadApplicationsFromFile() {
+    try {
+        if (fs.existsSync(APPLICATIONS_FILE)) {
+            const raw = fs.readFileSync(APPLICATIONS_FILE, 'utf-8');
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+                for (const app of parsed) {
+                    if (app && app.id) {
+                        memoryJobApplications.set(app.id, app);
+                    }
+                }
+            }
+        }
+    } catch (err) {
+        console.warn('[Job Applications] Error reading applications file:', err.message);
+    }
+}
+
+function saveApplicationsToFile() {
+    try {
+        const dir = path.dirname(APPLICATIONS_FILE);
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+        const list = Array.from(memoryJobApplications.values());
+        fs.writeFileSync(APPLICATIONS_FILE, JSON.stringify(list, null, 2), 'utf-8');
+    } catch (err) {
+        console.warn('[Job Applications] Error writing applications file:', err.message);
+    }
+}
+
+loadApplicationsFromFile();
+
 // Helper to dispatch 1:1 webhook to Google Apps Script
 async function dispatch1on1Webhook(payload) {
     const webhookUrl = 
@@ -1434,6 +1471,274 @@ app.post('/api/1on1-bookings/update-notes', async (req, res) => {
     } catch (err) {
         console.error('[1:1 Update Notes] Error:', err);
         res.status(500).json({ error: 'Failed to update notes' });
+    }
+});
+
+// ==========================================
+// JOB APPLICATIONS (Subject Tutors & Campus Leaders)
+// ==========================================
+
+// 1. SUBMIT APPLICATION
+app.post('/api/job-applications', async (req, res) => {
+    try {
+        const {
+            role,
+            role_title,
+            full_name,
+            name,
+            email,
+            phone,
+            is_iitm,
+            isIITM,
+            level,
+            subject,
+            language,
+            cgpa,
+            resume_link,
+            resumeLink,
+            official_email,
+            officialEmail,
+            is_bs_student,
+            isBSStudent,
+            is_group_owner,
+            isGroupOwner,
+            group_link,
+            groupLink,
+            group_members,
+            groupMembers,
+            inquiries,
+            metadata = {}
+        } = req.body || {};
+
+        const candidateName = (full_name || name || '').trim();
+        const candidateEmail = (email || '').trim().toLowerCase();
+        const candidatePhone = (phone || '').trim();
+
+        if (!candidateName || !candidateEmail) {
+            return res.status(400).json({ error: 'Name and email are required.' });
+        }
+
+        const appId = `app-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+        const resolvedRole = role || (role_title?.toLowerCase().includes('campus') ? 'campus-leader' : 'tutor');
+        const resolvedRoleTitle = role_title || (resolvedRole === 'campus-leader' ? 'Campus Leaders' : 'Subject Tutor (Faculty)');
+
+        const applicationRecord = {
+            id: appId,
+            role: resolvedRole,
+            role_title: resolvedRoleTitle,
+            full_name: candidateName,
+            email: candidateEmail,
+            phone: candidatePhone,
+
+            // Tutor specific
+            is_iitm: is_iitm || isIITM || null,
+            level: level || null,
+            subject: subject || null,
+            language: language || null,
+            cgpa: cgpa || null,
+            resume_link: resume_link || resumeLink || null,
+
+            // Campus Leader specific
+            official_email: official_email || officialEmail || null,
+            is_bs_student: is_bs_student || isBSStudent || null,
+            is_group_owner: is_group_owner || isGroupOwner || null,
+            group_link: group_link || groupLink || null,
+            group_members: group_members || groupMembers || null,
+            inquiries: inquiries || null,
+
+            metadata: {
+                ...metadata,
+                submitted_at: new Date().toISOString()
+            },
+            status: 'PENDING',
+            manager_notes: '',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        };
+
+        // 1. In-memory & local file persistence
+        memoryJobApplications.set(appId, applicationRecord);
+        saveApplicationsToFile();
+
+        // 2. Supabase storage
+        if (supabase) {
+            try {
+                const { error: insErr } = await supabase.from('job_applications').insert([applicationRecord]);
+                if (insErr) {
+                    console.warn('[Job Applications Server] Table insert notice:', insErr.message);
+                }
+            } catch (e) {
+                console.warn('[Job Applications Server] Supabase insert warning:', e.message);
+            }
+
+            try {
+                await supabase.from('activity_logs').insert({
+                    email: candidateEmail,
+                    action: 'JOB_APPLICATION_SUBMITTED',
+                    metadata: applicationRecord
+                });
+            } catch (e) {
+                console.warn('[Job Applications Server] activity_logs warning:', e.message);
+            }
+        }
+
+        console.log(`[Job Application] New application received: ${candidateName} (${candidateEmail}) for ${resolvedRoleTitle}`);
+
+        res.json({
+            success: true,
+            message: 'Application recorded successfully',
+            application: applicationRecord
+        });
+    } catch (err) {
+        console.error('[Job Application Submit] Error:', err);
+        res.status(500).json({ error: 'Internal server error recording application' });
+    }
+});
+
+// 2. GET ALL APPLICATIONS (For Manager Portal)
+app.get('/api/job-applications', async (req, res) => {
+    try {
+        loadApplicationsFromFile();
+        const appMap = new Map();
+
+        // Load from local memory file first
+        for (const [id, app] of memoryJobApplications.entries()) {
+            appMap.set(id, app);
+        }
+
+        // Merge from Supabase table if available
+        if (supabase) {
+            try {
+                const { data, error } = await supabase
+                    .from('job_applications')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (!error && Array.isArray(data)) {
+                    for (const row of data) {
+                        if (row && row.id) {
+                            appMap.set(row.id, { ...(appMap.get(row.id) || {}), ...row });
+                        }
+                    }
+                }
+            } catch (e) {}
+
+            // Merge from activity_logs fallback
+            try {
+                const { data: logs } = await supabase
+                    .from('activity_logs')
+                    .select('*')
+                    .eq('action', 'JOB_APPLICATION_SUBMITTED')
+                    .order('created_at', { ascending: false });
+
+                if (Array.isArray(logs)) {
+                    for (const log of logs) {
+                        const meta = log.metadata || {};
+                        const bId = meta.id || `log-${log.id}`;
+                        if (!appMap.has(bId)) {
+                            appMap.set(bId, {
+                                id: bId,
+                                role: meta.role || 'tutor',
+                                role_title: meta.role_title || 'Subject Tutor (Faculty)',
+                                full_name: meta.full_name || 'Candidate',
+                                email: (log.email || meta.email || '').trim().toLowerCase(),
+                                phone: meta.phone || '',
+                                is_iitm: meta.is_iitm,
+                                level: meta.level,
+                                subject: meta.subject,
+                                language: meta.language,
+                                cgpa: meta.cgpa,
+                                resume_link: meta.resume_link,
+                                official_email: meta.official_email,
+                                is_bs_student: meta.is_bs_student,
+                                is_group_owner: meta.is_group_owner,
+                                group_link: meta.group_link,
+                                group_members: meta.group_members,
+                                inquiries: meta.inquiries,
+                                metadata: meta,
+                                status: meta.status || 'PENDING',
+                                manager_notes: meta.manager_notes || '',
+                                created_at: log.created_at || meta.created_at || new Date().toISOString(),
+                                updated_at: log.created_at || meta.updated_at || new Date().toISOString()
+                            });
+                        }
+                    }
+                }
+            } catch (e) {}
+        }
+
+        const sorted = Array.from(appMap.values()).sort((a, b) => {
+            const timeA = new Date(a.created_at || 0).getTime();
+            const timeB = new Date(b.created_at || 0).getTime();
+            return timeB - timeA;
+        });
+
+        res.json({ success: true, applications: sorted });
+    } catch (err) {
+        console.error('[Job Applications GET] Error:', err);
+        res.status(500).json({ error: 'Failed to fetch applications' });
+    }
+});
+
+// 3. UPDATE APPLICATION STATUS & NOTES
+app.post('/api/job-applications/update-status', async (req, res) => {
+    try {
+        const { id, status, manager_notes } = req.body || {};
+        if (!id) return res.status(400).json({ error: 'ID is required' });
+
+        let app = memoryJobApplications.get(id);
+
+        if (supabase) {
+            const updatePayload = { updated_at: new Date().toISOString() };
+            if (status) updatePayload.status = status;
+            if (manager_notes !== undefined) updatePayload.manager_notes = manager_notes;
+
+            try {
+                await supabase.from('job_applications').update(updatePayload).eq('id', id);
+            } catch (e) {}
+
+            try {
+                await supabase.from('activity_logs').insert({
+                    action: 'JOB_APPLICATION_STATUS_UPDATED',
+                    metadata: { id, status, manager_notes, timestamp: new Date().toISOString() }
+                });
+            } catch (e) {}
+        }
+
+        if (app) {
+            if (status) app.status = status;
+            if (manager_notes !== undefined) app.manager_notes = manager_notes;
+            app.updated_at = new Date().toISOString();
+            memoryJobApplications.set(id, app);
+            saveApplicationsToFile();
+        }
+
+        res.json({ success: true, message: 'Application updated', application: app });
+    } catch (err) {
+        console.error('[Job Applications Update Status] Error:', err);
+        res.status(500).json({ error: 'Failed to update application' });
+    }
+});
+
+// 4. DELETE APPLICATION
+app.post('/api/job-applications/delete', async (req, res) => {
+    try {
+        const { id } = req.body || {};
+        if (!id) return res.status(400).json({ error: 'ID is required' });
+
+        memoryJobApplications.delete(id);
+        saveApplicationsToFile();
+
+        if (supabase) {
+            try {
+                await supabase.from('job_applications').delete().eq('id', id);
+            } catch (e) {}
+        }
+
+        res.json({ success: true, message: 'Application deleted' });
+    } catch (err) {
+        console.error('[Job Applications Delete] Error:', err);
+        res.status(500).json({ error: 'Failed to delete application' });
     }
 });
 

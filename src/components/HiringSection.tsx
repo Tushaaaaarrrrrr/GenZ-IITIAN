@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronDown, ChevronUp, Briefcase, Star, Users, BrainCircuit, Rocket, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
+import CareerApplicationModal from './CareerApplicationModal';
 
 export default function HiringSection() {
   const [openJob, setOpenJob] = useState<string | null>(null);
-  const [showForm, setShowForm] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [applicationModalRole, setApplicationModalRole] = useState<'tutor' | 'campus-leader' | null>(null);
 
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
 
@@ -39,74 +38,6 @@ export default function HiringSection() {
     setCurrentTestimonial((prev) => (prev - 1 + testimonials.length) % testimonials.length);
   };
 
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    isIITM: 'Yes',
-    level: 'Foundation',
-    subject: '',
-    language: 'English',
-    cgpa: '',
-    resumeLink: '',
-  });
-
-  const subjects = {
-    Foundation: [
-      'Mathematics for Data Science I',
-      'Mathematics for Data Science II',
-      'Statistics for Data Science I',
-      'Statistics for Data Science II',
-      'Computational Thinking',
-      'Programming in Python'
-    ],
-    Diploma: [
-      'PDSA (using Python)',
-      'Programming Concepts using Java',
-      'Database Management Systems',
-      'Machine Learning Foundations',
-      'Machine Learning Techniques',
-      'Machine Learning Practice',
-      'Modern Application Development 1 (MAD 1)',
-      'Modern Application Development 2 (MAD 2)',
-      'Deep Learning & Gen AI'
-    ]
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    
-    try {
-      // Get the Web App URL from environment variables
-      const GOOGLE_SCRIPT_URL = import.meta.env.VITE_CAREERS_SCRIPT_URL;
-      
-      if (GOOGLE_SCRIPT_URL && GOOGLE_SCRIPT_URL !== 'YOUR_GOOGLE_SCRIPT_URL_HERE') {
-        await fetch(GOOGLE_SCRIPT_URL, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(formData)
-        });
-      } else {
-        // Mock delay if URL is not set
-        await new Promise(r => setTimeout(r, 1500));
-      }
-      
-      setSubmitted(true);
-    } catch (error) {
-      console.error('Error submitting application', error);
-      alert('Something went wrong. Please try again!');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   return (
     <section id="careers" className="py-24 bg-gray-50 border-t border-gray-200">
@@ -125,7 +56,6 @@ export default function HiringSection() {
                 onClick={() => {
                   const isOpening = openJob !== 'tutor';
                   setOpenJob(isOpening ? 'tutor' : null);
-                  if (!isOpening) setShowForm(false);
                 }}
                 className="w-full px-8 py-6 flex items-center justify-between bg-white hover:bg-gray-50 transition-colors text-left"
               >
@@ -176,105 +106,15 @@ export default function HiringSection() {
                       </p>
                     </div>
 
-                    {!showForm && (
-                      <div className="mt-8 flex justify-center">
-                        <button 
-                          onClick={() => setShowForm(true)}
-                          className="px-8 py-4 bg-blue-600 text-white font-black rounded-xl hover:bg-blue-700 transition-colors border-2 border-transparent shadow-[4px_4px_0px_#0b1120] text-lg"
-                        >
-                          Apply for this role
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Application Form */}
-                  {showForm && (
-                  <div className="bg-white p-6 md:p-8 rounded-2xl border-2 border-gray-200 mt-6 inline-block w-full">
-                    <div className="flex justify-between items-center mb-6">
-                      <h4 className="text-2xl font-black text-[#0b1120]">Apply Now!</h4>
-                      <button onClick={() => setShowForm(false)} className="text-sm font-bold text-gray-500 hover:text-gray-800">Close Form</button>
+                    <div className="mt-8 flex justify-center">
+                      <button 
+                        onClick={() => setApplicationModalRole('tutor')}
+                        className="px-8 py-4 bg-blue-600 text-white font-black rounded-xl hover:bg-blue-700 transition-colors border-2 border-transparent shadow-[4px_4px_0px_#0b1120] text-lg cursor-pointer active:scale-95"
+                      >
+                        Apply for this role
+                      </button>
                     </div>
-                    
-                    {submitted ? (
-                      <div className="text-center py-10 bg-green-50 rounded-xl border-2 border-green-200">
-                        <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <CheckCircle2 className="w-8 h-8" />
-                        </div>
-                        <h4 className="text-2xl font-bold text-green-800 mb-2">Thank you!</h4>
-                        <p className="font-medium text-green-700">Your application has been received. We will contact you soon!</p>
-                        <button onClick={() => setSubmitted(false)} className="mt-6 font-bold text-blue-600 hover:text-blue-800">Submit another application</button>
-                      </div>
-                    ) : (
-                      <form onSubmit={handleSubmit} className="space-y-5">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                          <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Full Name *</label>
-                            <input required type="text" name="name" value={formData.name} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-blue-500 focus:ring-0 transition-colors font-medium outline-none" placeholder="John Doe" />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Email Address *</label>
-                            <input required type="email" name="email" value={formData.email} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-blue-500 focus:ring-0 transition-colors font-medium outline-none" placeholder="john@example.com" />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Phone / WhatsApp *</label>
-                            <input required type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-blue-500 focus:ring-0 transition-colors font-medium outline-none" placeholder="+91 9876543210" />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Are you an IITM BS Student? *</label>
-                            <select required name="isIITM" value={formData.isIITM} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-blue-500 focus:ring-0 transition-colors font-medium outline-none">
-                              <option value="Yes">Yes</option>
-                              <option value="No">No</option>
-                            </select>
-                          </div>
-                          
-                          <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Teaching Level *</label>
-                            <select required name="level" value={formData.level} onChange={(e) => { handleInputChange(e); setFormData(prev => ({...prev, subject: subjects[e.target.value as keyof typeof subjects][0] })) }} className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-blue-500 focus:ring-0 transition-colors font-medium outline-none">
-                              <option value="Foundation">Foundation</option>
-                              <option value="Diploma">Diploma</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Target Subject *</label>
-                            <select required name="subject" value={formData.subject} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-blue-500 focus:ring-0 transition-colors font-medium outline-none">
-                              <option value="" disabled>Select a subject...</option>
-                              {subjects[formData.level as keyof typeof subjects].map(sub => (
-                                <option key={sub} value={sub}>{sub}</option>
-                              ))}
-                            </select>
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Preferred Teaching Language *</label>
-                            <select required name="language" value={formData.language} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-blue-500 focus:ring-0 transition-colors font-medium outline-none">
-                              <option value="English">English</option>
-                              <option value="Hindi">Hindi</option>
-                              <option value="Both (English + Hindi)">Both (English + Hindi)</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Subject CGPA / Grade *</label>
-                            <input required type="text" name="cgpa" value={formData.cgpa} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-blue-500 focus:ring-0 transition-colors font-medium outline-none" placeholder="e.g. 8.5 or S Grade" />
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <label className="block text-sm font-bold text-gray-700 mb-2">Resume / CV Link *</label>
-                          <input required type="url" name="resumeLink" value={formData.resumeLink} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-blue-500 focus:ring-0 transition-colors font-medium outline-none" placeholder="Google Drive / Dropbox link (Make sure it's public)" />
-                        </div>
-
-                        <button 
-                          type="submit" 
-                          disabled={isSubmitting}
-                          className="w-full py-4 bg-[#0b1120] text-white font-black rounded-xl hover:bg-gray-800 transition-colors border-2 border-transparent disabled:opacity-70 flex items-center justify-center gap-2"
-                        >
-                          {isSubmitting ? 'Submitting Application...' : 'Submit Application'}
-                        </button>
-                      </form>
-                    )}
                   </div>
-                  )}
                 </div>
               )}
             </div>
@@ -346,14 +186,20 @@ export default function HiringSection() {
                       If you're passionate about helping the IIT Madras BS community and want to grow with us, we'd love to hear from you.
                     </p>
 
-                    <div className="mt-8 flex justify-center">
+                    <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+                      <button 
+                        onClick={() => setApplicationModalRole('campus-leader')}
+                        className="px-8 py-4 bg-blue-600 text-white font-black rounded-xl hover:bg-blue-700 transition-colors border-2 border-transparent shadow-[4px_4px_0px_#0b1120] text-lg text-center cursor-pointer active:scale-95"
+                      >
+                        Apply for this role
+                      </button>
                       <a 
                         href="https://forms.gle/bQL5p6Bb9zX3pk2n8" 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="px-8 py-4 bg-blue-600 text-white font-black rounded-xl hover:bg-blue-700 transition-colors border-2 border-transparent shadow-[4px_4px_0px_#0b1120] text-lg text-center"
+                        className="text-xs font-bold text-slate-500 hover:text-blue-600 underline py-2"
                       >
-                        Apply Now
+                        Or open Google Form
                       </a>
                     </div>
                   </div>
@@ -464,6 +310,13 @@ export default function HiringSection() {
         </div>
 
       </div>
+
+      {/* Full Page Career Application Collector & Celebration Modal */}
+      <CareerApplicationModal
+        isOpen={applicationModalRole !== null}
+        onClose={() => setApplicationModalRole(null)}
+        role={applicationModalRole || 'tutor'}
+      />
     </section>
   );
 }

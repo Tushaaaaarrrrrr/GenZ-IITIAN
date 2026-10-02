@@ -1,13 +1,14 @@
 import { useAuth } from '../context/AuthContext';
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import { supabase } from '../lib/supabase';
-import { LayoutDashboard, ShoppingBag, ScrollText, BookOpen, Plus, Search, Trash2, Edit, Save, X, Loader2, AlertCircle, User, Download, TrendingUp, TrendingDown, Users, ShieldCheck, CreditCard, RefreshCw, Gift, ArrowRight, Copy, Coins, Eye, Settings, ClipboardList, Boxes, ArrowLeft, Calendar, IndianRupee, UserX, ChevronDown } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, ScrollText, BookOpen, Plus, Search, Trash2, Edit, Save, X, Loader2, AlertCircle, User, Download, TrendingUp, TrendingDown, Users, ShieldCheck, CreditCard, RefreshCw, Gift, ArrowRight, Copy, Coins, Eye, Settings, ClipboardList, Boxes, ArrowLeft, Calendar, IndianRupee, UserX, ChevronDown, Briefcase } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate, useLocation, NavLink } from 'react-router-dom';
 import { apiService } from '../lib/api';
 import BlogsManager from '../components/manager/BlogsManager';
 import EmployeesManager from '../components/manager/EmployeesManager';
 import OneOnOneBookingsManager from '../components/manager/OneOnOneBookingsManager';
+import JobApplicationsManager from '../components/manager/JobApplicationsManager';
 import ManagerFullPageSheet from '../components/manager/ManagerFullPageSheet';
 import ErrorBoundary from '../components/ErrorBoundary';
 import { getYouTubeId } from '../utils/youtube';
@@ -22,7 +23,7 @@ import {
 } from '../data/coursePage';
 
 
-type Tab = 'users' | 'courses' | 'boxes' | 'discounts' | 'payments' | 'catalog' | 'referrals' | 'blogs' | 'settings' | 'employees' | 'logs' | '1on1';
+type Tab = 'users' | 'courses' | 'boxes' | 'discounts' | 'payments' | 'catalog' | 'referrals' | 'blogs' | 'settings' | 'employees' | 'logs' | '1on1' | 'applications';
 type CourseTerm = 'Re-attempt' | 'Foundation' | 'DIPLOMA' | 'Qualifier';
 
 const TERM_OPTIONS: CourseTerm[] = ['Qualifier', 'Re-attempt', 'Foundation', 'DIPLOMA'];
@@ -66,7 +67,7 @@ export default function Manager() {
   const activeTab = (rawTab && rawTab !== 'manager' ? rawTab : 'users') as Tab;
   
   // Validate tab - if path is just /manager, it's users. If invalid, could redirect.
-  const validTabs: Tab[] = ['users', '1on1', 'courses', 'boxes', 'discounts', 'payments', 'referrals', 'blogs', 'settings', 'employees', 'logs'];
+  const validTabs: Tab[] = ['users', '1on1', 'applications', 'courses', 'boxes', 'discounts', 'payments', 'referrals', 'blogs', 'settings', 'employees', 'logs'];
   const effectiveTab = validTabs.includes(activeTab) ? activeTab : 'users';
   const [data, setData] = useState<any>([]);
   const [loading, setLoading] = useState(true);
@@ -463,7 +464,7 @@ export default function Manager() {
   };
 
   const fetchData = async () => {
-    if (effectiveTab === 'blogs' || effectiveTab === 'settings' || effectiveTab === 'logs' || effectiveTab === 'boxes' || effectiveTab === 'employees' || effectiveTab === '1on1') {
+    if (effectiveTab === 'blogs' || effectiveTab === 'settings' || effectiveTab === 'logs' || effectiveTab === 'boxes' || effectiveTab === 'employees' || effectiveTab === '1on1' || effectiveTab === 'applications') {
       setLoading(false);
       return;
     }
@@ -896,6 +897,7 @@ export default function Manager() {
   const managerTabs = [
     { id: 'users', label: 'Users', icon: User, path: '/manager/users' },
     { id: '1on1', label: '1:1 Bookings', icon: Calendar, path: '/manager/1on1' },
+    { id: 'applications', label: 'Job Applications', icon: Briefcase, path: '/manager/applications' },
     { id: 'employees', label: 'Employees', icon: ShieldCheck, path: '/manager/employees' },
     { id: 'logs', label: 'Logs', icon: ClipboardList, path: '/manager/logs' },
     { id: 'courses', label: 'Courses', icon: BookOpen, path: '/manager/courses' },
@@ -924,7 +926,7 @@ export default function Manager() {
             <span className="font-semibold text-base text-slate-900 tracking-tight truncate">Manager</span>
           </div>
           <span className="text-[10px] font-semibold uppercase tracking-wider bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md shrink-0">
-            {effectiveTab === '1on1' ? '1:1 Bookings' : effectiveTab}
+            {effectiveTab === '1on1' ? '1:1 Bookings' : effectiveTab === 'applications' ? 'Job Applications' : effectiveTab}
           </span>
         </div>
         <nav className="flex gap-1 overflow-x-auto no-scrollbar py-2 px-3 border-t border-slate-100">
@@ -987,9 +989,15 @@ export default function Manager() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div>
               <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 capitalize tracking-tight">
-                {effectiveTab === '1on1' ? '1:1 Bookings' : effectiveTab}
+                {effectiveTab === '1on1' ? '1:1 Bookings' : effectiveTab === 'applications' ? 'Job Applications' : effectiveTab}
               </h1>
-              <p className="text-sm text-slate-500 mt-0.5">Manager panel</p>
+              <p className="text-sm text-slate-500 mt-0.5">
+                {effectiveTab === '1on1'
+                  ? 'Manage student consultations, follow-ups, and pipeline'
+                  : effectiveTab === 'applications'
+                  ? 'Review tutor faculty & campus leader submissions, contact candidates, and manage pipeline'
+                  : 'Manager panel'}
+              </p>
             </div>
             <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
               {effectiveTab === 'users' && (
@@ -1075,6 +1083,8 @@ export default function Manager() {
               <div className="space-y-6">
 
                 {effectiveTab === '1on1' && <OneOnOneBookingsManager />}
+
+                {effectiveTab === 'applications' && <JobApplicationsManager />}
 
                 {effectiveTab === 'blogs' && <BlogsManager />}
 

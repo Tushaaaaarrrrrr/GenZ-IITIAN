@@ -391,11 +391,7 @@ export default function OneOnOneBookingsManager() {
   return (
     <div className="space-y-6">
       {/* Top Action Bar */}
-      <div className="flex justify-between items-center gap-4 flex-wrap">
-        <div>
-          <h2 className="text-xl font-black text-slate-900 tracking-tight">1:1 Bookings</h2>
-          <p className="text-xs text-slate-500 font-medium">Manage student consultations, follow-ups, and pipeline</p>
-        </div>
+      <div className="flex justify-end items-center">
         <button
           onClick={fetchBookings}
           disabled={loading}
