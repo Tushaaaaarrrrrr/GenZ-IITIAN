@@ -9,10 +9,19 @@ CREATE TABLE IF NOT EXISTS public.job_applications (
     email TEXT NOT NULL,
     phone TEXT NOT NULL,
     
+    -- Personal & Academic background
+    age TEXT,
+    gender TEXT,
+    student_type TEXT,                      -- 'Standalone', 'Dual Degree', 'Working Professional'
+    degree_level TEXT,                      -- 'Foundation', 'Diploma', 'Degree'
+    
     -- Subject Tutor specific
     is_iitm TEXT,
     level TEXT,
     subject TEXT,
+    courses JSONB DEFAULT '[]'::jsonb,      -- Selected courses list
+    has_tablet TEXT,                        -- 'Yes' or 'No'
+    experience_and_why TEXT,                -- Teaching experience & why GenZ IITian
     language TEXT,
     cgpa TEXT,
     resume_link TEXT,

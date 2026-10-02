@@ -2,10 +2,20 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronDown, ChevronUp, Briefcase, Star, Users, BrainCircuit, Rocket, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
 import CareerApplicationModal from './CareerApplicationModal';
+import { useAuth } from '../context/AuthContext';
 
 export default function HiringSection() {
+  const { user, openLoginModal } = useAuth();
   const [openJob, setOpenJob] = useState<string | null>(null);
   const [applicationModalRole, setApplicationModalRole] = useState<'tutor' | 'campus-leader' | null>(null);
+
+  const handleApply = (role: 'tutor' | 'campus-leader') => {
+    if (!user) {
+      openLoginModal();
+      return;
+    }
+    setApplicationModalRole(role);
+  };
 
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
 
@@ -108,7 +118,7 @@ export default function HiringSection() {
 
                     <div className="mt-8 flex justify-center">
                       <button 
-                        onClick={() => setApplicationModalRole('tutor')}
+                        onClick={() => handleApply('tutor')}
                         className="w-full sm:w-auto px-8 py-3.5 sm:py-4 bg-blue-600 text-white font-black rounded-xl hover:bg-blue-700 transition-colors border-2 border-transparent shadow-[4px_4px_0px_#0b1120] text-base sm:text-lg cursor-pointer active:scale-95 text-center"
                       >
                         Apply for this role
@@ -188,7 +198,7 @@ export default function HiringSection() {
 
                     <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
                       <button 
-                        onClick={() => setApplicationModalRole('campus-leader')}
+                        onClick={() => handleApply('campus-leader')}
                         className="w-full sm:w-auto px-8 py-3.5 sm:py-4 bg-blue-600 text-white font-black rounded-xl hover:bg-blue-700 transition-colors border-2 border-transparent shadow-[4px_4px_0px_#0b1120] text-base sm:text-lg text-center cursor-pointer active:scale-95"
                       >
                         Apply for this role

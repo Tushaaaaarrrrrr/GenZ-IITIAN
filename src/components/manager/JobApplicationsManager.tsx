@@ -38,10 +38,19 @@ export interface JobApplication {
   email: string;
   phone: string;
   
+  // Personal & academic profile
+  age?: string | number;
+  gender?: string;
+  student_type?: string;
+  degree_level?: string;
+
   // Tutor specific
   is_iitm?: string;
   level?: string;
   subject?: string;
+  courses?: string[];
+  has_tablet?: string;
+  experience_and_why?: string;
   language?: string;
   cgpa?: string;
   resume_link?: string;
@@ -69,9 +78,16 @@ const DEFAULT_DEMO_APPLICATIONS: JobApplication[] = [
     full_name: 'Aditya Verma',
     email: 'aditya.verma@example.com',
     phone: '9876543210',
+    age: '21',
+    gender: 'Male',
+    student_type: 'Standalone',
+    degree_level: 'Diploma',
     is_iitm: 'Yes',
-    level: 'Foundation',
-    subject: 'Mathematics for Data Science I',
+    level: 'Diploma',
+    subject: 'Mathematics for Data Science I, Statistics for Data Science I',
+    courses: ['Mathematics for Data Science I', 'Statistics for Data Science I'],
+    has_tablet: 'Yes',
+    experience_and_why: '2 terms of peer teaching in IITM BS community with 9.2 CGPA.',
     language: 'English',
     cgpa: '9.2',
     resume_link: 'https://drive.google.com/file/d/demo-resume/view',
@@ -106,9 +122,16 @@ CREATE TABLE IF NOT EXISTS public.job_applications (
     full_name TEXT NOT NULL,
     email TEXT NOT NULL,
     phone TEXT NOT NULL,
+    age TEXT,
+    gender TEXT,
+    student_type TEXT,
+    degree_level TEXT,
     is_iitm TEXT,
     level TEXT,
     subject TEXT,
+    courses JSONB DEFAULT '[]'::jsonb,
+    has_tablet TEXT,
+    experience_and_why TEXT,
     language TEXT,
     cgpa TEXT,
     resume_link TEXT,
@@ -309,9 +332,16 @@ export default function JobApplicationsManager() {
       'Full Name',
       'Email',
       'Phone',
+      'Age',
+      'Gender',
+      'Student Status',
+      'Degree Level',
       'IITM BS Student',
       'Level',
       'Subject',
+      'Courses Selected',
+      'Has Tablet & Stylus',
+      'Teaching Experience & Why',
       'Language',
       'CGPA',
       'Resume Link',
@@ -331,9 +361,16 @@ export default function JobApplicationsManager() {
       `"${(app.full_name || '').replace(/"/g, '""')}"`,
       `"${app.email}"`,
       `"${app.phone}"`,
+      `"${app.age || ''}"`,
+      `"${app.gender || ''}"`,
+      `"${app.student_type || ''}"`,
+      `"${app.degree_level || ''}"`,
       `"${app.is_iitm || app.is_bs_student || ''}"`,
       `"${app.level || ''}"`,
       `"${(app.subject || '').replace(/"/g, '""')}"`,
+      `"${(Array.isArray(app.courses) ? app.courses.join(', ') : (app.courses || '')).replace(/"/g, '""')}"`,
+      `"${app.has_tablet || ''}"`,
+      `"${(app.experience_and_why || '').replace(/"/g, '""')}"`,
       `"${app.language || ''}"`,
       `"${app.cgpa || ''}"`,
       `"${app.resume_link || ''}"`,
@@ -978,17 +1015,32 @@ export default function JobApplicationsManager() {
                   </div>
                 </div>
 
+                {/* PERSONAL & ACADEMIC BACKGROUND */}
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                  <div className="text-slate-400 font-bold uppercase text-[10px]">Age & Gender</div>
+                  <div className="font-bold text-slate-800 mt-1">
+                    {selectedApp.age ? `${selectedApp.age} yrs` : 'N/A'} • {selectedApp.gender || 'Not specified'}
+                  </div>
+                </div>
+
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                  <div className="text-slate-400 font-bold uppercase text-[10px]">Student Status & Level</div>
+                  <div className="font-bold text-slate-800 mt-1">
+                    {selectedApp.student_type || 'Standalone'} • {selectedApp.degree_level || selectedApp.level || 'Degree'}
+                  </div>
+                </div>
+
                 {/* ROLE SPECIFIC FIELDS */}
                 {selectedApp.role === 'tutor' ? (
                   <>
                     <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                      <div className="text-slate-400 font-bold uppercase text-[10px]">IITM BS Student?</div>
-                      <div className="font-bold text-slate-800 mt-1">{selectedApp.is_iitm || 'Yes'}</div>
-                    </div>
-
-                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                      <div className="text-slate-400 font-bold uppercase text-[10px]">Level & Subject</div>
-                      <div className="font-bold text-slate-800 mt-1">{selectedApp.level} — {selectedApp.subject}</div>
+                      <div className="text-slate-400 font-bold uppercase text-[10px]">Has Tablet & Stylus?</div>
+                      <div className="font-bold text-slate-800 mt-1 flex items-center gap-1.5">
+                        <span className={`w-2 h-2 rounded-full ${
+                          selectedApp.has_tablet === 'Yes' ? 'bg-emerald-500' : 'bg-amber-500'
+                        }`} />
+                        <span>{selectedApp.has_tablet || 'Yes'}</span>
+                      </div>
                     </div>
 
                     <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
@@ -1000,6 +1052,51 @@ export default function JobApplicationsManager() {
                       <div className="text-slate-400 font-bold uppercase text-[10px]">Subject CGPA / Grade</div>
                       <div className="font-bold text-slate-800 mt-1">{selectedApp.cgpa || 'N/A'}</div>
                     </div>
+
+                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                      <div className="text-slate-400 font-bold uppercase text-[10px]">IITM BS Student</div>
+                      <div className="font-bold text-slate-800 mt-1">{selectedApp.is_iitm || 'Yes'}</div>
+                    </div>
+
+                    {/* Selected Courses Chips */}
+                    <div className="sm:col-span-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                      <div className="text-slate-400 font-bold uppercase text-[10px] mb-1.5">Selected Courses to Teach</div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {Array.isArray(selectedApp.courses) && selectedApp.courses.length > 0 ? (
+                          selectedApp.courses.map((course, idx) => (
+                            <span 
+                              key={idx} 
+                              className="px-2.5 py-1 bg-emerald-100/80 text-emerald-900 border border-emerald-300 rounded-lg text-xs font-bold"
+                            >
+                              {course}
+                            </span>
+                          ))
+                        ) : selectedApp.subject ? (
+                          selectedApp.subject.split(',').map((s, idx) => (
+                            <span 
+                              key={idx} 
+                              className="px-2.5 py-1 bg-emerald-100/80 text-emerald-900 border border-emerald-300 rounded-lg text-xs font-bold"
+                            >
+                              {s.trim()}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-slate-500 font-medium">None specified</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Teaching Experience & Motivation */}
+                    {selectedApp.experience_and_why && (
+                      <div className="sm:col-span-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                        <div className="text-slate-400 font-bold uppercase text-[10px] mb-1">
+                          Teaching Experience & Why GenZ IITian
+                        </div>
+                        <p className="text-slate-800 text-xs font-medium whitespace-pre-wrap leading-relaxed">
+                          {selectedApp.experience_and_why}
+                        </p>
+                      </div>
+                    )}
 
                     <div className="sm:col-span-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
                       <div className="text-slate-400 font-bold uppercase text-[10px]">Resume / CV Link</div>
