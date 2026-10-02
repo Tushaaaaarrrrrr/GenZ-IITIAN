@@ -71,7 +71,7 @@ const COURSES_DATA = {
 };
 
 const MEMBER_RANGES = ['1-10', '11-50', '51-100', '100-500', '500+', '1000+'];
-const STORAGE_KEY = 'gzi_applicant_saved_profile_v2';
+const STORAGE_KEY = 'gzi_applicant_personal_profile_v3';
 
 export default function CareerApplicationModal({ isOpen, onClose, role }: CareerApplicationModalProps) {
   const { user, profile, openLoginModal } = useAuth();
@@ -90,12 +90,12 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
     name: '',
     phone: '',
     age: '',
-    gender: 'Male',
-    studentType: 'Standalone', // Standalone, Dual Degree, Working Professional
-    degreeLevel: 'Foundation', // Foundation, Diploma, Degree
-    selectedCourses: ['Mathematics for Data Science I'] as string[],
+    gender: '',
+    studentType: '', // Standalone, Dual Degree, Working Professional
+    degreeLevel: '', // Foundation, Diploma, Degree
+    selectedCourses: [] as string[],
     experienceAndWhy: '',
-    hasTablet: 'Yes', // 'Yes' or 'No'
+    hasTablet: '', // 'Yes' or 'No'
     language: 'Both (English + Hindi)',
     cgpa: '',
     resumeLink: ''
@@ -113,7 +113,7 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
     inquiries: ''
   });
 
-  // Hydrate profile data & local storage memory
+  // Hydrate profile data & local storage memory (PERSONAL PROFILE ONLY)
   useEffect(() => {
     if (!isOpen) return;
 
@@ -123,27 +123,27 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
       return;
     }
 
-    // Try reading cached draft from localStorage
+    // Try reading cached personal profile from localStorage
     try {
       const savedRaw = localStorage.getItem(STORAGE_KEY);
       const saved = savedRaw ? JSON.parse(savedRaw) : {};
 
       setTutorData(prev => ({
         ...prev,
+        // Only remember personal profile info
         name: saved.name || profile?.name || user.user_metadata?.full_name || '',
         phone: saved.phone || profile?.phone || user.user_metadata?.phone || '',
-        age: saved.age || prev.age,
-        gender: saved.gender || prev.gender,
-        studentType: saved.studentType || prev.studentType,
-        degreeLevel: saved.degreeLevel || prev.degreeLevel,
-        selectedCourses: Array.isArray(saved.selectedCourses) && saved.selectedCourses.length > 0 
-          ? saved.selectedCourses 
-          : prev.selectedCourses,
-        experienceAndWhy: saved.experienceAndWhy || prev.experienceAndWhy,
-        hasTablet: saved.hasTablet || prev.hasTablet,
-        language: saved.language || prev.language,
-        cgpa: saved.cgpa || prev.cgpa,
-        resumeLink: saved.resumeLink || prev.resumeLink
+        age: saved.age || '',
+        gender: saved.gender || '',
+        studentType: saved.studentType || '',
+        degreeLevel: saved.degreeLevel || '',
+        // Teaching profile fields must be fresh and clean every time
+        selectedCourses: [],
+        experienceAndWhy: '',
+        hasTablet: '',
+        language: 'Both (English + Hindi)',
+        cgpa: '',
+        resumeLink: ''
       }));
 
       setLeaderData(prev => ({
@@ -153,12 +153,11 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
         officialEmail: saved.officialEmail || prev.officialEmail,
         isBSStudent: saved.isBSStudent || prev.isBSStudent,
         isGroupOwner: saved.isGroupOwner || prev.isGroupOwner,
-        groupLink: saved.groupLink || prev.groupLink,
-        groupMembers: saved.groupMembers || prev.groupMembers,
-        inquiries: saved.inquiries || prev.inquiries
+        groupLink: '',
+        groupMembers: '100-500',
+        inquiries: ''
       }));
     } catch (e) {
-      // Fallback to auth profile
       if (profile?.name || user.user_metadata?.full_name) {
         const defaultName = profile?.name || user.user_metadata?.full_name || '';
         setTutorData(prev => ({ ...prev, name: defaultName }));
@@ -172,39 +171,33 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
     }
   }, [isOpen, user, profile]);
 
-  // Persist draft to local storage on changes
-  const saveDraft = (updatedTutor?: Partial<typeof tutorData>, updatedLeader?: Partial<typeof leaderData>) => {
+  // Persist ONLY personal profile to local storage (NEVER teaching profile)
+  const savePersonalDraft = (updatedTutor?: Partial<typeof tutorData>, updatedLeader?: Partial<typeof leaderData>) => {
     try {
       const currentTutor = { ...tutorData, ...updatedTutor };
       const currentLeader = { ...leaderData, ...updatedLeader };
-      const toPersist = {
+      const personalOnly = {
         name: currentTutor.name || currentLeader.name,
         phone: currentTutor.phone || currentLeader.phone,
         age: currentTutor.age,
         gender: currentTutor.gender,
         studentType: currentTutor.studentType,
         degreeLevel: currentTutor.degreeLevel,
-        selectedCourses: currentTutor.selectedCourses,
-        experienceAndWhy: currentTutor.experienceAndWhy,
-        hasTablet: currentTutor.hasTablet,
-        language: currentTutor.language,
-        cgpa: currentTutor.cgpa,
-        resumeLink: currentTutor.resumeLink,
         officialEmail: currentLeader.officialEmail,
         isBSStudent: currentLeader.isBSStudent,
-        isGroupOwner: currentLeader.isGroupOwner,
-        groupLink: currentLeader.groupLink,
-        groupMembers: currentLeader.groupMembers,
-        inquiries: currentLeader.inquiries
+        isGroupOwner: currentLeader.isGroupOwner
       };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(toPersist));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(personalOnly));
     } catch (e) {}
   };
 
   const handleTutorChange = (name: keyof typeof tutorData, value: any) => {
     setTutorData(prev => {
       const next = { ...prev, [name]: value };
-      saveDraft({ [name]: value });
+      // Only save personal fields to localStorage
+      if (['name', 'phone', 'age', 'gender', 'studentType', 'degreeLevel'].includes(name)) {
+        savePersonalDraft({ [name]: value });
+      }
       return next;
     });
   };
@@ -215,8 +208,6 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
       const updated = exists 
         ? prev.selectedCourses.filter(c => c !== courseName)
         : [...prev.selectedCourses, courseName];
-      
-      saveDraft({ selectedCourses: updated });
       return { ...prev, selectedCourses: updated };
     });
   };
@@ -225,7 +216,9 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
     const { name, value } = e.target;
     setLeaderData(prev => {
       const next = { ...prev, [name]: value };
-      saveDraft(undefined, { [name]: value });
+      if (['name', 'phone', 'officialEmail', 'isBSStudent', 'isGroupOwner'].includes(name)) {
+        savePersonalDraft(undefined, { [name]: value });
+      }
       return next;
     });
   };
@@ -235,28 +228,41 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
     e.preventDefault();
     setErrorMessage('');
 
-    if (!tutorData.name.trim()) {
+    const trimmedName = tutorData.name.trim();
+    if (!trimmedName) {
       setErrorMessage('Please enter your full name.');
       return;
     }
-    if (!tutorData.phone.trim()) {
-      setErrorMessage('Please provide a valid phone or WhatsApp number.');
+    // Name can only be letters and spaces
+    if (!/^[a-zA-Z\s.]+$/.test(trimmedName)) {
+      setErrorMessage('Full name can only contain letters.');
       return;
     }
-    if (!tutorData.age.trim()) {
-      setErrorMessage('Please enter your age.');
+
+    // Phone must be 10 digits starting with 6-9
+    const cleanPhone = tutorData.phone.replace(/\D/g, '').slice(-10);
+    if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
+      setErrorMessage('Phone number must be a valid 10-digit number starting with 6-9.');
       return;
     }
+
+    // Age must be 15 to 100
+    const ageNum = parseInt(tutorData.age.trim(), 10);
+    if (isNaN(ageNum) || ageNum < 15 || ageNum > 100) {
+      setErrorMessage('Age must be between 15 and 100.');
+      return;
+    }
+
     if (!tutorData.gender) {
       setErrorMessage('Please select your gender.');
       return;
     }
     if (!tutorData.studentType) {
-      setErrorMessage('Please select whether you are Standalone, Dual Degree, or Working Professional.');
+      setErrorMessage('Please select your student status.');
       return;
     }
     if (!tutorData.degreeLevel) {
-      setErrorMessage('Please select your current degree level.');
+      setErrorMessage('Please select your degree level.');
       return;
     }
 
@@ -276,12 +282,17 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
 
     if (isTutor) {
       if (!tutorData.selectedCourses || tutorData.selectedCourses.length === 0) {
-        setErrorMessage('Please select at least one course you are comfortable teaching.');
+        setErrorMessage('Please select which courses you can teach.');
         setSubmitting(false);
         return;
       }
       if (!tutorData.experienceAndWhy.trim()) {
-        setErrorMessage('Please describe your teaching experience and why you want to teach at GenZ IITian.');
+        setErrorMessage('Please describe your teaching experience and why GenZ IITian.');
+        setSubmitting(false);
+        return;
+      }
+      if (!tutorData.hasTablet) {
+        setErrorMessage('Please select whether you have a tablet or a tablet with stylus to write.');
         setSubmitting(false);
         return;
       }
@@ -292,6 +303,19 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
       }
       if (!tutorData.resumeLink.trim()) {
         setErrorMessage('Please provide a link to your Resume / CV.');
+        setSubmitting(false);
+        return;
+      }
+    } else {
+      const trimmedLeaderName = leaderData.name.trim();
+      if (!trimmedLeaderName || !/^[a-zA-Z\s.]+$/.test(trimmedLeaderName)) {
+        setErrorMessage('Full name can only contain letters.');
+        setSubmitting(false);
+        return;
+      }
+      const cleanLeaderPhone = leaderData.phone.replace(/\D/g, '').slice(-10);
+      if (!/^[6-9]\d{9}$/.test(cleanLeaderPhone)) {
+        setErrorMessage('Phone number must be a valid 10-digit number starting with 6-9.');
         setSubmitting(false);
         return;
       }
@@ -675,9 +699,6 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
                                 className="w-full pl-10 pr-4 py-3 sm:py-2.5 bg-slate-100/90 border-2 border-slate-300 text-slate-600 rounded-xl text-base sm:text-sm font-bold cursor-not-allowed min-h-[48px] select-none"
                               />
                             </div>
-                            <p className="text-[11px] text-slate-500 font-medium mt-1">
-                              Fixed to your verified account email and cannot be changed.
-                            </p>
                           </div>
 
                           {/* 3. Contact Number / WhatsApp (Editable, prefilled) */}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronDown, ChevronUp, Briefcase, Star, Users, BrainCircuit, Rocket, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
 import CareerApplicationModal from './CareerApplicationModal';
@@ -9,8 +9,24 @@ export default function HiringSection() {
   const [openJob, setOpenJob] = useState<string | null>(null);
   const [applicationModalRole, setApplicationModalRole] = useState<'tutor' | 'campus-leader' | null>(null);
 
+  useEffect(() => {
+    if (user) {
+      try {
+        const pending = localStorage.getItem('gzi_pending_apply_role');
+        if (pending === 'tutor' || pending === 'campus-leader') {
+          localStorage.removeItem('gzi_pending_apply_role');
+          setApplicationModalRole(pending);
+          setOpenJob(pending);
+        }
+      } catch (e) {}
+    }
+  }, [user]);
+
   const handleApply = (role: 'tutor' | 'campus-leader') => {
     if (!user) {
+      try {
+        localStorage.setItem('gzi_pending_apply_role', role);
+      } catch (e) {}
       openLoginModal();
       return;
     }

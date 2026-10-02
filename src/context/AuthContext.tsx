@@ -36,6 +36,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let cancelled = false;
 
+    const checkPostAuthRedirect = () => {
+      try {
+        const saved = localStorage.getItem('auth_redirect_url');
+        if (!saved) return;
+        localStorage.removeItem('auth_redirect_url');
+
+        const target = new URL(saved, window.location.origin);
+        if (target.origin === window.location.origin) {
+          const currentTarget = window.location.pathname + window.location.search + window.location.hash;
+          const dest = target.pathname + target.search + target.hash;
+          if (dest && dest !== '/' && dest !== currentTarget) {
+            window.location.replace(dest);
+          }
+        }
+      } catch (e) {
+        console.warn('Post auth redirect error:', e);
+      }
+    };
+
     const init = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -43,6 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         if (session?.user) {
           await syncProfile(session.user);
+          checkPostAuthRedirect();
         } else {
           setProfile(null);
         }
@@ -55,11 +75,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     init();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       // Do not toggle the global loading gate on token refresh — that blanks Manager to white.
       setUser(session?.user ?? null);
       if (session?.user) {
         syncProfile(session.user);
+        if (event === 'SIGNED_IN') {
+          checkPostAuthRedirect();
+        }
       } else {
         setProfile(null);
       }
@@ -150,10 +173,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const closeLoginModal = () => setIsLoginModalOpen(false);
 
   const signIn = async () => {
+    try {
+      localStorage.setItem('auth_redirect_url', window.location.href);
+    } catch (e) {}
+
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin,
+        redirectTo: window.location.href,
       },
     });
   };

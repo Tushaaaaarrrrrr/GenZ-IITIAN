@@ -1523,10 +1523,29 @@ app.post('/api/job-applications', async (req, res) => {
 
         const candidateName = (full_name || name || '').trim();
         const candidateEmail = (email || '').trim().toLowerCase();
-        const candidatePhone = (phone || '').trim();
+        const rawPhone = (phone || '').trim();
+        const cleanPhone = rawPhone.replace(/\D/g, '').slice(-10);
 
         if (!candidateName || !candidateEmail) {
             return res.status(400).json({ error: 'Name and email are required.' });
+        }
+
+        // Name can only be letters and spaces
+        if (!/^[a-zA-Z\s.]+$/.test(candidateName)) {
+            return res.status(400).json({ error: 'Full name can only contain letters.' });
+        }
+
+        // Phone must be 10 digits starting with 6-9
+        if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
+            return res.status(400).json({ error: 'Phone number must be a valid 10-digit number starting with 6-9.' });
+        }
+
+        // Age must be between 15 and 100
+        if (age !== undefined && age !== null && String(age).trim() !== '') {
+            const numAge = parseInt(String(age), 10);
+            if (isNaN(numAge) || numAge < 15 || numAge > 100) {
+                return res.status(400).json({ error: 'Age must be between 15 and 100.' });
+            }
         }
 
         const appId = `app-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
