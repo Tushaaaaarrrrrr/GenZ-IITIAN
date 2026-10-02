@@ -29,10 +29,10 @@ interface CareerApplicationModalProps {
 const CONFETTI_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#0b1120'];
 const CONFETTI_PARTICLES = Array.from({ length: 32 }, (_, i) => ({
   id: i,
-  x: (i % 2 === 0 ? -1 : 1) * (50 + (i % 8) * 22 + (i % 3) * 12),
-  y: -100 - (i % 5) * 32 - (i % 4) * 16,
+  x: (i % 2 === 0 ? -1 : 1) * (25 + (i % 8) * 14 + (i % 3) * 8),
+  y: -70 - (i % 5) * 22 - (i % 4) * 12,
   rotate: (i % 2 === 0 ? 1 : -1) * (140 + i * 20),
-  size: 6 + (i % 4) * 2.5,
+  size: 5 + (i % 4) * 2,
   color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
   delay: (i % 8) * 0.035,
   isCircle: i % 3 === 0
@@ -204,46 +204,46 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[150] overflow-y-auto bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-3 sm:p-6">
+      <div className="fixed inset-0 z-[150] overflow-y-auto bg-slate-950/80 backdrop-blur-md flex items-start sm:items-center justify-center p-0 sm:p-4 md:p-6 overscroll-contain">
         <motion.div
-          initial={{ opacity: 0, scale: 0.94, y: 24 }}
+          initial={{ opacity: 0, scale: 0.96, y: 16 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.94, y: 24 }}
-          transition={{ duration: 0.25, ease: 'easeOut' }}
-          className="relative w-full max-w-3xl bg-white border-[3.5px] border-[#0b1120] rounded-[1.75rem] sm:rounded-[2.25rem] shadow-[10px_10px_0px_#0b1120] my-auto overflow-hidden flex flex-col max-h-[94vh]"
+          exit={{ opacity: 0, scale: 0.96, y: 16 }}
+          transition={{ duration: 0.22, ease: 'easeOut' }}
+          className="relative w-full h-[100dvh] sm:h-auto sm:max-h-[92vh] max-w-3xl bg-white border-0 sm:border-[3.5px] border-[#0b1120] rounded-none sm:rounded-[2rem] shadow-none sm:shadow-[8px_8px_0px_#0b1120] overflow-hidden flex flex-col min-h-0 sm:my-auto"
         >
           {/* Top Bar with Close button */}
-          <div className="bg-[#0b1120] text-white px-5 sm:px-8 py-4 flex items-center justify-between border-b-[3.5px] border-[#0b1120] shrink-0">
-            <div className="flex items-center gap-2.5">
-              <span className={`px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider ${
+          <div className="bg-[#0b1120] text-white px-4 sm:px-8 py-3.5 sm:py-4 flex items-center justify-between border-b-[3px] sm:border-b-[3.5px] border-[#0b1120] shrink-0 sticky top-0 z-20">
+            <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+              <span className={`px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-black uppercase tracking-wider shrink-0 ${
                 role === 'tutor' ? 'bg-emerald-400 text-slate-900' : 'bg-blue-400 text-slate-900'
               }`}>
                 {role === 'tutor' ? 'Faculty Opening' : 'Campus Ambassador'}
               </span>
-              <span className="text-xs text-slate-300 font-bold hidden sm:inline">
-                {role === 'tutor' ? 'Subject Tutor (Faculty)' : 'Campus Leaders'}
+              <span className="text-xs text-slate-300 font-bold truncate">
+                {role === 'tutor' ? 'Subject Tutor' : 'Campus Leaders'}
               </span>
             </div>
             <button
               onClick={handleClose}
-              className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center text-white transition-colors cursor-pointer"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center text-white transition-colors cursor-pointer shrink-0 active:scale-95"
               title="Close"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
 
-          <div className="p-5 sm:p-8 overflow-y-auto flex-1 min-h-0">
+          <div className="p-4 sm:p-8 overflow-y-auto flex-1 min-h-0 overscroll-contain">
             {/* SUCCESS: Big Animated Modal State */}
             {submitted ? (
               <motion.div 
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.35, type: 'spring' }}
-                className="relative py-8 sm:py-12 text-center space-y-6"
+                className="relative py-6 sm:py-12 text-center space-y-5 sm:space-y-6 px-2 overflow-hidden"
               >
                 {/* Confetti Explosion Particles */}
-                <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-visible">
+                <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden">
                   {CONFETTI_PARTICLES.map(p => (
                     <motion.div
                       key={p.id}
@@ -276,20 +276,20 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
                   initial={{ scale: 0 }}
                   animate={{ scale: [0, 1.15, 1] }}
                   transition={{ delay: 0.15, duration: 0.4 }}
-                  className="w-24 h-24 mx-auto bg-emerald-100 border-[3.5px] border-[#0b1120] rounded-3xl shadow-[6px_6px_0px_#0b1120] flex items-center justify-center text-emerald-600"
+                  className="w-20 h-20 sm:w-24 sm:h-24 mx-auto bg-emerald-100 border-[3px] sm:border-[3.5px] border-[#0b1120] rounded-2xl sm:rounded-3xl shadow-[4px_4px_0px_#0b1120] sm:shadow-[6px_6px_0px_#0b1120] flex items-center justify-center text-emerald-600"
                 >
-                  <Rocket className="w-12 h-12 text-emerald-700 animate-bounce" />
+                  <Rocket className="w-10 h-10 sm:w-12 sm:h-12 text-emerald-700 animate-bounce" />
                 </motion.div>
 
                 {/* Headline: "Welcome to one Step ahead of 99% people" */}
-                <div className="space-y-3 max-w-xl mx-auto">
+                <div className="space-y-2.5 sm:space-y-3 max-w-xl mx-auto">
                   <motion.div 
                     initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.25 }}
-                    className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-100 border-2 border-amber-300 text-amber-900 text-xs font-black uppercase tracking-wider"
+                    className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100 border-2 border-amber-300 text-amber-900 text-[11px] sm:text-xs font-black uppercase tracking-wider"
                   >
-                    <Sparkles className="w-4 h-4 text-amber-600" />
+                    <Sparkles className="w-3.5 h-3.5 text-amber-600" />
                     <span>Application Received</span>
                   </motion.div>
 
@@ -297,7 +297,7 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
                     initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.35 }}
-                    className="text-2xl sm:text-4xl font-black text-[#0b1120] tracking-tight leading-tight"
+                    className="text-2xl sm:text-4xl font-black text-[#0b1120] tracking-tight leading-tight px-1"
                   >
                     Welcome to One Step Ahead of 99% of People 🚀
                   </motion.h2>
@@ -306,7 +306,7 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
                     initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.45 }}
-                    className="text-sm sm:text-base text-slate-600 font-bold leading-relaxed max-w-lg mx-auto"
+                    className="text-xs sm:text-base text-slate-600 font-bold leading-relaxed max-w-lg mx-auto px-2"
                   >
                     We review your application and get back to you shortly via WhatsApp & Email.
                   </motion.p>
@@ -317,10 +317,10 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.55 }}
-                  className="bg-slate-900 text-white p-5 rounded-2xl border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#10b981] max-w-md mx-auto"
+                  className="bg-slate-900 text-white p-4 sm:p-5 rounded-2xl border-2 sm:border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#10b981] sm:shadow-[6px_6px_0px_#10b981] max-w-md mx-auto"
                 >
-                  <p className="text-xs font-black uppercase tracking-widest text-emerald-400 mb-1">Our Motto</p>
-                  <p className="text-lg sm:text-xl font-black tracking-tight text-white">
+                  <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-emerald-400 mb-1">Our Motto</p>
+                  <p className="text-base sm:text-xl font-black tracking-tight text-white">
                     “Work with Best, and be best.”
                   </p>
                 </motion.div>
@@ -330,11 +330,11 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.65 }}
-                  className="pt-2"
+                  className="pt-2 pb-4 sm:pb-0"
                 >
                   <button
                     onClick={handleClose}
-                    className="px-8 py-3.5 bg-[#0b1120] hover:bg-slate-800 text-white font-black text-sm rounded-xl border-2 border-[#0b1120] shadow-[4px_4px_0px_#0b1120] transition-all cursor-pointer inline-flex items-center gap-2 active:scale-95"
+                    className="w-full sm:w-auto px-8 py-3.5 bg-[#0b1120] hover:bg-slate-800 text-white font-black text-sm rounded-xl border-2 border-[#0b1120] shadow-[4px_4px_0px_#0b1120] transition-all cursor-pointer inline-flex items-center justify-center gap-2 active:scale-95"
                   >
                     <span>Done & Return to Site</span>
                     <ArrowRight className="w-4 h-4" />
@@ -343,27 +343,27 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
               </motion.div>
             ) : (
               /* INPUT COLLECTOR: Full Page Form */
-              <div className="space-y-6">
+              <div className="space-y-5 sm:space-y-6">
                 {/* Big Headline */}
-                <div className="border-b-2 border-slate-100 pb-5">
-                  <h1 className="text-3xl sm:text-4xl font-black text-[#0b1120] tracking-tight leading-tight">
+                <div className="border-b-2 border-slate-100 pb-4 sm:pb-5">
+                  <h1 className="text-2xl sm:text-4xl font-black text-[#0b1120] tracking-tight leading-tight">
                     GenZ IITian Careers
                   </h1>
-                  <p className="text-sm sm:text-base font-bold text-slate-600 mt-1">
+                  <p className="text-xs sm:text-base font-bold text-slate-600 mt-1">
                     Please fill all info correct as of your knowledge
                   </p>
                 </div>
 
                 {errorMessage && (
-                  <div className="p-4 rounded-xl bg-rose-50 border-2 border-rose-300 text-rose-700 text-xs font-bold">
+                  <div className="p-3.5 sm:p-4 rounded-xl bg-rose-50 border-2 border-rose-300 text-rose-700 text-xs font-bold">
                     {errorMessage}
                   </div>
                 )}
 
                 {/* ROLE A: Subject Tutor Form */}
                 {role === 'tutor' && (
-                  <form onSubmit={handleSubmit} className="space-y-5">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
                       <div>
                         <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
                           Full Name *
@@ -377,7 +377,7 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
                             value={tutorData.name}
                             onChange={handleTutorChange}
                             placeholder="e.g. Aryan Sharma"
-                            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:bg-white focus:border-blue-600"
+                            className="w-full pl-10 pr-4 py-3 sm:py-2.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-base sm:text-sm font-bold text-slate-900 focus:outline-none focus:bg-white focus:border-blue-600 min-h-[46px]"
                           />
                         </div>
                       </div>
@@ -395,7 +395,7 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
                             value={tutorData.email}
                             onChange={handleTutorChange}
                             placeholder="name@example.com"
-                            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:bg-white focus:border-blue-600"
+                            className="w-full pl-10 pr-4 py-3 sm:py-2.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-base sm:text-sm font-bold text-slate-900 focus:outline-none focus:bg-white focus:border-blue-600 min-h-[46px]"
                           />
                         </div>
                       </div>
@@ -413,7 +413,7 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
                             value={tutorData.phone}
                             onChange={handleTutorChange}
                             placeholder="+91 98765 43210"
-                            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:bg-white focus:border-blue-600"
+                            className="w-full pl-10 pr-4 py-3 sm:py-2.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-base sm:text-sm font-bold text-slate-900 focus:outline-none focus:bg-white focus:border-blue-600 min-h-[46px]"
                           />
                         </div>
                       </div>
@@ -426,7 +426,7 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
                           name="isIITM"
                           value={tutorData.isIITM}
                           onChange={handleTutorChange}
-                          className="w-full px-3.5 py-2.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:bg-white focus:border-blue-600"
+                          className="w-full px-3.5 py-3 sm:py-2.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-base sm:text-sm font-bold text-slate-900 focus:outline-none focus:bg-white focus:border-blue-600 min-h-[46px]"
                         >
                           <option value="Yes">Yes</option>
                           <option value="No">No</option>
@@ -441,7 +441,7 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
                           name="level"
                           value={tutorData.level}
                           onChange={handleTutorChange}
-                          className="w-full px-3.5 py-2.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:bg-white focus:border-blue-600"
+                          className="w-full px-3.5 py-3 sm:py-2.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-base sm:text-sm font-bold text-slate-900 focus:outline-none focus:bg-white focus:border-blue-600 min-h-[46px]"
                         >
                           <option value="Foundation">Foundation</option>
                           <option value="Diploma">Diploma</option>
@@ -456,7 +456,7 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
                           name="subject"
                           value={tutorData.subject}
                           onChange={handleTutorChange}
-                          className="w-full px-3.5 py-2.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:bg-white focus:border-blue-600"
+                          className="w-full px-3.5 py-3 sm:py-2.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-base sm:text-sm font-bold text-slate-900 focus:outline-none focus:bg-white focus:border-blue-600 min-h-[46px]"
                         >
                           {TUTOR_SUBJECTS[tutorData.level as 'Foundation' | 'Diploma'].map(sub => (
                             <option key={sub} value={sub}>{sub}</option>
@@ -472,7 +472,7 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
                           name="language"
                           value={tutorData.language}
                           onChange={handleTutorChange}
-                          className="w-full px-3.5 py-2.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:bg-white focus:border-blue-600"
+                          className="w-full px-3.5 py-3 sm:py-2.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-base sm:text-sm font-bold text-slate-900 focus:outline-none focus:bg-white focus:border-blue-600 min-h-[46px]"
                         >
                           <option value="English">English</option>
                           <option value="Hindi">Hindi</option>
@@ -493,7 +493,7 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
                             value={tutorData.cgpa}
                             onChange={handleTutorChange}
                             placeholder="e.g. 8.5 or S Grade"
-                            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:bg-white focus:border-blue-600"
+                            className="w-full pl-10 pr-4 py-3 sm:py-2.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-base sm:text-sm font-bold text-slate-900 focus:outline-none focus:bg-white focus:border-blue-600 min-h-[46px]"
                           />
                         </div>
                       </div>
@@ -512,16 +512,16 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
                           value={tutorData.resumeLink}
                           onChange={handleTutorChange}
                           placeholder="https://drive.google.com/... (ensure link is viewable)"
-                          className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:bg-white focus:border-blue-600"
+                          className="w-full pl-10 pr-4 py-3 sm:py-2.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-base sm:text-sm font-bold text-slate-900 focus:outline-none focus:bg-white focus:border-blue-600 min-h-[46px]"
                         />
                       </div>
                     </div>
 
-                    <div className="pt-2">
+                    <div className="pt-2 pb-6 sm:pb-2">
                       <button
                         type="submit"
                         disabled={submitting}
-                        className="w-full py-4 bg-[#0b1120] hover:bg-slate-800 text-white font-black text-sm rounded-xl border-2 border-[#0b1120] shadow-[5px_5px_0px_#10b981] transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 active:scale-98"
+                        className="w-full py-4 min-h-[50px] bg-[#0b1120] hover:bg-slate-800 text-white font-black text-sm sm:text-base rounded-xl border-2 border-[#0b1120] shadow-[4px_4px_0px_#10b981] sm:shadow-[5px_5px_0px_#10b981] transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 active:scale-98"
                       >
                         {submitting ? (
                           <>
@@ -538,8 +538,8 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
 
                 {/* ROLE B: Campus Leader Form */}
                 {role === 'campus-leader' && (
-                  <form onSubmit={handleSubmit} className="space-y-5">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
                       <div>
                         <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
                           Full Name *
@@ -553,7 +553,7 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
                             value={leaderData.name}
                             onChange={handleLeaderChange}
                             placeholder="e.g. Priyanshu Roy"
-                            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:bg-white focus:border-blue-600"
+                            className="w-full pl-10 pr-4 py-3 sm:py-2.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-base sm:text-sm font-bold text-slate-900 focus:outline-none focus:bg-white focus:border-blue-600 min-h-[46px]"
                           />
                         </div>
                       </div>
@@ -571,7 +571,7 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
                             value={leaderData.email}
                             onChange={handleLeaderChange}
                             placeholder="priyanshu@gmail.com"
-                            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:bg-white focus:border-blue-600"
+                            className="w-full pl-10 pr-4 py-3 sm:py-2.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-base sm:text-sm font-bold text-slate-900 focus:outline-none focus:bg-white focus:border-blue-600 min-h-[46px]"
                           />
                         </div>
                       </div>
@@ -589,7 +589,7 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
                             value={leaderData.officialEmail}
                             onChange={handleLeaderChange}
                             placeholder="e.g. 21f1000000@ds.study.iitm.ac.in"
-                            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:bg-white focus:border-blue-600"
+                            className="w-full pl-10 pr-4 py-3 sm:py-2.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-base sm:text-sm font-bold text-slate-900 focus:outline-none focus:bg-white focus:border-blue-600 min-h-[46px]"
                           />
                         </div>
                       </div>
@@ -607,7 +607,7 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
                             value={leaderData.phone}
                             onChange={handleLeaderChange}
                             placeholder="+91 98765 43210"
-                            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:bg-white focus:border-blue-600"
+                            className="w-full pl-10 pr-4 py-3 sm:py-2.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-base sm:text-sm font-bold text-slate-900 focus:outline-none focus:bg-white focus:border-blue-600 min-h-[46px]"
                           />
                         </div>
                       </div>
@@ -620,7 +620,7 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
                           name="isBSStudent"
                           value={leaderData.isBSStudent}
                           onChange={handleLeaderChange}
-                          className="w-full px-3.5 py-2.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:bg-white focus:border-blue-600"
+                          className="w-full px-3.5 py-3 sm:py-2.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-base sm:text-sm font-bold text-slate-900 focus:outline-none focus:bg-white focus:border-blue-600 min-h-[46px]"
                         >
                           <option value="Yes">Yes</option>
                           <option value="No">No</option>
@@ -636,7 +636,7 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
                           name="isGroupOwner"
                           value={leaderData.isGroupOwner}
                           onChange={handleLeaderChange}
-                          className="w-full px-3.5 py-2.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:bg-white focus:border-blue-600"
+                          className="w-full px-3.5 py-3 sm:py-2.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-base sm:text-sm font-bold text-slate-900 focus:outline-none focus:bg-white focus:border-blue-600 min-h-[46px]"
                         >
                           <option value="Yes">Yes</option>
                           <option value="No">No</option>
@@ -657,7 +657,7 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
                           value={leaderData.groupLink}
                           onChange={handleLeaderChange}
                           placeholder="e.g. https://chat.whatsapp.com/... or https://t.me/..."
-                          className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:bg-white focus:border-blue-600"
+                          className="w-full pl-10 pr-4 py-3 sm:py-2.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-base sm:text-sm font-bold text-slate-900 focus:outline-none focus:bg-white focus:border-blue-600 min-h-[46px]"
                         />
                       </div>
                     </div>
@@ -671,7 +671,7 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
                         name="groupMembers"
                         value={leaderData.groupMembers}
                         onChange={handleLeaderChange}
-                        className="w-full px-3.5 py-2.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:bg-white focus:border-blue-600"
+                        className="w-full px-3.5 py-3 sm:py-2.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-base sm:text-sm font-bold text-slate-900 focus:outline-none focus:bg-white focus:border-blue-600 min-h-[46px]"
                       >
                         {MEMBER_RANGES.map(range => (
                           <option key={range} value={range}>{range}</option>
@@ -689,15 +689,15 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
                         value={leaderData.inquiries}
                         onChange={handleLeaderChange}
                         placeholder="Ask anything or tell us more about your community..."
-                        className="w-full px-3.5 py-2.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:bg-white focus:border-blue-600 resize-none"
+                        className="w-full px-3.5 py-3 sm:py-2.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-base sm:text-sm font-medium text-slate-900 focus:outline-none focus:bg-white focus:border-blue-600 resize-none min-h-[70px]"
                       />
                     </div>
 
-                    <div className="pt-2">
+                    <div className="pt-2 pb-6 sm:pb-2">
                       <button
                         type="submit"
                         disabled={submitting}
-                        className="w-full py-4 bg-[#0b1120] hover:bg-slate-800 text-white font-black text-sm rounded-xl border-2 border-[#0b1120] shadow-[5px_5px_0px_#3b82f6] transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 active:scale-98"
+                        className="w-full py-4 min-h-[50px] bg-[#0b1120] hover:bg-slate-800 text-white font-black text-sm sm:text-base rounded-xl border-2 border-[#0b1120] shadow-[4px_4px_0px_#3b82f6] sm:shadow-[5px_5px_0px_#3b82f6] transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 active:scale-98"
                       >
                         {submitting ? (
                           <>

@@ -577,7 +577,7 @@ export default function JobApplicationsManager() {
             placeholder="Search candidate, email, phone, subject..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-400"
+            className="w-full pl-9 pr-4 py-2.5 sm:py-2 bg-slate-50 border border-slate-200 rounded-xl text-base sm:text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-400"
           />
         </div>
 
@@ -628,10 +628,118 @@ export default function JobApplicationsManager() {
             <p className="text-sm">No applications found matching your filters.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-black uppercase tracking-wider">
-                <tr>
+          <>
+            {/* Mobile Card Feed (shown on screens < md) */}
+            <div className="md:hidden divide-y divide-slate-100">
+              {filteredApplications.map(app => {
+                const statusConf = getStatusBadge(app.status);
+                const isTutor = app.role === 'tutor';
+
+                return (
+                  <div
+                    key={app.id}
+                    className="p-4 space-y-3 hover:bg-slate-50/80 transition-colors"
+                  >
+                    {/* Top Row: Avatar + Name + Status */}
+                    <div className="flex items-start justify-between gap-2.5">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center font-black text-xs shrink-0 ${
+                          isTutor ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {app.full_name?.charAt(0)?.toUpperCase() || 'C'}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-bold text-slate-900 text-sm truncate">
+                            {app.full_name}
+                          </div>
+                          <div className="text-[11px] text-slate-500 font-mono truncate">
+                            {app.email}
+                          </div>
+                        </div>
+                      </div>
+
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border shrink-0 ${statusConf.bg} ${statusConf.text} ${statusConf.border}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${statusConf.dot}`} />
+                        <span>{statusConf.label}</span>
+                      </span>
+                    </div>
+
+                    {/* Middle Row: Role badge and info */}
+                    <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-xs space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border ${
+                          isTutor 
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                            : 'bg-blue-50 text-blue-700 border-blue-200'
+                        }`}>
+                          {isTutor ? 'Subject Tutor' : 'Campus Leader'}
+                        </span>
+                        <span className="text-[11px] text-slate-400">
+                          {app.created_at ? new Date(app.created_at).toLocaleDateString('en-IN', {
+                            day: 'numeric',
+                            month: 'short'
+                          }) : ''}
+                        </span>
+                      </div>
+
+                      <div className="text-slate-800 font-medium text-[11px] pt-0.5">
+                        {isTutor ? (
+                          <span>{app.subject || 'All subjects'} • {app.level} (CGPA: {app.cgpa || 'N/A'})</span>
+                        ) : (
+                          <span>Owner: {app.is_group_owner || 'Yes'} • Members: {app.group_members || '100+'}</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Bottom Actions Row */}
+                    <div className="flex items-center justify-between pt-1">
+                      <div className="flex items-center gap-2">
+                        {app.phone && (
+                          <a
+                            href={`https://wa.me/91${app.phone.replace(/\D/g, '').slice(-10)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg transition-colors flex items-center gap-1 text-xs font-bold"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5" />
+                            <span>WhatsApp</span>
+                          </a>
+                        )}
+                        <a
+                          href={`mailto:${app.email}`}
+                          className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition-colors flex items-center gap-1 text-xs font-bold"
+                        >
+                          <Mail className="w-3.5 h-3.5" />
+                          <span>Email</span>
+                        </a>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => openAppDetails(app)}
+                          className="px-3 py-1.5 bg-slate-900 text-white rounded-lg font-bold text-xs hover:bg-slate-800 transition-colors"
+                        >
+                          Details
+                        </button>
+                        <button
+                          onClick={() => handleDelete(app.id, app.full_name)}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 rounded"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop Table (shown on screens >= md) */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-black uppercase tracking-wider">
+                  <tr>
                   <th className="p-4">Candidate</th>
                   <th className="p-4">Role & Domain</th>
                   <th className="p-4">Key Qualifications</th>
@@ -776,21 +884,22 @@ export default function JobApplicationsManager() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
 
       {/* DETAIL MODAL / SHEET */}
       <AnimatePresence>
         {selectedApp && (
-          <div className="fixed inset-0 z-[160] flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[160] flex items-start sm:items-center justify-center p-0 sm:p-5 bg-black/60 backdrop-blur-sm overflow-y-auto overscroll-contain">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              initial={{ opacity: 0, scale: 0.96, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className="bg-white rounded-2xl border-2 border-slate-900 shadow-2xl p-6 max-w-2xl w-full max-h-[92vh] overflow-y-auto space-y-5 text-left"
+              exit={{ opacity: 0, scale: 0.96, y: 15 }}
+              className="bg-white rounded-none sm:rounded-2xl border-0 sm:border-2 border-slate-900 shadow-2xl p-4 sm:p-6 max-w-2xl w-full min-h-[100dvh] sm:min-h-0 sm:max-h-[92vh] overflow-y-auto space-y-4 sm:space-y-5 text-left sm:my-auto"
             >
               {/* Header */}
-              <div className="flex items-start justify-between border-b pb-4">
+              <div className="flex items-start justify-between border-b pb-3 sm:pb-4 sticky top-0 bg-white z-10 -mx-4 px-4 sm:mx-0 sm:px-0 sm:static">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <span className={`px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border ${
@@ -804,7 +913,7 @@ export default function JobApplicationsManager() {
                       ID: {selectedApp.id}
                     </span>
                   </div>
-                  <h3 className="text-xl font-black text-slate-900">
+                  <h3 className="text-lg sm:text-xl font-black text-slate-900">
                     {selectedApp.full_name}
                   </h3>
                   <div className="text-xs text-slate-500">
@@ -813,21 +922,21 @@ export default function JobApplicationsManager() {
                 </div>
                 <button
                   onClick={() => setSelectedApp(null)}
-                  className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors cursor-pointer"
+                  className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors cursor-pointer shrink-0"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
               {/* Status Selector Bar */}
-              <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-3">
+              <div className="bg-slate-50 p-3 sm:p-3.5 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
                 <div className="text-xs font-bold text-slate-700">Application Pipeline Status:</div>
-                <div className="flex flex-wrap items-center gap-1.5">
+                <div className="grid grid-cols-3 sm:flex sm:flex-wrap items-center gap-1.5 w-full sm:w-auto">
                   {(['PENDING', 'REVIEWED', 'SHORTLISTED', 'HIRED', 'REJECTED'] as const).map(st => (
                     <button
                       key={st}
                       onClick={() => handleUpdateStatus(selectedApp.id, st)}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                      className={`px-2 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer text-center ${
                         selectedApp.status === st
                           ? 'bg-slate-900 text-white shadow-xs'
                           : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
@@ -970,13 +1079,13 @@ export default function JobApplicationsManager() {
                   value={managerNotesInput}
                   onChange={e => setManagerNotesInput(e.target.value)}
                   placeholder="e.g. Cleared round 1, high communication skills, schedule demo lecture on Wednesday..."
-                  className="w-full px-3 py-2.5 border border-slate-300 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-slate-500"
+                  className="w-full px-3 py-2.5 border border-slate-300 rounded-xl text-base sm:text-xs font-medium text-slate-800 focus:outline-none focus:border-slate-500 min-h-[70px]"
                 />
                 <div className="flex justify-end mt-2">
                   <button
                     onClick={handleSaveNotes}
                     disabled={savingNotes}
-                    className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 disabled:opacity-50"
+                    className="w-full sm:w-auto justify-center px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 disabled:opacity-50"
                   >
                     {savingNotes && <Loader2 className="w-3 h-3 animate-spin" />}
                     <span>Save Notes</span>
@@ -985,32 +1094,32 @@ export default function JobApplicationsManager() {
               </div>
 
               {/* Quick Communication Links */}
-              <div className="flex items-center justify-between pt-3 border-t">
-                <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-3 border-t pb-6 sm:pb-0">
+                <div className="flex flex-wrap items-center gap-2">
                   {selectedApp.phone && (
                     <a
                       href={`https://wa.me/91${selectedApp.phone.replace(/\D/g, '').slice(-10)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-colors"
+                      className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-colors"
                     >
-                      <MessageCircle className="w-3.5 h-3.5" />
-                      <span>WhatsApp Candidate</span>
+                      <MessageCircle className="w-4 h-4" />
+                      <span>WhatsApp</span>
                     </a>
                   )}
                   <a
                     href={`mailto:${selectedApp.email}`}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors"
+                    className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors"
                   >
-                    <Mail className="w-3.5 h-3.5" />
-                    <span>Send Email</span>
+                    <Mail className="w-4 h-4" />
+                    <span>Email</span>
                   </a>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => setSelectedApp(null)}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold cursor-pointer"
+                  className="w-full sm:w-auto px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold cursor-pointer text-center"
                 >
                   Close
                 </button>
