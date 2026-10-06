@@ -86,7 +86,7 @@ export default async function handler(req: any, res: any) {
         role_title: resolvedRoleTitle,
         full_name: candidateName,
         email: candidateEmail,
-        phone: cleanPhone,
+        phone: candidatePhone,
 
         // Personal & Background profile
         age: age || null,

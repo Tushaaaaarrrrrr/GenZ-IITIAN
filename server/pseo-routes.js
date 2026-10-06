@@ -12,6 +12,142 @@ import {
 const router = express.Router();
 
 // ==========================================
+// PUBLIC API — Serves pSEO pages to frontend
+// ==========================================
+
+/**
+ * GET /api/pseo/page/:slug
+ * Fetch a single published pSEO page by slug
+ * Supports nested slugs like: compare/iitm-bs-vs-btech
+ */
+router.get('/page/*', async (req, res) => {
+    try {
+        const slug = req.params[0];
+        const page = await pdb.getAsync(
+            'SELECT * FROM pseo_pages WHERE slug = ? AND published = 1',
+            [slug]
+        );
+        if (!page) return res.status(404).json({ error: 'Page not found' });
+
+        // Parse JSON fields
+        page.sections = JSON.parse(page.sections || '[]');
+        page.faq = JSON.parse(page.faq || '[]');
+        page.secondary_keywords = JSON.parse(page.secondary_keywords || '[]');
+        page.internal_links = JSON.parse(page.internal_links || '[]');
+        page.related_pages = JSON.parse(page.related_pages || '[]');
+        page.schema_data = JSON.parse(page.schema_data || '{}');
+
+        res.json(page);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+/**
+ * GET /api/pseo/pages
+ * List published pSEO pages with pagination and filters
+ */
+router.get('/pages', async (req, res) => {
+    try {
+        const { type, cluster, page = 1, limit = 20, search } = req.query;
+        const offset = (parseInt(page) - 1) * parseInt(limit);
+
+        let query = 'SELECT id, slug, playbook_type, title, meta_description, primary_keyword, cluster_topic, word_count, updated_at FROM pseo_pages WHERE published = 1';
+        const params = [];
+
+        if (type) {
+            query += ' AND playbook_type = ?';
+            params.push(type);
+        }
+        if (cluster) {
+            query += ' AND cluster_topic = ?';
+            params.push(cluster);
+        }
+        if (search) {
+            query += ' AND (title LIKE ? OR primary_keyword LIKE ?)';
+            params.push(`%${search}%`, `%${search}%`);
+        }
+
+        // Get total count
+        const countQuery = query.replace('SELECT id, slug, playbook_type, title, meta_description, primary_keyword, cluster_topic, word_count, updated_at', 'SELECT COUNT(*) as total');
+        const countResult = await pdb.getAsync(countQuery, params);
+
+        query += ' ORDER BY updated_at DESC LIMIT ? OFFSET ?';
+        params.push(parseInt(limit), offset);
+
+        const pages = await pdb.allAsync(query, params);
+
+        res.json({
+            pages,
+            pagination: {
+                page: parseInt(page),
+                limit: parseInt(limit),
+                total: countResult.total,
+                totalPages: Math.ceil(countResult.total / parseInt(limit)),
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+/**
+ * GET /api/pseo/related/:slug
+ * Get related pages for a given slug
+ */
+router.get('/related/:slug', async (req, res) => {
+    try {
+        const page = await pdb.getAsync('SELECT cluster_topic, playbook_type FROM pseo_pages WHERE slug = ?', [req.params.slug]);
+        if (!page) return res.json([]);
+
+        const related = await pdb.allAsync(`
+      SELECT slug, title, playbook_type, meta_description
+      FROM pseo_pages
+      WHERE published = 1 AND slug != ? AND (cluster_topic = ? OR playbook_type = ?)
+      ORDER BY RANDOM() LIMIT 6
+    `, [req.params.slug, page.cluster_topic, page.playbook_type]);
+
+        res.json(related);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+/**
+ * GET /api/pseo/clusters
+ * Get all clusters with page counts
+ */
+router.get('/clusters', async (req, res) => {
+    try {
+        const clusters = await pdb.allAsync(`
+      SELECT pc.*, COUNT(pp.id) as actual_page_count
+      FROM pseo_clusters pc
+      LEFT JOIN pseo_pages pp ON pp.cluster_topic = pc.name AND pp.published = 1
+      GROUP BY pc.id
+      ORDER BY actual_page_count DESC
+    `);
+        res.json(clusters);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+/**
+ * GET /api/pseo/sitemap.xml
+ * Dynamic sitemap
+ */
+router.get('/sitemap.xml', async (req, res) => {
+    try {
+        const baseUrl = req.query.baseUrl || 'https://genziitian.in';
+        const xml = await generateSitemap(baseUrl);
+        res.set('Content-Type', 'application/xml');
+        res.send(xml);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ==========================================
 // ADMIN API — Manage pSEO pages
 // ==========================================
 
@@ -54,9 +190,9 @@ router.get('/admin/pages', async (req, res) => {
 
         // Parse JSON fields
         for (const p of pages) {
-            p.sections = typeof p.sections === 'string' ? JSON.parse(p.sections || '[]') : (p.sections || []);
-            p.faq = typeof p.faq === 'string' ? JSON.parse(p.faq || '[]') : (p.faq || []);
-            p.internal_links = typeof p.internal_links === 'string' ? JSON.parse(p.internal_links || '[]') : (p.internal_links || []);
+            p.sections = JSON.parse(p.sections || '[]');
+            p.faq = JSON.parse(p.faq || '[]');
+            p.internal_links = JSON.parse(p.internal_links || '[]');
         }
 
         res.json({

@@ -5,9 +5,9 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 
 const RESOURCE_LINKS = [
-  { to: '/iitm-bs/resources', label: 'PYQs & Notes' },
+  { to: '/resources', label: 'PYQs & Notes' },
   { to: '/syllabus', label: 'Syllabus' },
-  { to: '/iitm-bs/graded-assignment', label: 'Graded Assignment' },
+  { to: '/graded-assignment', label: 'Graded Assignment' },
   { to: '/tools/cgpa-calculator', label: 'CGPA Calculator' },
   { to: '/tools/grade-predictor', label: 'Grade Predictor' },
   { to: '/blog', label: 'Blog' },
@@ -114,7 +114,7 @@ export default function Navbar() {
             <button 
               onClick={() => setDesktopMenu(desktopMenu === 'resources' ? null : 'resources')}
               className={`flex items-center gap-1 relative font-bold text-[15px] transition-colors pb-1 ${
-                location.pathname.includes('/iitm-bs/resources') || location.pathname.includes('/docs') || location.pathname.includes('/iitm-bs/graded-assignment') || location.pathname.includes('/blog') || location.pathname.includes('/tools')
+                location.pathname.includes('/resources') || location.pathname.includes('/docs') || location.pathname.includes('/graded-assignment') || location.pathname.includes('/blog') || location.pathname.includes('/tools')
                   ? 'text-[#0b1120] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2.5px] after:bg-blue-600 after:rounded-full'
                   : 'text-gray-600 hover:text-[#0b1120]'
               }`}
@@ -246,9 +246,9 @@ export default function Navbar() {
             </button>
             {mobileResourcesOpen && (
               <div className="flex flex-col gap-3 pl-4 pt-2 pb-2 border-l-2 border-gray-100 ml-2 mt-1">
-                <Link to="/iitm-bs/resources" className="text-sm font-bold text-gray-600 hover:text-blue-600">PYQs & Notes</Link>
+                <Link to="/resources" className="text-sm font-bold text-gray-600 hover:text-blue-600">PYQs & Notes</Link>
                 <Link to="/syllabus" className="text-sm font-bold text-gray-600 hover:text-blue-600">Syllabus</Link>
-                <Link to="/iitm-bs/graded-assignment" className="text-sm font-bold text-gray-600 hover:text-blue-600">Graded Assignment</Link>
+                <Link to="/graded-assignment" className="text-sm font-bold text-gray-600 hover:text-blue-600">Graded Assignment</Link>
                 <Link to="/tools/cgpa-calculator" className="text-sm font-bold text-gray-600 hover:text-blue-600">CGPA Calculator</Link>
                 <Link to="/tools/grade-predictor" className="text-sm font-bold text-gray-600 hover:text-blue-600">Grade Predictor</Link>
                 <Link to="/blog" className="text-sm font-bold text-gray-600 hover:text-blue-600">Blog</Link>

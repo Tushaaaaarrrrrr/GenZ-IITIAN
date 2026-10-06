@@ -18,7 +18,6 @@ const WEEKS = [
 
 // Lines we strip entirely (PDF page headers, footers, course banners)
 const NOISE = [
-  /^\s*Computational [Tt]hinking\s*$/,
   /^\s*Computational [Tt]hinking\b.*Page \d+ of \d+\s*$/,
   /^\s*BSCCS1001:.*$/,
   /^\s*Page \d+\s*$/,
@@ -132,7 +131,7 @@ function flowText(lines) {
 // "What will") for weeks that use a tutorial format without explicit numbering.
 // Returns { number, points, rest } or null.
 function detectQuestionHeader(lines, expectedNum) {
-  const first = lines[0].trim().replace(/^(?:Next\s+|Moving on to (?:the )?next\s+)/i, '');
+  const first = lines[0].trim();
   // "Question 1: text..." (Week 1 Q1 style — with number)
   let m = first.match(/^Question\s+(\d+)\s*:\s*(.*)/i);
   if (m) {

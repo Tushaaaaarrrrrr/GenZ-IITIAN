@@ -180,7 +180,7 @@ export default function HiringSection() {
                     </p>
                     <ul className="list-disc pl-5 space-y-2 font-medium text-sm sm:text-base mb-6">
                       <li><strong>exam.genziitian.in</strong> – Previous Year Questions, video solutions, PDFs, and exam resources.</li>
-                      <li><strong>genziitian.in/iitm-bs/resources</strong> – Completely free study materials.</li>
+                      <li><strong>genziitian.in/resources</strong> – Completely free study materials.</li>
                       <li><strong>Free YouTube Marathon Classes</strong> before exams.</li>
                       <li><strong>genziitian.live</strong> – A dedicated social platform for IIT Madras BS students with better privacy and organized discussions than traditional WhatsApp groups.</li>
                     </ul>

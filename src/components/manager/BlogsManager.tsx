@@ -25,8 +25,7 @@ const emptyBlog: BlogRow = {
   image: '',
   date: '',
   read_time: '5 min read',
-  published: 0,
-  summary: '', author: '', reviewer: '', source_references: [], last_verified_at: null, published_at: null, modified_at: null, image_alt: '',
+  published: 1,
   seo_title: '',
   seo_description: '',
   seo_keywords: '',
@@ -76,7 +75,7 @@ export default function BlogsManager() {
     setEditing({ ...blog });
   };
 
-  const setField = (key: keyof BlogRow, value: string | number | {title:string;url:string}[] | null) => {
+  const setField = (key: keyof BlogRow, value: string | number) => {
     setEditing((prev) => (prev ? { ...prev, [key]: value } : prev));
   };
 
@@ -110,12 +109,6 @@ export default function BlogsManager() {
       seo_title: editing.seo_title?.trim() || null,
       seo_description: editing.seo_description?.trim() || null,
       seo_keywords: editing.seo_keywords?.trim() || null,
-      summary: editing.summary?.trim() || '',
-      author: editing.author?.trim() || null, reviewer: editing.reviewer?.trim() || null,
-      source_references: editing.source_references || [],
-      last_verified_at: editing.last_verified_at || null,
-      published_at: editing.published_at || (Number(editing.published) && (!editing.id || !Number(blogs.find(b=>b.id===editing.id)?.published)) ? new Date().toISOString() : null),
-      modified_at: editing.modified_at || null, image_alt: editing.image_alt || '',
     };
 
     let err;
@@ -327,16 +320,6 @@ export default function BlogsManager() {
                   </Field>
                 </div>
 
-                <Field label="Summary"><textarea className={managerInputCls} rows={3} value={editing?.summary || ''} onChange={e=>setField('summary',e.target.value)} /></Field>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  <Field label="Author (leave blank if unknown)"><input className={managerInputCls} value={editing?.author || ''} onChange={e=>setField('author',e.target.value)} /></Field>
-                  <Field label="Reviewer (optional)"><input className={managerInputCls} value={editing?.reviewer || ''} onChange={e=>setField('reviewer',e.target.value)} /></Field>
-                  <Field label="Image alternative text"><input className={managerInputCls} value={editing?.image_alt || ''} onChange={e=>setField('image_alt',e.target.value)} /></Field>
-                  <Field label="Last sources verified (date)"><input type="date" className={managerInputCls} value={editing?.last_verified_at?.slice(0,10) || ''} onChange={e=>setField('last_verified_at',e.target.value || null)} /></Field>
-                  <Field label="Actual publication date"><input type="date" className={managerInputCls} value={editing?.published_at?.slice(0,10) || ''} onChange={e=>setField('published_at',e.target.value || null)} /></Field>
-                  <Field label="Substantive revision date"><input type="date" className={managerInputCls} value={editing?.modified_at?.slice(0,10) || ''} onChange={e=>setField('modified_at',e.target.value || null)} /></Field>
-                </div>
-                <Field label="Sources (one title | https://URL per line)"><textarea className={managerInputCls} rows={4} defaultValue={(editing?.source_references || []).map(s=>`${s.title} | ${s.url}`).join('\n')} onChange={e=>setField('source_references',e.target.value.split('\n').filter(Boolean).map(line=>{const i=line.indexOf('|');return {title:(i<0?line:line.slice(0,i)).trim(),url:(i<0?line:line.slice(i+1)).trim()}}))}/></Field>
                 <Field label="Content (HTML)">
                   <textarea
                     value={editing?.content || ''}

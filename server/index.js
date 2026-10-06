@@ -9,13 +9,10 @@ import { supabase } from './supabase.js';
 import pseoRouter from './pseo-routes.js';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
-import { createPublicHttp } from './public/http.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Keep the module loadable by hosting launchers that use require() for ESM.
-async function startServer() {
 const app = express();
 app.set('trust proxy', 1); // Trust first proxy (Hostinger reverse proxy)
 const PORT = process.env.PORT || 3001;
@@ -46,9 +43,7 @@ app.use((req, res, next) => {
     next();
 });
 
-const publicHttp = await createPublicHttp({root:path.join(__dirname,'..'),client:supabase});
-app.use(publicHttp.early);
-app.use(express.static(path.join(__dirname, '..', 'dist'), {index:false}));
+app.use(express.static(path.join(__dirname, '..', 'dist')));
 app.use('/admin', express.static(path.join(__dirname, '..', 'admin')));
 
 // ========== RATE LIMITING ==========
@@ -62,7 +57,6 @@ const apiLimiter = rateLimit({
 
 // Apply rate limiting to all /api routes
 app.use('/api/', apiLimiter);
-app.use(publicHttp.api);
 
 // ========== AUTH ==========
 
@@ -206,6 +200,49 @@ app.get('/api/auth/check', authMiddleware, (req, res) => {
 
 // ========== PUBLIC API ==========
 
+app.get('/api/blogs', async (req, res) => {
+    try {
+        const blogs = await db.allAsync('SELECT * FROM blogs WHERE published = 1 ORDER BY id DESC');
+        res.json(blogs);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/blogs/:slug', async (req, res) => {
+    try {
+        const blog = await db.getAsync('SELECT * FROM blogs WHERE slug = ? AND published = 1', [req.params.slug]);
+        if (!blog) return res.status(404).json({ error: 'Blog not found' });
+        res.json(blog);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/resources', async (req, res) => {
+    const { level, subject, type } = req.query;
+    let query = 'SELECT * FROM resources WHERE published = 1';
+    const params = [];
+    if (level) { query += ' AND level = ?'; params.push(level); }
+    if (subject) { query += ' AND subject = ?'; params.push(subject); }
+    if (type) { query += ' AND resource_type = ?'; params.push(type); }
+    query += ' ORDER BY level, subject, resource_type, sub_type, id';
+
+    try {
+        const resources = await db.allAsync(query, params);
+        res.json(resources);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/resources/subjects', async (req, res) => {
+    const { level } = req.query;
+    let query = 'SELECT DISTINCT level, subject FROM resources WHERE published = 1';
+    const params = [];
+    if (level) { query += ' AND level = ?'; params.push(level); }
+    query += ' ORDER BY level, subject';
+
+    try {
+        const subjects = await db.allAsync(query, params);
+        res.json(subjects);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 app.get('/api/settings', async (req, res) => {
     try {
         const settings = await db.allAsync('SELECT * FROM settings');
@@ -343,7 +380,7 @@ app.post('/api/admin/settings', authMiddleware, async (req, res) => {
 });
 
 // ========== pSEO ENGINE ==========
-app.use('/api/pseo', (req,res,next) => req.path.startsWith('/admin') ? authMiddleware(req,res,next) : next(), pseoRouter);
+app.use('/api/pseo', pseoRouter);
 
 // ========== PAYMENTS (Razorpay) ==========
 
@@ -1521,7 +1558,7 @@ app.post('/api/job-applications', async (req, res) => {
             role_title: resolvedRoleTitle,
             full_name: candidateName,
             email: candidateEmail,
-            phone: cleanPhone,
+            phone: candidatePhone,
 
             // Personal & Background profile
             age: age || null,
@@ -2581,7 +2618,12 @@ app.get('/api/referral/validate', async (req, res) => {
     }
 });
 
-// Explicit application routes and published public documents, with real status codes.
+// --- CATCH-ALL FOR FRONTEND ---
+app.get('*', (req, res) => {
+    if (!req.path.startsWith('/api') && !req.path.startsWith('/admin')) {
+        res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
+    }
+});
 
 // --- AUTOMATED EMAILS (BACKGROUND JOB) ---
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -2822,9 +2864,6 @@ app.get('/api/cron-check-emails', async (req, res) => {
     }
 });
 
-// Documents and API 404s must be last, after the existing cron endpoint.
-app.use(publicHttp.document);
-
 // Run automatically every 60 minutes for persistent servers
 setInterval(async () => {
     const welcomeWebhookUrl = process.env.WELCOME_WEBHOOK_URL;
@@ -2841,11 +2880,4 @@ app.listen(PORT, () => {
     const host = process.env.PUBLIC_HOST || process.env.HOST || 'localhost';
     console.log(`\n  🔐 Admin Panel running on port ${PORT} (host: ${host})`);
     console.log(`  📡 API running on port ${PORT}/api\n`);
-});
-
-}
-
-startServer().catch(error => {
-    console.error('[Startup] Failed to start GenZ IITian:', error);
-    process.exitCode = 1;
 });
