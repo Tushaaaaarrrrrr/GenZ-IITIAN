@@ -14,6 +14,8 @@ import { createPublicHttp } from './public/http.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Keep the module loadable by hosting launchers that use require() for ESM.
+async function startServer() {
 const app = express();
 app.set('trust proxy', 1); // Trust first proxy (Hostinger reverse proxy)
 const PORT = process.env.PORT || 3001;
@@ -2839,4 +2841,11 @@ app.listen(PORT, () => {
     const host = process.env.PUBLIC_HOST || process.env.HOST || 'localhost';
     console.log(`\n  🔐 Admin Panel running on port ${PORT} (host: ${host})`);
     console.log(`  📡 API running on port ${PORT}/api\n`);
+});
+
+}
+
+startServer().catch(error => {
+    console.error('[Startup] Failed to start GenZ IITian:', error);
+    process.exitCode = 1;
 });

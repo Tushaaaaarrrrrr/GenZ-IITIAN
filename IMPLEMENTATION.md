@@ -123,3 +123,9 @@ The GitHub branch includes the latest main changes through `641674df198235164121
 If the SQL editor reported `42P01: relation "public.resources" does not exist`, use the corrected **entire** `migrations/20261006-public-seo.sql` and run it again. Its transaction creates missing resource/knowledge tables before applying policies, and reruns preserve existing records. If the editor still has an aborted transaction, run `ROLLBACK;` first. No existing local SQLite resources are automatically imported or published; use reviewed content through the manager or a separate verified import. Then continue with `npm run audit:public` and `npm run seed:editorial`.
 
 Migration regression checks can be run with `bash scripts/test-seo-migration.sh` when local PostgreSQL tools and `rg` are available. This starts a disposable local instance and checks missing tables, safe reruns, publication defaults, anonymous/manager/service access and incompatible-schema failure; it never uses deployment credentials.
+
+## Hosting startup compatibility
+
+Server initialization runs inside an async startup function rather than module-level await. This permits hosting launchers that load the ESM entry point with `require()` on supported modern Node versions, as well as direct `npm start`. The startup regression tests launch the actual Express application using both modes with external credentials removed.
+
+If Hostinger returns its generic 503 page even for `/robots.txt` and `/favicon.ico`, inspect build/runtime logs first: that response does not establish a database failure. Check the backend entry file `server/index.js`, build command `npm run build`, required dependencies, retained server/client output and server environment. Restore the last working hosting deployment for campaign recovery if the app cannot be restarted; database migrations do not need to be undone for that recovery.
