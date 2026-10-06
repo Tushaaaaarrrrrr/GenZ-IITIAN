@@ -50,6 +50,8 @@ import {
 } from './pages/errors';
 import LoginModal from './components/LoginModal';
 import WelcomeModal from './components/WelcomeModal';
+import DocumentNavigation from './public/DocumentNavigation';
+import ApplicationMetadata from './public/ApplicationMetadata';
 
 // Captures ?ref=CODE from the URL and saves it to localStorage with 24h expiry
 function ReferralCapture() {
@@ -85,8 +87,9 @@ function AppContent() {
       {!isManagerPage && <Navbar />}
       {/* pb on mobile clears the fixed bottom tab bar; removed on checkout + manager */}
       <main className={`flex-grow ${isCheckoutPage || isManagerPage ? '' : 'pb-24 md:pb-0'}`}>
+        <ApplicationMetadata />
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<DocumentNavigation />} />
           <Route path="/one-to-one" element={<OneOnOne />} />
           <Route path="/1-on-1" element={<OneOnOne />} />
           <Route path="/menu" element={<Menu />} />
@@ -94,23 +97,24 @@ function AppContent() {
           <Route path="/courses" element={<Courses />} />
           <Route path="/syllabus" element={<Syllabus />} />
           <Route path="/courses/:id" element={<CourseDetail />} />
-          <Route path="/resources" element={<Resources />} />
-          <Route path="/resources/:level/:subject" element={<ResourceDetail />} />
-          <Route path="/graded-assignment" element={<GradedAssignment />} />
+          <Route path="/resources" element={<DocumentNavigation />} />
+          <Route path="/resources/:level/:subject" element={<DocumentNavigation />} />
+          <Route path="/iitm-bs/*" element={<DocumentNavigation />} />
+          <Route path="/graded-assignment" element={<DocumentNavigation />} />
           <Route path="/tools/cgpa-calculator" element={<ToolsPage />} />
           <Route path="/tools/grade-predictor" element={<ToolsPage />} />
           <Route path="/tools/grading-scale" element={<ToolsPage />} />
           <Route path="/access-pdf" element={<AccessPdf />} />
-          <Route path="/blog" element={<Blog />} />
-          <Route path="/blog/:slug" element={<BlogDetail />} />
-          <Route path="/docs" element={<Docs />} />
-          <Route path="/docs/:slug" element={<DocsDetail />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} />
+          <Route path="/blog" element={<DocumentNavigation />} />
+          <Route path="/blog/:slug" element={<DocumentNavigation />} />
+          <Route path="/docs" element={<DocumentNavigation />} />
+          <Route path="/docs/:slug" element={<DocumentNavigation />} />
+          <Route path="/about" element={<DocumentNavigation />} />
+          <Route path="/contact" element={<DocumentNavigation />} />
           <Route path="/careers" element={<Careers />} />
           <Route path="/verify" element={<Verify />} />
           <Route path="/newsletter" element={<Newsletter />} />
-          <Route path="/knowledge" element={<SEODirectory />} />
+          <Route path="/knowledge" element={<DocumentNavigation />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/checkout/:id" element={<CourseSelection />} />
           <Route path="/profile" element={<Profile />} />
@@ -134,7 +138,7 @@ function AppContent() {
           <Route path="/error/500" element={<ServerError />} />
           <Route path="/error/503" element={<ServiceUnavailable />} />
           {/* pSEO catch-all — must be last */}
-          <Route path="/*" element={<SEOPage />} />
+          <Route path="/*" element={<DocumentNavigation />} />
         </Routes>
       </main>
       {/* Footer is hidden on mobile — the bottom-nav Menu tab covers all links there */}
@@ -149,24 +153,6 @@ function AppContent() {
 }
 
 export default function App() {
-  useEffect(() => {
-    // Fetch Global Settings for SEO
-    fetch('/api/settings')
-      .then(res => res.json())
-      .then(config => {
-        if (config.site_title) document.title = config.site_title;
-        if (config.site_description) {
-          let meta = document.querySelector('meta[name="description"]');
-          if (!meta) {
-            meta = document.createElement('meta');
-            meta.setAttribute('name', 'description');
-            document.head.appendChild(meta);
-          }
-          meta.setAttribute('content', config.site_description);
-        }
-      })
-      .catch(() => { });
-  }, []);
 
   return (
     <AuthProvider>

@@ -6,7 +6,7 @@ const db = {
     // 1. Handle "SELECT * FROM blogs"
     if (sql.includes('FROM blogs')) {
       let query = supabase.from('blogs').select('*');
-      if (sql.includes('published = 1')) query = query.eq('published', true);
+      if (sql.includes('published = 1')) query = query.eq('published', 1);
       if (sql.includes('ORDER BY id DESC')) query = query.order('id', { ascending: false });
       const { data, error } = await query;
       if (error) throw error;
@@ -64,7 +64,7 @@ const db = {
     if (sql.startsWith('INSERT INTO blogs')) {
       const payload = {
         title: params[0], slug: params[1], category: params[2], content: params[3],
-        image: params[4], date: params[5], read_time: params[6], published: Boolean(params[7]),
+        image: params[4], date: params[5], read_time: params[6], published: Number(params[7]) ? 1 : 0,
         seo_title: params[8], seo_description: params[9], seo_keywords: params[10]
       };
       const { data, error } = await supabase.from('blogs').insert(payload).select('id').single();
@@ -76,7 +76,7 @@ const db = {
     if (sql.startsWith('UPDATE blogs')) {
       const payload = {
         title: params[0], slug: params[1], category: params[2], content: params[3],
-        image: params[4], date: params[5], read_time: params[6], published: Boolean(params[7]),
+        image: params[4], date: params[5], read_time: params[6], published: Number(params[7]) ? 1 : 0,
         seo_title: params[8], seo_description: params[9], seo_keywords: params[10],
         updated_at: new Date().toISOString()
       };

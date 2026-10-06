@@ -1,0 +1,652 @@
+                              Computational Thinking
+                                        Week - 3
+                           Graded Assignment Solution
+1. In the “Paragraph words” dataset, the procedure CountLongNouns counts the number of
+   nouns that are longer than the average word length. Assume that the variable Avg holds the
+   value of average word length. Choose the correct choice to complete the procedure.        [3 Marks]
+
+          Procedure CountLongNouns()
+              Count = 0
+              while (Pile 1 has more rows) {
+                  Read the top card X from Pile 1
+                       *********************
+                       *     Fill the code   *
+                       *********************
+                  }
+                  Move X to Pile 2
+              }
+          end CountLongNouns
+
+    a.
+           if (X.LetterCount > Avg) {
+                Count = Count + 1
+           }
+    b.
+           if (X.PartOfSpeech == “Noun”) {
+                Count = Count + 1
+           }
+    c.
+           if (X.LetterCount > Avg or X.PartOfSpeech == “Noun”) {
+                Count = Count + 1
+           }
+    d.
+           if (X.LetterCount > Avg and X.PartOfSpeech == “Noun”) {
+                Count = Count + 1
+           }
+    e. None of the above
+Computational thinking         Graded Assignment Solution of Week - 3                  Page 2 of 21
+
+    Solution: The purpose of the procedure CountLongNouns is as follows: To count nouns
+    with letter count more than average letter count. The average letter count of the data set is
+    stored in the variable Avg. We are iterating the cards in Pile 1 using the iterator X. In each
+    step of the iteration, we have to check whether the word is a noun as well as the letter count
+    is more than the average letter count. The variable Count is incremented when the both
+    conditions are satisfied. So, we have to use and operator to merge the conditions. Therefore,
+    the following code-block complete the procedure CountLongNouns.
+        if (X.LetterCount > Avg and X.PartOfSpeech == “Noun”) {
+             Count = Count + 1
+        }
+Computational thinking        Graded Assignment Solution of Week - 3                Page 3 of 21
+
+ 2. The following pseudocode is executed using the “Scores” dataset. What will be the value of
+    the variable Z at the end of the execution? [Note: Consider only two decimal places in all
+    division operations.]                                                                     [4 Marks]
+
+              SumT = 0, SumM = 0, SumP = 0, SumC = 0
+              Count = 0
+              while (Pile 1 has more cards) {
+                   Read the top card X from Pile 1
+                   SumT = SumT + X.Total
+                   SumM = SumM + X.Mathematics
+                   SumP = SumP + X.Physics
+                   SumC = SumC + X.Chemistry
+                   Count = Count + 1
+                   Move X to Pile 2
+              }
+              A = SumT / Count
+              B = SumM / Count
+              C = SumP / Count
+              D = SumC / Count
+              Z=0
+              if ((B + C + D) − A ≤ -1) {
+                   Z = -1
+              }
+              if ((B + C + D) − A ≥ 1) {
+                   Z=1
+              }
+
+
+      a. -1
+      b. 0
+      c. +1
+      d. None of the above
+Computational thinking          Graded Assignment Solution of Week - 3                   Page 4 of 21
+
+    Solution: The values captured by the variables in this pseudocode are listed as follows:
+     SumT       -   The sum of the total marks (SumT = 6674)
+     SumM       -   The sum of the Mathematics marks (SumM = 2171)
+     SumP       -   The sum of the Physics marks (SumP = 2189)
+     SumC       -   The sum of the Chemistry marks (SumC = 2314)
+     Count      -   Number of cards in the data set (Count = 30)
+    The above values are computed during the iteration. After the iteration, the variables A, B,
+    C and D are computed as follows.
+
+       • A = SumT / Count = 6674 / 30 ≃ 222.47
+       • B = SumM / Count = 2171 / 30 ≃ 72.37
+       • C = SumP / Count = 2189 / 30 ≃ 72.97
+       • D = SumC / Count = 2314 / 30 ≃ 73.13
+
+    The value of the expression (B + C + D) - A is 72.37 + 72.97 + 73.13 = 222.47. Therefore,
+    both if-conditions will be failed and the value of Z remains 0. Note that, we consider only
+    two decimal places in all division operation. For nay rounding value, the difference between
+    the values to be rounded is at most 0.01. Therefore, a difference of at most 0.04 is possible
+    on overall evaluation of the expression and it is less than the margin value given in the range.
+    Thus, the answer is Z = 0.
+Computational thinking        Graded Assignment Solution of Week - 3                Page 5 of 21
+
+ 3. The following pseudocode is executed using the “Scores” table. At the end of the execution,
+    the variable CountBA captures the number of students with total marks less than average
+    total marks and below average in exactly one subject. Assume that the variable AvgT holds
+    the value of average total marks. Similarly, the variables AvgP, AvgC and AvgM hold
+    the value of average marks of Physics, Chemistry and Mathematics respectively. Choose the
+    correct choice to complete the pseudocode.                                                 [3 Marks]
+
+            CountBA = 0
+            while (Table 1 has more rows) {
+                Read the first row X from Table 1
+                SubC = 0
+                if (X.Total < AvgT) {
+                     if (X.Mathematics < AvgM) {
+                          SubC = SubC + 1
+                     }
+                     if (X.Physics < AvgP) {
+                          SubC = SubC + 1
+                     }
+                     if (X.Chemistry < AvgC) {
+                          SubC = SubC + 1
+                     }
+                     *********************
+                     *     Fill the code   *
+                     *********************
+                }
+                Move X to Table 2
+            }
+
+      a.
+             if (SubC ≤ 1) {
+                  CountBA = CountBA + 1
+             }
+      b.
+             if (SubC ≤ 1) {
+                  CountBA = 1
+             }
+      c.
+             if (SubC == 1) {
+                  CountBA = 1
+             }
+      d.
+             if (SubC == 1) {
+                  CountBA = CountBA + 1
+             }
+Computational thinking         Graded Assignment Solution of Week - 3                   Page 6 of 21
+
+    Solution: Assume that the variables AvgT, AvgM, AvgP and AvgC hold the values of the
+    average total marks, the average marks of Mathematics, Physics and Chemistry, respectively.
+    The cards in the Pile 1 are iterated using the iterator X. Our aim is to count the students
+    with total marks less than average total marks and below average in exactly one subject. The
+    variable SubC captures the number of subject in which the student is scored below average.
+    The first filter is to check the total marks is less than the average total marks. If the above
+    filter is applied, then we count the number of subjects in which the marks are below average.
+    After computation of the variable SubC, we have to check that the SubC is either one or not.
+    If the value is one, then increment the variable CountBA. Therefore, the following code-block
+    completes the pseudocode.
+        if (SubC == 1) {
+             CountBA = CountBA + 1
+        }
+Computational thinking         Graded Assignment Solution of Week - 3                 Page 7 of 21
+
+ 4. The following pseudocode is executed using the “Shopping bills” dataset. What will the values
+    of the variables A and B represent at the end of the execution?                              [4 Marks]
+
+            SumSV = 0, SumBB = 0
+            CountSV = 0, CountBB = 0
+            while (Pile 1 has more cards) {
+                Read the top card X from Pile 1
+                if (X.ShopName == “SV Stores”) {
+                     SumSV = SumSV + X.TotalBillAmount
+                     CountSV = CountSV + 1
+                }
+                if (X.ShopName == “Big Bazaar”) {
+                     SumBB = SumBB + X.TotalBillAmount
+                     CountBB = CountBB + 1
+                }
+                Move X to Pile 2
+            }
+            MSV = SumSV / CountSV
+            MBB = SumBB / CountBB
+            A = 0, B = 0
+            while (Pile 2 has more cards) {
+                Read the top card X from Pile 2
+                if (X.ShopName == “SV Stores” and X.TotalBillAmount < MSV) {
+                     A=A+1
+                }
+                if (X.ShopName == “Big Bazaar” and X.TotalBillAmount > MBB) {
+                     B=B+1
+                }
+                Move X to Pile 1
+            }
+
+
+      a. A = Number of bills with total bill amount less than the average total bill amount
+         B = Number of bills with total bill amount greater than the average total bill amount
+      b. A = Number of bills from “Big Bazaar” with total bill amount greater than the average
+         total bill amount of “Big Bazaar”
+         B = Number of bills from “SV Stores” with total bill amount less than the average total
+         bill amount of “SV Stores”
+      c. A = Number of bills from “SV Stores” with total bill amount less than the average total
+         bill amount of “SV Stores”
+         B = Number of bills from “Big Bazaar” with total bill amount greater than the average
+         total bill amount of “Big Bazaar”
+      d. A = Number of bills with total bill amount greater than the average total bill amount
+         B = Number of bills with total bill amount less than the average total bill amount
+Computational thinking            Graded Assignment Solution of Week - 3                   Page 8 of 21
+
+    Solution: The pseudocode consists of two non-nested iterations. There are two if-conditions
+    in the first iteration. The first condition checks whether the bill belongs to “SV Stores”. If
+    the condition is True, then the variable SumSV is added with the total bill amount of the
+    bill and the variable CountSV is incremented by one. Similarly, the second condition checks
+    whether the bill belongs to “Big Bazaar”, and updates SumBB and CountBB.
+    At the end of the first iteration, the values captured by the variables are listed below:
+     SumSV          -    The sum of the total bill amount of the bills from “SV Stores”
+     CountSV        -    Number of bills from “SV Stores”
+     SumBB          -    The sum of the total bill amount of the bills from “Big Bazaar”
+     CountBB        -    Number of bills from “Big Bazaar”
+     MSV            -    The average total bill amount of the bills from “SV Stores”
+     MBB            -    The average total bill amount of the bills from “Big Bazaar”
+    There are two if-conditions in the first iteration. The first condition checks whether the bill
+    belongs to “SV Stores” and the total bill amount is less than the average total bill amount of
+    the bills from “SV Stores”. If the condition is True, then the variable A is incremented by
+    one. Similarly, the second condition checks whether the bill belongs to “Big Bazaar” and the
+    total bill amount is more than the average total bill amount of the bills from “SV Stores”, and
+    updates B. Therefore the variables A and B capture the following at the end of the execution.
+    A = Number of bills from “SV Stores” with total bill amount less than the average total bill
+    amount of “SV Stores”
+    B = Number of bills from “Big Bazaar” with total bill amount greater than the average total
+    bill amount of “Big Bazaar”
+Computational thinking        Graded Assignment Solution of Week - 3                 Page 9 of 21
+
+ 5. The following pseudocode is executed using the “Scores” dataset to grade the students by
+    total marks. Also, the pseudocode counts number of male students in each grade. But the
+    pseudocode may have mistakes in one or more lines. Identify all such lines (if any). It is a
+    Multiple Select Question (MSQ).                                                             [4 Marks]
+         1     MinT = -1, MaxT = 301
+         2     while (Pile 1 has more cards) {
+         3         Read the top card X from Pile 1
+         4         if (MinT > X.Total ) {
+         5              MinT = X.Total
+         6         }
+         7         if (MaxT < X.Total ) {
+         8              MaxT = X.Total
+         9         }
+         10        Move X to Pile 2
+         11    }
+         12    Interval = (MaxT - MinT) / 4
+         13    Mid3 = MinT + Interval
+         14    Mid2 = Mid3 + Interval
+         15    Mid1 = Mid2 + Interval
+         16    CountA = 0, CountB = 0, CountC = 0, CountD = 0
+         17    while (Pile 2 has more cards) {
+         18        Read the top card X from Pile 2
+         19        if (X.Gender == “F” ) {
+         20             if (X.Total ≥ Mid1) {
+         21                  CountA = CountA + 1
+         22             }
+         23             if (X.Total < Mid1 and X.Total ≥ Mid2) {
+         24                  CountB = CountB + 1
+         25             }
+         26             if (X.Total < Mid2 and X.Total ≥ Mid3) {
+         27                  CountC = CountC + 1
+         28             }
+         29             if (X.Total < Mid3) {
+         30                  CountD = 1
+         31             }
+         32        }
+         33        Move X to Pile 1
+         34    }
+      a. Error in Line 1
+      b. Error in Line 19
+      c. Error in Line 20
+      d. Error in Line 23
+      e. Error in Line 26
+      f. Error in Line 30
+      g. No error
+Computational thinking          Graded Assignment Solution of Week - 3                  Page 10 of 21
+
+    Solution: The objective of the pseudocode is to grade the students based on total marks and
+    count number of male students in each of the grades. To grade the students, the first step is
+    to fix the range of marks for each of the grades. To find the range, we have to compute the
+    minimum and maximum total marks. The variable MinT and MaxT are used to find the
+    minimum and maximum total marks. To find the minimum total mark, the variable should be
+    initialized with a large value. Similarly, the variable to compute maximum should be initialized
+    with a small value. In Line 1, the statement MinT = -1, MaxT = 301 is initialized with
+    wrong values. Therefore, Error in Lien 1. In the first iteration, we compute the minimum and
+    maximum total marks. After the iteration, the variable Interval captures the uniform range
+    of the marks for the grades. The variables Mid1, Mid2 and Mid3 capture the lower bound
+    for the Grade-1, Grade-2 and Grade-3 respectively.
+    In the second iteration, we count the male students in each of the grades. We use iterator
+    X to iterate cards in Pile 2. In each of the iteration step, we have to check whether the card
+    belongs to a male student. But, the if-condition in the Line 19 is incorrect. Therefore, Error
+    in Line 19. In the code-block of the if-condition, we find the grade in which the total marks
+    lie in the mark range of the grade. then, we increment the respecting variable for the grade.
+    But, the variable to count the Grade-4 is not incremented in Line 30. Therefore, Error in Line
+    30. After the end of the iteration, we terminate the execution of the pseudocode.
+Computational thinking        Graded Assignment Solution of Week - 3               Page 11 of 21
+
+ 6. The following pseudocode is executed using the “Shopping bills” dataset. Let MinT be a
+    variable that holds the value of the minimum total bill amount. What will be the values of
+    A, B, C and D at the end of the execution?                                                [4 Marks]
+
+            Interval = 1021
+            Mid3 = MinT + Interval
+            Mid2 = Mid3 + Interval
+            Mid1 = Mid2 + Interval
+            A = 0, B = 0, C = 0, D = 0
+            while (Pile 1 has more cards) {
+                Read the top card X from Pile 1
+                if (X.TotalBillAmount > Mid1) {
+                     A=A+1
+                }
+                if (X.TotalBillAmount > Mid2) {
+                     B=B+1
+                }
+                if (X.TotalBillAmount > Mid3) {
+                     C=C+1
+                }
+                else {
+                     D=D+1
+                }
+                Move X to Pile 2
+            }
+
+
+
+    Answer: A = 1, B = 3, C = 6 and D = 24 (Numerical input)
+Computational thinking              Graded Assignment Solution of Week - 3                Page 12 of 21
+
+    Solution: In the “Shopping bills” dataset, the minimum total bill amount is 92. Therefore,
+    the variable MinT hold the value 92. The values of the variables Mid1, Mid2 and Mid3 are
+    1113, 2134 and 3155. Tabulate the contents of the dataset and execute it on the pseudocode.
+    In the below table, we refer the column names as follows:
+     #            -   Sequence number
+     TBA          -   Total Bill Amount
+     C1           -   X.TotalBillAmount > Mid1
+     C2           -   X.TotalBillAmount > Mid2
+     C3           -   X.TotalBillAmount > Mid3
+     C3-Else      -   Else part of C3
+
+     #    TBA         C1     C2      C3     C3-Else    A    B    C    D
+     1     567                                True                     1
+     2     1525                     True                          1
+     3     1341                     True                          2
+     4     123                                True                     2
+     5     4174       True   True   True                1    1    3
+     6     354                                True                     3
+     7      96                                True                     4
+     8     3132              True   True                     2    4
+     9     595                                True                     5
+     10    378                                True                     6
+     11    893                                True                     7
+     12    186                                True                     8
+     13    3060              True   True                     3    5
+     14    656                                True                    9
+     15    229                                True                    10
+     16    187                                True                    11
+     17    279                                True                    12
+     18    603                                True                    13
+     19    592                                True                    14
+     20    622                                True                    15
+     21    128                                True                    16
+     22    315                                True                    17
+     23    888                                True                    18
+     24     92                                True                    19
+     25    1364                     True                          6
+     26    276                                True                    20
+     27    340                                True                    21
+     28    514                                True                    22
+     29    106                                True                    23
+     30    798                                True                    24
+    Note that the else in the en of the iteration is the else-part of the immediate if-condition, that
+    is the third if-condition. At the end of the execution, A = 1, B = 3, C = 6 and D = 24
+Computational thinking          Graded Assignment Solution of Week - 3                  Page 13 of 21
+
+ 7. The following pseudocode is executed using the “Shopping bills” dataset to find the number
+    of eligible bills for top three total bill amounts. Choose the correct code block to complete the
+    pseudocode.                                                                                      [3 Marks]
+
+            FirstT = 0, SecondT = 0, ThirdT = 0
+            while (Pile 1 has more cards) {
+                Read the top card X from Pile 1
+                if (X.TotalBillAmount ≥ FirstT) {
+                     ThirdT = SecondT
+                     SecondT = FirstT
+                     FirstT = X.TotalBillAmount
+                }
+                if (X.TotalBillAmount < FirstT and X.TotalBillAmount ≥ SecondT) {
+                     ThirdT = SecondT
+                     SecondT = X.TotalBillAmount
+                }
+                if (X.TotalBillAmount < SecondT and X.TotalBillAmount > ThirdT) {
+                     ThirdT = X.TotalBillAmount
+                }
+                Move X to Pile 2
+            }
+            Count = 0
+            while (Pile 2 has more cards) {
+                Read the top card X from Pile 2
+                *********************
+                *      Fill the code   *
+                *********************
+                Move X to Pile 1
+            }
+
+      a.
+             if (X.TotalBillAmount < ThirdT) {
+                  Count = Count + 1
+             }
+      b.
+             if (X.TotalBillAmount ≥ FirstT) {
+                  Count = Count + 1
+             }
+      c.
+             if (X.TotalBillAmount > ThirdT) {
+                  Count = Count + 1
+             }
+      d.
+            if (X.TotalBillAmount ≥ ThirdT) {
+                 Count = Count + 1
+            }
+      e. None of the above
+Computational thinking          Graded Assignment Solution of Week - 3                   Page 14 of 21
+
+    Solution: The pseudocode consists of two non-nested iterations. In the first iteration, we
+    find the top three distinct total bill amounts from the dataset. In the second iteration, we
+    are counting the number of bills eligible for the top three prizes. A bill is said to be eligible
+    for a price if the total bill amount is at least the third top total bill amount. We increment
+    the count when we encounter such a bill. Therefore, the following code-block completes the
+    pseudocode.
+        if (X.TotalBillAmount ≥ ThirdT) {
+             Count = Count + 1
+        }
+Computational thinking         Graded Assignment Solution of Week - 3                Page 15 of 21
+
+ 8. The following pseudocode is executed using the “Shopping bills” dataset. What will the values
+    of A, B and C represent at the end of the execution?                                         [3 Marks]
+
+            A = 0, B = 0, C = 0
+            while (Pile 1 has more cards) {
+                Read the top card X from Pile 1
+                A, B, C = DoSomething(X, A, B, C)
+                Move X to Pile 2
+            }
+
+            Procedure DoSomething(Y, A, B, C) {
+               if (Y.ShopName == “SV Stores” and Y.TotalBillAmount > A) {
+                    A = Y.TotalBillAmount
+               }
+               if (Y.ShopName == “Big Bazaar” and Y.TotalBillAmount > B) {
+                    B = Y.TotalBillAmount
+               }
+               if (Y.ShopName == “Sun General” and Y.TotalBillAmount > C) {
+                    C = Y.TotalBillAmount
+               }
+               return ([A, B, C])
+            End DoSomething
+
+
+      a. Maximum total bill amount of each customer
+      b. Maximum total bill amount of each shop
+      c. Shop name of the bill with maximum total bill amount
+      d. Maximum total bill amount
+Computational thinking          Graded Assignment Solution of Week - 3                   Page 16 of 21
+
+    Solution: The pseudocode consists of two parts. The first part is the main pseudocode and the
+    second part is the procedure DoSomething. First we consider the procedure DoSomething.
+    The procedure is called with four parameters. The first parameter Y is denoting a card from
+    the data set, and remaining three parameters are integer values. There are three if-conditions
+    in the procedure. For each shop in the shopping bills dataset, the if-condition check whether the
+    bill belong to the shop and the total bill amount is more the integer value given as parameter.
+    In the True case, the integer value is updated with the total bill amount of the shop. at the
+    end, it returns a list of updated integers. The procedure DoSomething captures updates the
+    variable value to the maximum bill total bill amount of the specific shops.
+    In the main pseudocode, thee cards in the Pile 1 are iterated using the iterator X. The variable
+    A, B and C are used to find the maximum total bill amount of each shops respectively. At
+    the end of the execution of the pseudocode, the variables A, B and C capture the Maximum
+    total bill amounts of each shop.
+Computational thinking         Graded Assignment Solution of Week - 3                Page 17 of 21
+
+ 9. The following pseudocode is executed using the “Paragraph words” dataset. At the end of the
+    execution, CountB captures the number of verbs with letter count less than the average letter
+    count of verbs. But the pseudocode may have mistakes in one or more lines. Identify all such
+    lines (if any). It is a Multiple Select Question (MSQ).                                      [6 Marks]
+
+         1     Sum = 0, Count = 0
+         2     while (Pile 1 has more cards) {
+         3         Read the top card X in Pile 1
+         4         Sum, Count = AddIfVerb(X)
+         5         Move X to Pile 2
+         6     }
+         7     AvgT = Sum / Count
+         8     CountB = 0
+         9     while (Pile 2 has more cards) {
+         10        Read the top card X in Pile 2
+         11        if (X.LetterCount < AvgT) {
+         12             CountB = CountB + 1
+         13        }
+         14        Move X to Pile 1
+         15    }
+
+         16    Procedure AddIfVerb (Y, SumT, CountT)
+         17       if (Y.PartOfSpeech == “Verb”) {
+         18            SumT = Y.LetterCount
+         19            CountT = CountT + 1
+         20       }
+         21       return ([SumT, CountT])
+         22    End AddIfVerb
+
+
+
+      a. Error in Line 4
+      b. Error in Line 8
+      c. Error in Line 11
+      d. Error at Line 12
+      e. Error in Line 17
+       f. Error at Line 18
+      g. Error in Line 21
+Computational thinking          Graded Assignment Solution of Week - 3                   Page 18 of 21
+
+    Solution: The objective of the pseudocode is to find the number of verbs with letter count
+    less than the average letter count of the verbs. We have to do the following steps:
+
+      1. To find the average letter count of verbs
+      2. Filter verbs in the data set and count if the letter count is less than the average letter
+         count of verbs
+
+    The procedure AddIfVerb is used to update the variables SumT and CountT, if the current
+    word (passed to the procedure) is a verb. The if-condition checks whether the word is a verb.
+    If the condition is evaluated to True, then we have to add the letter count of the word to
+    the variable SumT, and increment CountT by one. But, the Line 18 is incorrect since it is
+    not adding the letter count. Therefore, Error in Line 18. At the end, it returns the updated
+    SumT and CountT.
+    In the main pseudocode, we compute the sum of letter count and the number of words using
+    the variables Sum and Count. In the the first iteration, the procedure AddIfVerb is called
+    only with the card X. But, the procedure AddIFVerb should be called with X, Sum and
+    Count. Therefore, Error in Line 4.
+    After the first iteration, we store the average letter count of verbs in the variable AvgT. In
+    the second iteration, we have to filter words with part of speech is verb and the letter count is
+    less than the average letter count. But, the if-condition in the iteration checks only the letter
+    count less than the average letter count of verb. It is not checking whether the part of speech
+    is verb. Therefore, Error in Line 11.
+Computational thinking         Graded Assignment Solution of Week - 3               Page 19 of 21
+
+10. The following pseudocode is executed using the “Words” table. What will be the value of A at
+    the end of the execution?                                                                   [6 Marks]
+
+            Sum = 0
+            Count = 0
+            while (Table 1 has more rows) {
+                Read the first row X in Table 1
+                Sum, Count = AddWord(X, Sum, Count)
+                Move X to Table 2
+            }
+            B = Sum / Count
+            Sum = 0, Count = 0, A = 0
+            Move all rows from Table 2 to Table 1
+            while (Table 1 has more rows) {
+                Read the first row X in Table 1
+                Sum, Count = AddWord(X, Sum, Count)
+                if (X.Word ends with a full stop) {
+                     C = Sum / Count
+                     A = DoSomething(C, B, A)
+                     Sum = 0, Count = 0
+                }
+                Move X to Table 2
+            }
+
+            Procedure AddWord (Y, SumT, CountT)
+               SumT = SumT + Y.LetterCount
+               CountT = CountT + 1
+               return ([SumT, CountT])
+            End AddWord
+
+            Procedure DoSomething (P, Q, R)
+               if (P < Q) {
+                    return (R + 1)
+               }
+               else {
+                    return (R)
+               }
+            End DoSomething
+
+    A=          (Numerical input)
+Computational thinking         Graded Assignment Solution of Week - 3                 Page 20 of 21
+
+    Solution: The pseudocode consists of three parts, namely – the main pseudocode and two
+    procedures AddWord and DoSomething. First, we consider the procedure Addword. It is
+    called with three parameters Y, SumT and CountT. the procedure adds the letter count of
+    the word Y to SumT and increment CountT by one. Then, it returns the updated SumT and
+    CountT. Therefore, the procedure AddWord sums the letter count of the first parameter to
+    the second parameter and increment the third parameter.
+    In the main pseudocode consists of two non-nested iterations. In the first iteration, we use
+    iterator X to iterate rows in Table 1. In each step of the iteration, we call the procedure
+    AddWord with the parameters X, Sum and Count. The return value is stored in the
+    variable Sum and Count. That is, the variable Sum is added with the letter count of current
+    word and Count is incremented by one in each step. At the end of the iteration, the variable
+    Sum and Count captures the sum of letter count and the numbe rof words in the data set.
+     #          Word      LC   Sum    Count      #         Word         LC   Sum   Count
+      0           It       2     2      1        33          the         3   173    34
+      1          was       3     5      2        34      Monday          6   179    35
+      2       Monday       6    11      3        35        mood          4   183    36
+      3      morning.      7    18      4        36           of         2   185    37
+      4    Swaminathan    11    29      5        37         work         4   189    38
+      5          was       3    32      6        38         and          3   192    39
+      6      reluctant     9    41      7        39     discipline.     10   202    40
+      7           to       2    43      8        40          He          2   204    41
+      8         open       4    47      9        41     shuddered        9   213    42
+      9          his       3    50     10        42           at         2   215    43
+     10         eyes.      4    54     11        43          the         3   218    44
+     11          He        2    56     12        44         very         4   222    45
+     12     considered    10    66     13        45      thought         7   229    46
+     13       Monday       6    72     14        46           of         2   231    47
+     14      specially     9    81     15        47       school:        6   237    48
+     15     unpleasant    10    91     16        48          the         3   240    49
+     16           in       2    93     17        49       dismal         6   246    50
+     17          the       3    96     18        50        yellow        6   252    51
+     18      calendar.     8   104     19        51      building;       8   260    52
+     19         After      5   109     20        52          the         3   263    53
+     20          the       3   112     21        53      fire-eyed       8   271    54
+     21      delicious     9   121     22        54   Vedanayagam,      11   282    55
+     22       freedom      7   128     23        55          his         3   285    56
+     23           of       2   130     24        56         class        5   290    57
+     24      Saturday      8   138     25        57      teacher,        7   297    58
+     25         And        3   141     26        58         and          3   300    59
+     26       Sunday,      6   147     27        59    headmaster       10   310    60
+     27           it       2   149     28        60         with         4   314    61
+     28          was       3   152     29        61          his         3   317    62
+     29       difficult    9   161     30        62         thin         4   321    63
+     30           to       2   163     31        63         long         4   325    64
+     31          get       3   166     32        64        cane...       4   329    65
+     32         into       4   170     33
+Computational thinking           Graded Assignment Solution of Week - 3                    Page 21 of 21
+
+    Tabulate the content of the data set and execute it on the pseudocode. At the end of the
+    execution, Sum = 329 and Count = 65. Therefore, B = 329 / 65 ≃ 5.06.
+    In the second iteration, we find average letter count of each sentence. In the if-condition inside
+    the iteration, we check whether the current word is the end of the sentence. If the condition
+    evaluates to True, then we call the procedureDoSomething to check whether the average
+    letter count of the current sentence less than the average letter count of the data set. The
+    variable A is incremented for each sentence with average letter count less than the average
+    letter count of the dataset. The variable A captures the number of sentences with average
+    letter count less than average letter count of the dataset. In the dataset, there are five sentences
+    with average letter count 4.5, 5.14, 6.25, 4.67 and 5.08. Therefore the value of the variable
+    A is 2.
+

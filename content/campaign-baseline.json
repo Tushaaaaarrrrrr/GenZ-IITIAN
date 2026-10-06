@@ -1,0 +1,26 @@
+{
+  "source_commit": "8e1257b13fcba3d9db805f473a99eca32a3a3f84",
+  "server_span_start": "app.post('/api/create-order'",
+  "server_span_end": "// Explicit application routes and published public documents, with real status codes.",
+  "sha256": "051ef5b303f4a045c6e991df8ed28798be6227ee3e80e21a8887c6c6c800c104",
+  "paths": [
+    "/courses",
+    "/courses/:id",
+    "/checkout/:slug?courseId=:id",
+    "/cart",
+    "/api/create-order",
+    "/api/auto-enroll",
+    "/api/verify-payment",
+    "/api/razorpay-webhook",
+    "/api/referral",
+    "/api/referral/validate"
+  ],
+  "query_parameters": [
+    "ref",
+    "courseId",
+    "utm_*",
+    "gclid",
+    "fbclid",
+    "msclkid"
+  ]
+}

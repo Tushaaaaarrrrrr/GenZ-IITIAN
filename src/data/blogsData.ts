@@ -8,6 +8,16 @@ export interface BlogPost {
   date: string;
   read_time: string;
   published: number;
+  summary?: string;
+  author?: string | null;
+  reviewer?: string | null;
+  source_references?: {title:string;url:string}[];
+  last_verified_at?: string | null;
+  published_at?: string | null;
+  modified_at?: string | null;
+  image_alt?: string;
+  created_at?: string;
+  updated_at?: string;
   seo_title?: string;
   seo_description?: string;
   seo_keywords?: string;

@@ -9,7 +9,7 @@ import MobileHome from '../components/mobile/MobileHome';
 import OneOnOnePromoBanner from '../components/OneOnOnePromoBanner';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { BlogPost, fallbackBlogs } from '../data/blogsData';
+import { BlogPost } from '../data/blogsData';
 import { getYouTubeId } from '../utils/youtube';
 
 function AnimatedNumber({ value, decimals = 0, suffix = "" }: { value: number, decimals?: number, suffix?: string }) {
@@ -50,7 +50,7 @@ export default function Home() {
   const { isManager } = useAuth();
   const [courses, setCourses] = useState<CourseCardData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [blogPosts, setBlogPosts] = useState<BlogPost[]>(fallbackBlogs);
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const reviewsRef = useRef<HTMLDivElement>(null);
   
   const [showVideoModal, setShowVideoModal] = useState(false);
@@ -99,13 +99,7 @@ export default function Home() {
 
   useEffect(() => {
     fetchCourses();
-    // Blogs now come from Supabase (managed in Manager → Blogs).
-    supabase
-      .from('blogs')
-      .select('*')
-      .eq('published', 1)
-      .order('created_at', { ascending: false })
-      .then(({ data }) => { if (Array.isArray(data) && data.length > 0) setBlogPosts(data as BlogPost[]); });
+    fetch('/api/blogs').then(r=>{if(!r.ok)throw new Error('Unavailable');return r.json();}).then(setBlogPosts).catch(()=>setBlogPosts([]));
   }, []);
 
   const fetchCourses = async () => {

@@ -45,3 +45,8 @@ Thumbs.db
 restore-original.sh
 apply-endterm-idea.sh
 
+
+# Public SSR bundle and local QA artifacts
+dist-server/
+review/browser/*.png
+review/assignments/*.png

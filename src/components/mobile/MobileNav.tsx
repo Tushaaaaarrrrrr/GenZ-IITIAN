@@ -13,7 +13,7 @@ type Tab = {
 
 const TABS: Tab[] = [
   { id: 'home', label: 'Home', to: '/', Icon: HomeIcon },
-  { id: 'resources', label: 'Resources', to: '/resources', Icon: FolderOpen, match: ['/resources', '/syllabus', '/graded-assignment', '/blog', '/docs'] },
+  { id: 'resources', label: 'Resources', to: '/iitm-bs/resources', Icon: FolderOpen, match: ['/iitm-bs/resources', '/syllabus', '/iitm-bs/graded-assignment', '/blog', '/docs'] },
   { id: 'courses', label: 'Courses', to: '/courses', Icon: GraduationCap, center: true, match: ['/courses', '/checkout'] },
   { id: 'ecosystem', label: 'Ecosystem', to: '/ecosystem', Icon: Boxes },
   { id: 'menu', label: 'Menu', to: '/menu', Icon: MenuIcon, match: ['/menu', '/about', '/contact', '/newsletter', '/profile', '/privacy', '/terms', '/refund', '/refer'] },

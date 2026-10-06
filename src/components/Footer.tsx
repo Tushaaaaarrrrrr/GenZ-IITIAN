@@ -41,7 +41,7 @@ export default function Footer() {
               <h4 className="text-xl font-black text-white mb-6">Additional Links</h4>
               <ul className="space-y-4">
                 <li><Link to="/courses" className="text-gray-400 font-bold hover:text-[#10b981] transition-colors">Courses</Link></li>
-                <li><Link to="/resources" className="text-gray-400 font-bold hover:text-[#10b981] transition-colors">Resources</Link></li>
+                <li><Link to="/iitm-bs/resources" className="text-gray-400 font-bold hover:text-[#10b981] transition-colors">Resources</Link></li>
                 <li><Link to="/tools/cgpa-calculator" className="text-gray-400 font-bold hover:text-[#10b981] transition-colors">CGPA Calculator</Link></li>
                 <li><Link to="/tools/grade-predictor" className="text-gray-400 font-bold hover:text-[#10b981] transition-colors">Grade Predictor</Link></li>
                 <li><Link to="/blog" className="text-gray-400 font-bold hover:text-[#10b981] transition-colors">Blog</Link></li>
