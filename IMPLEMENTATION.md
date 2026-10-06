@@ -62,7 +62,7 @@ The script blocks external services, mocks course reads, and prevents payment/en
 
 Use a staging database and retain a database backup. Do not point transaction tests at production payments or email webhooks.
 
-1. Apply `migrations/20261006-public-seo.sql` in the Supabase SQL editor. It assumes the existing `public.is_manager()` helper and the source's schema: `blogs.published` is INTEGER; `resources.published` and `pseo_pages.published` are BOOLEAN. Verify these types and manager access first. The migration fails visibly if an existing schema is incompatible.
+1. Apply `migrations/20261006-public-seo.sql` in the Supabase SQL editor. It assumes the existing `public.is_manager()` helper and the source's schema: `blogs.published` is INTEGER; `resources.published` and `pseo_pages.published` are BOOLEAN. Verify these types and manager access first. The migration creates missing `resources` and pSEO tables with draft defaults, publication policies and explicit API grants. Existing tables and records are retained. It fails visibly if an existing publication type is incompatible.
 2. Run the read-only public inventory audit with deployment credentials:
 
 ```sh
@@ -117,3 +117,9 @@ Live database migration/seeding, Hostinger deployment, actual gateway/analytics 
 ## GitHub integration
 
 The GitHub branch includes the latest main changes through `641674df198235164121873a0faf4b6e058ca11f`. The existing careers API phone-field typo in both Express and the standalone API (`candidatePhone`) was corrected to use the validated `cleanPhone`; no course or payment behavior was changed. `seo-baseline.json` records the protected files from that upstream commit so campaign verification runs from a fresh checkout.
+
+## Recovering a missing resources table
+
+If the SQL editor reported `42P01: relation "public.resources" does not exist`, use the corrected **entire** `migrations/20261006-public-seo.sql` and run it again. Its transaction creates missing resource/knowledge tables before applying policies, and reruns preserve existing records. If the editor still has an aborted transaction, run `ROLLBACK;` first. No existing local SQLite resources are automatically imported or published; use reviewed content through the manager or a separate verified import. Then continue with `npm run audit:public` and `npm run seed:editorial`.
+
+Migration regression checks can be run with `bash scripts/test-seo-migration.sh` when local PostgreSQL tools and `rg` are available. This starts a disposable local instance and checks missing tables, safe reruns, publication defaults, anonymous/manager/service access and incompatible-schema failure; it never uses deployment credentials.
