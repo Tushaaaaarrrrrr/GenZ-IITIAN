@@ -1,6 +1,6 @@
 # GenZ IITian SEO, AEO and GEO implementation
 
-Implemented in an isolated copy of source commit `8e1257b13fcba3d9db805f473a99eca32a3a3f84`. The original Downloads checkout is unchanged. This is a local implementation and tested handoff; it has not been deployed or applied to your live database.
+Implemented in an isolated copy of source commit `8e1257b13fcba3d9db805f473a99eca32a3a3f84`. Merged with GitHub main `641674df198235164121873a0faf4b6e058ca11f` before publishing, retaining the newer course, checkout, careers and authentication changes. The original Downloads checkout is unchanged. This is a local implementation and tested handoff; it has not been deployed or applied to your live database.
 
 ## What is included
 
@@ -108,8 +108,12 @@ Review nonbrand clicks, comparison queries, AI citations/referrals and qualified
 
 - TypeScript check passed.
 - Client and SSR production builds passed.
-- 76 Vitest tests passed, including the 33 existing grading tests.
+- 78 Vitest tests passed, including the 33 existing grading tests.
 - Browser fixture regression passed, including mocked course detail, checkout and cart checks; no real payment or enrolment calls.
-- Twelve protected campaign files are byte-for-byte unchanged; the payment/enrolment/referral server-handler span also matches the original source hash.
+- Twenty protected campaign/application files are byte-for-byte unchanged; the payment/enrolment/referral server-handler segments also match the original source hash.
 
 Live database migration/seeding, Hostinger deployment, actual gateway/analytics verification, crawler/CDN access and Search Console/Bing checks have not been performed because deployment/account access is not available in this workspace.
+
+## GitHub integration
+
+The GitHub branch includes the latest main changes through `641674df198235164121873a0faf4b6e058ca11f`. The existing careers API phone-field typo in both Express and the standalone API (`candidatePhone`) was corrected to use the validated `cleanPhone`; no course or payment behavior was changed. `seo-baseline.json` records the protected files from that upstream commit so campaign verification runs from a fresh checkout.

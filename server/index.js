@@ -755,6 +755,43 @@ function saveBookingsToFile() {
 // Initial load on server start
 loadBookingsFromFile();
 
+// --- JOB APPLICATIONS PERSISTENCE ---
+const APPLICATIONS_FILE = path.join(__dirname, 'data', 'job_applications.json');
+const memoryJobApplications = new Map();
+
+function loadApplicationsFromFile() {
+    try {
+        if (fs.existsSync(APPLICATIONS_FILE)) {
+            const raw = fs.readFileSync(APPLICATIONS_FILE, 'utf-8');
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+                for (const app of parsed) {
+                    if (app && app.id) {
+                        memoryJobApplications.set(app.id, app);
+                    }
+                }
+            }
+        }
+    } catch (err) {
+        console.warn('[Job Applications] Error reading applications file:', err.message);
+    }
+}
+
+function saveApplicationsToFile() {
+    try {
+        const dir = path.dirname(APPLICATIONS_FILE);
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+        const list = Array.from(memoryJobApplications.values());
+        fs.writeFileSync(APPLICATIONS_FILE, JSON.stringify(list, null, 2), 'utf-8');
+    } catch (err) {
+        console.warn('[Job Applications] Error writing applications file:', err.message);
+    }
+}
+
+loadApplicationsFromFile();
+
 // Helper to dispatch 1:1 webhook to Google Apps Script
 async function dispatch1on1Webhook(payload) {
     const webhookUrl = 
@@ -890,6 +927,8 @@ app.post('/api/book-1on1-slot', async (req, res) => {
             slot_date: slot_date || 'Upcoming',
             slot_time: slot_time || '15-min consultation',
             plan: plan || '1:1 Personalised Teaching',
+            user_notes: notes || '',
+            manager_notes: '',
             notes: notes || '',
             status: 'CONFIRMED',
             created_at: new Date().toISOString(),
@@ -900,40 +939,45 @@ app.post('/api/book-1on1-slot', async (req, res) => {
         memory1on1Bookings.set(bookingId, bookingRecord);
         saveBookingsToFile();
 
-        // 1. Supabase Activity Log & Table Entry
-        if (supabase) {
-            try {
-                const { error: logErr } = await supabase.from('activity_logs').insert({
-                    email: bookingRecord.email,
-                    action: '1ON1_SLOT_BOOKED',
-                    metadata: {
-                        ...bookingRecord,
-                        bcc
-                    }
-                });
-                if (logErr) console.warn('[1:1 Booking] activity_logs notice:', logErr.message);
-            } catch (e) {
-                console.warn('[1:1 Booking] activity_logs notice:', e.message);
-            }
-
-            try {
-                const { error: bookingErr } = await supabase.from('one_on_one_bookings').insert(bookingRecord);
-                if (bookingErr) console.warn('[1:1 Booking] one_on_one_bookings notice:', bookingErr.message);
-            } catch (e) {
-                console.warn('[1:1 Booking] one_on_one_bookings notice:', e.message);
-            }
-        }
-
-        // 2. Trigger Webhook for Booked Mail + BCC to genziitian@gmail.com
-        await dispatch1on1Webhook({
-            type: 'one_on_one_booking',
-            ...bookingRecord
-        });
-
+        // Confirm the student immediately. Email + remote sync run after the response.
         res.json({
             success: true,
-            message: '1:1 Slot booked successfully. Confirmation email sent.',
+            message: '1:1 Slot booked successfully. Confirmation email is on its way.',
             booking: bookingRecord
+        });
+
+        setImmediate(() => {
+            (async () => {
+                if (supabase) {
+                    try {
+                        const { error: logErr } = await supabase.from('activity_logs').insert({
+                            email: bookingRecord.email,
+                            action: '1ON1_SLOT_BOOKED',
+                            metadata: {
+                                ...bookingRecord,
+                                bcc
+                            }
+                        });
+                        if (logErr) console.warn('[1:1 Booking] activity_logs notice:', logErr.message);
+                    } catch (e) {
+                        console.warn('[1:1 Booking] activity_logs notice:', e.message);
+                    }
+
+                    try {
+                        const { error: bookingErr } = await supabase.from('one_on_one_bookings').insert(bookingRecord);
+                        if (bookingErr) console.warn('[1:1 Booking] one_on_one_bookings notice:', bookingErr.message);
+                    } catch (e) {
+                        console.warn('[1:1 Booking] one_on_one_bookings notice:', e.message);
+                    }
+                }
+
+                await dispatch1on1Webhook({
+                    type: 'one_on_one_booking',
+                    ...bookingRecord
+                });
+            })().catch((err) => {
+                console.error('[1:1 Booking] Background sync/email failed:', err?.message || err);
+            });
         });
     } catch (err) {
         console.error('[1:1 Booking] Error:', err);
@@ -1077,7 +1121,9 @@ app.get('/api/1on1-bookings', async (req, res) => {
                                 slot_date: meta.slot_date || 'Upcoming',
                                 slot_time: meta.slot_time || '15-min consultation',
                                 plan: meta.plan || '1:1 Personalised Teaching',
-                                notes: meta.notes || '',
+                                notes: meta.notes || meta.user_notes || '',
+                                user_notes: meta.user_notes || meta.notes || '',
+                                manager_notes: meta.manager_notes || '',
                                 status: meta.status || 'CONFIRMED',
                                 created_at: meta.created_at || log.created_at || new Date().toISOString(),
                                 updated_at: meta.updated_at || log.created_at || new Date().toISOString()
@@ -1085,18 +1131,25 @@ app.get('/api/1on1-bookings', async (req, res) => {
                         } else if (log.action === '1ON1_SLOT_CANCELLED' && logMap.has(bId)) {
                             const b = logMap.get(bId);
                             b.status = 'CANCELLED';
-                            if (meta.reason) b.notes = meta.reason;
+                            if (meta.manager_notes || meta.reason) {
+                                b.manager_notes = meta.manager_notes || meta.reason;
+                            }
                             b.updated_at = log.created_at;
                         } else if (log.action === '1ON1_SLOT_RESCHEDULED' && logMap.has(bId)) {
                             const b = logMap.get(bId);
                             b.status = 'RESCHEDULED';
                             if (meta.new_slot_date) b.slot_date = meta.new_slot_date;
                             if (meta.new_slot_time) b.slot_time = meta.new_slot_time;
+                            if (meta.manager_notes || meta.reason) {
+                                b.manager_notes = meta.manager_notes || meta.reason;
+                            }
                             b.updated_at = log.created_at;
                         } else if (log.action === '1ON1_STATUS_UPDATED' && logMap.has(bId)) {
                             const b = logMap.get(bId);
                             if (meta.status) b.status = meta.status;
-                            if (meta.notes) b.notes = meta.notes;
+                            if (meta.manager_notes !== undefined) {
+                                b.manager_notes = meta.manager_notes;
+                            }
                             b.updated_at = log.created_at;
                         }
                     }
@@ -1133,7 +1186,11 @@ app.get('/api/1on1-bookings', async (req, res) => {
         });
         saveBookingsToFile();
 
-        const sorted = Array.from(combinedMap.values()).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        const sorted = Array.from(combinedMap.values()).map(b => ({
+            ...b,
+            user_notes: b.user_notes || b.notes || '',
+            manager_notes: b.manager_notes || ''
+        })).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
         res.json({ success: true, bookings: sorted });
     } catch (err) {
         console.error('[1:1 Get Bookings] Error:', err);
@@ -1144,25 +1201,35 @@ app.get('/api/1on1-bookings', async (req, res) => {
 // CANCEL 1:1 BOOKING (By Student or Manager)
 app.post('/api/1on1-bookings/cancel', async (req, res) => {
     try {
-        const { id, email, reason = 'Cancelled by student' } = req.body || {};
+        const { id, email, reason = 'Cancelled by student', manager_notes } = req.body || {};
         if (!id) return res.status(400).json({ error: 'Booking ID is required' });
 
         let booking = memory1on1Bookings.get(id);
+        const cancellationNote = manager_notes || reason || 'Cancelled';
 
         if (supabase) {
             const { data } = await supabase.from('one_on_one_bookings').select('*').eq('id', id).maybeSingle();
-            if (data) booking = data;
+            if (data) booking = { ...booking, ...data };
 
-            await supabase.from('one_on_one_bookings')
-                .update({ status: 'CANCELLED', notes: reason, updated_at: new Date().toISOString() })
-                .eq('id', id);
+            try {
+                await supabase.from('one_on_one_bookings')
+                    .update({ status: 'CANCELLED', updated_at: new Date().toISOString() })
+                    .eq('id', id);
+            } catch (supaErr) {}
 
             if (booking) {
                 try {
                     await supabase.from('activity_logs').insert({
                         email: booking.email,
                         action: '1ON1_SLOT_CANCELLED',
-                        metadata: { id, reason, slot_date: booking.slot_date, slot_time: booking.slot_time }
+                        metadata: { 
+                            id, 
+                            reason: cancellationNote, 
+                            manager_notes: cancellationNote,
+                            user_notes: booking.user_notes || booking.notes || '',
+                            slot_date: booking.slot_date, 
+                            slot_time: booking.slot_time 
+                        }
                     });
                 } catch (e) {}
             }
@@ -1170,7 +1237,8 @@ app.post('/api/1on1-bookings/cancel', async (req, res) => {
 
         if (booking) {
             booking.status = 'CANCELLED';
-            booking.notes = reason;
+            booking.manager_notes = cancellationNote;
+            booking.user_notes = booking.user_notes || booking.notes || '';
             booking.updated_at = new Date().toISOString();
             memory1on1Bookings.set(id, booking);
             saveBookingsToFile();
@@ -1179,11 +1247,11 @@ app.post('/api/1on1-bookings/cancel', async (req, res) => {
             await dispatch1on1Webhook({
                 type: 'one_on_one_cancelled',
                 ...booking,
-                reason
+                reason: cancellationNote
             });
         }
 
-        res.json({ success: true, message: 'Booking cancelled successfully. Cancellation email sent.' });
+        res.json({ success: true, message: 'Booking cancelled successfully. Cancellation email sent.', booking });
     } catch (err) {
         console.error('[1:1 Cancel] Error:', err);
         res.status(500).json({ error: 'Failed to cancel booking' });
@@ -1193,7 +1261,7 @@ app.post('/api/1on1-bookings/cancel', async (req, res) => {
 // RESCHEDULE 1:1 BOOKING (By Student or Manager)
 app.post('/api/1on1-bookings/reschedule', async (req, res) => {
     try {
-        const { id, new_slot_date, new_slot_time, reason = 'Rescheduled' } = req.body || {};
+        const { id, new_slot_date, new_slot_time, reason = 'Rescheduled', manager_notes } = req.body || {};
         if (!id || !new_slot_date || !new_slot_time) {
             return res.status(400).json({ error: 'Booking ID, new date, and new slot time are required' });
         }
@@ -1201,28 +1269,39 @@ app.post('/api/1on1-bookings/reschedule', async (req, res) => {
         let booking = memory1on1Bookings.get(id);
         let previous_slot_date = '';
         let previous_slot_time = '';
+        const rescheduleNote = manager_notes || reason || 'Rescheduled';
 
         if (supabase) {
             const { data } = await supabase.from('one_on_one_bookings').select('*').eq('id', id).maybeSingle();
             if (data) {
-                booking = data;
+                booking = { ...booking, ...data };
                 previous_slot_date = data.slot_date;
                 previous_slot_time = data.slot_time;
             }
 
-            await supabase.from('one_on_one_bookings').update({
-                slot_date: new_slot_date,
-                slot_time: new_slot_time,
-                status: 'RESCHEDULED',
-                updated_at: new Date().toISOString()
-            }).eq('id', id);
+            try {
+                await supabase.from('one_on_one_bookings').update({
+                    slot_date: new_slot_date,
+                    slot_time: new_slot_time,
+                    status: 'RESCHEDULED',
+                    updated_at: new Date().toISOString()
+                }).eq('id', id);
+            } catch (supaErr) {}
 
             if (booking) {
                 try {
                     await supabase.from('activity_logs').insert({
                         email: booking.email,
                         action: '1ON1_SLOT_RESCHEDULED',
-                        metadata: { id, previous_slot_date, previous_slot_time, new_slot_date, new_slot_time }
+                        metadata: { 
+                            id, 
+                            previous_slot_date, 
+                            previous_slot_time, 
+                            new_slot_date, 
+                            new_slot_time,
+                            manager_notes: rescheduleNote,
+                            user_notes: booking.user_notes || booking.notes || ''
+                        }
                     });
                 } catch (e) {}
             }
@@ -1234,6 +1313,8 @@ app.post('/api/1on1-bookings/reschedule', async (req, res) => {
             booking.slot_date = new_slot_date;
             booking.slot_time = new_slot_time;
             booking.status = 'RESCHEDULED';
+            booking.manager_notes = rescheduleNote;
+            booking.user_notes = booking.user_notes || booking.notes || '';
             booking.updated_at = new Date().toISOString();
             memory1on1Bookings.set(id, booking);
             saveBookingsToFile();
@@ -1246,11 +1327,11 @@ app.post('/api/1on1-bookings/reschedule', async (req, res) => {
                 previous_slot_time,
                 new_slot_date,
                 new_slot_time,
-                reason
+                reason: rescheduleNote
             });
         }
 
-        res.json({ success: true, message: 'Booking rescheduled successfully. Confirmation email sent.' });
+        res.json({ success: true, message: 'Booking rescheduled successfully. Confirmation email sent.', booking });
     } catch (err) {
         console.error('[1:1 Reschedule] Error:', err);
         res.status(500).json({ error: 'Failed to reschedule booking' });
@@ -1260,40 +1341,404 @@ app.post('/api/1on1-bookings/reschedule', async (req, res) => {
 // UPDATE 1:1 BOOKING STATUS (By Manager)
 app.post('/api/1on1-bookings/update-status', async (req, res) => {
     try {
-        const { id, status, notes = '' } = req.body || {};
+        const { id, status, manager_notes, notes } = req.body || {};
         if (!id || !status) return res.status(400).json({ error: 'ID and status are required' });
 
         let booking = memory1on1Bookings.get(id);
+        const resolvedManagerNote = manager_notes !== undefined ? manager_notes : (notes !== undefined ? notes : (booking?.manager_notes || ''));
 
         if (supabase) {
             const { data } = await supabase.from('one_on_one_bookings').select('*').eq('id', id).maybeSingle();
-            if (data) booking = data;
+            if (data) booking = { ...booking, ...data };
 
-            await supabase.from('one_on_one_bookings').update({
-                status,
-                notes: notes || undefined,
-                updated_at: new Date().toISOString()
-            }).eq('id', id);
+            try {
+                await supabase.from('one_on_one_bookings').update({
+                    status,
+                    updated_at: new Date().toISOString()
+                }).eq('id', id);
+            } catch (supaErr) {}
+
+            try {
+                await supabase.from('activity_logs').insert({
+                    email: booking?.email,
+                    action: '1ON1_STATUS_UPDATED',
+                    metadata: { 
+                        id, 
+                        status, 
+                        manager_notes: resolvedManagerNote, 
+                        user_notes: booking?.user_notes || booking?.notes || '' 
+                    }
+                });
+            } catch (e) {}
         }
 
         if (booking) {
             booking.status = status;
-            if (notes) booking.notes = notes;
+            booking.manager_notes = resolvedManagerNote;
+            booking.user_notes = booking.user_notes || booking.notes || '';
             booking.updated_at = new Date().toISOString();
             memory1on1Bookings.set(id, booking);
             saveBookingsToFile();
 
             if (status === 'CANCELLED') {
-                dispatch1on1Webhook({ type: 'one_on_one_cancelled', ...booking, reason: notes || 'Cancelled by manager' });
+                dispatch1on1Webhook({ type: 'one_on_one_cancelled', ...booking, reason: resolvedManagerNote || 'Cancelled by manager' });
             } else if (status === 'RESCHEDULED') {
                 dispatch1on1Webhook({ type: 'one_on_one_rescheduled', ...booking });
             }
         }
 
-        res.json({ success: true, message: `Booking status updated to ${status}` });
+        res.json({ success: true, message: `Booking status updated to ${status}`, booking });
     } catch (err) {
         console.error('[1:1 Update Status] Error:', err);
         res.status(500).json({ error: 'Failed to update status' });
+    }
+});
+
+// UPDATE 1:1 BOOKING MANAGER NOTES ONLY (By Manager)
+app.post('/api/1on1-bookings/update-notes', async (req, res) => {
+    try {
+        const { id, manager_notes = '' } = req.body || {};
+        if (!id) return res.status(400).json({ error: 'ID is required' });
+
+        let booking = memory1on1Bookings.get(id);
+
+        if (supabase) {
+            const { data } = await supabase.from('one_on_one_bookings').select('*').eq('id', id).maybeSingle();
+            if (data) booking = { ...booking, ...data };
+
+            try {
+                await supabase.from('activity_logs').insert({
+                    email: booking?.email,
+                    action: '1ON1_STATUS_UPDATED',
+                    metadata: { 
+                        id, 
+                        status: booking?.status, 
+                        manager_notes, 
+                        user_notes: booking?.user_notes || booking?.notes || '' 
+                    }
+                });
+            } catch (e) {}
+        }
+
+        if (booking) {
+            booking.manager_notes = manager_notes;
+            booking.user_notes = booking.user_notes || booking.notes || '';
+            booking.updated_at = new Date().toISOString();
+            memory1on1Bookings.set(id, booking);
+            saveBookingsToFile();
+        }
+
+        res.json({ success: true, message: 'Notes saved successfully', booking });
+    } catch (err) {
+        console.error('[1:1 Update Notes] Error:', err);
+        res.status(500).json({ error: 'Failed to update notes' });
+    }
+});
+
+// ==========================================
+// JOB APPLICATIONS (Subject Tutors & Campus Leaders)
+// ==========================================
+
+// 1. SUBMIT APPLICATION
+app.post('/api/job-applications', async (req, res) => {
+    try {
+        const {
+            role,
+            role_title,
+            full_name,
+            name,
+            email,
+            phone,
+            age,
+            gender,
+            student_type,
+            studentType,
+            degree_level,
+            degreeLevel,
+            courses,
+            has_tablet,
+            hasTablet,
+            experience_and_why,
+            experienceAndWhy,
+            is_iitm,
+            isIITM,
+            level,
+            subject,
+            language,
+            cgpa,
+            resume_link,
+            resumeLink,
+            official_email,
+            officialEmail,
+            is_bs_student,
+            isBSStudent,
+            is_group_owner,
+            isGroupOwner,
+            group_link,
+            groupLink,
+            group_members,
+            groupMembers,
+            inquiries,
+            metadata = {}
+        } = req.body || {};
+
+        const candidateName = (full_name || name || '').trim();
+        const candidateEmail = (email || '').trim().toLowerCase();
+        const rawPhone = (phone || '').trim();
+        const cleanPhone = rawPhone.replace(/\D/g, '').slice(-10);
+
+        if (!candidateName || !candidateEmail) {
+            return res.status(400).json({ error: 'Name and email are required.' });
+        }
+
+        // Name can only be letters and spaces
+        if (!/^[a-zA-Z\s.]+$/.test(candidateName)) {
+            return res.status(400).json({ error: 'Full name can only contain letters.' });
+        }
+
+        // Phone must be 10 digits starting with 6-9
+        if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
+            return res.status(400).json({ error: 'Phone number must be a valid 10-digit number starting with 6-9.' });
+        }
+
+        // Age must be between 15 and 100
+        if (age !== undefined && age !== null && String(age).trim() !== '') {
+            const numAge = parseInt(String(age), 10);
+            if (isNaN(numAge) || numAge < 15 || numAge > 100) {
+                return res.status(400).json({ error: 'Age must be between 15 and 100.' });
+            }
+        }
+
+        const appId = `app-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+        const resolvedRole = role || (role_title?.toLowerCase().includes('campus') ? 'campus-leader' : 'tutor');
+        const resolvedRoleTitle = role_title || (resolvedRole === 'campus-leader' ? 'Campus Leaders' : 'Subject Tutor (Faculty)');
+
+        const applicationRecord = {
+            id: appId,
+            role: resolvedRole,
+            role_title: resolvedRoleTitle,
+            full_name: candidateName,
+            email: candidateEmail,
+            phone: cleanPhone,
+
+            // Personal & Background profile
+            age: age || null,
+            gender: gender || null,
+            student_type: student_type || studentType || null,
+            degree_level: degree_level || degreeLevel || null,
+
+            // Tutor specific
+            courses: Array.isArray(courses) ? courses : (courses ? [courses] : []),
+            has_tablet: has_tablet || hasTablet || null,
+            experience_and_why: experience_and_why || experienceAndWhy || null,
+            is_iitm: is_iitm || isIITM || null,
+            level: level || degree_level || degreeLevel || null,
+            subject: subject || (Array.isArray(courses) && courses.length > 0 ? courses.join(', ') : null),
+            language: language || null,
+            cgpa: cgpa || null,
+            resume_link: resume_link || resumeLink || null,
+
+            // Campus Leader specific
+            official_email: official_email || officialEmail || null,
+            is_bs_student: is_bs_student || isBSStudent || null,
+            is_group_owner: is_group_owner || isGroupOwner || null,
+            group_link: group_link || groupLink || null,
+            group_members: group_members || groupMembers || null,
+            inquiries: inquiries || null,
+
+            metadata: {
+                ...metadata,
+                submitted_at: new Date().toISOString()
+            },
+            status: 'PENDING',
+            manager_notes: '',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        };
+
+        // 1. In-memory & local file persistence
+        memoryJobApplications.set(appId, applicationRecord);
+        saveApplicationsToFile();
+
+        // 2. Supabase storage
+        if (supabase) {
+            try {
+                const { error: insErr } = await supabase.from('job_applications').insert([applicationRecord]);
+                if (insErr) {
+                    console.warn('[Job Applications Server] Table insert notice:', insErr.message);
+                }
+            } catch (e) {
+                console.warn('[Job Applications Server] Supabase insert warning:', e.message);
+            }
+
+            try {
+                await supabase.from('activity_logs').insert({
+                    email: candidateEmail,
+                    action: 'JOB_APPLICATION_SUBMITTED',
+                    metadata: applicationRecord
+                });
+            } catch (e) {
+                console.warn('[Job Applications Server] activity_logs warning:', e.message);
+            }
+        }
+
+        console.log(`[Job Application] New application received: ${candidateName} (${candidateEmail}) for ${resolvedRoleTitle}`);
+
+        res.json({
+            success: true,
+            message: 'Application recorded successfully',
+            application: applicationRecord
+        });
+    } catch (err) {
+        console.error('[Job Application Submit] Error:', err);
+        res.status(500).json({ error: 'Internal server error recording application' });
+    }
+});
+
+// 2. GET ALL APPLICATIONS (For Manager Portal)
+app.get('/api/job-applications', async (req, res) => {
+    try {
+        loadApplicationsFromFile();
+        const appMap = new Map();
+
+        // Load from local memory file first
+        for (const [id, app] of memoryJobApplications.entries()) {
+            appMap.set(id, app);
+        }
+
+        // Merge from Supabase table if available
+        if (supabase) {
+            try {
+                const { data, error } = await supabase
+                    .from('job_applications')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (!error && Array.isArray(data)) {
+                    for (const row of data) {
+                        if (row && row.id) {
+                            appMap.set(row.id, { ...(appMap.get(row.id) || {}), ...row });
+                        }
+                    }
+                }
+            } catch (e) {}
+
+            // Merge from activity_logs fallback
+            try {
+                const { data: logs } = await supabase
+                    .from('activity_logs')
+                    .select('*')
+                    .eq('action', 'JOB_APPLICATION_SUBMITTED')
+                    .order('created_at', { ascending: false });
+
+                if (Array.isArray(logs)) {
+                    for (const log of logs) {
+                        const meta = log.metadata || {};
+                        const bId = meta.id || `log-${log.id}`;
+                        if (!appMap.has(bId)) {
+                            appMap.set(bId, {
+                                id: bId,
+                                role: meta.role || 'tutor',
+                                role_title: meta.role_title || 'Subject Tutor (Faculty)',
+                                full_name: meta.full_name || 'Candidate',
+                                email: (log.email || meta.email || '').trim().toLowerCase(),
+                                phone: meta.phone || '',
+                                is_iitm: meta.is_iitm,
+                                level: meta.level,
+                                subject: meta.subject,
+                                language: meta.language,
+                                cgpa: meta.cgpa,
+                                resume_link: meta.resume_link,
+                                official_email: meta.official_email,
+                                is_bs_student: meta.is_bs_student,
+                                is_group_owner: meta.is_group_owner,
+                                group_link: meta.group_link,
+                                group_members: meta.group_members,
+                                inquiries: meta.inquiries,
+                                metadata: meta,
+                                status: meta.status || 'PENDING',
+                                manager_notes: meta.manager_notes || '',
+                                created_at: log.created_at || meta.created_at || new Date().toISOString(),
+                                updated_at: log.created_at || meta.updated_at || new Date().toISOString()
+                            });
+                        }
+                    }
+                }
+            } catch (e) {}
+        }
+
+        const sorted = Array.from(appMap.values()).sort((a, b) => {
+            const timeA = new Date(a.created_at || 0).getTime();
+            const timeB = new Date(b.created_at || 0).getTime();
+            return timeB - timeA;
+        });
+
+        res.json({ success: true, applications: sorted });
+    } catch (err) {
+        console.error('[Job Applications GET] Error:', err);
+        res.status(500).json({ error: 'Failed to fetch applications' });
+    }
+});
+
+// 3. UPDATE APPLICATION STATUS & NOTES
+app.post('/api/job-applications/update-status', async (req, res) => {
+    try {
+        const { id, status, manager_notes } = req.body || {};
+        if (!id) return res.status(400).json({ error: 'ID is required' });
+
+        let app = memoryJobApplications.get(id);
+
+        if (supabase) {
+            const updatePayload = { updated_at: new Date().toISOString() };
+            if (status) updatePayload.status = status;
+            if (manager_notes !== undefined) updatePayload.manager_notes = manager_notes;
+
+            try {
+                await supabase.from('job_applications').update(updatePayload).eq('id', id);
+            } catch (e) {}
+
+            try {
+                await supabase.from('activity_logs').insert({
+                    action: 'JOB_APPLICATION_STATUS_UPDATED',
+                    metadata: { id, status, manager_notes, timestamp: new Date().toISOString() }
+                });
+            } catch (e) {}
+        }
+
+        if (app) {
+            if (status) app.status = status;
+            if (manager_notes !== undefined) app.manager_notes = manager_notes;
+            app.updated_at = new Date().toISOString();
+            memoryJobApplications.set(id, app);
+            saveApplicationsToFile();
+        }
+
+        res.json({ success: true, message: 'Application updated', application: app });
+    } catch (err) {
+        console.error('[Job Applications Update Status] Error:', err);
+        res.status(500).json({ error: 'Failed to update application' });
+    }
+});
+
+// 4. DELETE APPLICATION
+app.post('/api/job-applications/delete', async (req, res) => {
+    try {
+        const { id } = req.body || {};
+        if (!id) return res.status(400).json({ error: 'ID is required' });
+
+        memoryJobApplications.delete(id);
+        saveApplicationsToFile();
+
+        if (supabase) {
+            try {
+                await supabase.from('job_applications').delete().eq('id', id);
+            } catch (e) {}
+        }
+
+        res.json({ success: true, message: 'Application deleted' });
+    } catch (err) {
+        console.error('[Job Applications Delete] Error:', err);
+        res.status(500).json({ error: 'Failed to delete application' });
     }
 });
 

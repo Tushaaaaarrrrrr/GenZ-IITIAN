@@ -1,20 +1,29 @@
 import { useAuth } from '../context/AuthContext';
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import { supabase } from '../lib/supabase';
-import { LayoutDashboard, ShoppingBag, ScrollText, BookOpen, Plus, Search, Trash2, Edit, Save, X, Loader2, AlertCircle, User, Download, TrendingUp, TrendingDown, Users, ShieldCheck, CreditCard, RefreshCw, Gift, ArrowRight, Copy, Coins, Eye, Settings, ClipboardList, Boxes, ArrowLeft, Calendar, IndianRupee, UserX } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, ScrollText, BookOpen, Plus, Search, Trash2, Edit, Save, X, Loader2, AlertCircle, User, Download, TrendingUp, TrendingDown, Users, ShieldCheck, CreditCard, RefreshCw, Gift, ArrowRight, Copy, Coins, Eye, Settings, ClipboardList, Boxes, ArrowLeft, Calendar, IndianRupee, UserX, ChevronDown, Briefcase } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate, useLocation, NavLink } from 'react-router-dom';
 import { apiService } from '../lib/api';
 import BlogsManager from '../components/manager/BlogsManager';
 import EmployeesManager from '../components/manager/EmployeesManager';
 import OneOnOneBookingsManager from '../components/manager/OneOnOneBookingsManager';
+import JobApplicationsManager from '../components/manager/JobApplicationsManager';
 import ManagerFullPageSheet from '../components/manager/ManagerFullPageSheet';
 import ErrorBoundary from '../components/ErrorBoundary';
 import { getYouTubeId } from '../utils/youtube';
 import { resolveBundleDiscountConfig } from '../utils/bundleDiscount';
+import {
+  COURSE_PAGE_SETTINGS_KEY,
+  DEFAULT_FEEDBACK_BANK,
+  parseCoursePageSettings,
+  type CoursePageSettings,
+  type CoursePageTheme,
+  type FeedbackNote,
+} from '../data/coursePage';
 
 
-type Tab = 'users' | 'courses' | 'boxes' | 'discounts' | 'payments' | 'catalog' | 'referrals' | 'blogs' | 'settings' | 'employees' | 'logs' | '1on1';
+type Tab = 'users' | 'courses' | 'boxes' | 'discounts' | 'payments' | 'catalog' | 'referrals' | 'blogs' | 'settings' | 'employees' | 'logs' | '1on1' | 'applications';
 type CourseTerm = 'Re-attempt' | 'Foundation' | 'DIPLOMA' | 'Qualifier';
 
 const TERM_OPTIONS: CourseTerm[] = ['Qualifier', 'Re-attempt', 'Foundation', 'DIPLOMA'];
@@ -58,7 +67,7 @@ export default function Manager() {
   const activeTab = (rawTab && rawTab !== 'manager' ? rawTab : 'users') as Tab;
   
   // Validate tab - if path is just /manager, it's users. If invalid, could redirect.
-  const validTabs: Tab[] = ['users', '1on1', 'courses', 'boxes', 'discounts', 'payments', 'referrals', 'blogs', 'settings', 'employees', 'logs'];
+  const validTabs: Tab[] = ['users', '1on1', 'applications', 'courses', 'boxes', 'discounts', 'payments', 'referrals', 'blogs', 'settings', 'employees', 'logs'];
   const effectiveTab = validTabs.includes(activeTab) ? activeTab : 'users';
   const [data, setData] = useState<any>([]);
   const [loading, setLoading] = useState(true);
@@ -89,6 +98,12 @@ export default function Manager() {
   const [courseFoundationTerm, setCourseFoundationTerm] = useState<'Term 1' | 'Term 2' | 'BOTH'>('Term 1');
   const [selectedExamStages, setSelectedExamStages] = useState<string[]>([]);
   const [boxConfig, setBoxConfig] = useState<Record<CourseTerm, string[]>>(DEFAULT_BOX_CONFIG);
+  const [feedbackBank, setFeedbackBank] = useState<FeedbackNote[]>(DEFAULT_FEEDBACK_BANK);
+  const [selectedReviewIds, setSelectedReviewIds] = useState<string[]>(DEFAULT_FEEDBACK_BANK.slice(0, 3).map((note) => note.id));
+  const [accessVideoUrl, setAccessVideoUrl] = useState('');
+  const [coursePageTheme, setCoursePageTheme] = useState<CoursePageTheme>('old');
+  const [showCourseThemeSection, setShowCourseThemeSection] = useState(false);
+  const [draftReview, setDraftReview] = useState({ name: '', role: '', text: '' });
 
   // Discount Coupons state
   const [showAddDiscount, setShowAddDiscount] = useState(false);
@@ -182,8 +197,86 @@ export default function Manager() {
       setCourseTerm('NONE');
       setCourseFoundationTerm('Term 1');
       setSelectedExamStages([]);
+      setCoursePageTheme('old');
+      setShowCourseThemeSection(false);
+      setAccessVideoUrl('');
     }
   }, [editingCourse, showAddCourse]);
+
+  useEffect(() => {
+    if (!showAddCourse && !editingCourse) return;
+    let cancelled = false;
+
+    async function loadCoursePage() {
+      const { data } = await supabase
+        .from('settings')
+        .select('value')
+        .eq('key', COURSE_PAGE_SETTINGS_KEY)
+        .maybeSingle();
+      if (cancelled) return;
+      const settings = parseCoursePageSettings(data?.value);
+      setFeedbackBank(settings.bank);
+      const courseId = editingCourse?.id;
+      const saved = courseId ? settings.courses[courseId] : undefined;
+      setSelectedReviewIds(
+        saved?.reviewIds?.length
+          ? saved.reviewIds
+          : settings.bank.slice(0, 3).map((note) => note.id)
+      );
+      setAccessVideoUrl(saved?.videoUrl || settings.defaultVideoUrl || '');
+      setCoursePageTheme(saved?.theme === 'new' ? 'new' : 'old');
+    }
+
+    loadCoursePage();
+    return () => {
+      cancelled = true;
+    };
+  }, [editingCourse, showAddCourse]);
+
+  const addDraftReview = () => {
+    const name = draftReview.name.trim();
+    const role = draftReview.role.trim();
+    const text = draftReview.text.trim();
+    if (!name || !role || !text) {
+      alert('Add a name, the batch they were in, and the feedback.');
+      return;
+    }
+    const note: FeedbackNote = {
+      id: `note-${Date.now()}`,
+      name,
+      role,
+      text,
+      rating: 5,
+    };
+    setFeedbackBank((current) => [...current, note]);
+    setSelectedReviewIds((current) => [...current, note.id]);
+    setDraftReview({ name: '', role: '', text: '' });
+  };
+
+  const persistCoursePageSettings = async (courseId: string) => {
+    const { data } = await supabase
+      .from('settings')
+      .select('value')
+      .eq('key', COURSE_PAGE_SETTINGS_KEY)
+      .maybeSingle();
+    const current = parseCoursePageSettings(data?.value);
+    const next: CoursePageSettings = {
+      bank: feedbackBank,
+      defaultVideoUrl: accessVideoUrl.trim() || current.defaultVideoUrl || '',
+      courses: {
+        ...current.courses,
+        [courseId]: {
+          videoUrl: accessVideoUrl.trim(),
+          reviewIds: selectedReviewIds,
+          theme: coursePageTheme,
+        },
+      },
+    };
+    const { error } = await supabase
+      .from('settings')
+      .upsert({ key: COURSE_PAGE_SETTINGS_KEY, value: JSON.stringify(next) });
+    return error;
+  };
 
   const addBundleCourse = () => {
     if (bundleCourses.length >= 10) return;
@@ -371,7 +464,7 @@ export default function Manager() {
   };
 
   const fetchData = async () => {
-    if (effectiveTab === 'blogs' || effectiveTab === 'settings' || effectiveTab === 'logs' || effectiveTab === 'boxes' || effectiveTab === 'employees' || effectiveTab === '1on1') {
+    if (effectiveTab === 'blogs' || effectiveTab === 'settings' || effectiveTab === 'logs' || effectiveTab === 'boxes' || effectiveTab === 'employees' || effectiveTab === '1on1' || effectiveTab === 'applications') {
       setLoading(false);
       return;
     }
@@ -804,6 +897,7 @@ export default function Manager() {
   const managerTabs = [
     { id: 'users', label: 'Users', icon: User, path: '/manager/users' },
     { id: '1on1', label: '1:1 Bookings', icon: Calendar, path: '/manager/1on1' },
+    { id: 'applications', label: 'Job Applications', icon: Briefcase, path: '/manager/applications' },
     { id: 'employees', label: 'Employees', icon: ShieldCheck, path: '/manager/employees' },
     { id: 'logs', label: 'Logs', icon: ClipboardList, path: '/manager/logs' },
     { id: 'courses', label: 'Courses', icon: BookOpen, path: '/manager/courses' },
@@ -832,7 +926,7 @@ export default function Manager() {
             <span className="font-semibold text-base text-slate-900 tracking-tight truncate">Manager</span>
           </div>
           <span className="text-[10px] font-semibold uppercase tracking-wider bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md shrink-0">
-            {effectiveTab === '1on1' ? '1:1 Bookings' : effectiveTab}
+            {effectiveTab === '1on1' ? '1:1 Bookings' : effectiveTab === 'applications' ? 'Job Applications' : effectiveTab}
           </span>
         </div>
         <nav className="flex gap-1 overflow-x-auto no-scrollbar py-2 px-3 border-t border-slate-100">
@@ -895,9 +989,15 @@ export default function Manager() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div>
               <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 capitalize tracking-tight">
-                {effectiveTab === '1on1' ? '1:1 Bookings' : effectiveTab}
+                {effectiveTab === '1on1' ? '1:1 Bookings' : effectiveTab === 'applications' ? 'Job Applications' : effectiveTab}
               </h1>
-              <p className="text-sm text-slate-500 mt-0.5">Manager panel</p>
+              <p className="text-sm text-slate-500 mt-0.5">
+                {effectiveTab === '1on1'
+                  ? 'Manage student consultations, follow-ups, and pipeline'
+                  : effectiveTab === 'applications'
+                  ? 'Review tutor faculty & campus leader submissions, contact candidates, and manage pipeline'
+                  : 'Manager panel'}
+              </p>
             </div>
             <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
               {effectiveTab === 'users' && (
@@ -983,6 +1083,8 @@ export default function Manager() {
               <div className="space-y-6">
 
                 {effectiveTab === '1on1' && <OneOnOneBookingsManager />}
+
+                {effectiveTab === 'applications' && <JobApplicationsManager />}
 
                 {effectiveTab === 'blogs' && <BlogsManager />}
 
@@ -1503,8 +1605,150 @@ export default function Manager() {
                   </div>
                   <div>
                     <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">What You Get in the Cohort</label>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mb-2">This content appears under the "What You Get in the Cohort" section on the course page. Use line breaks for separate points.</p>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mb-2">These lines show under “Included with enrollment” on the course page. One point per line.</p>
                     <textarea defaultValue={editingCourse?.cohortContent || ''} id="c-cohort" placeholder="e.g.&#10;✅ Live doubt-solving sessions every week&#10;✅ Structured notes + PYQs&#10;✅ Mock tests before every quiz&#10;..." className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none h-48 leading-relaxed" />
+                  </div>
+                  <div className="border-[3px] border-[#0b1120] rounded-2xl bg-slate-50 overflow-hidden shadow-[4px_4px_0px_#0b1120]">
+                    <button
+                      type="button"
+                      onClick={() => setShowCourseThemeSection(!showCourseThemeSection)}
+                      className="w-full p-4 flex items-center justify-between text-left hover:bg-slate-100 transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-white border-2 border-[#0b1120] flex items-center justify-center font-black text-lg shadow-[2px_2px_0px_#0b1120] shrink-0">
+                          🎨
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-black text-[#0b1120] uppercase tracking-tight">
+                              Course Page Design & Theme
+                            </span>
+                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${
+                              coursePageTheme === 'new'
+                                ? 'bg-blue-600 text-white border-blue-700'
+                                : 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                            }`}>
+                              {coursePageTheme === 'new' ? 'Modern Theme ON' : 'Classic (Old) Default'}
+                            </span>
+                          </div>
+                          <p className="text-[11px] font-bold text-gray-500 mt-0.5">
+                            {coursePageTheme === 'new'
+                              ? 'Modern redesign active · Click to configure theme, video, or feedback reviews'
+                              : 'Default Classic theme · Click to expand and turn ON Modern Redesign'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 font-black text-xs text-[#0b1120] bg-white border-2 border-[#0b1120] px-3 py-1.5 rounded-xl shadow-[2px_2px_0px_#0b1120] shrink-0">
+                        <span>{showCourseThemeSection ? 'Collapse' : 'Customize Theme'}</span>
+                        <ChevronDown className={`w-4 h-4 transition-transform ${showCourseThemeSection ? 'rotate-180' : ''}`} />
+                      </div>
+                    </button>
+
+                    {showCourseThemeSection && (
+                      <div className="p-5 border-t-[3px] border-[#0b1120] space-y-4 bg-slate-50">
+                        <div>
+                          <label className="block text-sm font-black text-[#0b1120] uppercase mb-1">Course Page Design Theme</label>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mb-2">Default is Classic. Only manager can turn ON the Modern Redesign.</p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <button
+                              type="button"
+                              onClick={() => setCoursePageTheme('old')}
+                              className={`p-3 rounded-xl border-2 font-bold text-left transition-all cursor-pointer ${
+                                coursePageTheme === 'old'
+                                  ? 'border-[#0b1120] bg-white shadow-[3px_3px_0px_#0b1120]'
+                                  : 'border-slate-200 bg-white/60 text-gray-500 hover:border-slate-300'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between text-xs font-black text-[#0b1120] uppercase">
+                                <span>Classic (Old)</span>
+                                {coursePageTheme === 'old' && <span className="bg-emerald-100 text-emerald-800 text-[9px] px-1.5 py-0.5 rounded font-black">Default Active</span>}
+                              </div>
+                              <p className="text-[11px] text-gray-500 font-medium mt-1 leading-snug">Brutalist layout with batch comparison cards, outcomes, and stats</p>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setCoursePageTheme('new')}
+                              className={`p-3 rounded-xl border-2 font-bold text-left transition-all cursor-pointer ${
+                                coursePageTheme === 'new'
+                                  ? 'border-[#0b1120] bg-white shadow-[3px_3px_0px_#0b1120]'
+                                  : 'border-slate-200 bg-white/60 text-gray-500 hover:border-slate-300'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between text-xs font-black text-[#0b1120] uppercase">
+                                <span>Modern Redesign (New)</span>
+                                {coursePageTheme === 'new' && <span className="bg-blue-100 text-blue-800 text-[9px] px-1.5 py-0.5 rounded font-black">Turned ON</span>}
+                              </div>
+                              <p className="text-[11px] text-gray-500 font-medium mt-1 leading-snug">Modern tabs layout with video spotlight, feedback reviews, and clean FAQ</p>
+                            </button>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-black text-[#0b1120] uppercase mb-1">Course page video</label>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mb-2">YouTube link for “How to use this batch”. Students can play it on the course page.</p>
+                          <input
+                            type="url"
+                            value={accessVideoUrl}
+                            onChange={(e) => setAccessVideoUrl(e.target.value)}
+                            placeholder="https://www.youtube.com/watch?v=..."
+                            className="w-full px-4 py-3 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none bg-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-black text-[#0b1120] uppercase mb-1">Feedback bank</label>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mb-3">Tick the notes that should show on this course. Add a new one if it is not in the bank yet.</p>
+                          <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
+                            {feedbackBank.map((note) => {
+                              const checked = selectedReviewIds.includes(note.id);
+                              return (
+                                <label key={note.id} className={`flex gap-3 p-3 rounded-xl border-2 cursor-pointer ${checked ? 'border-blue-500 bg-white' : 'border-slate-200 bg-white'}`}>
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    onChange={() => {
+                                      setSelectedReviewIds((current) =>
+                                        checked ? current.filter((reviewId) => reviewId !== note.id) : [...current, note.id]
+                                      );
+                                    }}
+                                    className="mt-1 w-4 h-4 accent-blue-600"
+                                  />
+                                  <span>
+                                    <span className="block text-sm font-black text-[#0b1120]">{note.name} <span className="font-bold text-gray-400">· {note.role}</span></span>
+                                    <span className="block text-xs font-bold text-gray-500 mt-1">{note.text}</span>
+                                  </span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <input
+                              value={draftReview.name}
+                              onChange={(e) => setDraftReview((current) => ({ ...current, name: e.target.value }))}
+                              placeholder="Student name"
+                              className="px-4 py-3 border-2 border-slate-200 rounded-xl font-bold outline-none bg-white"
+                            />
+                            <input
+                              value={draftReview.role}
+                              onChange={(e) => setDraftReview((current) => ({ ...current, role: e.target.value }))}
+                              placeholder="Batch, e.g. Maths 1"
+                              className="px-4 py-3 border-2 border-slate-200 rounded-xl font-bold outline-none bg-white"
+                            />
+                            <textarea
+                              value={draftReview.text}
+                              onChange={(e) => setDraftReview((current) => ({ ...current, text: e.target.value }))}
+                              placeholder="What they said"
+                              className="sm:col-span-2 px-4 py-3 border-2 border-slate-200 rounded-xl font-bold outline-none bg-white h-20"
+                            />
+                            <button
+                              type="button"
+                              onClick={addDraftReview}
+                              className="sm:col-span-2 py-3 rounded-xl border-2 border-[#0b1120] font-black text-sm bg-white hover:bg-slate-100"
+                            >
+                              Add to feedback bank
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -2170,6 +2414,10 @@ export default function Manager() {
                       alert('Please choose at least one box for this course.');
                       return;
                     }
+
+                    void persistCoursePageSettings(id).then((pageError) => {
+                      if (pageError) console.error('Course page notes were not saved:', pageError.message);
+                    });
 
                     const bundleCoursesForSave = bundleCourses.map((bc, idx) => {
                       if (idx !== 0) {

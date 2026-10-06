@@ -52,6 +52,7 @@ import LoginModal from './components/LoginModal';
 import WelcomeModal from './components/WelcomeModal';
 import DocumentNavigation from './public/DocumentNavigation';
 import ApplicationMetadata from './public/ApplicationMetadata';
+import SaleTicker from './components/SaleTicker';
 
 // Captures ?ref=CODE from the URL and saves it to localStorage with 24h expiry
 function ReferralCapture() {
@@ -85,6 +86,7 @@ function AppContent() {
     <div className="min-h-screen bg-white text-[#0b1120] font-sans selection:bg-blue-100 flex flex-col">
       <ScrollToTop />
       {!isManagerPage && <Navbar />}
+      {location.pathname === '/' && <SaleTicker />}
       {/* pb on mobile clears the fixed bottom tab bar; removed on checkout + manager */}
       <main className={`flex-grow ${isCheckoutPage || isManagerPage ? '' : 'pb-24 md:pb-0'}`}>
         <ApplicationMetadata />

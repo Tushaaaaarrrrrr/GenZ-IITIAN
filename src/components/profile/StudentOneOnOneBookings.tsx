@@ -26,8 +26,10 @@ interface Booking {
   subjects?: string[];
   slot_date: string;
   slot_time: string;
-  status: 'CONFIRMED' | 'RESCHEDULED' | 'CANCELLED' | 'COMPLETED';
+  status: 'CONFIRMED' | 'RESCHEDULED' | 'CANCELLED' | 'COMPLETED' | 'TRY_LATER' | 'GHOSTED' | 'NOT_INTERESTED';
   notes?: string;
+  user_notes?: string;
+  manager_notes?: string;
   created_at?: string;
 }
 
@@ -289,6 +291,25 @@ export default function StudentOneOnOneBookings({ email }: StudentOneOnOneBookin
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-blue-100 text-blue-800 border-2 border-blue-300">
             <CheckCircle2 className="w-3 h-3" />
             COMPLETED
+          </span>
+        );
+      case 'TRY_LATER':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-indigo-100 text-indigo-800 border-2 border-indigo-300">
+            <Clock className="w-3 h-3" />
+            TRY LATER
+          </span>
+        );
+      case 'GHOSTED':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-slate-100 text-slate-800 border-2 border-slate-300">
+            GHOSTED
+          </span>
+        );
+      case 'NOT_INTERESTED':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-orange-100 text-orange-800 border-2 border-orange-300">
+            NOT INTERESTED
           </span>
         );
       default:

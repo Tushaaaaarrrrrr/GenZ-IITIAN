@@ -64,26 +64,7 @@ export default async function handler(req: any, res: any) {
         });
       }
       
-      // Attempt logging to activity_logs
-      const { error: logErr } = await supabase.from('activity_logs').insert({
-        email: normalizedEmail,
-        action: '1ON1_SLOT_BOOKED',
-        metadata: {
-          name,
-          phone,
-          level,
-          subjects,
-          slot_date,
-          slot_time,
-          plan,
-          notes,
-          bcc,
-          timestamp: new Date().toISOString()
-        }
-      });
-      if (logErr) console.warn('[1:1 Booking] activity_logs notice:', logErr.message);
-
-      // Attempt to save to one_on_one_bookings table if it exists
+      // Persist the booking so confirmation is real. Email goes out after we respond.
       const { error: bookingErr } = await supabase.from('one_on_one_bookings').insert({
         name,
         email: normalizedEmail,
@@ -103,56 +84,90 @@ export default async function handler(req: any, res: any) {
     }
   }
 
-  // 2. Trigger Google Apps Script / Webhook for Email sending with BCC
-  const webhookUrl = 
-    process.env.ONE_ON_ONE_WEBHOOK_URL || 
+  const bookingDetails = {
+    name,
+    email: normalizedEmail,
+    slot_date,
+    slot_time,
+    bcc
+  };
+
+  res.status(200).json({
+    success: true,
+    message: 'Slot successfully booked. Confirmation email is on its way.',
+    details: bookingDetails
+  });
+
+  const webhookUrl =
+    process.env.ONE_ON_ONE_WEBHOOK_URL ||
     process.env.VITE_ONE_ON_ONE_WEBHOOK_URL ||
     process.env.ONE_TO_ONE_WEBHOOK_URL ||
     process.env.VITE_ONE_TO_ONE_WEBHOOK_URL ||
     process.env.ONE_ON_ONE_APP_SCRIPT_URL ||
-    process.env.WELCOME_WEBHOOK_URL || 
+    process.env.WELCOME_WEBHOOK_URL ||
     process.env.GOOGLE_SHEET_WEBHOOK_URL ||
     process.env.APP_SCRIPT_URL;
 
-  if (webhookUrl) {
-    try {
-      const res = await fetch(webhookUrl, {
-        method: 'POST',
-        redirect: 'follow',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'one_on_one_booking',
-          name,
+  const backgroundWork = (async () => {
+    if (supabaseUrl && serviceRole) {
+      try {
+        const supabase = createClient(supabaseUrl, serviceRole);
+        const { error: logErr } = await supabase.from('activity_logs').insert({
           email: normalizedEmail,
-          phone,
-          level,
-          subjects,
-          slot_date,
-          slot_time,
-          plan,
-          notes,
-          bcc: 'genziitian@gmail.com, lkiitmng2428@gmail.com',
-          timestamp: new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
-        })
-      });
-      const resText = await res.text();
-      console.log(`[1:1 Booking] Dispatched email webhook for ${normalizedEmail} with response:`, resText.slice(0, 100));
-    } catch (whErr: any) {
-      console.error('[1:1 Booking] Webhook call error:', whErr.message);
+          action: '1ON1_SLOT_BOOKED',
+          metadata: {
+            name,
+            phone,
+            level,
+            subjects,
+            slot_date,
+            slot_time,
+            plan,
+            notes,
+            bcc,
+            timestamp: new Date().toISOString()
+          }
+        });
+        if (logErr) console.warn('[1:1 Booking] activity_logs notice:', logErr.message);
+      } catch (dbErr: any) {
+        console.error('[1:1 Booking] activity_logs caught error:', dbErr.message);
+      }
     }
-  } else {
-    console.warn('[1:1 Booking] No webhook URL configured! Checked: ONE_ON_ONE_WEBHOOK_URL, WELCOME_WEBHOOK_URL, GOOGLE_SHEET_WEBHOOK_URL');
-  }
 
-  return res.status(200).json({
-    success: true,
-    message: 'Slot successfully booked. Confirmation email dispatched.',
-    details: {
-      name,
-      email: normalizedEmail,
-      slot_date,
-      slot_time,
-      bcc
+    if (!webhookUrl) {
+      console.warn('[1:1 Booking] No webhook URL configured! Checked: ONE_ON_ONE_WEBHOOK_URL, WELCOME_WEBHOOK_URL, GOOGLE_SHEET_WEBHOOK_URL');
+      return;
     }
+
+    const hookRes = await fetch(webhookUrl, {
+      method: 'POST',
+      redirect: 'follow',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'one_on_one_booking',
+        name,
+        email: normalizedEmail,
+        phone,
+        level,
+        subjects,
+        slot_date,
+        slot_time,
+        plan,
+        notes,
+        bcc: 'genziitian@gmail.com, lkiitmng2428@gmail.com',
+        timestamp: new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })
+      })
+    });
+    const resText = await hookRes.text();
+    console.log(`[1:1 Booking] Dispatched email webhook for ${normalizedEmail} with response:`, resText.slice(0, 100));
+  })().catch((whErr: any) => {
+    console.error('[1:1 Booking] Background email/sync error:', whErr.message);
   });
+
+  try {
+    const maybeWaitUntil = (globalThis as any)?.[Symbol.for('@vercel/request-context')]?.get?.()?.waitUntil;
+    if (typeof maybeWaitUntil === 'function') maybeWaitUntil(backgroundWork);
+  } catch {
+    // Express / local: process stays alive after the response.
+  }
 }
