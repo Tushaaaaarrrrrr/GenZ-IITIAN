@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BadgeCheck, Building2, CalendarDays, Camera, IdCard, Loader2, ShieldCheck, UserRound } from 'lucide-react';
+import { BadgeCheck, Building2, CalendarDays, FileText, IdCard, Loader2, Pencil, ShieldCheck, UserRound } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import PhotoCropDialog from '../components/employee/PhotoCropDialog';
 
 type Employee = {
   employee_id: string;
@@ -31,6 +32,7 @@ export default function EmployeeId() {
   const [photoUrl, setPhotoUrl] = useState('');
   const [loading, setLoading] = useState(true);
   const [savingPhoto, setSavingPhoto] = useState(false);
+  const [photoCropFile, setPhotoCropFile] = useState<File | null>(null);
   const [error, setError] = useState('');
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -77,7 +79,7 @@ export default function EmployeeId() {
     return () => { cancelled = true; };
   }, [user?.email]);
 
-  const savePhoto = async (file?: File) => {
+  const selectPhoto = (file?: File) => {
     if (!file || !employee) return;
     if (!file.type.startsWith('image/')) {
       setError('Choose an image file.');
@@ -87,31 +89,28 @@ export default function EmployeeId() {
       setError('Choose an image smaller than 2 MB.');
       return;
     }
+    setPhotoCropFile(file);
+  };
+
+  const savePhoto = async (nextPhoto: string) => {
+    if (!employee) return;
+    setPhotoCropFile(null);
     setSavingPhoto(true);
     setError('');
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const nextPhoto = String(reader.result || '');
+    try {
       const { data: existingPhoto, error: lookupError } = await supabase.from('employee_photos')
         .select('employee_id').eq('employee_id', employee.employee_id).maybeSingle();
-      const saveResult = lookupError
-        ? { error: lookupError }
-        : existingPhoto
-          ? await supabase.from('employee_photos').update({ photo_url: nextPhoto }).eq('employee_id', employee.employee_id)
-          : await supabase.from('employee_photos').insert({ employee_id: employee.employee_id, photo_url: nextPhoto });
-      const saveError = saveResult.error;
-      if (saveError) {
-        setError('Photo could not be saved. Ask your manager to apply the employee ID setup instructions.');
-      } else {
-        setPhotoUrl(nextPhoto);
-      }
+      if (lookupError) throw lookupError;
+      const saveResult = existingPhoto
+        ? await supabase.from('employee_photos').update({ photo_url: nextPhoto }).eq('employee_id', employee.employee_id)
+        : await supabase.from('employee_photos').insert({ employee_id: employee.employee_id, photo_url: nextPhoto });
+      if (saveResult.error) throw saveResult.error;
+      setPhotoUrl(nextPhoto);
+    } catch {
+      setError('Photo could not be saved. Ask your manager to apply the employee ID setup instructions.');
+    } finally {
       setSavingPhoto(false);
-    };
-    reader.onerror = () => {
-      setError('This photo could not be opened. Choose another image.');
-      setSavingPhoto(false);
-    };
-    reader.readAsDataURL(file);
+    }
   };
 
   if (authLoading || loading) return <div className="min-h-[65vh] flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
@@ -128,12 +127,14 @@ export default function EmployeeId() {
         <div className="h-3 bg-blue-600" />
         <div className="grid md:grid-cols-[230px_1fr]">
           <div className="flex flex-col items-center justify-center bg-[#0b1120] px-6 py-8 text-center text-white sm:py-10">
-            <div className="relative mb-5 h-36 w-36 overflow-hidden rounded-full border-4 border-white bg-blue-100 shadow-[5px_5px_0px_#2563eb]">
-              {photoUrl ? <img src={photoUrl} alt={`${employee.full_name}`} className="h-full w-full object-cover" /> : <div className="flex h-full w-full items-center justify-center text-blue-700"><UserRound className="h-16 w-16" /></div>}
-              <button type="button" disabled={savingPhoto} onClick={() => fileInput.current?.click()} aria-label="Change employee photo" className="absolute bottom-0 right-0 flex h-10 w-10 items-center justify-center rounded-full border-2 border-[#0b1120] bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-60"><Camera className="h-5 w-5" /></button>
-              <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={(e) => { void savePhoto(e.target.files?.[0]); e.currentTarget.value = ''; }} />
+            <div className="relative mb-5 h-36 w-36">
+              <div className="absolute inset-0 overflow-hidden rounded-full border-4 border-white bg-blue-100 shadow-[5px_5px_0px_#2563eb]">
+                {photoUrl ? <img src={photoUrl} alt={`${employee.full_name}`} className="h-full w-full object-cover" /> : <div className="flex h-full w-full items-center justify-center text-blue-700"><UserRound className="h-16 w-16" /></div>}
+              </div>
+              <button type="button" disabled={savingPhoto} onClick={() => fileInput.current?.click()} aria-label="Change employee photo" className="absolute -bottom-1 -right-1 z-10 flex h-11 w-11 items-center justify-center rounded-full border-[3px] border-[#0b1120] bg-blue-500 text-white shadow-md hover:bg-blue-600 disabled:opacity-60"><Pencil className="h-5 w-5" /></button>
+              <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={(e) => { selectPhoto(e.target.files?.[0]); e.currentTarget.value = ''; }} />
             </div>
-            {savingPhoto ? <p className="text-xs font-semibold text-blue-200">Saving photo…</p> : <p className="text-xs font-semibold text-slate-300">Tap camera to change photo</p>}
+            {savingPhoto ? <p className="text-xs font-semibold text-blue-200">Saving photo…</p> : <p className="text-xs font-semibold text-slate-300">Tap pencil to change photo</p>}
             <div className="mt-7 inline-flex items-center gap-1.5 rounded-full bg-emerald-400/15 px-3 py-1.5 text-xs font-black uppercase tracking-wide text-emerald-300"><BadgeCheck className="h-4 w-4" />{employee.status || 'ACTIVE'}</div>
           </div>
           <div className="p-6 sm:p-9">
@@ -149,7 +150,16 @@ export default function EmployeeId() {
           </div>
         </div>
       </section>
+      <div className="mx-auto mt-8 flex max-w-3xl flex-col gap-3 sm:flex-row">
+        <Link to="/verify" className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border-2 border-[#0b1120] bg-blue-600 px-5 py-3 font-black text-white shadow-[4px_4px_0px_#0b1120] transition hover:bg-blue-700">
+          <BadgeCheck className="h-5 w-5" /> Verify your employment
+        </Link>
+        <Link to="/employee/policy" className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border-2 border-[#0b1120] bg-white px-5 py-3 font-black text-[#0b1120] shadow-[4px_4px_0px_#0b1120] transition hover:bg-slate-100">
+          <FileText className="h-5 w-5" /> Employee policy
+        </Link>
+      </div>
       {error && <div role="status" className="mx-auto mt-8 max-w-3xl rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">{error}</div>}
     </div>
+    {photoCropFile && <PhotoCropDialog file={photoCropFile} onCancel={() => setPhotoCropFile(null)} onSave={(photo) => { void savePhoto(photo); }} />}
   </main>;
 }

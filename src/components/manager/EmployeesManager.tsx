@@ -3,6 +3,7 @@ import { Plus, Edit, Trash2, Save, X, Loader2, Search, AlertCircle, Copy, Check,
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import ManagerFullPageSheet from './ManagerFullPageSheet';
+import PhotoCropDialog from '../employee/PhotoCropDialog';
 
 interface Employee {
   id?: string;
@@ -182,6 +183,7 @@ export default function EmployeesManager() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [employeePhotos, setEmployeePhotos] = useState<Record<string, string>>({});
   const [editingPhoto, setEditingPhoto] = useState('');
+  const [photoCropFile, setPhotoCropFile] = useState<File | null>(null);
   const [savingPhoto, setSavingPhoto] = useState(false);
   const managerPhotoInput = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(true);
@@ -360,6 +362,7 @@ export default function EmployeesManager() {
     setGovernmentIdType('');
     setGovernmentIdNumber('');
     setEditingPhoto('');
+    setPhotoCropFile(null);
     setEditingEmployee({
       employee_id: '',
       full_name: '',
@@ -414,32 +417,30 @@ export default function EmployeesManager() {
       setErrorMsg('Employee photos require the connected Supabase database. Apply the employee database setup first.');
       return;
     }
+    setErrorMsg('');
+    setPhotoCropFile(file);
+  };
+
+  const saveCroppedPhoto = async (photoUrl: string) => {
+    if (!editingEmployee?.id) return;
+    setPhotoCropFile(null);
     setSavingPhoto(true);
     setErrorMsg('');
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const photoUrl = String(reader.result || '');
-      try {
-        const { data: existingPhoto, error: lookupError } = await supabase.from('employee_photos')
-          .select('employee_id').eq('employee_id', editingEmployee.employee_id).maybeSingle();
-        if (lookupError) throw lookupError;
-        const result = existingPhoto
-          ? await supabase.from('employee_photos').update({ photo_url: photoUrl }).eq('employee_id', editingEmployee.employee_id)
-          : await supabase.from('employee_photos').insert({ employee_id: editingEmployee.employee_id, photo_url: photoUrl });
-        if (result.error) throw result.error;
-        setEditingPhoto(photoUrl);
-        setEmployeePhotos((current) => ({ ...current, [editingEmployee.employee_id]: photoUrl }));
-      } catch (error: any) {
-        setErrorMsg(error.message || 'The employee photo could not be saved.');
-      } finally {
-        setSavingPhoto(false);
-      }
-    };
-    reader.onerror = () => {
-      setErrorMsg('This image could not be opened. Choose another photo.');
+    try {
+      const { data: existingPhoto, error: lookupError } = await supabase.from('employee_photos')
+        .select('employee_id').eq('employee_id', editingEmployee.employee_id).maybeSingle();
+      if (lookupError) throw lookupError;
+      const result = existingPhoto
+        ? await supabase.from('employee_photos').update({ photo_url: photoUrl }).eq('employee_id', editingEmployee.employee_id)
+        : await supabase.from('employee_photos').insert({ employee_id: editingEmployee.employee_id, photo_url: photoUrl });
+      if (result.error) throw result.error;
+      setEditingPhoto(photoUrl);
+      setEmployeePhotos((current) => ({ ...current, [editingEmployee.employee_id]: photoUrl }));
+    } catch (error: any) {
+      setErrorMsg(error.message || 'The employee photo could not be saved.');
+    } finally {
       setSavingPhoto(false);
-    };
-    reader.readAsDataURL(file);
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -1020,6 +1021,8 @@ export default function EmployeesManager() {
           </form>
         )}
       </ManagerFullPageSheet>
+
+      {photoCropFile && <PhotoCropDialog file={photoCropFile} onCancel={() => setPhotoCropFile(null)} onSave={(photo) => { void saveCroppedPhoto(photo); }} />}
 
       {/* Delete Confirmation Modal */}
       {deleteTarget && (
