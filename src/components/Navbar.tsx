@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { User as UserIcon, LogOut, LayoutDashboard, Gift, ChevronDown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { supabase } from '../lib/supabase';
 
 const RESOURCE_LINKS = [
   { to: '/resources', label: 'PYQs & Notes' },
@@ -38,6 +39,19 @@ export default function Navbar() {
   
   const { user, profile, signIn, signOut, isManager, openLoginModal } = useAuth();
   const { cart } = useCart();
+  const [isEmployee, setIsEmployee] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!user?.email) {
+      setIsEmployee(false);
+      return;
+    }
+    Promise.resolve(supabase.from('employees').select('employee_id').ilike('email', user.email).maybeSingle())
+      .then(({ data }) => { if (!cancelled) setIsEmployee(Boolean(data)); })
+      .catch(() => { if (!cancelled) setIsEmployee(false); });
+    return () => { cancelled = true; };
+  }, [user?.email]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -172,6 +186,9 @@ export default function Navbar() {
                     <Link to="/profile" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">
                       <UserIcon className="w-4 h-4" /> My Profile
                     </Link>
+                    {isEmployee && <Link to="/employee/id" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-blue-600 hover:bg-blue-50 transition-colors">
+                      <UserIcon className="w-4 h-4" /> Your ID
+                    </Link>}
                     {isManager && (
                       <Link to="/manager" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 transition-colors">
                         <LayoutDashboard className="w-4 h-4" /> Manager Panel

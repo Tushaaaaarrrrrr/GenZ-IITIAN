@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Plus, Edit, Trash2, Save, X, Loader2, Search, AlertCircle, Copy, Check, Database } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Plus, Edit, Trash2, Save, X, Loader2, Search, AlertCircle, Copy, Check, Database, Camera, UserRound } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import ManagerFullPageSheet from './ManagerFullPageSheet';
@@ -14,6 +14,9 @@ interface Employee {
   role: string;
   tenure: string;
   status: string;
+  date_of_birth?: string;
+  government_id_type?: string;
+  government_id_number?: string;
 }
 
 const DEFAULT_EMPLOYEES: Employee[] = [
@@ -87,7 +90,10 @@ const AVAILABLE_STATUSES = [
   'REMOVED'
 ];
 
-const SQL_MIGRATION_CODE = `CREATE TABLE employees (
+const AVAILABLE_DEPARTMENTS = ['Temporary Teacher', 'Fixed Teacher', 'Support', 'Marketing', 'Programming', 'Core'];
+const GOVERNMENT_ID_TYPES = ['PAN', 'Aadhaar'];
+
+const SQL_MIGRATION_CODE = `CREATE TABLE IF NOT EXISTS employees (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     employee_id TEXT UNIQUE NOT NULL,
     full_name TEXT NOT NULL,
@@ -103,23 +109,85 @@ const SQL_MIGRATION_CODE = `CREATE TABLE employees (
 -- Enable RLS
 ALTER TABLE employees ENABLE ROW LEVEL SECURITY;
 
--- Allow public read access
+DROP POLICY IF EXISTS "Allow public read access" ON employees;
 CREATE POLICY "Allow public read access" ON employees FOR SELECT USING (true);
 
--- Allow full access to authenticated managers
-CREATE POLICY "Allow all access to authenticated users" ON employees FOR ALL USING (auth.role() = 'authenticated');
+-- Only managers may create, edit, or delete directory records.
+DROP POLICY IF EXISTS "Allow all access to authenticated users" ON employees;
+DROP POLICY IF EXISTS "Allow manager access to employees" ON employees;
+CREATE POLICY "Allow manager access to employees" ON employees FOR ALL TO authenticated
+  USING (EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'MANAGER') OR lower(auth.jwt()->>'email') IN ('laxmikant.p@genziitian.com', 'genziitian@gmail.com', 'lkiitmng2424@gmail.com'))
+  WITH CHECK (EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'MANAGER') OR lower(auth.jwt()->>'email') IN ('laxmikant.p@genziitian.com', 'genziitian@gmail.com', 'lkiitmng2424@gmail.com'));
 
 -- IF THE TABLE ALREADY EXISTS: Run these ALTER statements to add missing columns:
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS email TEXT;
-ALTER TABLE employees ADD COLUMN IF NOT EXISTS phone TEXT;`;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS phone TEXT;
+UPDATE public.employees SET department = 'Fixed Teacher' WHERE lower(trim(department)) IN ('academics', 'academic', 'fixed teacher');
+UPDATE public.employees SET department = 'Temporary Teacher' WHERE lower(trim(department)) IN ('temporary teacher', 'temporary teaching');
+UPDATE public.employees SET department = 'Support' WHERE lower(trim(department)) IN ('operations', 'support');
+UPDATE public.employees SET department = 'Marketing' WHERE lower(trim(department)) = 'marketing';
+UPDATE public.employees SET department = 'Programming' WHERE lower(trim(department)) = 'programming';
+UPDATE public.employees SET department = 'Core' WHERE lower(trim(department)) = 'core';
+
+-- Private employee details: managers can read/write ID documents; employees can read their own DOB.
+CREATE TABLE IF NOT EXISTS public.employee_birth_dates (
+  employee_id TEXT PRIMARY KEY REFERENCES public.employees(employee_id) ON DELETE CASCADE,
+  date_of_birth DATE NOT NULL
+);
+ALTER TABLE public.employee_birth_dates ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS employee_birth_dates_manager_access ON public.employee_birth_dates;
+CREATE POLICY employee_birth_dates_manager_access ON public.employee_birth_dates FOR ALL TO authenticated
+  USING (EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'MANAGER') OR lower(auth.jwt()->>'email') IN ('laxmikant.p@genziitian.com', 'genziitian@gmail.com', 'lkiitmng2424@gmail.com'))
+  WITH CHECK (EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'MANAGER') OR lower(auth.jwt()->>'email') IN ('laxmikant.p@genziitian.com', 'genziitian@gmail.com', 'lkiitmng2424@gmail.com'));
+DROP POLICY IF EXISTS employee_birth_dates_self_read ON public.employee_birth_dates;
+CREATE POLICY employee_birth_dates_self_read ON public.employee_birth_dates FOR SELECT TO authenticated
+  USING (EXISTS (SELECT 1 FROM public.employees e WHERE e.employee_id = employee_birth_dates.employee_id AND lower(e.email) = lower(auth.jwt()->>'email')));
+
+CREATE TABLE IF NOT EXISTS public.employee_identity_documents (
+  employee_id TEXT PRIMARY KEY REFERENCES public.employees(employee_id) ON DELETE CASCADE,
+  document_type TEXT NOT NULL CHECK (document_type IN ('PAN', 'Aadhaar')),
+  document_number TEXT NOT NULL
+);
+ALTER TABLE public.employee_identity_documents ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS employee_identity_documents_manager_access ON public.employee_identity_documents;
+CREATE POLICY employee_identity_documents_manager_access ON public.employee_identity_documents FOR ALL TO authenticated
+  USING (EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'MANAGER') OR lower(auth.jwt()->>'email') IN ('laxmikant.p@genziitian.com', 'genziitian@gmail.com', 'lkiitmng2424@gmail.com'))
+  WITH CHECK (EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'MANAGER') OR lower(auth.jwt()->>'email') IN ('laxmikant.p@genziitian.com', 'genziitian@gmail.com', 'lkiitmng2424@gmail.com'));
+
+-- Employees can update only the photo stored in this separate table.
+CREATE TABLE IF NOT EXISTS public.employee_photos (
+  employee_id TEXT PRIMARY KEY REFERENCES public.employees(employee_id) ON DELETE CASCADE,
+  photo_url TEXT NOT NULL
+);
+ALTER TABLE public.employee_photos ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS employee_photos_read_self_or_manager ON public.employee_photos;
+CREATE POLICY employee_photos_read_self_or_manager ON public.employee_photos FOR SELECT TO authenticated
+  USING (EXISTS (SELECT 1 FROM public.employees e WHERE e.employee_id = employee_photos.employee_id AND lower(e.email) = lower(auth.jwt()->>'email')) OR EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'MANAGER') OR lower(auth.jwt()->>'email') IN ('laxmikant.p@genziitian.com', 'genziitian@gmail.com', 'lkiitmng2424@gmail.com'));
+DROP POLICY IF EXISTS employee_photos_insert_self_or_manager ON public.employee_photos;
+CREATE POLICY employee_photos_insert_self_or_manager ON public.employee_photos FOR INSERT TO authenticated
+  WITH CHECK (EXISTS (SELECT 1 FROM public.employees e WHERE e.employee_id = employee_photos.employee_id AND lower(e.email) = lower(auth.jwt()->>'email')) OR EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'MANAGER') OR lower(auth.jwt()->>'email') IN ('laxmikant.p@genziitian.com', 'genziitian@gmail.com', 'lkiitmng2424@gmail.com'));
+DROP POLICY IF EXISTS employee_photos_update_self_or_manager ON public.employee_photos;
+CREATE POLICY employee_photos_update_self_or_manager ON public.employee_photos FOR UPDATE TO authenticated
+  USING (EXISTS (SELECT 1 FROM public.employees e WHERE e.employee_id = employee_photos.employee_id AND lower(e.email) = lower(auth.jwt()->>'email')) OR EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'MANAGER') OR lower(auth.jwt()->>'email') IN ('laxmikant.p@genziitian.com', 'genziitian@gmail.com', 'lkiitmng2424@gmail.com'))
+  WITH CHECK (EXISTS (SELECT 1 FROM public.employees e WHERE e.employee_id = employee_photos.employee_id AND lower(e.email) = lower(auth.jwt()->>'email')) OR EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'MANAGER') OR lower(auth.jwt()->>'email') IN ('laxmikant.p@genziitian.com', 'genziitian@gmail.com', 'lkiitmng2424@gmail.com'));
+GRANT SELECT, INSERT ON public.employee_photos TO authenticated;
+REVOKE UPDATE ON public.employee_photos FROM anon, authenticated;
+GRANT UPDATE (photo_url) ON public.employee_photos TO authenticated;
+GRANT SELECT ON public.employee_birth_dates TO authenticated;
+GRANT INSERT, UPDATE, DELETE ON public.employee_birth_dates TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.employee_identity_documents TO authenticated;`;
 
 export default function EmployeesManager() {
   const { user } = useAuth();
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [employeePhotos, setEmployeePhotos] = useState<Record<string, string>>({});
+  const [editingPhoto, setEditingPhoto] = useState('');
+  const [savingPhoto, setSavingPhoto] = useState(false);
+  const managerPhotoInput = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [isDemoMode, setIsDemoMode] = useState(false);
-  const [showSqlTip, setShowSqlTip] = useState(true);
+  const [showSqlTip, setShowSqlTip] = useState(false);
   const [copiedSql, setCopiedSql] = useState(false);
 
   // Edit / Create Modal State
@@ -132,6 +200,9 @@ export default function EmployeesManager() {
   const [startD, setStartD] = useState('');
   const [endD, setEndD] = useState('');
   const [isPresent, setIsPresent] = useState(true);
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [governmentIdType, setGovernmentIdType] = useState('');
+  const [governmentIdNumber, setGovernmentIdNumber] = useState('');
 
   // Date parsing helpers
   const parseDateToYmd = (dateStr: string) => {
@@ -204,8 +275,15 @@ export default function EmployeesManager() {
           loadLocalEmployees();
         }
       } else {
-        setEmployees(Array.isArray(data) ? data.filter(Boolean) : []);
+        const loadedEmployees = Array.isArray(data) ? data.filter(Boolean) : [];
+        setEmployees(loadedEmployees);
         setIsDemoMode(false);
+        const { data: photos, error: photosError } = await supabase
+          .from('employee_photos')
+          .select('employee_id, photo_url');
+        if (!photosError) {
+          setEmployeePhotos(Object.fromEntries((photos || []).map((photo) => [photo.employee_id, photo.photo_url])));
+        }
       }
     } catch (err) {
       console.error('Database query catch block:', err);
@@ -217,6 +295,8 @@ export default function EmployeesManager() {
 
   const loadLocalEmployees = () => {
     setIsDemoMode(true);
+    setShowSqlTip(true);
+    setEmployeePhotos({});
     const stored = localStorage.getItem('gzi_mock_employees');
     if (stored) {
       try {
@@ -276,19 +356,23 @@ export default function EmployeesManager() {
     setStartD('');
     setEndD('');
     setIsPresent(true);
+    setDateOfBirth('');
+    setGovernmentIdType('');
+    setGovernmentIdNumber('');
+    setEditingPhoto('');
     setEditingEmployee({
       employee_id: '',
       full_name: '',
       email: '',
       phone: '',
-      department: '',
+      department: 'Core',
       role: 'Educator',
       tenure: '',
       status: 'ACTIVE'
     });
   };
 
-  const openEdit = (emp: Employee) => {
+  const openEdit = async (emp: Employee) => {
     setErrorMsg('');
     
     // Parse tenure dates into calendar selectors
@@ -298,7 +382,64 @@ export default function EmployeesManager() {
     setIsPresent(present);
     setEndD(present ? '' : parseDateToYmd(tenureParts[1] || ''));
 
-    setEditingEmployee({ ...emp, status: emp.status || 'ACTIVE' });
+    setEditingEmployee({ ...emp, department: AVAILABLE_DEPARTMENTS.includes(emp.department) ? emp.department : 'Core', status: emp.status || 'ACTIVE' });
+    setEditingPhoto(employeePhotos[emp.employee_id] || '');
+    setDateOfBirth(emp.date_of_birth || '');
+    setGovernmentIdType(emp.government_id_type || '');
+    setGovernmentIdNumber(emp.government_id_number || '');
+    if (!isDemoMode) {
+      const [birth, document] = await Promise.all([
+        supabase.from('employee_birth_dates').select('date_of_birth').eq('employee_id', emp.employee_id).maybeSingle(),
+        supabase.from('employee_identity_documents').select('document_type, document_number').eq('employee_id', emp.employee_id).maybeSingle()
+      ]);
+      setDateOfBirth(birth.data?.date_of_birth || '');
+      setGovernmentIdType(document.data?.document_type || '');
+      setGovernmentIdNumber(document.data?.document_number || '');
+      const { data: photo } = await supabase.from('employee_photos').select('photo_url').eq('employee_id', emp.employee_id).maybeSingle();
+      setEditingPhoto(photo?.photo_url || employeePhotos[emp.employee_id] || '');
+    }
+  };
+
+  const handlePhotoUpload = async (file?: File) => {
+    if (!file || !editingEmployee?.id) return;
+    if (!file.type.startsWith('image/')) {
+      setErrorMsg('Choose an image file for the employee photo.');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setErrorMsg('Choose an image smaller than 2 MB.');
+      return;
+    }
+    if (isDemoMode) {
+      setErrorMsg('Employee photos require the connected Supabase database. Apply the employee database setup first.');
+      return;
+    }
+    setSavingPhoto(true);
+    setErrorMsg('');
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const photoUrl = String(reader.result || '');
+      try {
+        const { data: existingPhoto, error: lookupError } = await supabase.from('employee_photos')
+          .select('employee_id').eq('employee_id', editingEmployee.employee_id).maybeSingle();
+        if (lookupError) throw lookupError;
+        const result = existingPhoto
+          ? await supabase.from('employee_photos').update({ photo_url: photoUrl }).eq('employee_id', editingEmployee.employee_id)
+          : await supabase.from('employee_photos').insert({ employee_id: editingEmployee.employee_id, photo_url: photoUrl });
+        if (result.error) throw result.error;
+        setEditingPhoto(photoUrl);
+        setEmployeePhotos((current) => ({ ...current, [editingEmployee.employee_id]: photoUrl }));
+      } catch (error: any) {
+        setErrorMsg(error.message || 'The employee photo could not be saved.');
+      } finally {
+        setSavingPhoto(false);
+      }
+    };
+    reader.onerror = () => {
+      setErrorMsg('This image could not be opened. Choose another photo.');
+      setSavingPhoto(false);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -339,6 +480,17 @@ export default function EmployeesManager() {
       tenure: tenureStr,
       status: (editingEmployee.status || 'ACTIVE').toUpperCase()
     };
+
+    if (!dateOfBirth || !governmentIdType || !governmentIdNumber.trim()) {
+      setErrorMsg('Date of birth and government ID details are required.');
+      setSaving(false);
+      return;
+    }
+    if (isDemoMode) {
+      setErrorMsg('Secure employee records are unavailable in demo mode. Apply the employee database setup before saving DOB or PAN/Aadhaar details.');
+      setSaving(false);
+      return;
+    }
 
     try {
       if (isDemoMode) {
@@ -413,9 +565,11 @@ export default function EmployeesManager() {
             await insertAuditLog('UPDATE', payload.employee_id, payload.full_name, changes.length > 0 ? changes.join(', ') : 'No field changes');
           }
         } else {
-          const { error } = await supabase
+          const { data: insertedEmployee, error } = await supabase
             .from('employees')
-            .insert([payload]);
+            .insert([payload])
+            .select('id')
+            .single();
           if (error) {
             if (error.code === '23505') {
               setErrorMsg('An employee with this ID already exists in the database.');
@@ -424,8 +578,13 @@ export default function EmployeesManager() {
             }
             throw error;
           }
+          if (insertedEmployee?.id) setEditingEmployee({ ...editingEmployee, id: insertedEmployee.id });
           await insertAuditLog('CREATE', payload.employee_id, payload.full_name, `Created new record — Role: ${payload.role}, Dept: ${payload.department}, Status: ${payload.status}`);
         }
+        const { error: birthError } = await supabase.from('employee_birth_dates').upsert({ employee_id: empId, date_of_birth: dateOfBirth }, { onConflict: 'employee_id' });
+        if (birthError) throw birthError;
+        const { error: documentError } = await supabase.from('employee_identity_documents').upsert({ employee_id: empId, document_type: governmentIdType, document_number: governmentIdNumber.trim() }, { onConflict: 'employee_id' });
+        if (documentError) throw documentError;
         setEditingEmployee(null);
         fetchEmployees();
       }
@@ -480,9 +639,9 @@ export default function EmployeesManager() {
   return (
     <div className="space-y-8 text-left">
       {/* Demo / Database Warning Banner */}
-      {isDemoMode && showSqlTip && (
+      {showSqlTip && (
         <div className="bg-yellow-50 border-2 border-yellow-200 rounded-2xl p-6 relative">
-          <button 
+          <button
             onClick={() => setShowSqlTip(false)}
             className="absolute top-4 right-4 text-yellow-600 hover:text-yellow-900"
           >
@@ -494,11 +653,9 @@ export default function EmployeesManager() {
               <Database className="w-6 h-6" />
             </div>
             <div className="space-y-3 flex-grow">
-              <h4 className="font-black text-yellow-900 text-lg">Running in Local Demo Mode</h4>
+              <h4 className="font-black text-yellow-900 text-lg">Employee ID card database setup</h4>
               <p className="text-sm text-yellow-800 font-medium max-w-3xl leading-relaxed">
-                The database table <code className="bg-yellow-100 px-1.5 py-0.5 rounded font-mono font-bold">employees</code> was not found. 
-                We are falling back to <code className="bg-yellow-100 px-1.5 py-0.5 rounded font-mono font-bold">localStorage</code> so you can test all features.
-                To set up the database table, run this SQL in your Supabase SQL Editor:
+                {isDemoMode ? <>The database table <code className="bg-yellow-100 px-1.5 py-0.5 rounded font-mono font-bold">employees</code> was not found. Basic directory data is falling back to local storage. DOB and PAN/Aadhaar details require the secure Supabase tables below and are not saved in demo mode.</> : <>This migration adds employee DOB, private PAN/Aadhaar storage, employee photo permissions, and the fixed department list.</>} Run the SQL in your Supabase SQL Editor:
               </p>
               
               <div className="relative bg-gray-900 text-gray-100 font-mono text-xs p-4 rounded-xl max-h-48 overflow-y-auto max-w-3xl">
@@ -530,13 +687,20 @@ export default function EmployeesManager() {
           />
         </div>
 
-        {/* Add Button */}
-        <button 
-          onClick={openCreate}
-          className="w-full sm:w-auto px-4 py-2.5 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 transition-colors flex items-center justify-center gap-2 text-sm"
-        >
-          <Plus className="w-4 h-4" /> Add Employee Record
-        </button>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+          <button
+            onClick={() => setShowSqlTip((shown) => !shown)}
+            className="w-full px-4 py-2.5 bg-white text-slate-700 border border-slate-200 font-medium rounded-lg hover:bg-slate-50 transition-colors flex items-center justify-center gap-2 text-sm sm:w-auto"
+          >
+            <Database className="w-4 h-4" /> Database setup
+          </button>
+          <button
+            onClick={openCreate}
+            className="w-full px-4 py-2.5 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 transition-colors flex items-center justify-center gap-2 text-sm sm:w-auto"
+          >
+            <Plus className="w-4 h-4" /> Add Employee Record
+          </button>
+        </div>
       </div>
 
       {/* Employee List Table */}
@@ -555,7 +719,7 @@ export default function EmployeesManager() {
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50/50">
                   <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-wider">ID</th>
-                  <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-wider">FULL NAME</th>
+                  <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-wider">EMPLOYEE</th>
                   <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-wider">EMAIL</th>
                   <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-wider">PHONE</th>
                   <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-wider">DEPARTMENT</th>
@@ -569,7 +733,14 @@ export default function EmployeesManager() {
                 {filtered.map((emp) => (
                   <tr key={emp.id || emp.employee_id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="px-6 py-4.5 font-mono text-xs font-bold text-gray-500">{emp.employee_id}</td>
-                    <td className="px-6 py-4.5 text-[#0b1120] font-black">{emp.full_name}</td>
+                    <td className="px-6 py-4.5 text-[#0b1120] font-black">
+                      <span className="flex items-center gap-3">
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-100 text-slate-400">
+                          {employeePhotos[emp.employee_id] ? <img src={employeePhotos[emp.employee_id]} alt={`${emp.full_name}`} className="h-full w-full object-cover" /> : <UserRound className="h-5 w-5" />}
+                        </span>
+                        {emp.full_name}
+                      </span>
+                    </td>
                     <td className="px-6 py-4.5 text-gray-600 text-xs font-semibold">{emp.email || '-'}</td>
                     <td className="px-6 py-4.5 text-gray-600 text-xs font-semibold">{emp.phone || '-'}</td>
                     <td className="px-6 py-4.5 text-gray-800">{emp.department}</td>
@@ -591,7 +762,7 @@ export default function EmployeesManager() {
                     <td className="px-6 py-4.5 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button 
-                          onClick={() => openEdit(emp)}
+                          onClick={() => { void openEdit(emp); }}
                           className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
                           title="Edit Record"
                         >
@@ -634,6 +805,32 @@ export default function EmployeesManager() {
               </div>
             )}
 
+            <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center">
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-white bg-white shadow-sm">
+                {editingPhoto ? <img src={editingPhoto} alt={`${editingEmployee.full_name || 'Employee'} photo`} className="h-full w-full object-cover" /> : <UserRound className="h-8 w-8 text-slate-300" />}
+              </div>
+              <div className="flex-1">
+                <p className="font-bold text-slate-800">Employee photo</p>
+                <p className="mt-1 text-xs text-slate-500">Managers can upload a photo or view the photo the employee added to their ID card. Images must be under 2 MB.</p>
+              </div>
+              <input
+                ref={managerPhotoInput}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(event) => { void handlePhotoUpload(event.target.files?.[0]); event.currentTarget.value = ''; }}
+              />
+              <button
+                type="button"
+                disabled={!editingEmployee.id || savingPhoto}
+                onClick={() => managerPhotoInput.current?.click()}
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {savingPhoto ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+                {editingEmployee.id ? (savingPhoto ? 'Saving photo…' : 'Upload photo') : 'Save record first'}
+              </button>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
               {/* Left Column */}
               <div className="space-y-5">
@@ -668,14 +865,14 @@ export default function EmployeesManager() {
                   <label className="block text-xs font-semibold text-slate-600 mb-1.5">
                     Department *
                   </label>
-                  <input 
-                    required 
-                    type="text" 
-                    value={editingEmployee.department || ''}
+                  <select
+                    required
+                    value={AVAILABLE_DEPARTMENTS.includes(editingEmployee.department) ? editingEmployee.department : 'Core'}
                     onChange={(e) => setEditingEmployee({ ...editingEmployee, department: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-slate-400 outline-none font-medium text-sm transition-all text-slate-900 placeholder-slate-400" 
-                    placeholder="e.g. Programming"
-                  />
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-slate-400 outline-none font-medium text-sm transition-all text-slate-900 bg-white"
+                  >
+                    {AVAILABLE_DEPARTMENTS.map((department) => <option key={department} value={department}>{department}</option>)}
+                  </select>
                 </div>
 
                 <div>
@@ -721,6 +918,44 @@ export default function EmployeesManager() {
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-slate-400 outline-none font-medium text-sm transition-all text-slate-900 placeholder-slate-400" 
                     placeholder="e.g. +91 98765 43210"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">Date of birth *</label>
+                  <input
+                    required
+                    type="date"
+                    value={dateOfBirth}
+                    onChange={(e) => setDateOfBirth(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-slate-400 outline-none font-medium text-sm text-slate-900"
+                  />
+                </div>
+
+                <div className="grid grid-cols-[0.8fr_1.2fr] gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">ID document *</label>
+                    <select
+                      required
+                      value={governmentIdType}
+                      onChange={(e) => setGovernmentIdType(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-slate-400 outline-none font-medium text-sm text-slate-900 bg-white"
+                    >
+                      <option value="">Select</option>
+                      {GOVERNMENT_ID_TYPES.map((type) => <option key={type} value={type}>{type}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">ID number *</label>
+                    <input
+                      required
+                      type="password"
+                      autoComplete="off"
+                      value={governmentIdNumber}
+                      onChange={(e) => setGovernmentIdNumber(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-slate-400 outline-none font-medium text-sm text-slate-900"
+                      placeholder="PAN or Aadhaar number"
+                    />
+                  </div>
                 </div>
 
                 <div>

@@ -1,4 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import {
   BookOpen, FolderOpen, ListChecks, ClipboardList, Newspaper, Compass,
   Gift, LayoutDashboard, ShieldCheck,
@@ -8,6 +9,7 @@ import {
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 
 type RowProps = {
   Icon: typeof Mail;
@@ -57,6 +59,19 @@ function Group({ label, children }: { label: string; children: ReactNode }) {
 export default function Menu() {
   const { user, profile, isManager, openLoginModal, signOut } = useAuth();
   const navigate = useNavigate();
+  const [isEmployee, setIsEmployee] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!user?.email) {
+      setIsEmployee(false);
+      return;
+    }
+    Promise.resolve(supabase.from('employees').select('employee_id').ilike('email', user.email).maybeSingle())
+      .then(({ data }) => { if (!cancelled) setIsEmployee(Boolean(data)); })
+      .catch(() => { if (!cancelled) setIsEmployee(false); });
+    return () => { cancelled = true; };
+  }, [user?.email]);
 
   const displayName = profile?.name || user?.email?.split('@')[0] || 'Guest';
 
@@ -94,6 +109,7 @@ export default function Menu() {
 
         <Group label="ACCOUNT">
           {user && <MenuRow Icon={UserIcon} tint="#E7EEFF" glyph="#2563EB" label="My Profile" to="/profile" />}
+          {user && isEmployee && <MenuRow Icon={UserCheck} tint="#D1FAE5" glyph="#059669" label="Your ID" to="/employee/id" />}
           <MenuRow Icon={Gift} tint="#FEF1DF" glyph="#FF7A00" label="Refer & Earn" to="/refer" />
           {user && <MenuRow Icon={LayoutDashboard} tint="#E4F7EE" glyph="#0E9E6A" label="Class Dashboard" href="https://class.genziitian.in" external />}
           {isManager && <MenuRow Icon={ShieldCheck} tint="#FCE4E4" glyph="#FF2424" label="Manager Panel" to="/manager" />}

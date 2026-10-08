@@ -36,6 +36,7 @@ import TermsAndConditions from './pages/TermsAndConditions';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import RefundPolicy from './pages/RefundPolicy';
 import EmployeePolicy from './pages/EmployeePolicy';
+import EmployeeId from './pages/EmployeeId';
 import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentFailed from './pages/PaymentFailed';
 import Menu from './pages/Menu';
@@ -122,6 +123,7 @@ function AppContent() {
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/refund" element={<RefundPolicy />} />
           <Route path="/employee/policy" element={<EmployeePolicy />} />
+          <Route path="/employee/id" element={<EmployeeId />} />
           <Route path="/payment-success" element={<PaymentSuccess />} />
           <Route path="/payment-failed" element={<PaymentFailed />} />
           {/* Error pages */}
@@ -185,4 +187,3 @@ export default function App() {
     </AuthProvider>
   );
 }
-
