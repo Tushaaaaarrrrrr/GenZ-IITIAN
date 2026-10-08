@@ -124,7 +124,6 @@ export default function EmployeeId() {
   return <main className="min-h-[75vh] bg-slate-50 px-4 py-10 sm:px-6 sm:py-16">
     <div className="mx-auto max-w-5xl">
       <header className="mb-8 text-center sm:mb-10"><p className="text-sm font-black uppercase tracking-[0.22em] text-blue-600">Employee identity</p><h1 className="mt-2 text-3xl font-black tracking-tight text-[#0b1120] sm:text-4xl">Hey {firstName}</h1><p className="mt-2 text-slate-600">Here’s your Gen-Z IITian employee ID.</p></header>
-      {error && <div role="status" className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">{error}</div>}
       <section className="relative mx-auto max-w-3xl overflow-hidden rounded-[2rem] border-[3px] border-[#0b1120] bg-white shadow-[10px_10px_0px_#0b1120]">
         <div className="h-3 bg-blue-600" />
         <div className="grid md:grid-cols-[230px_1fr]">
@@ -150,6 +149,7 @@ export default function EmployeeId() {
           </div>
         </div>
       </section>
+      {error && <div role="status" className="mx-auto mt-8 max-w-3xl rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">{error}</div>}
     </div>
   </main>;
 }
