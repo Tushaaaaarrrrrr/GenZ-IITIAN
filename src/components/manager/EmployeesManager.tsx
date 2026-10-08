@@ -720,8 +720,6 @@ export default function EmployeesManager() {
                 <tr className="border-b border-gray-200 bg-gray-50/50">
                   <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-wider">ID</th>
                   <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-wider">EMPLOYEE</th>
-                  <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-wider">EMAIL</th>
-                  <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-wider">PHONE</th>
                   <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-wider">DEPARTMENT</th>
                   <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-wider">ROLE</th>
                   <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-wider">TENURE</th>
@@ -741,8 +739,6 @@ export default function EmployeesManager() {
                         {emp.full_name}
                       </span>
                     </td>
-                    <td className="px-6 py-4.5 text-gray-600 text-xs font-semibold">{emp.email || '-'}</td>
-                    <td className="px-6 py-4.5 text-gray-600 text-xs font-semibold">{emp.phone || '-'}</td>
                     <td className="px-6 py-4.5 text-gray-800">{emp.department}</td>
                     <td className="px-6 py-4.5 text-gray-800 capitalize">{emp.role}</td>
                     <td className="px-6 py-4.5 text-gray-600 font-mono text-xs">{emp.tenure}</td>
