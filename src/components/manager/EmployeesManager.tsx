@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Plus, Edit, Trash2, Save, X, Loader2, Search, AlertCircle, Copy, Check, Database, Camera, UserRound } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, Loader2, Search, AlertCircle, Copy, Check, Database, Camera, UserRound, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import ManagerFullPageSheet from './ManagerFullPageSheet';
@@ -11,6 +11,8 @@ interface Employee {
   full_name: string;
   email?: string;
   phone?: string;
+  secondary_email?: string;
+  secondary_phone?: string;
   department: string;
   role: string;
   tenure: string;
@@ -93,6 +95,7 @@ const AVAILABLE_STATUSES = [
 
 const AVAILABLE_DEPARTMENTS = ['Academic', 'Support', 'Marketing', 'Programming', 'Core'];
 const GOVERNMENT_ID_TYPES = ['PAN', 'Aadhaar'];
+type TenurePeriod = { startDate: string; endDate: string; isPresent: boolean };
 
 const normalizeDepartment = (department: string) => {
   const normalized = (department || '').trim().toLowerCase();
@@ -106,6 +109,8 @@ const SQL_MIGRATION_CODE = `CREATE TABLE IF NOT EXISTS employees (
     full_name TEXT NOT NULL,
     email TEXT,
     phone TEXT,
+    secondary_email TEXT,
+    secondary_phone TEXT,
     department TEXT NOT NULL,
     role TEXT NOT NULL,
     tenure TEXT NOT NULL,
@@ -133,6 +138,8 @@ CREATE POLICY "Allow manager access to employees" ON employees FOR ALL TO authen
 -- IF THE TABLE ALREADY EXISTS: Run these ALTER statements to add missing columns:
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS email TEXT;
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS phone TEXT;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS secondary_email TEXT;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS secondary_phone TEXT;
 UPDATE public.employees SET department = 'Academic' WHERE lower(trim(department)) IN ('academics', 'academic', 'temporary teacher', 'temporary teaching', 'fixed teacher', 'permanent teacher', 'permanent teaching');
 UPDATE public.employees SET department = 'Support' WHERE lower(trim(department)) IN ('operations', 'support');
 UPDATE public.employees SET department = 'Marketing' WHERE lower(trim(department)) = 'marketing';
@@ -208,12 +215,11 @@ export default function EmployeesManager() {
   const [deleteTarget, setDeleteTarget] = useState<Employee | null>(null);
 
   // Date picker states
-  const [startD, setStartD] = useState('');
-  const [endD, setEndD] = useState('');
-  const [isPresent, setIsPresent] = useState(true);
+  const [tenurePeriods, setTenurePeriods] = useState<TenurePeriod[]>([{ startDate: '', endDate: '', isPresent: true }]);
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [governmentIdType, setGovernmentIdType] = useState('');
   const [governmentIdNumber, setGovernmentIdNumber] = useState('');
+  const [showGovernmentIdNumber, setShowGovernmentIdNumber] = useState(false);
 
   // Date parsing helpers
   const parseDateToYmd = (dateStr: string) => {
@@ -234,6 +240,15 @@ export default function EmployeesManager() {
       return `${parts[2]}/${parts[1]}/${parts[0]}`;
     }
     return '';
+  };
+
+  const parseTenurePeriods = (tenure: string): TenurePeriod[] => {
+    const periods = String(tenure || '').split(';').map((period) => period.trim()).filter(Boolean).map((period) => {
+      const [start, end] = period.split(' - ');
+      const isPresent = (end || '').trim().toLowerCase() === 'present';
+      return { startDate: parseDateToYmd(start || ''), endDate: isPresent ? '' : parseDateToYmd(end || ''), isPresent };
+    });
+    return periods.length ? periods : [{ startDate: '', endDate: '', isPresent: true }];
   };
 
   const getNextEmployeeId = (role: string, name: string) => {
@@ -364,12 +379,11 @@ export default function EmployeesManager() {
 
   const openCreate = () => {
     setErrorMsg('');
-    setStartD('');
-    setEndD('');
-    setIsPresent(true);
+    setTenurePeriods([{ startDate: '', endDate: '', isPresent: true }]);
     setDateOfBirth('');
     setGovernmentIdType('');
     setGovernmentIdNumber('');
+    setShowGovernmentIdNumber(false);
     setEditingPhoto('');
     setPhotoCropFile(null);
     setEditingEmployee({
@@ -386,13 +400,8 @@ export default function EmployeesManager() {
 
   const openEdit = async (emp: Employee) => {
     setErrorMsg('');
-    
-    // Parse tenure dates into calendar selectors
-    const tenureParts = String(emp.tenure || '').split(' - ');
-    setStartD(parseDateToYmd(tenureParts[0] || ''));
-    const present = (tenureParts[1] || '').toLowerCase() === 'present';
-    setIsPresent(present);
-    setEndD(present ? '' : parseDateToYmd(tenureParts[1] || ''));
+    setTenurePeriods(parseTenurePeriods(emp.tenure));
+    setShowGovernmentIdNumber(false);
 
     setEditingEmployee({ ...emp, department: normalizeDepartment(emp.department), status: emp.status || 'ACTIVE' });
     setEditingPhoto(employeePhotos[emp.employee_id] || '');
@@ -461,16 +470,16 @@ export default function EmployeesManager() {
     const fullName = editingEmployee.full_name.trim();
     const dept = editingEmployee.department.trim();
     
-    if (!startD) {
-      setErrorMsg('Start date is required.');
+    if (tenurePeriods.some((period) => !period.startDate)) {
+      setErrorMsg('A start date is required for every tenure period.');
       return;
     }
-    if (!isPresent && !endD) {
-      setErrorMsg('End date is required if not currently working.');
+    if (tenurePeriods.some((period) => !period.isPresent && !period.endDate)) {
+      setErrorMsg('Add an end date for each tenure period that is not marked present.');
       return;
     }
 
-    const tenureStr = `${formatYmdToDdMmYyyy(startD)} - ${isPresent ? 'Present' : formatYmdToDdMmYyyy(endD)}`;
+    const tenureStr = tenurePeriods.map((period) => `${formatYmdToDdMmYyyy(period.startDate)} - ${period.isPresent ? 'Present' : formatYmdToDdMmYyyy(period.endDate)}`).join('; ');
 
     if (!empId || !fullName || !dept) {
       setErrorMsg('All marked fields are required.');
@@ -485,6 +494,8 @@ export default function EmployeesManager() {
       full_name: fullName,
       email: editingEmployee.email?.trim() || '',
       phone: editingEmployee.phone?.trim() || '',
+      secondary_email: editingEmployee.secondary_email?.trim() || '',
+      secondary_phone: editingEmployee.secondary_phone?.trim() || '',
       department: dept,
       role: editingEmployee.role,
       tenure: tenureStr,
@@ -537,6 +548,8 @@ export default function EmployeesManager() {
             if (oldEmp.tenure !== payload.tenure) changes.push(`Tenure: ${oldEmp.tenure} → ${payload.tenure}`);
             if (oldEmp.email !== payload.email) changes.push(`Email: ${oldEmp.email || 'N/A'} → ${payload.email || 'N/A'}`);
             if (oldEmp.phone !== payload.phone) changes.push(`Phone: ${oldEmp.phone || 'N/A'} → ${payload.phone || 'N/A'}`);
+            if (oldEmp.secondary_email !== payload.secondary_email) changes.push('Secondary email updated');
+            if (oldEmp.secondary_phone !== payload.secondary_phone) changes.push('Secondary phone updated');
             await insertAuditLog('UPDATE', payload.employee_id, payload.full_name, changes.length > 0 ? changes.join(', ') : 'No field changes');
           }
         } else {
@@ -572,6 +585,8 @@ export default function EmployeesManager() {
             if (oldEmp.tenure !== payload.tenure) changes.push(`Tenure: ${oldEmp.tenure} → ${payload.tenure}`);
             if (oldEmp.email !== payload.email) changes.push(`Email: ${oldEmp.email || 'N/A'} → ${payload.email || 'N/A'}`);
             if (oldEmp.phone !== payload.phone) changes.push(`Phone: ${oldEmp.phone || 'N/A'} → ${payload.phone || 'N/A'}`);
+            if (oldEmp.secondary_email !== payload.secondary_email) changes.push('Secondary email updated');
+            if (oldEmp.secondary_phone !== payload.secondary_phone) changes.push('Secondary phone updated');
             await insertAuditLog('UPDATE', payload.employee_id, payload.full_name, changes.length > 0 ? changes.join(', ') : 'No field changes');
           }
         } else {
@@ -868,6 +883,17 @@ export default function EmployeesManager() {
                 </div>
 
                 <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">Secondary email (optional)</label>
+                  <input
+                    type="email"
+                    value={editingEmployee.secondary_email || ''}
+                    onChange={(e) => setEditingEmployee({ ...editingEmployee, secondary_email: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-slate-400 outline-none font-medium text-sm text-slate-900 placeholder-slate-400"
+                    placeholder="e.g. personal@email.com"
+                  />
+                </div>
+
+                <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1.5">
                     Department *
                   </label>
@@ -927,6 +953,17 @@ export default function EmployeesManager() {
                 </div>
 
                 <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">Secondary phone number (optional)</label>
+                  <input
+                    type="tel"
+                    value={editingEmployee.secondary_phone || ''}
+                    onChange={(e) => setEditingEmployee({ ...editingEmployee, secondary_phone: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-slate-400 outline-none font-medium text-sm text-slate-900 placeholder-slate-400"
+                    placeholder="Optional alternate number"
+                  />
+                </div>
+
+                <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1.5">Date of birth *</label>
                   <input
                     required
@@ -952,15 +989,25 @@ export default function EmployeesManager() {
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-slate-600 mb-1.5">ID number *</label>
+                    <div className="flex">
                     <input
                       required
-                      type="password"
+                      type={showGovernmentIdNumber ? 'text' : 'password'}
                       autoComplete="off"
                       value={governmentIdNumber}
                       onChange={(e) => setGovernmentIdNumber(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-slate-400 outline-none font-medium text-sm text-slate-900"
+                      className="min-w-0 flex-1 rounded-l-xl border border-r-0 border-slate-200 px-3.5 py-2.5 font-medium text-sm text-slate-900 outline-none focus:border-slate-400"
                       placeholder="PAN or Aadhaar number"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowGovernmentIdNumber((shown) => !shown)}
+                      aria-label={showGovernmentIdNumber ? 'Hide ID number' : 'Show ID number'}
+                      className="flex items-center justify-center rounded-r-xl border border-slate-200 px-3 text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+                    >
+                      {showGovernmentIdNumber ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                    </div>
                   </div>
                 </div>
 
@@ -981,47 +1028,68 @@ export default function EmployeesManager() {
                   </select>
                 </div>
 
-                {/* Tenure Selection with calendar dates */}
+                {/* Multiple employment periods allow breaks and returns. */}
                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
-                  <div className="text-xs font-semibold text-slate-600">Tenure / duration</div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-center justify-between gap-3">
                     <div>
-                      <label className="block text-[11px] font-semibold text-slate-500 mb-1.5">Start date *</label>
-                      <input 
-                        required
-                        type="date"
-                        value={startD}
-                        onChange={(e) => setStartD(e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-slate-400 outline-none font-medium text-xs transition-all text-slate-900 bg-white"
-                      />
+                      <div className="text-xs font-semibold text-slate-700">Tenure / duration</div>
+                      <p className="mt-1 text-[11px] text-slate-500">Add a period each time they return to work.</p>
                     </div>
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-500 mb-1.5">End date</label>
-                      <input 
-                        disabled={isPresent}
-                        required={!isPresent}
-                        type="date"
-                        value={endD}
-                        onChange={(e) => setEndD(e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-slate-400 outline-none font-medium text-xs transition-all text-slate-900 bg-white disabled:bg-slate-100 disabled:text-slate-400"
-                      />
+                    <button
+                      type="button"
+                      onClick={() => setTenurePeriods((periods) => [
+                        ...periods.map((period) => ({ ...period, isPresent: false })),
+                        { startDate: '', endDate: '', isPresent: true },
+                      ])}
+                      className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100"
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Add period
+                    </button>
+                  </div>
+                  {tenurePeriods.map((period, index) => (
+                    <div key={index} className="rounded-xl border border-slate-200 bg-white p-3.5">
+                      <div className="mb-3 flex items-center justify-between">
+                        <span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Period {index + 1}</span>
+                        {tenurePeriods.length > 1 && <button type="button" onClick={() => setTenurePeriods((periods) => periods.filter((_, periodIndex) => periodIndex !== index))} className="text-[11px] font-bold text-red-600 hover:text-red-700">Remove</button>}
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="mb-1.5 block text-[11px] font-semibold text-slate-500">Start date *</label>
+                          <input
+                            required
+                            type="date"
+                            value={period.startDate}
+                            onChange={(e) => setTenurePeriods((periods) => periods.map((item, periodIndex) => periodIndex === index ? { ...item, startDate: e.target.value } : item))}
+                            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-900 outline-none focus:border-slate-400"
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-1.5 block text-[11px] font-semibold text-slate-500">End date</label>
+                          <input
+                            disabled={period.isPresent}
+                            required={!period.isPresent}
+                            type="date"
+                            value={period.endDate}
+                            onChange={(e) => setTenurePeriods((periods) => periods.map((item, periodIndex) => periodIndex === index ? { ...item, endDate: e.target.value } : item))}
+                            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-900 outline-none focus:border-slate-400 disabled:bg-slate-100 disabled:text-slate-400"
+                          />
+                        </div>
+                      </div>
+                      <div className="mt-3 flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id={`is-present-checkbox-${index}`}
+                          checked={period.isPresent}
+                          disabled={index < tenurePeriods.length - 1}
+                          onChange={(e) => setTenurePeriods((periods) => periods.map((item, periodIndex) => periodIndex === index ? { ...item, isPresent: e.target.checked, endDate: e.target.checked ? '' : item.endDate } : item))}
+                          className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500 disabled:opacity-50"
+                        />
+                        <label htmlFor={`is-present-checkbox-${index}`} className="cursor-pointer select-none text-xs font-medium text-slate-700">
+                          Currently working here (Present)
+                        </label>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2 pt-1">
-                    <input 
-                      type="checkbox"
-                      id="is-present-checkbox"
-                      checked={isPresent}
-                      onChange={(e) => {
-                        setIsPresent(e.target.checked);
-                        if (e.target.checked) setEndD('');
-                      }}
-                      className="w-4 h-4 text-slate-900 border-slate-300 rounded focus:ring-slate-500"
-                    />
-                    <label htmlFor="is-present-checkbox" className="text-xs text-slate-700 font-medium select-none cursor-pointer">
-                      Currently working here (Present)
-                    </label>
-                  </div>
+                  ))}
                 </div>
               </div>
             </div>
