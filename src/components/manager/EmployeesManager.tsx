@@ -36,7 +36,7 @@ const DEFAULT_EMPLOYEES: Employee[] = [
     full_name: 'Vaibhav',
     email: 'vaibhav@genziitian.in',
     phone: '+91 99887 76655',
-    department: 'Academics',
+    department: 'Academic',
     role: 'Educator',
     tenure: '01/06/2025 - Present',
     status: 'ACTIVE'
@@ -46,7 +46,7 @@ const DEFAULT_EMPLOYEES: Employee[] = [
     full_name: 'Ayush',
     email: 'ayush@genziitian.in',
     phone: '+91 88776 65544',
-    department: 'Academics',
+    department: 'Academic',
     role: 'Educator',
     tenure: '01/07/2025 - Present',
     status: 'ACTIVE'
@@ -56,7 +56,7 @@ const DEFAULT_EMPLOYEES: Employee[] = [
     full_name: 'Ankit K.',
     email: 'ankit@genziitian.in',
     phone: '+91 77665 54433',
-    department: 'Academics',
+    department: 'Academic',
     role: 'Educator',
     tenure: '01/08/2025 - 15/05/2026',
     status: 'INACTIVE'
@@ -91,8 +91,14 @@ const AVAILABLE_STATUSES = [
   'REMOVED'
 ];
 
-const AVAILABLE_DEPARTMENTS = ['Temporary Teacher', 'Fixed Teacher', 'Support', 'Marketing', 'Programming', 'Core'];
+const AVAILABLE_DEPARTMENTS = ['Academic', 'Support', 'Marketing', 'Programming', 'Core'];
 const GOVERNMENT_ID_TYPES = ['PAN', 'Aadhaar'];
+
+const normalizeDepartment = (department: string) => {
+  const normalized = (department || '').trim().toLowerCase();
+  if (['academic', 'academics', 'temporary teacher', 'temporary teaching', 'fixed teacher', 'permanent teacher', 'permanent teaching'].includes(normalized)) return 'Academic';
+  return AVAILABLE_DEPARTMENTS.find((option) => option.toLowerCase() === normalized) || 'Core';
+};
 
 const SQL_MIGRATION_CODE = `CREATE TABLE IF NOT EXISTS employees (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -110,8 +116,12 @@ const SQL_MIGRATION_CODE = `CREATE TABLE IF NOT EXISTS employees (
 -- Enable RLS
 ALTER TABLE employees ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS "Allow public read access" ON employees;
-CREATE POLICY "Allow public read access" ON employees FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow public read access" ON public.employees;
+DROP POLICY IF EXISTS employees_self_read ON public.employees;
+REVOKE ALL ON public.employees FROM anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.employees TO authenticated;
+CREATE POLICY employees_self_read ON public.employees FOR SELECT TO authenticated
+  USING (lower(email) = lower(auth.jwt()->>'email'));
 
 -- Only managers may create, edit, or delete directory records.
 DROP POLICY IF EXISTS "Allow all access to authenticated users" ON employees;
@@ -123,8 +133,7 @@ CREATE POLICY "Allow manager access to employees" ON employees FOR ALL TO authen
 -- IF THE TABLE ALREADY EXISTS: Run these ALTER statements to add missing columns:
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS email TEXT;
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS phone TEXT;
-UPDATE public.employees SET department = 'Fixed Teacher' WHERE lower(trim(department)) IN ('academics', 'academic', 'fixed teacher');
-UPDATE public.employees SET department = 'Temporary Teacher' WHERE lower(trim(department)) IN ('temporary teacher', 'temporary teaching');
+UPDATE public.employees SET department = 'Academic' WHERE lower(trim(department)) IN ('academics', 'academic', 'temporary teacher', 'temporary teaching', 'fixed teacher', 'permanent teacher', 'permanent teaching');
 UPDATE public.employees SET department = 'Support' WHERE lower(trim(department)) IN ('operations', 'support');
 UPDATE public.employees SET department = 'Marketing' WHERE lower(trim(department)) = 'marketing';
 UPDATE public.employees SET department = 'Programming' WHERE lower(trim(department)) = 'programming';
@@ -385,7 +394,7 @@ export default function EmployeesManager() {
     setIsPresent(present);
     setEndD(present ? '' : parseDateToYmd(tenureParts[1] || ''));
 
-    setEditingEmployee({ ...emp, department: AVAILABLE_DEPARTMENTS.includes(emp.department) ? emp.department : 'Core', status: emp.status || 'ACTIVE' });
+    setEditingEmployee({ ...emp, department: normalizeDepartment(emp.department), status: emp.status || 'ACTIVE' });
     setEditingPhoto(employeePhotos[emp.employee_id] || '');
     setDateOfBirth(emp.date_of_birth || '');
     setGovernmentIdType(emp.government_id_type || '');
@@ -864,7 +873,7 @@ export default function EmployeesManager() {
                   </label>
                   <select
                     required
-                    value={AVAILABLE_DEPARTMENTS.includes(editingEmployee.department) ? editingEmployee.department : 'Core'}
+                    value={normalizeDepartment(editingEmployee.department)}
                     onChange={(e) => setEditingEmployee({ ...editingEmployee, department: e.target.value })}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-slate-400 outline-none font-medium text-sm transition-all text-slate-900 bg-white"
                   >
