@@ -3,8 +3,9 @@
 -- These are used for server-side validated bundle discounts
 
 ALTER TABLE courses ADD COLUMN IF NOT EXISTS "bundleDiscountPrice" integer;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS "bundleDiscountAmount" integer;
 ALTER TABLE courses ADD COLUMN IF NOT EXISTS "bundleDiscountCode" text;
 
 -- Verify
 SELECT column_name, data_type FROM information_schema.columns 
-WHERE table_name = 'courses' AND column_name IN ('bundleDiscountPrice', 'bundleDiscountCode');
+WHERE table_name = 'courses' AND column_name IN ('bundleDiscountPrice', 'bundleDiscountAmount', 'bundleDiscountCode');

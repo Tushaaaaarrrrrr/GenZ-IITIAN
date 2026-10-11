@@ -324,17 +324,15 @@ export default function CourseSelection() {
         .reduce((sum: number, bc: SubCourse) => sum + bc.price, 0) || 0
     : 0;
 
-  const bundleDiscountPreviewSavings = Math.max(
-    (bundleDiscountMode === 'any' ? bundleSelectedRaw : bundleTotalRaw) - Number(course?.bundleDiscountPrice || 0),
-    0
-  );
+  const bundleDiscountVal = Number(course?.bundleDiscountAmount || course?.bundleDiscountPrice || 0);
+  const bundleDiscountPreviewSavings = bundleDiscountVal;
 
   const bundleSelectionProgress = course?.isBundle && bundleDiscountRequiredCount > 0
     ? Math.min((selectedCourses.length / bundleDiscountRequiredCount) * 100, 100)
     : 0;
 
   const hasBundleDiscount = course?.isBundle && (
-    (course.bundleDiscountPrice && course.bundleDiscountPrice < bundleTotalRaw) || 
+    bundleDiscountVal > 0 || 
     !!course.bundleDiscountCode
   );
 
@@ -412,8 +410,8 @@ export default function CourseSelection() {
             .filter((bc: SubCourse) => selectedCourses.includes(bc.courseId))
             .reduce((sum: number, bc: SubCourse) => sum + bc.price, 0);
             
-          const bundlePrice = course.bundleDiscountPrice || rawTotal;
-          const calculatedDiscount = Math.max(rawTotal - bundlePrice, 0);
+          const bundleDiscountVal = Number(course.bundleDiscountAmount || course.bundleDiscountPrice || 0);
+          const calculatedDiscount = Math.min(bundleDiscountVal, rawTotal);
           
           setDiscountAmount(calculatedDiscount);
           setAppliedDiscountCode(codeToApply);
@@ -560,8 +558,8 @@ export default function CourseSelection() {
       const rawTotal = course.bundleCourses
         .filter((bc: SubCourse) => selectedCourses.includes(bc.courseId))
         .reduce((sum: number, bc: SubCourse) => sum + bc.price, 0);
-      const bundlePrice = Number(course.bundleDiscountPrice || rawTotal);
-      setDiscountAmount(Math.max(rawTotal - bundlePrice, 0));
+      const bundleDiscountVal = Number(course.bundleDiscountAmount || course.bundleDiscountPrice || 0);
+      setDiscountAmount(Math.min(bundleDiscountVal, rawTotal));
       return;
     }
 
@@ -1004,10 +1002,10 @@ export default function CourseSelection() {
                               <div>
                                   <div className="font-black text-xl md:text-2xl text-[#0b1120] uppercase tracking-tight leading-tight">
                                       {isBundleDiscountEligible 
-                                          ? "🎉 Bundle Price Unlocked!" 
+                                          ? "🎉 Bundle Discount Unlocked!" 
                                           : (bundleDiscountMode === 'all'
-                                              ? `Select All ${course.bundleCourses.length} Courses to Save ₹${course.bundleCourses.reduce((s: any, b: any) => s + b.price, 0) - (course.bundleDiscountPrice || 0)}`
-                                              : `Select at least ${bundleDiscountRequiredCount} Courses to Unlock Bundle Discount`
+                                              ? `Select All ${course.bundleCourses.length} Courses to Save ₹${bundleDiscountVal}`
+                                              : `Select at least ${bundleDiscountRequiredCount} Courses to Save ₹${bundleDiscountVal}`
                                             )
                                       }
                                   </div>
@@ -1022,7 +1020,7 @@ export default function CourseSelection() {
                                         </>
                                       ) : (
                                         bundleDiscountMode === 'all'
-                                          ? 'Select all courses to unlock the bundle price.'
+                                          ? 'Select all courses to unlock the bundle discount.'
                                           : `Select at least ${bundleDiscountRequiredCount} courses to unlock this code.`
                                       )}
                                   </div>

@@ -67,9 +67,14 @@ export async function validateCouponForCheckout({
     }
   }
 
-  const calculatedDiscount = coupon.discount_percentage
+  let calculatedDiscount = coupon.discount_percentage
     ? Math.floor(total * (Number(coupon.discount_percentage) / 100))
     : Number(coupon.discount_amount || 0);
+
+  const maxDiscount = Number(coupon.max_discount_amount || coupon.max_discount || 0);
+  if (maxDiscount > 0) {
+    calculatedDiscount = Math.min(calculatedDiscount, maxDiscount);
+  }
 
   return Math.min(calculatedDiscount, total);
 }

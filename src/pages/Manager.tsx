@@ -157,7 +157,7 @@ export default function Manager() {
       const discountConfig = getBundleDiscountConfig(editingCourse);
       setIsBundle(editingCourse.isBundle || false);
       setBundleCourses(editingCourse.bundleCourses || []);
-      setBundleDiscountPrice(editingCourse.bundleDiscountPrice || '');
+      setBundleDiscountPrice(editingCourse.bundleDiscountAmount || editingCourse.bundleDiscountPrice || editingCourse.bundleCourses?.[0]?._bundleDiscountAmount || '');
       setBundleDiscountCode(editingCourse.bundleDiscountCode || '');
       setBundleDiscountMode(discountConfig.mode);
       setBundleDiscountMinCourses(discountConfig.minCourses);
@@ -699,6 +699,7 @@ export default function Manager() {
         isBundle: course.isBundle || false,
         bundleCourses: course.bundleCourses || [],
         bundleDiscountPrice: course.bundleDiscountPrice || null,
+        bundleDiscountAmount: course.bundleDiscountAmount || course.bundleDiscountPrice || null,
         bundleDiscountCode: course.bundleDiscountCode || null,
         bundleDiscountMode: course.isBundle
           ? (course.bundleDiscountMode === 'any' ? 'any' : 'all')
@@ -751,7 +752,13 @@ export default function Manager() {
             )
           }));
 
-        const { error: insertError } = await supabase.from('courses').insert(cleanedCourse);
+        let { error: insertError } = await supabase.from('courses').insert(cleanedCourse);
+        if (insertError && insertError.message?.includes('bundleDiscountAmount')) {
+          const fallbackCourse = { ...cleanedCourse };
+          delete (fallbackCourse as any).bundleDiscountAmount;
+          const retry = await supabase.from('courses').insert(fallbackCourse);
+          insertError = retry.error;
+        }
         if (insertError) {
           alert(insertError.message);
           return;
@@ -792,7 +799,12 @@ export default function Manager() {
         const { error: deleteOldError } = await supabase.from('courses').delete().eq('id', previousCourseId);
         error = deleteOldError;
       } else {
-        const response = await supabase.from('courses').upsert(cleanedCourse);
+        let response = await supabase.from('courses').upsert(cleanedCourse);
+        if (response.error && response.error.message?.includes('bundleDiscountAmount')) {
+          const fallbackCourse = { ...cleanedCourse };
+          delete (fallbackCourse as any).bundleDiscountAmount;
+          response = await supabase.from('courses').upsert(fallbackCourse);
+        }
         error = response.error;
       }
 
@@ -836,11 +848,12 @@ export default function Manager() {
       return;
     } else {
 
-      const cleanedDiscount = {
+      const cleanedDiscount: any = {
         ...(discount.id ? { id: discount.id } : {}),
         code: discount.code.toUpperCase(),
         discount_percentage: discount.discount_percentage ? parseInt(discount.discount_percentage) : null,
         discount_amount: discount.discount_amount ? parseInt(discount.discount_amount) : null,
+        max_discount_amount: discount.max_discount_amount ? parseInt(discount.max_discount_amount) : null,
         applies_to: discount.applies_to || 'ALL',
         allowed_emails: discount.discountType === 'specific'
           ? discount.discountEmails
@@ -857,7 +870,15 @@ export default function Manager() {
         hidden: Boolean(discount.hidden),
         active: Boolean(discount.active)
       };
-      const { error } = await supabase.from('discount_coupons').upsert(cleanedDiscount, { onConflict: 'code' });
+      let { error } = await supabase.from('discount_coupons').upsert(cleanedDiscount, { onConflict: 'code' });
+      if (error && error.message?.includes('max_discount_amount')) {
+        delete cleanedDiscount.max_discount_amount;
+        const retry = await supabase.from('discount_coupons').upsert(cleanedDiscount, { onConflict: 'code' });
+        error = retry.error;
+        if (!error) {
+          alert('Saved! To persist Max Discount, run this SQL in Supabase SQL Editor: ALTER TABLE discount_coupons ADD COLUMN IF NOT EXISTS max_discount_amount INTEGER;');
+        }
+      }
       if (error) alert(error.message);
       setEditingDiscount(null);
       setShowAddDiscount(false);
@@ -1461,7 +1482,12 @@ export default function Manager() {
                             </td>
                             <td className="px-4 sm:px-5 py-3.5">
                               {discount.discount_percentage ? (
-                                <span className="font-semibold text-violet-600">{discount.discount_percentage}% OFF</span>
+                                <div>
+                                  <span className="font-semibold text-violet-600">{discount.discount_percentage}% OFF</span>
+                                  {(discount.max_discount_amount || discount.max_discount) ? (
+                                    <span className="block text-[11px] text-gray-500 font-bold">Max ₹{discount.max_discount_amount || discount.max_discount}</span>
+                                  ) : null}
+                                </div>
                               ) : discount.discount_amount ? (
                                 <span className="font-semibold text-violet-600">₹{discount.discount_amount} OFF</span>
                               ) : (
@@ -2034,14 +2060,16 @@ export default function Manager() {
 
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <label className="text-xs font-black text-[#10b981] uppercase tracking-widest pl-1">Bundle Discount Price (₹)</label>
+                          <label className="text-xs font-black text-[#10b981] uppercase tracking-widest pl-1">
+                            {bundleDiscountMode === 'any' ? `Discount for Any ${bundleDiscountMinCourses}+ (₹ Off)` : 'Bundle Discount (₹ Off)'}
+                          </label>
                           <div className="relative">
                             <span className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 font-black text-xl">₹</span>
                             <input
                               type="text" inputMode="decimal"
                               value={bundleDiscountPrice}
                               onChange={e => setBundleDiscountPrice(e.target.value ? parseInt(e.target.value) : '')}
-                              placeholder="e.g. 799"
+                              placeholder="e.g. 200"
                               className="w-full pl-12 pr-6 py-4 border-2 border-green-200 rounded-2xl font-black text-xl outline-none focus:border-[#10b981] transition-all bg-white"
                             />
                           </div>
@@ -2059,7 +2087,10 @@ export default function Manager() {
                       </div>
                       {bundleDiscountPrice && bundleCourses.length > 0 && (
                         <div className="p-3 bg-white border-2 border-green-200 rounded-xl text-xs font-bold text-gray-600">
-                          {bundleDiscountMode === 'all' ? 'Whole bundle mode:' : `Any ${bundleDiscountMinCourses} mode:`} Student pays <span className="text-[#10b981] font-black">₹{bundleDiscountPrice}</span> after entering this code.
+                          {bundleDiscountMode === 'all'
+                            ? <>Whole bundle mode: Student gets <span className="text-[#10b981] font-black">₹{bundleDiscountPrice} OFF</span> when all courses are selected.</>
+                            : <>Any {bundleDiscountMinCourses}+ mode: Student gets <span className="text-[#10b981] font-black">₹{bundleDiscountPrice} OFF</span> when selecting {bundleDiscountMinCourses} or more courses.</>
+                          }
                         </div>
                       )}
                     </div>
@@ -2421,12 +2452,13 @@ export default function Manager() {
 
                     const bundleCoursesForSave = bundleCourses.map((bc, idx) => {
                       if (idx !== 0) {
-                        const { _bundleDiscountMode: _mode, _bundleDiscountMinCourses: _min, ...rest } = bc as any;
+                        const { _bundleDiscountMode: _mode, _bundleDiscountMinCourses: _min, _bundleDiscountAmount: _amt, ...rest } = bc as any;
                         return rest;
                       }
 
                       return {
                         ...bc,
+                        _bundleDiscountAmount: isBundle && bundleDiscountPrice ? Number(bundleDiscountPrice) : undefined,
                         _bundleDiscountMode: isBundle ? bundleDiscountMode : undefined,
                         _bundleDiscountMinCourses: isBundle && bundleDiscountMode === 'any' ? bundleDiscountMinCourses : undefined,
                       };
@@ -2451,6 +2483,7 @@ export default function Manager() {
                       isBundle,
                       bundleCourses: bundleCoursesForSave,
                       bundleDiscountPrice: isBundle && bundleDiscountPrice ? Number(bundleDiscountPrice) : null,
+                      bundleDiscountAmount: isBundle && bundleDiscountPrice ? Number(bundleDiscountPrice) : null,
                       bundleDiscountCode: isBundle && bundleDiscountCode ? bundleDiscountCode : null,
                       bundleDiscountMode: isBundle ? bundleDiscountMode : null,
                       bundleDiscountMinCourses: isBundle && bundleDiscountMode === 'any' ? bundleDiscountMinCourses : null,
@@ -2566,6 +2599,13 @@ export default function Manager() {
                     <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Min Order Value (Optional)</label>
                     <input type="text" inputMode="decimal" min="0" defaultValue={editingDiscount?.min_order_value || ''} id="d-min-order" placeholder="₹ No minimum" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-purple-100 outline-none" />
                   </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Max Discount (Optional)</label>
+                    <input type="text" inputMode="decimal" min="0" defaultValue={editingDiscount?.max_discount_amount || editingDiscount?.max_discount || ''} id="d-max-discount" placeholder="₹ No maximum (e.g. 100 or 1000)" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-purple-100 outline-none" />
+                    <p className="text-xs font-bold text-gray-400 mt-2">
+                      Cap the maximum discount amount a user can get (e.g. for a 15% discount, cap savings to ₹100 or ₹1000).
+                    </p>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2604,6 +2644,7 @@ export default function Manager() {
                     const expires_at = (document.getElementById('d-expires') as HTMLInputElement).value;
                     const max_uses = (document.getElementById('d-max-uses') as HTMLInputElement).value;
                     const min_order_value = (document.getElementById('d-min-order') as HTMLInputElement).value;
+                    const max_discount_amount = (document.getElementById('d-max-discount') as HTMLInputElement).value;
 
                     if (!code) {
                       alert('Please enter a coupon code.');
@@ -2631,6 +2672,7 @@ export default function Manager() {
                       code,
                       discount_percentage: discountValueType === 'percentage' ? discount_value : '',
                       discount_amount: discountValueType === 'amount' ? discount_value : '',
+                      max_discount_amount,
                       applies_to,
                       start_date,
                       expires_at,

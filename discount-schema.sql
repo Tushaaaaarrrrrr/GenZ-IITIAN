@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS public.discount_coupons (
   expires_at TIMESTAMP WITH TIME ZONE,
   max_uses INTEGER,
   min_order_value INTEGER DEFAULT 0,
+  max_discount_amount INTEGER,
   first_purchase_only BOOLEAN DEFAULT false,
   single_use_per_user BOOLEAN DEFAULT true,
   hidden BOOLEAN DEFAULT false,

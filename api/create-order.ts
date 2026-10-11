@@ -163,9 +163,14 @@ const validateCouponForOrder = async ({
     }
   }
 
-  const discount = coupon.discount_percentage
+  let discount = coupon.discount_percentage
     ? Math.floor(totalAmount * (Number(coupon.discount_percentage) / 100))
     : Number(coupon.discount_amount || 0);
+
+  const maxDiscount = Number(coupon.max_discount_amount || coupon.max_discount || 0);
+  if (maxDiscount > 0) {
+    discount = Math.min(discount, maxDiscount);
+  }
 
   return Math.min(discount, totalAmount);
 };
@@ -296,8 +301,8 @@ export default async function handler(req: any, res: any) {
               : isAllSelected;
 
             if (isEligibleForBundleCode) {
-               const bPrice = bundle.bundleDiscountPrice || totalOriginalPrice;
-               couponSavings = Math.max(totalOriginalPrice - bPrice, 0);
+               const bundleDiscountVal = Number(bundle.bundleDiscountAmount || bundle.bundleDiscountPrice || firstBundleCourse._bundleDiscountAmount || 0);
+               couponSavings = Math.min(bundleDiscountVal, totalOriginalPrice);
             } else {
                return res.status(400).json({
                  error: bundleDiscountMode === 'any'

@@ -166,9 +166,14 @@ async function validateCouponForOrder({ coupon, email, totalAmount, courseIds, b
         }
     }
 
-    const discount = coupon.discount_percentage
+    let discount = coupon.discount_percentage
         ? Math.floor(totalAmount * (Number(coupon.discount_percentage) / 100))
         : Number(coupon.discount_amount || 0);
+
+    const maxDiscount = Number(coupon.max_discount_amount || coupon.max_discount || 0);
+    if (maxDiscount > 0) {
+        discount = Math.min(discount, maxDiscount);
+    }
 
     return Math.min(discount, totalAmount);
 }
@@ -542,8 +547,11 @@ app.post('/api/create-order', async (req, res) => {
 
                 if (isEligibleForBundleCode) {
                     isBundleDiscountUsed = true;
-                    totalAmount = Number(bundle.bundleDiscountPrice);
                     originalAmount = bundleSubCourses.filter(bc => courseIds.includes(bc.courseId)).reduce((sum, bc) => sum + Number(bc.price), 0);
+                    const bundleDiscountVal = Number(bundle.bundleDiscountAmount || bundle.bundleDiscountPrice || firstBundleCourse._bundleDiscountAmount || 0);
+                    const disc = Math.min(bundleDiscountVal, originalAmount);
+                    totalAmount = Math.max(originalAmount - disc, 0);
+                    discountAmountTotal = disc;
                     discountApplied = true;
                 } else {
                     const message = bundleDiscountMode === 'any'
