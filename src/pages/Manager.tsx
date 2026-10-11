@@ -870,18 +870,39 @@ export default function Manager() {
         hidden: Boolean(discount.hidden),
         active: Boolean(discount.active)
       };
-      let { error } = await supabase.from('discount_coupons').upsert(cleanedDiscount, { onConflict: 'code' });
-      if (error && error.message?.includes('max_discount_amount')) {
-        delete cleanedDiscount.max_discount_amount;
-        const retry = await supabase.from('discount_coupons').upsert(cleanedDiscount, { onConflict: 'code' });
-        error = retry.error;
-        if (!error) {
-          alert('Saved! To persist Max Discount, run this SQL in Supabase SQL Editor: ALTER TABLE discount_coupons ADD COLUMN IF NOT EXISTS max_discount_amount INTEGER;');
+      let error = null;
+      if (discount.id) {
+        const { id, ...updatePayload } = cleanedDiscount;
+        const res = await supabase.from('discount_coupons').update(updatePayload).eq('id', discount.id);
+        error = res.error;
+        if (error && error.message?.includes('max_discount_amount')) {
+          delete updatePayload.max_discount_amount;
+          const retry = await supabase.from('discount_coupons').update(updatePayload).eq('id', discount.id);
+          error = retry.error;
+          if (!error) {
+            alert('Saved! To persist Max Discount, run this SQL in Supabase SQL Editor: ALTER TABLE discount_coupons ADD COLUMN IF NOT EXISTS max_discount_amount INTEGER;');
+          }
+        }
+      } else {
+        delete cleanedDiscount.id;
+        const res = await supabase.from('discount_coupons').insert(cleanedDiscount);
+        error = res.error;
+        if (error && error.message?.includes('max_discount_amount')) {
+          delete cleanedDiscount.max_discount_amount;
+          const retry = await supabase.from('discount_coupons').insert(cleanedDiscount);
+          error = retry.error;
+          if (!error) {
+            alert('Saved! To persist Max Discount, run this SQL in Supabase SQL Editor: ALTER TABLE discount_coupons ADD COLUMN IF NOT EXISTS max_discount_amount INTEGER;');
+          }
         }
       }
-      if (error) alert(error.message);
-      setEditingDiscount(null);
-      setShowAddDiscount(false);
+
+      if (error) {
+        alert(error.message);
+      } else {
+        setEditingDiscount(null);
+        setShowAddDiscount(false);
+      }
     }
     fetchData();
   };
