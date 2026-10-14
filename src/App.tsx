@@ -18,6 +18,7 @@ import ResourceDetail from './pages/ResourceDetail';
 import Contact from './pages/Contact';
 import About from './pages/About';
 import Careers from './pages/Careers';
+import CareerApply from './pages/CareerApply';
 import Verify from './pages/Verify';
 import Newsletter from './pages/Newsletter';
 import SEODirectory from './pages/SEODirectory';
@@ -80,6 +81,8 @@ function AppContent() {
   const isCoursesPage = location.pathname === '/courses';
   const isManagerPage = location.pathname.startsWith('/manager');
   const isOneOnOnePage = location.pathname === '/one-to-one' || location.pathname === '/1-on-1';
+  // Full-page job application: hide the mobile tab bar so the sticky submit bar has room
+  const isCareerApplyPage = location.pathname.startsWith('/careers/apply');
 
   return (
     <div className="min-h-screen bg-white text-[#0b1120] font-sans selection:bg-blue-100 flex flex-col">
@@ -87,7 +90,7 @@ function AppContent() {
       {!isManagerPage && <Navbar />}
       {location.pathname === '/' && <SaleTicker />}
       {/* pb on mobile clears the fixed bottom tab bar; removed on checkout + manager */}
-      <main className={`flex-grow ${isCheckoutPage || isManagerPage ? '' : 'pb-24 md:pb-0'}`}>
+      <main className={`flex-grow ${isCheckoutPage || isManagerPage || isCareerApplyPage ? '' : 'pb-24 md:pb-0'}`}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/one-to-one" element={<OneOnOne />} />
@@ -111,6 +114,7 @@ function AppContent() {
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/careers" element={<Careers />} />
+          <Route path="/careers/apply/:role" element={<CareerApply />} />
           <Route path="/verify" element={<Verify />} />
           <Route path="/newsletter" element={<Newsletter />} />
           <Route path="/knowledge" element={<SEODirectory />} />
@@ -147,7 +151,7 @@ function AppContent() {
           <Footer />
         </div>
       )}
-      {!isCheckoutPage && !isManagerPage && <MobileNav />}
+      {!isCheckoutPage && !isManagerPage && !isCareerApplyPage && <MobileNav />}
     </div>
   );
 }

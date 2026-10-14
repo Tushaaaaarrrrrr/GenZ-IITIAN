@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronUp, Briefcase, Star, Users, BrainCircuit, Rocket, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
-import CareerApplicationModal from './CareerApplicationModal';
 import { useAuth } from '../context/AuthContext';
 
 export default function HiringSection() {
   const { user, openLoginModal } = useAuth();
   const [openJob, setOpenJob] = useState<string | null>(null);
-  const [applicationModalRole, setApplicationModalRole] = useState<'tutor' | 'campus-leader' | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (user) {
@@ -15,8 +14,8 @@ export default function HiringSection() {
         const pending = localStorage.getItem('gzi_pending_apply_role');
         if (pending === 'tutor' || pending === 'campus-leader') {
           localStorage.removeItem('gzi_pending_apply_role');
-          setApplicationModalRole(pending);
           setOpenJob(pending);
+          navigate(`/careers/apply/${pending}`);
         }
       } catch (e) {}
     }
@@ -30,7 +29,7 @@ export default function HiringSection() {
       openLoginModal();
       return;
     }
-    setApplicationModalRole(role);
+    navigate(`/careers/apply/${role}`);
   };
 
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
@@ -336,13 +335,6 @@ export default function HiringSection() {
         </div>
 
       </div>
-
-      {/* Full Page Career Application Collector & Celebration Modal */}
-      <CareerApplicationModal
-        isOpen={applicationModalRole !== null}
-        onClose={() => setApplicationModalRole(null)}
-        role={applicationModalRole || 'tutor'}
-      />
     </section>
   );
 }
