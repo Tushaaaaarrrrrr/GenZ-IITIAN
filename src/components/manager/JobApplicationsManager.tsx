@@ -186,13 +186,62 @@ export default function JobApplicationsManager() {
 
       // 2. Direct Supabase query fallback
       if (supabase) {
+        let directApps: JobApplication[] = [];
         const { data, error } = await supabase
           .from('job_applications')
           .select('*')
           .order('created_at', { ascending: false });
 
-        if (!error && Array.isArray(data) && data.length > 0) {
-          setApplications(data);
+        if (!error && Array.isArray(data)) {
+          directApps = data;
+        }
+
+        try {
+          const { data: logs } = await supabase
+            .from('activity_logs')
+            .select('*')
+            .eq('action', 'JOB_APPLICATION_SUBMITTED')
+            .order('created_at', { ascending: false });
+
+          if (Array.isArray(logs) && logs.length > 0) {
+            const existingIds = new Set(directApps.map(a => a.id));
+            for (const log of logs) {
+              const meta = log.metadata || {};
+              const id = meta.id || `log-${log.id}`;
+              if (!existingIds.has(id)) {
+                directApps.push({
+                  id,
+                  role: meta.role || 'tutor',
+                  role_title: meta.role_title || 'Subject Tutor (Faculty)',
+                  full_name: meta.full_name || 'Candidate',
+                  email: log.email || meta.email || '',
+                  phone: meta.phone || '',
+                  is_iitm: meta.is_iitm,
+                  level: meta.level,
+                  subject: meta.subject,
+                  language: meta.language,
+                  cgpa: meta.cgpa,
+                  resume_link: meta.resume_link,
+                  official_email: meta.official_email,
+                  is_bs_student: meta.is_bs_student,
+                  is_group_owner: meta.is_group_owner,
+                  group_link: meta.group_link,
+                  group_members: meta.group_members,
+                  inquiries: meta.inquiries,
+                  metadata: meta,
+                  status: meta.status || 'PENDING',
+                  manager_notes: meta.manager_notes || '',
+                  created_at: log.created_at || meta.created_at || new Date().toISOString(),
+                  updated_at: log.created_at || meta.updated_at || new Date().toISOString()
+                });
+                existingIds.add(id);
+              }
+            }
+          }
+        } catch (e) {}
+
+        if (directApps.length > 0) {
+          setApplications(directApps);
           setIsDemoMode(false);
           setLoading(false);
           return;

@@ -24,6 +24,7 @@ import {
   Laptop
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 
 interface CareerApplicationModalProps {
   isOpen: boolean;
@@ -326,6 +327,7 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
           role: 'tutor',
           role_title: 'Subject Tutor (Faculty)',
           full_name: tutorData.name.trim(),
+          name: tutorData.name.trim(),
           email: (user?.email || '').trim().toLowerCase(),
           phone: tutorData.phone.trim(),
           age: tutorData.age.trim(),
@@ -339,48 +341,103 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
           language: tutorData.language,
           cgpa: tutorData.cgpa.trim(),
           resume_link: tutorData.resumeLink.trim(),
+          resumeLink: tutorData.resumeLink.trim(),
           is_iitm: 'Yes',
+          isIITM: 'Yes',
+          level: tutorData.degreeLevel,
           metadata: { ...tutorData, auth_email: user?.email }
         }
       : {
           role: 'campus-leader',
           role_title: 'Campus Leaders',
           full_name: leaderData.name.trim(),
+          name: leaderData.name.trim(),
           email: (user?.email || '').trim().toLowerCase(),
           official_email: leaderData.officialEmail.trim(),
           phone: leaderData.phone.trim(),
           is_bs_student: leaderData.isBSStudent,
+          isIITM: leaderData.isBSStudent,
           is_group_owner: leaderData.isGroupOwner,
           group_link: leaderData.groupLink.trim(),
           group_members: leaderData.groupMembers,
           inquiries: leaderData.inquiries.trim(),
+          level: 'Campus Leader',
+          subject: `Campus Leader (${leaderData.groupMembers} members)`,
           metadata: { ...leaderData, auth_email: user?.email }
         };
 
     try {
       // 1. Submit to platform API
-      const apiPromise = fetch('/api/job-applications', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      }).catch(err => {
-        console.warn('[Careers] API error fallback:', err);
-      });
+      let apiSaved = false;
+      try {
+        const res = await fetch('/api/job-applications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          apiSaved = true;
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          console.warn('[Careers] API error response:', errData);
+        }
+      } catch (err) {
+        console.warn('[Careers] API network error:', err);
+      }
 
-      // 2. Google Apps Script Webhook trigger (legacy support for faculty button)
-      if (isTutor) {
-        const GOOGLE_SCRIPT_URL = import.meta.env.VITE_CAREERS_SCRIPT_URL;
-        if (GOOGLE_SCRIPT_URL && GOOGLE_SCRIPT_URL !== 'YOUR_GOOGLE_SCRIPT_URL_HERE') {
-          fetch(GOOGLE_SCRIPT_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          }).catch(err => console.warn('[Careers] Google script notice:', err));
+      // 2. Direct Supabase insert fallback if API didn't succeed (e.g. static hosting)
+      if (!apiSaved && supabase) {
+        try {
+          const appId = `app-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+          await supabase.from('job_applications').insert([{
+            id: appId,
+            role: payload.role,
+            role_title: payload.role_title,
+            full_name: payload.full_name,
+            email: payload.email,
+            phone: payload.phone,
+            age: (payload as any).age || null,
+            gender: (payload as any).gender || null,
+            student_type: (payload as any).student_type || null,
+            degree_level: (payload as any).degree_level || null,
+            courses: (payload as any).courses || [],
+            has_tablet: (payload as any).has_tablet || null,
+            experience_and_why: (payload as any).experience_and_why || null,
+            is_iitm: (payload as any).is_iitm || 'Yes',
+            level: (payload as any).level || (payload as any).degree_level || null,
+            subject: (payload as any).subject || null,
+            language: (payload as any).language || null,
+            cgpa: (payload as any).cgpa || null,
+            resume_link: (payload as any).resume_link || null,
+            official_email: (payload as any).official_email || null,
+            is_bs_student: (payload as any).is_bs_student || null,
+            is_group_owner: (payload as any).is_group_owner || null,
+            group_link: (payload as any).group_link || null,
+            group_members: (payload as any).group_members || null,
+            inquiries: (payload as any).inquiries || null,
+            metadata: payload.metadata || {},
+            status: 'PENDING',
+            manager_notes: '',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }]);
+        } catch (subErr) {
+          console.warn('[Careers] Direct Supabase fallback warning:', subErr);
         }
       }
 
-      // 3. Fallback cache in localStorage for safety
+      // 3. Google Apps Script Webhook trigger (syncs to Google Sheet for both roles)
+      const GOOGLE_SCRIPT_URL = import.meta.env.VITE_CAREERS_SCRIPT_URL;
+      if (GOOGLE_SCRIPT_URL && GOOGLE_SCRIPT_URL !== 'YOUR_GOOGLE_SCRIPT_URL_HERE') {
+        fetch(GOOGLE_SCRIPT_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }).catch(err => console.warn('[Careers] Google script notice:', err));
+      }
+
+      // 4. Fallback cache in localStorage for safety
       try {
         const cached = localStorage.getItem('gzi_job_applications');
         const list = cached ? JSON.parse(cached) : [];
@@ -393,7 +450,6 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
         localStorage.setItem('gzi_job_applications', JSON.stringify(list));
       } catch (e) {}
 
-      await apiPromise;
       setSubmitted(true);
     } catch (err: any) {
       console.error('Job application submission error:', err);

@@ -1566,7 +1566,7 @@ app.post('/api/job-applications', async (req, res) => {
             role_title: resolvedRoleTitle,
             full_name: candidateName,
             email: candidateEmail,
-            phone: candidatePhone,
+            phone: cleanPhone || rawPhone,
 
             // Personal & Background profile
             age: age || null,
