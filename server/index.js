@@ -2682,6 +2682,15 @@ app.get('/api/referral', async (req, res) => {
     const { email } = req.query;
     if (!email) return res.status(400).json({ error: 'Email is required' });
 
+    // Verify caller is the authenticated owner of the email or a manager
+    const authUser = await getAuthenticatedUser(req);
+    if (!authUser) {
+        return res.status(401).json({ error: 'Unauthorized: Authentication required' });
+    }
+    if (authUser.email !== String(email).trim().toLowerCase() && !authUser.isManager) {
+        return res.status(403).json({ error: 'Forbidden: You can only view your own referral profile' });
+    }
+
     try {
         const { data: profile } = await supabase
             .from('referral_profiles')
@@ -2716,7 +2725,7 @@ app.get('/api/referral', async (req, res) => {
     }
 });
 
-// Validate referral code
+// Validate referral code (does not leak referrer's email address)
 app.get('/api/referral/validate', async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not initialized' });
     const { code } = req.query;
@@ -2725,12 +2734,12 @@ app.get('/api/referral/validate', async (req, res) => {
     try {
         const { data } = await supabase
             .from('referral_profiles')
-            .select('email')
+            .select('referral_code')
             .eq('referral_code', String(code).trim().toUpperCase())
             .maybeSingle();
 
         if (data) {
-            return res.json({ valid: true, referrerEmail: data.email });
+            return res.json({ valid: true });
         }
         return res.json({ valid: false });
     } catch (err) {
@@ -2971,9 +2980,10 @@ async function processAutomatedEmails(supabaseClient, welcomeWebhookUrl) {
 // REST route to trigger checks on demand (ideal for Vercel Cron or local testing)
 app.get('/api/cron-check-emails', async (req, res) => {
     try {
-        if (process.env.CRON_SECRET) {
+        const cronSecret = process.env.CRON_SECRET;
+        if (cronSecret || process.env.NODE_ENV === 'production') {
             const authHeader = req.headers.authorization;
-            if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+            if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
                 return res.status(401).json({ error: 'Unauthorized cron request' });
             }
         }

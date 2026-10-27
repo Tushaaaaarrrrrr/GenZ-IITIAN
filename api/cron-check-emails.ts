@@ -30,9 +30,10 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  if (process.env.CRON_SECRET) {
+  const cronSecret = process.env.CRON_SECRET;
+  if (cronSecret || process.env.NODE_ENV === 'production' || process.env.VERCEL) {
     const authHeader = req.headers.authorization;
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
       return res.status(401).json({ error: 'Unauthorized cron request' });
     }
   }
