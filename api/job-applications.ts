@@ -6,6 +6,32 @@ export default async function handler(req: any, res: any) {
 
   const supabase = supabaseUrl && serviceRole ? createClient(supabaseUrl, serviceRole) : null;
 
+  // Protect management operations (GET, PUT, PATCH, DELETE) — only applicants can POST without auth
+  if (req.method !== 'POST') {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Unauthorized: Missing auth token' });
+    }
+
+    const token = authHeader.slice(7);
+    const supabaseAuth = createClient(supabaseUrl || '', process.env.VITE_SUPABASE_ANON_KEY || '');
+    const { data: { user }, error: authErr } = await supabaseAuth.auth.getUser(token);
+
+    if (authErr || !user || !supabase) {
+      return res.status(401).json({ error: 'Unauthorized: Invalid token' });
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (profile?.role !== 'MANAGER') {
+      return res.status(403).json({ error: 'Forbidden: Manager access required' });
+    }
+  }
+
   // 1. POST: Submit a new job application
   if (req.method === 'POST') {
     try {

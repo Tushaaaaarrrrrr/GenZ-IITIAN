@@ -27,6 +27,15 @@ import {
   X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { supabase } from '../../lib/supabase';
+
+const getAuthHeaders = async (): Promise<Record<string, string>> => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.access_token) {
+    return { 'Authorization': `Bearer ${session.access_token}` };
+  }
+  return {};
+};
 
 export type BookingStatus = 
   | 'CONFIRMED' 
@@ -159,7 +168,8 @@ export default function OneOnOneBookingsManager() {
   const fetchBookings = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/1on1-bookings');
+      const authHeaders = await getAuthHeaders();
+      const res = await fetch('/api/1on1-bookings', { headers: authHeaders });
       const data = await res.json();
       if (data.success && Array.isArray(data.bookings)) {
         setBookings(data.bookings);
@@ -198,9 +208,10 @@ export default function OneOnOneBookingsManager() {
     if (!viewBooking) return;
     setSavingNotes(true);
     try {
+      const authHeaders = await getAuthHeaders();
       const res = await fetch('/api/1on1-bookings/update-notes', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
         body: JSON.stringify({
           id: viewBooking.id,
           manager_notes: managerNotesInput
@@ -228,9 +239,10 @@ export default function OneOnOneBookingsManager() {
     setActionLoading(true);
     const notesToSave = customManagerNotes !== undefined ? customManagerNotes : managerNotesInput;
     try {
+      const authHeaders = await getAuthHeaders();
       const res = await fetch('/api/1on1-bookings/update-status', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
         body: JSON.stringify({
           id: viewBooking.id,
           status: newStatus,
@@ -266,9 +278,10 @@ export default function OneOnOneBookingsManager() {
     if (!viewBooking || !newDate || !newSlot) return;
     setActionLoading(true);
     try {
+      const authHeaders = await getAuthHeaders();
       const res = await fetch('/api/1on1-bookings/reschedule', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
         body: JSON.stringify({
           id: viewBooking.id,
           new_slot_date: newDate,
@@ -311,10 +324,11 @@ export default function OneOnOneBookingsManager() {
     if (!viewBooking) return;
     setActionLoading(true);
     try {
+      const authHeaders = await getAuthHeaders();
       const reasonToUse = cancelReason || managerNotesInput || 'Cancelled by manager';
       const res = await fetch('/api/1on1-bookings/cancel', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
         body: JSON.stringify({
           id: viewBooking.id,
           reason: reasonToUse,

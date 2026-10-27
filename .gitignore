@@ -45,3 +45,7 @@ Thumbs.db
 restore-original.sh
 apply-endterm-idea.sh
 
+# Agent skills
+.agents/
+skills-lock.json
+

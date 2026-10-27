@@ -77,41 +77,24 @@ export default async function handler(req: any, res: any) {
       .update(body)
       .digest('hex');
 
-    if (expectedSignature !== razorpay_signature) {
+    const expectedBuf = Buffer.from(expectedSignature, 'utf8');
+    const signatureBuf = Buffer.from(razorpay_signature || '', 'utf8');
+    if (expectedBuf.length !== signatureBuf.length || !crypto.timingSafeEqual(expectedBuf, signatureBuf)) {
       return res.status(400).json({ error: 'Signature mismatch' });
     }
 
-    const { error: orderUpdateError } = await supabase
-      .from('website_orders')
-      .update({ status: 'PAID' })
-      .eq('order_id', razorpay_order_id);
-
-    if (orderUpdateError) {
-      throw orderUpdateError;
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, name, phone, gender')
-      .eq('email', email)
-      .single();
-
-    const lmsEnrollUrl = process.env.LMS_ENROLL_URL || 'https://class.genziitian.in/api/external-enroll';
-    const externalEnrollSecret = process.env.EXTERNAL_ENROLL_SECRET;
-
-    // === STEP 1: LMS ENROLLMENT (isolated — failures here must NOT block referral/coin processing) ===
-    // Fetch order details. Some deployed databases do not have selected_class_type yet.
+    // Fetch order first to enforce verified server-side email and course IDs (prevent parameter tampering)
     let orderData: any = null;
     const orderWithClassType = await supabase
       .from('website_orders')
-      .select('total_amount, created_at, selected_class_type')
+      .select('user_email, course_ids, total_amount, created_at, selected_class_type')
       .eq('order_id', razorpay_order_id)
       .single();
 
     if (orderWithClassType.error?.code === 'PGRST204' && orderWithClassType.error.message?.includes('selected_class_type')) {
       const orderWithoutClassType = await supabase
         .from('website_orders')
-        .select('total_amount, created_at')
+        .select('user_email, course_ids, total_amount, created_at')
         .eq('order_id', razorpay_order_id)
         .single();
 
@@ -125,11 +108,39 @@ export default async function handler(req: any, res: any) {
       orderData = orderWithClassType.data;
     }
 
+    if (!orderData) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    const verifiedEmail = (orderData.user_email || email).trim().toLowerCase();
+    const verifiedCourseIds = Array.isArray(orderData.course_ids) && orderData.course_ids.length > 0
+      ? orderData.course_ids
+      : courseIds;
+
+    const { error: orderUpdateError } = await supabase
+      .from('website_orders')
+      .update({ status: 'PAID' })
+      .eq('order_id', razorpay_order_id);
+
+    if (orderUpdateError) {
+      throw orderUpdateError;
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id, name, phone, gender')
+      .eq('email', verifiedEmail)
+      .single();
+
+    const lmsEnrollUrl = process.env.LMS_ENROLL_URL || 'https://class.genziitian.in/api/external-enroll';
+    const externalEnrollSecret = process.env.EXTERNAL_ENROLL_SECRET;
+
+    // === STEP 1: LMS ENROLLMENT (isolated — failures here must NOT block referral/coin processing) ===
     // Fetch course details for class types and LMS IDs
-    const { data: coursesData } = await supabase.from('courses').select('id, class_type, bundleCourses').in('id', courseIds);
+    const { data: coursesData } = await supabase.from('courses').select('id, class_type, bundleCourses').in('id', verifiedCourseIds);
     
     // Translate website slugs to LMS course IDs
-    const lmsCourseIds = courseIds.flatMap(id => {
+    const lmsCourseIds = verifiedCourseIds.flatMap((id: string) => {
       const dbCourse = coursesData?.find(c => c.id === id);
       if (dbCourse) {
         let bundleCourses = dbCourse.bundleCourses;
@@ -178,7 +189,7 @@ export default async function handler(req: any, res: any) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           secret: externalEnrollSecret,
-          email,
+          email: verifiedEmail,
           name: profile?.name || 'Student',
           phone: profile?.phone || 'N/A',
           gender: profile?.gender || 'MALE',
@@ -198,9 +209,9 @@ export default async function handler(req: any, res: any) {
 
       lmsEnrollmentSucceeded = true;
 
-      const successLogs = courseIds.map((courseId: string) => ({
+      const successLogs = verifiedCourseIds.map((courseId: string) => ({
         userId: profile?.id,
-        email,
+        email: verifiedEmail,
         action: 'ENROLLMENT_SUCCESS',
         courseId,
         created_at: new Date().toISOString(),
@@ -214,9 +225,9 @@ export default async function handler(req: any, res: any) {
     } catch (lmsError) {
       console.error('LMS enrollment error:', lmsError);
 
-      const failureLogs = courseIds.map((courseId: string) => ({
+      const failureLogs = verifiedCourseIds.map((courseId: string) => ({
         userId: profile?.id,
-        email,
+        email: verifiedEmail,
         action: 'ENROLLMENT_FAILURE',
         courseId,
         created_at: new Date().toISOString(),
@@ -244,7 +255,7 @@ export default async function handler(req: any, res: any) {
 
       sendToGoogleSheet({
         name: profile?.name || 'Student',
-        email,
+        email: verifiedEmail,
         phone: profile?.phone || 'N/A',
         course_name: courseNames,
         price: orderForLog?.total_amount || 0,
@@ -274,7 +285,7 @@ export default async function handler(req: any, res: any) {
           if (coupon.single_use_per_user !== false) {
             await supabase.from('coupon_uses').upsert({
               code: coupon.code,
-              user_email: email,
+              user_email: verifiedEmail,
               order_id: razorpay_order_id,
             }, { onConflict: 'code,user_email' });
           }
@@ -292,7 +303,7 @@ export default async function handler(req: any, res: any) {
     // === STEP 3: REFERRAL REWARD PROCESSING (runs regardless of LMS result) ===
     if (referralCode) {
       try {
-        console.log(`[Referral] Processing code: ${referralCode} for buyer: ${email}`);
+        console.log(`[Referral] Processing code: ${referralCode} for buyer: ${verifiedEmail}`);
         const codeToCheck = String(referralCode).trim().toUpperCase();
         const { data: referrerProfile, error: rpErr } = await supabase
           .from('referral_profiles')
@@ -304,8 +315,8 @@ export default async function handler(req: any, res: any) {
 
         if (!referrerProfile) {
           console.log(`[Referral] Code ${codeToCheck} not found in referral_profiles.`);
-        } else if (referrerProfile.email.toLowerCase() === email.toLowerCase()) {
-          console.log(`[Referral] Buyer ${email} is using their own code. Skipping reward.`);
+        } else if (referrerProfile.email.toLowerCase() === verifiedEmail.toLowerCase()) {
+          console.log(`[Referral] Buyer ${verifiedEmail} is using their own code. Skipping reward.`);
         } else {
           console.log(`[Referral] Match found. Referrer: ${referrerProfile.email}`);
           const { data: orderRow, error: orderErr } = await supabase
@@ -360,7 +371,7 @@ export default async function handler(req: any, res: any) {
 
           const { error: txnErr } = await supabase.from('referral_transactions').insert({
             referrer_email: referrerProfile.email,
-            buyer_email: email,
+            buyer_email: verifiedEmail,
             referral_code: codeToCheck,
             order_id: razorpay_order_id,
             original_price: originalPrice,
@@ -384,7 +395,7 @@ export default async function handler(req: any, res: any) {
         const { data: buyerRef } = await supabase
           .from('referral_profiles')
           .select('wallet_balance')
-          .eq('email', email)
+          .eq('email', verifiedEmail)
           .maybeSingle();
 
         if (buyerRef) {
@@ -392,7 +403,7 @@ export default async function handler(req: any, res: any) {
           await supabase
             .from('referral_profiles')
             .update({ wallet_balance: newBal })
-            .eq('email', email);
+            .eq('email', verifiedEmail);
         }
       } catch (coinErr) {
         console.error('Coin deduction error (non-fatal):', coinErr);

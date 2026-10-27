@@ -65,7 +65,6 @@ CREATE POLICY "Managers can read job applications"
             AND profiles.role = 'MANAGER'
         )
         OR (auth.jwt() ->> 'role') = 'service_role'
-        OR true -- Fallback for authenticated/anon during development
     );
 
 -- 3. Managers can update application status and notes
@@ -80,7 +79,6 @@ CREATE POLICY "Managers can update job applications"
             AND profiles.role = 'MANAGER'
         )
         OR (auth.jwt() ->> 'role') = 'service_role'
-        OR true
     );
 
 -- 4. Managers can delete applications
@@ -95,7 +93,6 @@ CREATE POLICY "Managers can delete job applications"
             AND profiles.role = 'MANAGER'
         )
         OR (auth.jwt() ->> 'role') = 'service_role'
-        OR true
     );
 
 -- Index for speedy queries

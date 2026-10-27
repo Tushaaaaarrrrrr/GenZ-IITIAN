@@ -60,13 +60,59 @@ app.use('/api/', apiLimiter);
 
 // ========== AUTH ==========
 
-function authMiddleware(req, res, next) {
+async function authMiddleware(req, res, next) {
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) return res.status(401).json({ error: 'Unauthorized' });
+    if (!authHeader || !authHeader.startsWith('Bearer ')) return res.status(401).json({ error: 'Unauthorized: Missing token' });
     const token = authHeader.slice(7);
+
+    // 1. Check in-memory admin panel sessions
     const session = sessions.get(token);
-    if (!session || session.expires < Date.now()) { sessions.delete(token); return res.status(401).json({ error: 'Session expired' }); }
-    next();
+    if (session) {
+        if (session.expires < Date.now()) {
+            sessions.delete(token);
+            return res.status(401).json({ error: 'Session expired' });
+        }
+        req.user = session;
+        return next();
+    }
+
+    // 2. Check Supabase manager token
+    if (supabase) {
+        try {
+            const { data: { user }, error: authErr } = await supabase.auth.getUser(token);
+            if (!authErr && user) {
+                const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+                if (profile?.role === 'MANAGER') {
+                    req.user = { id: user.id, email: user.email, role: 'MANAGER' };
+                    return next();
+                }
+            }
+        } catch (e) {}
+    }
+
+    return res.status(401).json({ error: 'Unauthorized: Manager session required' });
+}
+
+async function getAuthenticatedUser(req) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
+    const token = authHeader.slice(7);
+
+    const session = sessions.get(token);
+    if (session && session.expires >= Date.now()) {
+        return { isManager: true, user: session };
+    }
+
+    if (supabase) {
+        try {
+            const { data: { user }, error: authErr } = await supabase.auth.getUser(token);
+            if (!authErr && user) {
+                const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+                return { isManager: profile?.role === 'MANAGER', user, role: profile?.role };
+            }
+        } catch (e) {}
+    }
+    return null;
 }
 
 const formatInList = (values) => values.map(value => `"${value}"`).join(',');
@@ -185,7 +231,15 @@ app.post('/api/auth/login', (req, res) => {
     if (!ADMIN_USER || !ADMIN_PASS) {
         return res.status(503).json({ error: 'Admin login is not configured.' });
     }
-    if (username === ADMIN_USER && password === ADMIN_PASS) {
+    const userBuf = Buffer.from(String(username || ''));
+    const adminUserBuf = Buffer.from(String(ADMIN_USER));
+    const passBuf = Buffer.from(String(password || ''));
+    const adminPassBuf = Buffer.from(String(ADMIN_PASS));
+
+    const userMatch = userBuf.length === adminUserBuf.length && crypto.timingSafeEqual(userBuf, adminUserBuf);
+    const passMatch = passBuf.length === adminPassBuf.length && crypto.timingSafeEqual(passBuf, adminPassBuf);
+
+    if (userMatch && passMatch) {
         const token = crypto.randomBytes(32).toString('hex');
         sessions.set(token, { user: username, expires: Date.now() + 24 * 60 * 60 * 1000 });
         return res.json({ token, message: 'Login successful' });
@@ -385,6 +439,7 @@ app.post('/api/admin/settings', authMiddleware, async (req, res) => {
 });
 
 // ========== pSEO ENGINE ==========
+app.use('/api/pseo/admin', authMiddleware);
 app.use('/api/pseo', pseoRouter);
 
 // ========== PAYMENTS (Razorpay) ==========
@@ -1121,6 +1176,16 @@ app.get('/api/1on1-bookings', async (req, res) => {
     try {
         const studentEmail = req.query.email ? String(req.query.email).trim().toLowerCase() : null;
 
+        const auth = await getAuthenticatedUser(req);
+        if (!auth) {
+            return res.status(401).json({ error: 'Unauthorized: Authentication required' });
+        }
+        if (!auth.isManager) {
+            if (!studentEmail || studentEmail.toLowerCase() !== auth.user.email?.toLowerCase()) {
+                return res.status(403).json({ error: 'Forbidden: You can only view your own bookings' });
+            }
+        }
+
         // 1. Refresh memory from local persistent disk storage
         loadBookingsFromFile();
 
@@ -1248,6 +1313,11 @@ app.get('/api/1on1-bookings', async (req, res) => {
 // CANCEL 1:1 BOOKING (By Student or Manager)
 app.post('/api/1on1-bookings/cancel', async (req, res) => {
     try {
+        const auth = await getAuthenticatedUser(req);
+        if (!auth) {
+            return res.status(401).json({ error: 'Unauthorized: Authentication required' });
+        }
+
         const { id, email, reason = 'Cancelled by student', manager_notes } = req.body || {};
         if (!id) return res.status(400).json({ error: 'Booking ID is required' });
 
@@ -1257,7 +1327,13 @@ app.post('/api/1on1-bookings/cancel', async (req, res) => {
         if (supabase) {
             const { data } = await supabase.from('one_on_one_bookings').select('*').eq('id', id).maybeSingle();
             if (data) booking = { ...booking, ...data };
+        }
 
+        if (!auth.isManager && booking?.email && booking.email.toLowerCase() !== auth.user.email?.toLowerCase()) {
+            return res.status(403).json({ error: 'Forbidden: You can only cancel your own bookings' });
+        }
+
+        if (supabase) {
             try {
                 await supabase.from('one_on_one_bookings')
                     .update({ status: 'CANCELLED', updated_at: new Date().toISOString() })
@@ -1308,6 +1384,11 @@ app.post('/api/1on1-bookings/cancel', async (req, res) => {
 // RESCHEDULE 1:1 BOOKING (By Student or Manager)
 app.post('/api/1on1-bookings/reschedule', async (req, res) => {
     try {
+        const auth = await getAuthenticatedUser(req);
+        if (!auth) {
+            return res.status(401).json({ error: 'Unauthorized: Authentication required' });
+        }
+
         const { id, new_slot_date, new_slot_time, reason = 'Rescheduled', manager_notes } = req.body || {};
         if (!id || !new_slot_date || !new_slot_time) {
             return res.status(400).json({ error: 'Booking ID, new date, and new slot time are required' });
@@ -1325,7 +1406,13 @@ app.post('/api/1on1-bookings/reschedule', async (req, res) => {
                 previous_slot_date = data.slot_date;
                 previous_slot_time = data.slot_time;
             }
+        }
 
+        if (!auth.isManager && booking?.email && booking.email.toLowerCase() !== auth.user.email?.toLowerCase()) {
+            return res.status(403).json({ error: 'Forbidden: You can only reschedule your own bookings' });
+        }
+
+        if (supabase) {
             try {
                 await supabase.from('one_on_one_bookings').update({
                     slot_date: new_slot_date,
@@ -1386,7 +1473,7 @@ app.post('/api/1on1-bookings/reschedule', async (req, res) => {
 });
 
 // UPDATE 1:1 BOOKING STATUS (By Manager)
-app.post('/api/1on1-bookings/update-status', async (req, res) => {
+app.post('/api/1on1-bookings/update-status', authMiddleware, async (req, res) => {
     try {
         const { id, status, manager_notes, notes } = req.body || {};
         if (!id || !status) return res.status(400).json({ error: 'ID and status are required' });
@@ -1442,7 +1529,7 @@ app.post('/api/1on1-bookings/update-status', async (req, res) => {
 });
 
 // UPDATE 1:1 BOOKING MANAGER NOTES ONLY (By Manager)
-app.post('/api/1on1-bookings/update-notes', async (req, res) => {
+app.post('/api/1on1-bookings/update-notes', authMiddleware, async (req, res) => {
     try {
         const { id, manager_notes = '' } = req.body || {};
         if (!id) return res.status(400).json({ error: 'ID is required' });
@@ -1643,7 +1730,7 @@ app.post('/api/job-applications', async (req, res) => {
 });
 
 // 2. GET ALL APPLICATIONS (For Manager Portal)
-app.get('/api/job-applications', async (req, res) => {
+app.get('/api/job-applications', authMiddleware, async (req, res) => {
     try {
         loadApplicationsFromFile();
         const appMap = new Map();
@@ -1728,7 +1815,7 @@ app.get('/api/job-applications', async (req, res) => {
 });
 
 // 3. UPDATE APPLICATION STATUS & NOTES
-app.post('/api/job-applications/update-status', async (req, res) => {
+app.post('/api/job-applications/update-status', authMiddleware, async (req, res) => {
     try {
         const { id, status, manager_notes } = req.body || {};
         if (!id) return res.status(400).json({ error: 'ID is required' });
@@ -1768,7 +1855,7 @@ app.post('/api/job-applications/update-status', async (req, res) => {
 });
 
 // 4. DELETE APPLICATION
-app.post('/api/job-applications/delete', async (req, res) => {
+app.post('/api/job-applications/delete', authMiddleware, async (req, res) => {
     try {
         const { id } = req.body || {};
         if (!id) return res.status(400).json({ error: 'ID is required' });
@@ -1885,6 +1972,8 @@ async function enrollUserInLMS({ email, courseIds, razorpay_order_id, razorpay_p
     }
 
     // Default to database values if not explicitly provided
+    email = existingOrder?.user_email || email;
+    courseIds = (Array.isArray(existingOrder?.course_ids) && existingOrder.course_ids.length > 0) ? existingOrder.course_ids : courseIds;
     referralCode = referralCode || existingOrder?.referral_code;
     discountCode = discountCode || existingOrder?.discount_code;
     coinsApplied = (coinsApplied !== undefined && coinsApplied !== null) ? coinsApplied : (existingOrder?.coins_applied || 0);
@@ -2221,7 +2310,11 @@ app.post('/api/verify-payment', async (req, res) => {
     const body = razorpay_order_id + "|" + razorpay_payment_id;
     const expectedSignature = crypto.createHmac('sha256', razorpaySecret).update(body.toString()).digest('hex');
 
-    if (expectedSignature !== razorpay_signature) {
+    const expectedBuf = Buffer.from(expectedSignature, 'utf8');
+    const signatureBuf = Buffer.from(razorpay_signature || '', 'utf8');
+    const signatureValid = expectedBuf.length === signatureBuf.length && crypto.timingSafeEqual(expectedBuf, signatureBuf);
+
+    if (!signatureValid) {
         // --- GOOGLE SHEETS LOGGING (FAILED - SIGNATURE) ---
         try {
             let orderAmount = 0;
@@ -2269,23 +2362,32 @@ app.post('/api/verify-payment', async (req, res) => {
     }
 
     try {
-        // Fetch the order first to ensure we have the verified price
+        // Fetch order to enforce verified database price, course IDs, and email
         const { data: order } = await supabase
             .from('website_orders')
-            .select('total_amount')
+            .select('*')
             .eq('order_id', razorpay_order_id)
             .single();
 
+        if (!order) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+
+        const verifiedEmail = (order.user_email || email).trim().toLowerCase();
+        const verifiedCourseIds = Array.isArray(order.course_ids) && order.course_ids.length > 0
+            ? order.course_ids
+            : courseIds;
+
         const result = await enrollUserInLMS({
-            email,
-            courseIds,
+            email: verifiedEmail,
+            courseIds: verifiedCourseIds,
             razorpay_order_id,
             razorpay_payment_id,
-            discountCode,
-            referralCode,
-            coinsApplied,
-            selectedClassType,
-            finalPrice: order?.total_amount
+            discountCode: order.discount_code || discountCode,
+            referralCode: order.referral_code || referralCode,
+            coinsApplied: (order.coins_applied !== undefined && order.coins_applied !== null) ? order.coins_applied : coinsApplied,
+            selectedClassType: order.selected_class_type || selectedClassType,
+            finalPrice: order.total_amount
         });
         
         // Always return success to the user — payment IS verified and PAID.
@@ -2304,6 +2406,14 @@ app.get('/api/get-orders', async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not initialized' });
     const { email } = req.query;
     if (!email) return res.status(400).json({ error: 'Email is required' });
+
+    const auth = await getAuthenticatedUser(req);
+    if (!auth) {
+        return res.status(401).json({ error: 'Unauthorized: Authentication required' });
+    }
+    if (!auth.isManager && String(email).toLowerCase() !== auth.user.email?.toLowerCase()) {
+        return res.status(403).json({ error: 'Forbidden: You can only view your own orders' });
+    }
 
     try {
         const { data, error } = await supabase
@@ -2528,7 +2638,9 @@ app.post('/api/razorpay-webhook', async (req, res) => {
         .update(req.rawBody)
         .digest('hex');
 
-    if (expectedSignature !== signature) {
+    const expectedBuf = Buffer.from(expectedSignature, 'utf8');
+    const signatureBuf = Buffer.from(signature || '', 'utf8');
+    if (expectedBuf.length !== signatureBuf.length || !crypto.timingSafeEqual(expectedBuf, signatureBuf)) {
         return res.status(400).json({ error: 'Invalid webhook signature' });
     }
 
@@ -2859,6 +2971,13 @@ async function processAutomatedEmails(supabaseClient, welcomeWebhookUrl) {
 // REST route to trigger checks on demand (ideal for Vercel Cron or local testing)
 app.get('/api/cron-check-emails', async (req, res) => {
     try {
+        if (process.env.CRON_SECRET) {
+            const authHeader = req.headers.authorization;
+            if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+                return res.status(401).json({ error: 'Unauthorized cron request' });
+            }
+        }
+
         const welcomeWebhookUrl = process.env.WELCOME_WEBHOOK_URL;
         if (!welcomeWebhookUrl) {
             return res.status(500).json({ error: 'WELCOME_WEBHOOK_URL environment variable is missing' });

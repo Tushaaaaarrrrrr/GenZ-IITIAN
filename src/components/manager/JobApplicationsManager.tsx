@@ -28,6 +28,14 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../../lib/supabase';
+
+const getAuthHeaders = async (): Promise<Record<string, string>> => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.access_token) {
+    return { 'Authorization': `Bearer ${session.access_token}` };
+  }
+  return {};
+};
 import { useAuth } from '../../context/AuthContext';
 
 export interface JobApplication {
@@ -173,7 +181,8 @@ export default function JobApplicationsManager() {
     setLoading(true);
     try {
       // 1. Try local server or Vercel API
-      const res = await fetch('/api/job-applications');
+      const authHeaders = await getAuthHeaders();
+      const res = await fetch('/api/job-applications', { headers: authHeaders });
       if (res.ok) {
         const data = await res.json();
         if (data.success && Array.isArray(data.applications)) {
@@ -287,9 +296,10 @@ export default function JobApplicationsManager() {
 
   const handleUpdateStatus = async (id: string, newStatus: JobApplication['status']) => {
     try {
+      const authHeaders = await getAuthHeaders();
       await fetch('/api/job-applications/update-status', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
         body: JSON.stringify({ id, status: newStatus })
       });
 
@@ -312,9 +322,10 @@ export default function JobApplicationsManager() {
     if (!selectedApp) return;
     setSavingNotes(true);
     try {
+      const authHeaders = await getAuthHeaders();
       await fetch('/api/job-applications/update-status', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
         body: JSON.stringify({ id: selectedApp.id, manager_notes: managerNotesInput })
       });
 
@@ -336,9 +347,10 @@ export default function JobApplicationsManager() {
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Are you sure you want to remove the application for "${name}"?`)) return;
     try {
+      const authHeaders = await getAuthHeaders();
       await fetch('/api/job-applications/delete', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
         body: JSON.stringify({ id })
       });
 

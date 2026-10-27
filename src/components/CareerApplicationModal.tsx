@@ -58,7 +58,7 @@ type JourneyStep = {
 
 const ROLE_META: Record<'tutor' | 'campus-leader', RoleMeta> = {
   tutor: {
-    badge: 'Faculty opening',
+    badge: '',
     title: 'Subject Tutor',
     blurb: 'Teach the IITM BS courses you have aced, guide your peers, and earn while you learn.',
     tags: ['Part-time · Paid', 'Remote'],
@@ -716,7 +716,7 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
 
   const heading = isTutor
     ? step === 1
-      ? { title: 'Tell us about yourself', sub: 'A few basics and where you are in your IITM BS degree. Please answer as accurately as you can.' }
+      ? { title: 'Tell us about yourself', sub: '' }
       : { title: 'Your teaching setup', sub: 'Pick the courses you can teach and tell us a little about how you teach.' }
     : { title: 'Tell us about your community', sub: 'A few details about you and the student group you run. Please answer as accurately as you can.' };
 
@@ -947,14 +947,16 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
                 <div aria-hidden className="absolute inset-0 opacity-[0.07]" style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '18px 18px' }} />
 
                 <div className="relative">
-                  <span
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] sm:text-xs font-black uppercase tracking-[0.14em] text-[#0b1120]"
-                    style={{ background: meta.accentText }}
-                  >
-                    <Sparkles className="w-3.5 h-3.5" /> {meta.badge}
-                  </span>
+                  {meta.badge && (
+                    <span
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] sm:text-xs font-black uppercase tracking-[0.14em] text-[#0b1120]"
+                      style={{ background: meta.accentText }}
+                    >
+                      <Sparkles className="w-3.5 h-3.5" /> {meta.badge}
+                    </span>
+                  )}
 
-                  <h1 className="mt-5 text-[2rem] sm:text-4xl xl:text-[2.75rem] font-black tracking-tight leading-[1.05]">
+                  <h1 className={`${meta.badge ? 'mt-5' : 'mt-1'} text-[2rem] sm:text-4xl xl:text-[2.75rem] font-black tracking-tight leading-[1.05]`}>
                     Apply as
                     <br />
                     <span style={{ color: meta.accentText }}>{meta.title}</span>
@@ -1093,9 +1095,11 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
                 <h2 className="text-[2rem] sm:text-5xl lg:text-[3.25rem] font-black tracking-tight text-[#0b1120] leading-[1.04]">
                   {heading.title}
                 </h2>
-                <p className="mt-3 sm:mt-4 text-base sm:text-lg text-slate-600 font-medium leading-relaxed max-w-2xl">
-                  {heading.sub}
-                </p>
+                {heading.sub && (
+                  <p className="mt-3 sm:mt-4 text-base sm:text-lg text-slate-600 font-medium leading-relaxed max-w-2xl">
+                    {heading.sub}
+                  </p>
+                )}
               </motion.div>
 
               <AnimatePresence mode="wait">
@@ -1269,7 +1273,7 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
                     exit="exit"
                     className="space-y-5 sm:space-y-6"
                   >
-                    <Section index={1} title="Courses you can teach" subtitle="Choose every course you're confident teaching. You can mix Foundation and Diploma.">
+                    <Section index={1} title="Courses you can teach" subtitle="Choose every course you're confident teaching.">
                       <div>
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="inline-flex w-fit p-1.5 rounded-2xl bg-slate-100 border border-slate-200">
@@ -1403,7 +1407,6 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
                       <Field
                         label="Any teaching experience? And why GenZ IITian?"
                         htmlFor="tutor-experience"
-                        hint="Past teaching, mentoring or doubt-solving, and why you want to guide fellow students."
                         required
                       >
                         <div className="relative">
@@ -1423,7 +1426,7 @@ export default function CareerApplicationModal({ isOpen, onClose, role }: Career
                       </Field>
                     </Section>
 
-                    <Section index={3} title="Setup & academics" subtitle="The practical bits we need to match you with the right batch.">
+                    <Section index={3} title="Setup & academics">
                       <Field label="Do you have a tablet, or a pen tablet with stylus?" hint="We teach by writing on screen, so this matters." required>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           {[

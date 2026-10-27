@@ -16,6 +16,15 @@ import {
   X,
   Sparkles
 } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
+
+const getAuthHeaders = async (): Promise<Record<string, string>> => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.access_token) {
+    return { 'Authorization': `Bearer ${session.access_token}` };
+  }
+  return {};
+};
 
 interface Booking {
   id: string;
@@ -69,7 +78,10 @@ export default function StudentOneOnOneBookings({ email }: StudentOneOnOneBookin
   const fetchBookings = async () => {
     if (!email) return;
     try {
-      const res = await fetch(`/api/1on1-bookings?email=${encodeURIComponent(email)}`);
+      const authHeaders = await getAuthHeaders();
+      const res = await fetch(`/api/1on1-bookings?email=${encodeURIComponent(email)}`, {
+        headers: authHeaders
+      });
       const data = await res.json();
       if (data.success && Array.isArray(data.bookings)) {
         setBookings(data.bookings);
@@ -125,9 +137,10 @@ export default function StudentOneOnOneBookings({ email }: StudentOneOnOneBookin
     setStatusMessage(null);
 
     try {
+      const authHeaders = await getAuthHeaders();
       const res = await fetch('/api/1on1-bookings/reschedule', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
         body: JSON.stringify({
           id: rescheduleBooking.id,
           email: rescheduleBooking.email,
@@ -175,9 +188,10 @@ export default function StudentOneOnOneBookings({ email }: StudentOneOnOneBookin
     setStatusMessage(null);
 
     try {
+      const authHeaders = await getAuthHeaders();
       const res = await fetch('/api/1on1-bookings/cancel', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
         body: JSON.stringify({
           id: cancelBooking.id,
           email: cancelBooking.email,
