@@ -308,3 +308,34 @@ BEGIN
       WITH CHECK (public.is_manager() OR (auth.jwt() ->> 'role') = 'service_role');
   END IF;
 END $$;
+
+-- 11. COURSES & COURSE CATALOG PROTECTION (No tampering with prices or catalog)
+DO $$
+BEGIN
+  IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'courses') THEN
+    ALTER TABLE public.courses ENABLE ROW LEVEL SECURITY;
+    DROP POLICY IF EXISTS "courses_select" ON public.courses;
+    DROP POLICY IF EXISTS "courses_insert_manager" ON public.courses;
+    DROP POLICY IF EXISTS "courses_update_manager" ON public.courses;
+    DROP POLICY IF EXISTS "courses_delete_manager" ON public.courses;
+    DROP POLICY IF EXISTS "courses_insert" ON public.courses;
+    DROP POLICY IF EXISTS "courses_update" ON public.courses;
+    DROP POLICY IF EXISTS "courses_delete" ON public.courses;
+
+    CREATE POLICY "courses_select" ON public.courses FOR SELECT USING (true);
+    CREATE POLICY "courses_write_manager" ON public.courses FOR ALL
+      USING (public.is_manager() OR (auth.jwt() ->> 'role') = 'service_role')
+      WITH CHECK (public.is_manager() OR (auth.jwt() ->> 'role') = 'service_role');
+  END IF;
+
+  IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'course_catalog') THEN
+    ALTER TABLE public.course_catalog ENABLE ROW LEVEL SECURITY;
+    DROP POLICY IF EXISTS "catalog_read" ON public.course_catalog;
+    DROP POLICY IF EXISTS "catalog_write_manager" ON public.course_catalog;
+
+    CREATE POLICY "catalog_read" ON public.course_catalog FOR SELECT USING (true);
+    CREATE POLICY "catalog_write_manager" ON public.course_catalog FOR ALL
+      USING (public.is_manager() OR (auth.jwt() ->> 'role') = 'service_role')
+      WITH CHECK (public.is_manager() OR (auth.jwt() ->> 'role') = 'service_role');
+  END IF;
+END $$;
