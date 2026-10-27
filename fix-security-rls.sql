@@ -42,6 +42,7 @@ DROP POLICY IF EXISTS "Users can view their own profile" ON public.profiles;
 DROP POLICY IF EXISTS "Managers can view all profiles" ON public.profiles;
 DROP POLICY IF EXISTS "Users can manage own profile" ON public.profiles;
 DROP POLICY IF EXISTS "Enable read for everyone" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_all_service" ON public.profiles;
 
 CREATE POLICY "profiles_select" ON public.profiles
   FOR SELECT USING (auth.uid() = id OR public.is_manager());
@@ -92,30 +93,24 @@ ALTER TABLE public.job_applications ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Public can submit job applications" ON public.job_applications;
 CREATE POLICY "Public can submit job applications"
-    ON public.job_applications
-    FOR INSERT
-    TO public
-    WITH CHECK (true);
+    ON public.job_applications FOR INSERT TO public WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Managers can read job applications" ON public.job_applications;
 CREATE POLICY "Managers can read job applications"
-    ON public.job_applications
-    FOR SELECT
+    ON public.job_applications FOR SELECT
     USING (public.is_manager() OR (auth.jwt() ->> 'role') = 'service_role');
 
 DROP POLICY IF EXISTS "Managers can update job applications" ON public.job_applications;
 CREATE POLICY "Managers can update job applications"
-    ON public.job_applications
-    FOR UPDATE
+    ON public.job_applications FOR UPDATE
     USING (public.is_manager() OR (auth.jwt() ->> 'role') = 'service_role');
 
 DROP POLICY IF EXISTS "Managers can delete job applications" ON public.job_applications;
 CREATE POLICY "Managers can delete job applications"
-    ON public.job_applications
-    FOR DELETE
+    ON public.job_applications FOR DELETE
     USING (public.is_manager() OR (auth.jwt() ->> 'role') = 'service_role');
 
--- 5. 1:1 BOOKINGS PROTECTION (SEC-04)
+-- 5. 1:1 BOOKINGS TABLE & PROTECTION (SEC-04)
 CREATE TABLE IF NOT EXISTS public.one_on_one_bookings (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
@@ -137,16 +132,12 @@ ALTER TABLE public.one_on_one_bookings ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Allow public inserts on 1:1 bookings" ON public.one_on_one_bookings;
 CREATE POLICY "Allow public inserts on 1:1 bookings"
-    ON public.one_on_one_bookings
-    FOR INSERT
-    TO public
-    WITH CHECK (true);
+    ON public.one_on_one_bookings FOR INSERT TO public WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Allow read on 1:1 bookings for authenticated users" ON public.one_on_one_bookings;
 DROP POLICY IF EXISTS "one_on_one_bookings_select" ON public.one_on_one_bookings;
 CREATE POLICY "one_on_one_bookings_select"
-    ON public.one_on_one_bookings
-    FOR SELECT
+    ON public.one_on_one_bookings FOR SELECT
     USING (
         email = (auth.jwt() ->> 'email')
         OR public.is_manager()
@@ -155,8 +146,7 @@ CREATE POLICY "one_on_one_bookings_select"
 
 DROP POLICY IF EXISTS "one_on_one_bookings_update" ON public.one_on_one_bookings;
 CREATE POLICY "one_on_one_bookings_update"
-    ON public.one_on_one_bookings
-    FOR UPDATE
+    ON public.one_on_one_bookings FOR UPDATE
     USING (
         email = (auth.jwt() ->> 'email')
         OR public.is_manager()
@@ -180,17 +170,19 @@ ALTER TABLE public.referral_profiles ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Authenticated can read referral profiles" ON public.referral_profiles;
 DROP POLICY IF EXISTS "Users can read own referral profile" ON public.referral_profiles;
 DROP POLICY IF EXISTS "Managers can view all referral profiles" ON public.referral_profiles;
+DROP POLICY IF EXISTS "ref_profiles_select_own" ON public.referral_profiles;
+DROP POLICY IF EXISTS "ref_profiles_select_auth" ON public.referral_profiles;
+DROP POLICY IF EXISTS "ref_profiles_all_service" ON public.referral_profiles;
+DROP POLICY IF EXISTS "referral_profiles_select" ON public.referral_profiles;
 
 CREATE POLICY "referral_profiles_select"
-    ON public.referral_profiles
-    FOR SELECT
+    ON public.referral_profiles FOR SELECT
     USING (
         auth.uid() = id
         OR public.is_manager()
         OR (auth.jwt() ->> 'role') = 'service_role'
     );
 
--- Secure RPC function to validate referral code at checkout without exposing emails/balances
 CREATE OR REPLACE FUNCTION public.validate_referral_code(code_input TEXT)
 RETURNS TABLE (is_valid BOOLEAN, referral_code TEXT) AS $$
   SELECT EXISTS (
@@ -218,6 +210,7 @@ ALTER TABLE public.website_orders ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Users can view own orders" ON public.website_orders;
 DROP POLICY IF EXISTS "Managers can view all orders" ON public.website_orders;
+DROP POLICY IF EXISTS "orders_all_service" ON public.website_orders;
 DROP POLICY IF EXISTS "orders_select" ON public.website_orders;
 
 CREATE POLICY "orders_select" ON public.website_orders
@@ -227,3 +220,91 @@ CREATE POLICY "orders_select" ON public.website_orders
         OR public.is_manager()
         OR (auth.jwt() ->> 'role') = 'service_role'
     );
+
+-- 8. BLOGS TABLE PROTECTION (Prevents Unauthorized Mod/Stored XSS)
+DO $$
+BEGIN
+  IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'blogs') THEN
+    ALTER TABLE public.blogs ENABLE ROW LEVEL SECURITY;
+    DROP POLICY IF EXISTS "blogs_select" ON public.blogs;
+    DROP POLICY IF EXISTS "blogs_all_service" ON public.blogs;
+    DROP POLICY IF EXISTS "blogs_insert_manager" ON public.blogs;
+    DROP POLICY IF EXISTS "blogs_update_manager" ON public.blogs;
+    DROP POLICY IF EXISTS "blogs_delete_manager" ON public.blogs;
+
+    CREATE POLICY "blogs_select" ON public.blogs FOR SELECT
+      USING (published = 1 OR public.is_manager() OR (auth.jwt() ->> 'role') = 'service_role');
+
+    CREATE POLICY "blogs_insert_manager" ON public.blogs FOR INSERT
+      WITH CHECK (public.is_manager() OR (auth.jwt() ->> 'role') = 'service_role');
+
+    CREATE POLICY "blogs_update_manager" ON public.blogs FOR UPDATE
+      USING (public.is_manager() OR (auth.jwt() ->> 'role') = 'service_role');
+
+    CREATE POLICY "blogs_delete_manager" ON public.blogs FOR DELETE
+      USING (public.is_manager() OR (auth.jwt() ->> 'role') = 'service_role');
+  END IF;
+END $$;
+
+-- 9. DISCOUNT COUPONS & USAGE INTEGRITY
+DO $$
+BEGIN
+  IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'discount_coupons') THEN
+    ALTER TABLE public.discount_coupons ENABLE ROW LEVEL SECURITY;
+    DROP POLICY IF EXISTS "Enable read access for all users on discount_coupons" ON public.discount_coupons;
+    DROP POLICY IF EXISTS "Enable all access for service role on discount_coupons" ON public.discount_coupons;
+    DROP POLICY IF EXISTS "Allow all operations for authenticated users (Manager) on discount_coupons" ON public.discount_coupons;
+    DROP POLICY IF EXISTS "discounts_select" ON public.discount_coupons;
+    DROP POLICY IF EXISTS "discounts_manager" ON public.discount_coupons;
+    DROP POLICY IF EXISTS "coupons_all_service" ON public.discount_coupons;
+
+    CREATE POLICY "coupons_select" ON public.discount_coupons FOR SELECT
+      USING (active = true OR public.is_manager() OR (auth.jwt() ->> 'role') = 'service_role');
+
+    CREATE POLICY "coupons_write_manager" ON public.discount_coupons FOR ALL
+      USING (public.is_manager() OR (auth.jwt() ->> 'role') = 'service_role')
+      WITH CHECK (public.is_manager() OR (auth.jwt() ->> 'role') = 'service_role');
+  END IF;
+
+  IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'coupon_uses') THEN
+    ALTER TABLE public.coupon_uses ENABLE ROW LEVEL SECURITY;
+    DROP POLICY IF EXISTS "Enable read access for own uses on coupon_uses" ON public.coupon_uses;
+    DROP POLICY IF EXISTS "Enable all access for service role on coupon_uses" ON public.coupon_uses;
+    DROP POLICY IF EXISTS "coupon_uses_select" ON public.coupon_uses;
+    DROP POLICY IF EXISTS "coupon_uses_all_service" ON public.coupon_uses;
+
+    CREATE POLICY "coupon_uses_select" ON public.coupon_uses FOR SELECT
+      USING (user_email = (auth.jwt() ->> 'email') OR public.is_manager() OR (auth.jwt() ->> 'role') = 'service_role');
+
+    CREATE POLICY "coupon_uses_write_service" ON public.coupon_uses FOR ALL
+      USING ((auth.jwt() ->> 'role') = 'service_role')
+      WITH CHECK ((auth.jwt() ->> 'role') = 'service_role');
+  END IF;
+END $$;
+
+-- 10. EMPLOYEES & AUDIT LOGS PROTECTION
+DO $$
+BEGIN
+  IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'employees') THEN
+    ALTER TABLE public.employees ENABLE ROW LEVEL SECURITY;
+    DROP POLICY IF EXISTS "Allow public read access" ON public.employees;
+    DROP POLICY IF EXISTS "Allow all access to authenticated users" ON public.employees;
+
+    CREATE POLICY "employees_select_public" ON public.employees FOR SELECT
+      USING (true);
+
+    CREATE POLICY "employees_write_manager" ON public.employees FOR ALL
+      USING (public.is_manager() OR (auth.jwt() ->> 'role') = 'service_role')
+      WITH CHECK (public.is_manager() OR (auth.jwt() ->> 'role') = 'service_role');
+  END IF;
+
+  IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'employee_logs') THEN
+    ALTER TABLE public.employee_logs ENABLE ROW LEVEL SECURITY;
+    DROP POLICY IF EXISTS "Allow authenticated users to read logs" ON public.employee_logs;
+    DROP POLICY IF EXISTS "Allow authenticated users to insert logs" ON public.employee_logs;
+
+    CREATE POLICY "employee_logs_manager" ON public.employee_logs FOR ALL
+      USING (public.is_manager() OR (auth.jwt() ->> 'role') = 'service_role')
+      WITH CHECK (public.is_manager() OR (auth.jwt() ->> 'role') = 'service_role');
+  END IF;
+END $$;
