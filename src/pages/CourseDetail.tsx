@@ -13,6 +13,7 @@ import {
 } from '../data/coursePage';
 import CourseDetailClassic from '../components/course/CourseDetailClassic';
 import CourseDetailModern from '../components/course/CourseDetailModern';
+import CourseFaqSection from '../components/course/CourseFaqSection';
 
 export default function CourseDetail() {
   const { id } = useParams<{ id: string }>();
@@ -83,15 +84,20 @@ export default function CourseDetail() {
     );
   }
 
-  return activeTheme === 'new' ? (
-    <CourseDetailModern
-      course={course}
-      reviews={reviews}
-      videoUrl={videoUrl}
-    />
-  ) : (
-    <CourseDetailClassic
-      course={course}
-    />
+  return (
+    <>
+      {activeTheme === 'new' ? (
+        <CourseDetailModern
+          course={course}
+          reviews={reviews}
+          videoUrl={videoUrl}
+        />
+      ) : (
+        <CourseDetailClassic
+          course={course}
+        />
+      )}
+      <CourseFaqSection />
+    </>
   );
 }

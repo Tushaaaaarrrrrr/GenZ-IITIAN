@@ -1,4 +1,5 @@
-import { Star } from 'lucide-react';
+import { useState } from 'react';
+import { Check, Share2, Star } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
 export type CourseCardData = {
@@ -46,6 +47,28 @@ const MAX_CHIPS = 4;
 
 export default function CourseCard({ course, className = '' }: CourseCardProps) {
   const navigate = useNavigate();
+  const [copied, setCopied] = useState(false);
+
+  const shareCourse = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const url = `${window.location.origin}/courses/${course.id}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: course.name, text: `Check out ${course.name} on GenZ IITian`, url });
+        return;
+      }
+    } catch (err) {
+      if ((err as Error)?.name === 'AbortError') return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      window.prompt('Copy this link', url);
+    }
+  };
 
   const displayPrice = course.discountPrice || course.price;
   const termInfo = course.term ? TERM_STYLE[course.term] : null;
@@ -79,8 +102,9 @@ export default function CourseCard({ course, className = '' }: CourseCardProps) 
               </span>
             )}
           </div>
+          <div className="flex flex-col items-end gap-2 shrink-0">
           {course.tags && course.tags.length > 0 && (
-            <div className="flex gap-1 shrink-0">
+            <div className="flex gap-1">
               {course.tags.slice(0, 2).map((tag, idx) => (
                 <span
                   key={`${tag}-${idx}`}
@@ -91,6 +115,16 @@ export default function CourseCard({ course, className = '' }: CourseCardProps) 
               ))}
             </div>
           )}
+            <button
+              type="button"
+              onClick={shareCourse}
+              aria-label={copied ? 'Link copied' : `Share ${course.name}`}
+              title={copied ? 'Link copied' : 'Share'}
+              className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 active:scale-90 transition-all cursor-pointer"
+            >
+              {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Share2 className="h-3.5 w-3.5" />}
+            </button>
+          </div>
         </div>
 
         <h3 className="text-xl font-extrabold text-[#0b1120] mb-2 leading-snug group-hover:text-blue-600 transition-colors">

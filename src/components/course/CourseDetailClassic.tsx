@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import ShareCourseButton from './ShareCourseButton';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -108,13 +109,18 @@ export default function CourseDetailClassic({ course }: CourseDetailClassicProps
               </div>
             </div>
 
-            <div className="mt-6 md:mt-8">
+            <div className="mt-6 md:mt-8 flex flex-wrap items-center gap-3">
               <Link
                 to="/contact"
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-[#0b1120] rounded-xl font-semibold text-sm hover:bg-gray-100 transition-all shadow-sm"
               >
                 <MessageCircle className="w-4 h-4" /> Contact Us
               </Link>
+              <ShareCourseButton
+                courseId={course.id}
+                courseName={course.name}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/10 text-white border border-white/20 rounded-xl font-semibold text-sm hover:bg-white/20 transition-all cursor-pointer"
+              />
             </div>
           </motion.div>
 

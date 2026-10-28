@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import ShareCourseButton from './ShareCourseButton';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -332,6 +333,11 @@ export default function CourseDetailModern({
               >
                 <MessageCircle className="w-4 h-4" /> Contact Us
               </Link>
+              <ShareCourseButton
+                courseId={course.id}
+                courseName={course.name}
+                className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white text-slate-900 text-sm font-medium py-2.5 hover:bg-slate-50 cursor-pointer"
+              />
               <p className="mt-2 text-center text-[11px] text-slate-400">
                 Coupons are applied on the next step.
               </p>

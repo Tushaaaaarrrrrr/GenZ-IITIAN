@@ -1,11 +1,12 @@
 import { useAuth } from '../context/AuthContext';
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { supabase } from '../lib/supabase';
-import { LayoutDashboard, ShoppingBag, ScrollText, BookOpen, Plus, Search, Trash2, Edit, Save, X, Loader2, AlertCircle, User, Download, TrendingUp, TrendingDown, Users, ShieldCheck, CreditCard, RefreshCw, Gift, ArrowRight, Copy, Coins, Eye, Settings, ClipboardList, Boxes, ArrowLeft, Calendar, IndianRupee, UserX, ChevronDown, Briefcase, EyeOff, Palette } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, ScrollText, BookOpen, Plus, Search, Trash2, Edit, Save, X, Loader2, AlertCircle, User, Download, TrendingUp, TrendingDown, Users, ShieldCheck, CreditCard, RefreshCw, Gift, ArrowRight, Copy, Coins, Eye, Settings, ClipboardList, Boxes, ArrowLeft, Calendar, IndianRupee, UserX, ChevronDown, Briefcase, EyeOff, Palette, HelpCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate, useLocation, NavLink } from 'react-router-dom';
 import { apiService } from '../lib/api';
 import BlogsManager from '../components/manager/BlogsManager';
+import FaqsManager from '../components/manager/FaqsManager';
 import EmployeesManager from '../components/manager/EmployeesManager';
 import OneOnOneBookingsManager from '../components/manager/OneOnOneBookingsManager';
 import JobApplicationsManager from '../components/manager/JobApplicationsManager';
@@ -25,7 +26,7 @@ import {
 } from '../data/coursePage';
 
 
-type Tab = 'users' | 'courses' | 'boxes' | 'discounts' | 'payments' | 'catalog' | 'referrals' | 'blogs' | 'settings' | 'employees' | 'logs' | '1on1' | 'applications';
+type Tab = 'users' | 'courses' | 'boxes' | 'discounts' | 'payments' | 'catalog' | 'referrals' | 'blogs' | 'settings' | 'employees' | 'logs' | '1on1' | 'applications' | 'faqs';
 type CourseTerm = 'Re-attempt' | 'Foundation' | 'DIPLOMA' | 'Qualifier';
 
 const TERM_OPTIONS: CourseTerm[] = ['Qualifier', 'Re-attempt', 'Foundation', 'DIPLOMA'];
@@ -69,7 +70,7 @@ export default function Manager() {
   const activeTab = (rawTab && rawTab !== 'manager' ? rawTab : 'users') as Tab;
   
   // Validate tab - if path is just /manager, it's users. If invalid, could redirect.
-  const validTabs: Tab[] = ['users', '1on1', 'applications', 'courses', 'boxes', 'discounts', 'payments', 'referrals', 'blogs', 'settings', 'employees', 'logs'];
+  const validTabs: Tab[] = ['users', '1on1', 'applications', 'courses', 'boxes', 'discounts', 'payments', 'referrals', 'blogs', 'faqs', 'settings', 'employees', 'logs'];
   const effectiveTab = validTabs.includes(activeTab) ? activeTab : 'users';
   const [data, setData] = useState<any>([]);
   const [loading, setLoading] = useState(true);
@@ -488,7 +489,7 @@ export default function Manager() {
   };
 
   const fetchData = async () => {
-    if (effectiveTab === 'blogs' || effectiveTab === 'settings' || effectiveTab === 'logs' || effectiveTab === 'boxes' || effectiveTab === 'employees' || effectiveTab === '1on1' || effectiveTab === 'applications' || effectiveTab === 'users') {
+    if (effectiveTab === 'blogs' || effectiveTab === 'faqs' || effectiveTab === 'settings' || effectiveTab === 'logs' || effectiveTab === 'boxes' || effectiveTab === 'employees' || effectiveTab === '1on1' || effectiveTab === 'applications' || effectiveTab === 'users') {
       setLoading(false);
       return;
     }
@@ -989,6 +990,7 @@ export default function Manager() {
     { id: 'payments', label: 'Payments', icon: CreditCard, path: '/manager/payments' },
     { id: 'referrals', label: 'Referrals', icon: Gift, path: '/manager/referrals' },
     { id: 'blogs', label: 'Blogs', icon: ScrollText, path: '/manager/blogs' },
+    { id: 'faqs', label: 'FAQs', icon: HelpCircle, path: '/manager/faqs' },
     { id: 'settings', label: 'Settings', icon: Settings, path: '/manager/settings' }
   ];
 
@@ -1155,6 +1157,7 @@ export default function Manager() {
 
               {effectiveTab === 'boxes' && <BoxesManager boxConfig={boxConfig} setBoxConfig={setBoxConfig} />}
 
+              {effectiveTab === 'faqs' && <FaqsManager />}
               {effectiveTab === 'settings' && <SettingsManager />}
 
               {effectiveTab === 'users' && <UsersManager onSelectUser={fetchUserDetails} />}
