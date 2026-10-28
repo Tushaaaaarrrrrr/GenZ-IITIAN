@@ -337,6 +337,77 @@ export default function CourseSelection() {
     !!course.bundleDiscountCode
   );
 
+  // ---- Exit offer: nudge users who are about to leave the main checkout without a discount ----
+  const [showExitOffer, setShowExitOffer] = useState(false);
+  const [autoApplyOffer, setAutoApplyOffer] = useState(false);
+  const exitArmedRef = useRef(false);
+  const exitShownRef = useRef(false);
+  const pendingNavRef = useRef<string | null>(null);
+  const exitHasPlans = !!(course?.isFixedBundle && course?.pricing_options && course.pricing_options.length > 0);
+  exitArmedRef.current =
+    !!course && step === 'selection' && !showProfilePrompt && !isProcessing &&
+    (!exitHasPlans || planConfirmed) &&
+    !appliedDiscountCode && !appliedReferralCode && !discountAmount && !referralDiscount;
+
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (!exitArmedRef.current || exitShownRef.current) return;
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const a = (e.target as HTMLElement | null)?.closest?.('a[href]') as HTMLAnchorElement | null;
+      if (!a || (a.target && a.target !== '_self') || a.hasAttribute('download')) return;
+      let url: URL;
+      try { url = new URL(a.href, window.location.href); } catch { return; }
+      if (url.origin !== window.location.origin) return;
+      if (url.pathname === window.location.pathname && url.search === window.location.search) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      pendingNavRef.current = url.pathname + url.search + url.hash;
+      exitShownRef.current = true;
+      setShowExitOffer(true);
+    };
+    const onMouseOut = (e: MouseEvent) => {
+      if (!exitArmedRef.current || exitShownRef.current) return;
+      if (e.relatedTarget === null && e.clientY <= 0) {
+        pendingNavRef.current = null;
+        exitShownRef.current = true;
+        setShowExitOffer(true);
+      }
+    };
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!exitArmedRef.current) return;
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    document.addEventListener('click', onClick, true);
+    document.addEventListener('mouseout', onMouseOut);
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => {
+      document.removeEventListener('click', onClick, true);
+      document.removeEventListener('mouseout', onMouseOut);
+      window.removeEventListener('beforeunload', onBeforeUnload);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (autoApplyOffer && discountCodeInput === 'GENZ5') {
+      setAutoApplyOffer(false);
+      applyDiscount();
+    }
+  }, [autoApplyOffer, discountCodeInput]);
+
+  const acceptExitOffer = () => {
+    pendingNavRef.current = null;
+    setShowExitOffer(false);
+    setDiscountCodeInput('GENZ5');
+    setAutoApplyOffer(true);
+  };
+  const cancelExitOffer = () => {
+    const target = pendingNavRef.current;
+    pendingNavRef.current = null;
+    setShowExitOffer(false);
+    if (target) navigate(target);
+  };
+
   const isTierSelectionRequired = () => (
     course?.isFixedBundle && Array.isArray(course.pricing_options) && course.pricing_options.length > 0
   );
@@ -423,7 +494,7 @@ export default function CourseSelection() {
 
           setDiscountCodeInput('');
           setShowSuccessModal(true);
-          setTimeout(() => setShowSuccessModal(false), 3500);
+          setTimeout(() => setShowSuccessModal(false), 2200);
           return;
       }
 
@@ -453,7 +524,7 @@ export default function CourseSelection() {
 
           setDiscountCodeInput('');
           setShowSuccessModal(true);
-          setTimeout(() => setShowSuccessModal(false), 3500);
+          setTimeout(() => setShowSuccessModal(false), 2200);
           return;
       }
 
@@ -474,7 +545,7 @@ export default function CourseSelection() {
 
           setDiscountCodeInput('');
           setShowSuccessModal(true);
-          setTimeout(() => setShowSuccessModal(false), 3500);
+          setTimeout(() => setShowSuccessModal(false), 2200);
           return;
       }
 
@@ -830,31 +901,39 @@ export default function CourseSelection() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/25 backdrop-blur-[3px] pointer-events-none"
+            onClick={() => setShowSuccessModal(false)}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/35 backdrop-blur-[4px] overflow-hidden"
             role="status"
           >
+            {/* party popper confetti */}
+            {[...Array(36)].map((_, i) => {
+              const colors = ['#10b981', '#f59e0b', '#3b82f6', '#ec4899', '#8b5cf6', '#ef4444'];
+              const dir = i % 2 === 0 ? -1 : 1;
+              const spread = 40 + ((i * 53) % 260);
+              const rise = 120 + ((i * 37) % 200);
+              const fall = 260 + ((i * 71) % 260);
+              const size = 6 + ((i * 7) % 7);
+              return (
+                <motion.span
+                  key={i}
+                  aria-hidden
+                  className="pointer-events-none absolute left-1/2 top-[44%]"
+                  style={{ width: size, height: size * (i % 3 === 0 ? 2.2 : 1), background: colors[i % colors.length], borderRadius: i % 4 === 0 ? 999 : 2 }}
+                  initial={{ x: 0, y: 0, opacity: 1, rotate: 0, scale: 0.6 }}
+                  animate={{ x: dir * spread, y: [0, -rise, fall], opacity: [1, 1, 0], rotate: dir * (180 + i * 40), scale: 1 }}
+                  transition={{ duration: 1.7, delay: 0.1 + (i % 6) * 0.03, ease: 'easeOut', times: [0, 0.35, 1] }}
+                />
+              );
+            })}
+
             <motion.div
-              initial={{ opacity: 0, scale: 0.85, y: 16 }}
+              onClick={(e) => e.stopPropagation()}
+              initial={{ opacity: 0, scale: 0.7, y: 30 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.92, y: 8 }}
-              transition={{ type: 'spring', bounce: 0.3, duration: 0.55 }}
-              className="relative w-full max-w-xs rounded-3xl bg-white px-8 pt-9 pb-7 text-center shadow-[0_30px_80px_rgba(0,0,0,0.3)]"
+              exit={{ opacity: 0, scale: 0.92, y: 10 }}
+              transition={{ type: 'spring', bounce: 0.35, duration: 0.6 }}
+              className="relative w-full max-w-xs rounded-3xl bg-white px-8 pt-9 pb-6 text-center shadow-[0_30px_80px_rgba(0,0,0,0.35)]"
             >
-              {/* burst particles */}
-              {[...Array(8)].map((_, i) => {
-                const angle = (i / 8) * Math.PI * 2;
-                return (
-                  <motion.span
-                    key={i}
-                    aria-hidden
-                    className="absolute left-1/2 top-[3.6rem] w-2 h-2 rounded-full"
-                    style={{ background: ['#10b981', '#f59e0b', '#3b82f6', '#ec4899'][i % 4] }}
-                    initial={{ x: -4, y: -4, opacity: 1, scale: 1 }}
-                    animate={{ x: Math.cos(angle) * 78 - 4, y: Math.sin(angle) * 78 - 4, opacity: 0, scale: 0.4 }}
-                    transition={{ duration: 0.9, delay: 0.25, ease: 'easeOut' }}
-                  />
-                );
-              })}
               <div className="relative mx-auto mb-5 w-16 h-16">
                 <motion.span
                   aria-hidden
@@ -863,19 +942,31 @@ export default function CourseSelection() {
                   animate={{ scale: 1.9, opacity: 0 }}
                   transition={{ duration: 1.1, repeat: Infinity, ease: 'easeOut' }}
                 />
-                <div className="relative w-16 h-16 rounded-full bg-emerald-500 flex items-center justify-center shadow-[0_12px_30px_-6px_rgba(16,185,129,0.6)]">
+                <motion.div
+                  initial={{ scale: 0, rotate: -30 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: 'spring', bounce: 0.5, duration: 0.7, delay: 0.1 }}
+                  className="relative w-16 h-16 rounded-full bg-emerald-500 flex items-center justify-center shadow-[0_12px_30px_-6px_rgba(16,185,129,0.6)]"
+                >
                   <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                     <motion.path
                       d="M5 12.5l4.5 4.5L19 7.5"
                       initial={{ pathLength: 0 }}
                       animate={{ pathLength: 1 }}
-                      transition={{ duration: 0.45, delay: 0.2, ease: 'easeOut' }}
+                      transition={{ duration: 0.45, delay: 0.3, ease: 'easeOut' }}
                     />
                   </svg>
-                </div>
+                </motion.div>
               </div>
               <h4 className="text-xl font-bold tracking-tight text-[#0b1120]">Discount applied</h4>
               <p className="mt-1 text-sm text-gray-500">Your savings are locked in.</p>
+              <button
+                type="button"
+                onClick={() => setShowSuccessModal(false)}
+                className="mt-6 w-full rounded-full bg-[#0b1120] py-3 text-sm font-semibold text-white hover:bg-gray-800 active:scale-[0.97] transition-all cursor-pointer"
+              >
+                Okay
+              </button>
             </motion.div>
           </motion.div>
         )}
@@ -1242,23 +1333,6 @@ export default function CourseSelection() {
                 </div>
               )}
 
-              {hasPricingPlans && planConfirmed && (
-                <div className="mb-5 flex items-center justify-between gap-3 rounded-2xl bg-white border border-black/5 px-4 py-3 shadow-sm">
-                  <div className="min-w-0 text-sm">
-                    <span className="text-gray-500">Selected plan: </span>
-                    <span className="font-semibold text-[#0b1120]">{getSelectedPricingOption()?.name}</span>
-                    <span className="text-gray-500"> · ₹{getSelectedPricingOption()?.price}</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => { setPlanConfirmed(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                    className="shrink-0 text-sm font-semibold text-blue-600 hover:text-blue-800 cursor-pointer"
-                  >
-                    Change plan
-                  </button>
-                </div>
-              )}
-
               {(!hasPricingPlans || planConfirmed) && (
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 <div ref={coursesPickerRef} className="lg:col-span-7 space-y-6 scroll-mt-24">
@@ -1303,6 +1377,21 @@ export default function CourseSelection() {
                         </div>
                     )}
                 </div>
+                {hasPricingPlans && planConfirmed && (
+                  <div className="flex items-center justify-between gap-3 rounded-2xl bg-gray-100 border border-gray-200 px-4 py-3.5">
+                    <div className="min-w-0 text-sm">
+                      <span className="text-gray-500">Selected plan: </span>
+                      <span className="font-semibold text-[#0b1120]">{getSelectedPricingOption()?.name}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setPlanConfirmed(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                      className="shrink-0 text-sm font-semibold text-blue-600 hover:text-blue-800 cursor-pointer"
+                    >
+                      Change plan
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div ref={summaryRef} className="lg:col-span-5 scroll-mt-24">
@@ -1495,6 +1584,58 @@ export default function CourseSelection() {
             </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {showExitOffer && (
+          <motion.div
+            key="exit-offer"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[260] flex items-center justify-center p-5 bg-black/45 backdrop-blur-md"
+            role="dialog"
+            aria-modal="true"
+            onClick={() => { pendingNavRef.current = null; setShowExitOffer(false); }}
+          >
+            <motion.div
+              onClick={(e) => e.stopPropagation()}
+              initial={{ opacity: 0, scale: 0.88, y: 24 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.94, y: 10 }}
+              transition={{ type: 'spring', bounce: 0.25, duration: 0.55 }}
+              className="relative w-full max-w-sm rounded-3xl bg-white p-7 sm:p-8 text-center shadow-[0_30px_80px_rgba(0,0,0,0.4)]"
+            >
+              <motion.div
+                animate={{ rotate: [0, -6, 6, -4, 4, 0] }}
+                transition={{ duration: 1.2, delay: 0.4, repeat: Infinity, repeatDelay: 2.5 }}
+                className="mx-auto mb-5 inline-flex flex-col items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-[0_16px_40px_-8px_rgba(16,185,129,0.6)]"
+              >
+                <span className="text-3xl font-bold leading-none">5%</span>
+                <span className="mt-1 text-xs font-semibold tracking-widest">OFF</span>
+              </motion.div>
+              <h3 className="text-2xl font-bold tracking-tight text-[#0b1120]">You have 5% off</h3>
+              <p className="mt-1.5 text-gray-500">Don&apos;t lose this offer. Apply code <span className="font-semibold text-[#0b1120]">GENZ5</span> before you go.</p>
+              <div className="mt-7 flex flex-col-reverse sm:flex-row gap-3">
+                <button
+                  type="button"
+                  onClick={cancelExitOffer}
+                  className="flex-1 rounded-full border border-black/15 bg-white py-3 text-sm font-semibold text-[#0b1120] hover:bg-gray-50 active:scale-[0.97] transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={acceptExitOffer}
+                  className="flex-1 rounded-full bg-emerald-500 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/30 hover:bg-emerald-600 active:scale-[0.97] transition-all cursor-pointer"
+                >
+                  Apply
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {hasPricingPlans && !planConfirmed && step === 'selection' && !showProfilePrompt && selectedPricingTier !== null && (

@@ -610,13 +610,20 @@ export default function CourseDetailClassic({ course }: CourseDetailClassicProps
               {/* Scrollable Content */}
               <div className="overflow-y-auto space-y-4 pr-2 font-medium text-gray-700 leading-relaxed text-sm scrollbar-thin text-left">
                 <p>
-                  Students who ENROLL in Qualify Champion Batch will be eligible for a full refund or free reattempt support, provided all the conditions below are fulfilled.
+                  Students who enroll in the Qualifier Champion Batch and fulfil all the conditions below are eligible for a refund of the price difference between the Champion and Live batch, or free reattempt support.
                 </p>
+
+                <div className="rounded-2xl bg-emerald-50 border border-emerald-100 p-4">
+                  <div className="text-xs font-semibold uppercase tracking-wider text-emerald-700 mb-1">Refund amount</div>
+                  <div className="font-semibold text-[#0b1120]">Champion price − Live price</div>
+                  <div className="mt-1 text-gray-600">Example: ₹1299 − ₹999 = <span className="font-semibold text-emerald-700">₹300 refunded</span></div>
+                </div>
 
                 <div>
                   <h3 className="text-base font-semibold text-[#0b1120] mt-4 mb-2">Eligibility Criteria</h3>
                   <ul className="list-disc pl-5 space-y-2">
-                    <li>You must attend at least 80% of live classes.</li>
+                    <li>You must attend at least 75% of live classes.</li>
+                    <li>You must attend the Qualifier exam, no matter what.</li>
                     <li>Weekly tests will be conducted based on the topics taught in class. You must score the minimum required marks in these tests.</li>
                     <li>You must regularly share your GA marks/progress with the team. and Be eligible for GIVING QUALIFIER exam offline</li>
                   </ul>
@@ -643,7 +650,8 @@ export default function CourseDetailClassic({ course }: CourseDetailClassicProps
                 </p>
                 
                 <ul className="list-disc pl-5 space-y-2">
-                  <li>80% attendance</li>
+                  <li>75% attendance</li>
+                  <li>Attending the Qualifier exam</li>
                   <li>Weekly test qualification</li>
                   <li>Active participation and seriousness toward studies</li>
                 </ul>
