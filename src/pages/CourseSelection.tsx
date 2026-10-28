@@ -1504,17 +1504,17 @@ export default function CourseSelection() {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
             transition={{ type: 'spring', bounce: 0, duration: 0.45 }}
-            className="fixed inset-x-0 bottom-0 z-[120] border-t border-black/10 bg-white/90 backdrop-blur-xl px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+            className="fixed inset-x-0 bottom-0 z-[120] border-t border-black/10 bg-white/90 backdrop-blur-xl px-4 md:px-8 pt-3 md:pt-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
           >
-            <div className="mx-auto flex max-w-3xl items-center gap-3">
+            <div className="mx-auto flex max-w-6xl items-center gap-4 md:gap-6 md:py-1">
               <div className="min-w-0 flex-1 leading-tight">
-                <div className="truncate text-xs text-gray-500">{getSelectedPricingOption()?.name} plan</div>
-                <div className="text-lg font-bold text-[#0b1120]">₹{getSelectedPricingOption()?.price}</div>
+                <div className="truncate text-xs md:text-sm text-gray-500">{getSelectedPricingOption()?.name} plan</div>
+                <div className="text-lg md:text-3xl font-bold tracking-tight text-[#0b1120]">₹{getSelectedPricingOption()?.price}</div>
               </div>
               <button
                 type="button"
                 onClick={confirmPlan}
-                className="shrink-0 inline-flex items-center justify-center gap-2 rounded-full bg-emerald-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/30 hover:bg-emerald-600 active:scale-[0.97] transition-all cursor-pointer"
+                className="shrink-0 inline-flex items-center justify-center gap-2 rounded-full bg-emerald-500 px-6 py-3 md:px-12 md:py-4 text-sm md:text-lg font-semibold text-white shadow-lg shadow-emerald-500/30 hover:bg-emerald-600 active:scale-[0.97] transition-all cursor-pointer"
               >
                 Continue to Checkout <ArrowRight className="w-4 h-4" />
               </button>
@@ -1531,13 +1531,13 @@ export default function CourseSelection() {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
             transition={{ type: 'spring', bounce: 0, duration: 0.45 }}
-            className="fixed inset-x-0 bottom-0 z-[120] border-t border-black/10 bg-white/90 backdrop-blur-xl px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+            className="fixed inset-x-0 bottom-0 z-[120] border-t border-black/10 bg-white/90 backdrop-blur-xl px-4 md:px-8 pt-3 md:pt-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
           >
-            <div className="mx-auto flex max-w-3xl items-center gap-3">
+            <div className="mx-auto flex max-w-6xl items-center gap-4 md:gap-6 md:py-1">
               <div className="min-w-0 flex-1 leading-tight">
-                <div className="truncate text-xs text-gray-500">{getSelectedPricingOption()?.name} plan · total</div>
+                <div className="truncate text-xs md:text-sm text-gray-500">{getSelectedPricingOption()?.name} plan · total</div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-lg font-bold text-[#0b1120]">₹{grandTotal}</span>
+                  <span className="text-lg md:text-3xl font-bold tracking-tight text-[#0b1120]">₹{grandTotal}</span>
                   {listTotal > grandTotal && <span className="text-xs text-gray-400 line-through">₹{listTotal}</span>}
                 </div>
               </div>
@@ -1545,7 +1545,7 @@ export default function CourseSelection() {
                 type="button"
                 onClick={onBannerEnroll}
                 disabled={isProcessing}
-                className="shrink-0 inline-flex items-center justify-center gap-2 rounded-full bg-emerald-500 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/30 hover:bg-emerald-600 active:scale-[0.97] disabled:opacity-60 transition-all cursor-pointer"
+                className="shrink-0 inline-flex items-center justify-center gap-2 rounded-full bg-emerald-500 px-7 py-3 md:px-14 md:py-4 text-sm md:text-lg font-semibold text-white shadow-lg shadow-emerald-500/30 hover:bg-emerald-600 active:scale-[0.97] disabled:opacity-60 transition-all cursor-pointer"
               >
                 {isProcessing ? <Loader2 className="animate-spin w-4 h-4" /> : <>{enrollLabel} <ArrowRight className="w-4 h-4" /></>}
               </button>
