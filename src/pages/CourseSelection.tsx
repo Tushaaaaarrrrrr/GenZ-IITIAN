@@ -865,25 +865,35 @@ export default function CourseSelection() {
             </div>
         </div>
 
-        <AnimatePresence mode="wait">
-          {showProfilePrompt ? (
+      <AnimatePresence>
+        {showProfilePrompt && (
+          <motion.div
+            key="profile-prompt-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/40 backdrop-blur-md"
+            role="dialog"
+            aria-modal="true"
+          >
             <motion.div
-              key="prompt"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="max-w-xl mx-auto bg-white border border-black/5 rounded-3xl p-6 sm:p-8 shadow-[0_8px_40px_rgba(0,0,0,0.06)] text-center"
+                            initial={{ opacity: 0, y: 20, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.97 }}
+              transition={{ type: 'spring', bounce: 0.15, duration: 0.5 }}
+              className="w-full max-w-lg bg-white rounded-3xl p-8 sm:p-10 shadow-[0_30px_80px_rgba(0,0,0,0.35)] text-center relative"
             >
               <motion.div
                 initial={{ scale: 0.6, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ type: 'spring', bounce: 0.35, duration: 0.6, delay: 0.1 }}
-                className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-5"
+                className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-5"
               >
                 <UserCheck className="w-7 h-7 text-emerald-600" />
               </motion.div>
-              <h2 className="text-2xl md:text-3xl font-bold tracking-[-0.02em] text-[#1d1d1f] mb-2">Welcome back</h2>
-              <p className="text-sm md:text-base text-gray-500 mb-7 leading-relaxed">
+              <h2 className="text-3xl md:text-4xl font-bold tracking-[-0.02em] text-[#1d1d1f] mb-2">Welcome back</h2>
+              <p className="text-base md:text-lg text-gray-500 mb-8 leading-relaxed">
                 We found your profile: <span className="font-semibold text-[#0b1120]">{profileData.name}</span> ({profileData.phone}). <br />
                 Would you like to use these details for your enrollment?
               </p>
@@ -891,19 +901,24 @@ export default function CourseSelection() {
               <div className="flex items-center justify-center gap-3">
                 <button
                   onClick={() => setShowProfilePrompt(false)}
-                  className="flex-1 max-w-[260px] py-3 bg-[#0b1120] text-white rounded-full font-semibold text-sm md:text-base hover:bg-gray-800 active:scale-[0.97] transition-all cursor-pointer"
+                  className="flex-1 max-w-[260px] py-3.5 bg-[#0b1120] text-white rounded-full font-semibold text-sm md:text-base hover:bg-gray-800 active:scale-[0.97] transition-all cursor-pointer"
                 >
                   Yes, Continue
                 </button>
                 <button
                   onClick={() => { setShowProfilePrompt(false); setStep('profile'); }}
-                  className="px-7 py-3 bg-white text-[#0b1120] rounded-full font-semibold text-sm md:text-base border border-black/15 hover:bg-gray-50 active:scale-[0.97] transition-all cursor-pointer"
+                  className="px-8 py-3.5 bg-white text-[#0b1120] rounded-full font-semibold text-sm md:text-base border border-black/15 hover:bg-gray-50 active:scale-[0.97] transition-all cursor-pointer"
                 >
                   No
                 </button>
               </div>
             </motion.div>
-          ) : step === 'profile' ? (
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+        <AnimatePresence mode="wait">
+          {step === 'profile' ? (
             <motion.div
               key="profile"
               initial={{ opacity: 0, scale: 0.95 }}
@@ -971,12 +986,10 @@ export default function CourseSelection() {
                   </div>
                 </div>
 
-                <div className="p-3 md:p-4 bg-amber-50 border-2 border-amber-200 rounded-xl md:rounded-2xl flex gap-2 md:gap-3 items-start">
-                    <AlertCircle className="w-4 h-4 md:w-5 md:h-5 text-amber-600 shrink-0 mt-0.5" />
-                    <p className="text-amber-800 font-bold text-[11px] md:text-xs leading-snug md:leading-relaxed">
-                        Course access will be granted to <span className="font-black underline text-[10px] break-all">{user?.email}</span>. Please ensure this is correct.
-                    </p>
-                </div>
+                <p className="flex items-start gap-1.5 text-[11px] md:text-xs text-gray-500 leading-snug">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-px" />
+                    <span>Course access will be granted to <span className="font-semibold text-[#0b1120] break-all">{user?.email}</span>. Please ensure this is correct.</span>
+                </p>
 
                 <button
                   type="submit"
@@ -1379,7 +1392,7 @@ export default function CourseSelection() {
         </AnimatePresence>
 
         {/* Why Gen-Z IITian? Section */}
-        <div className="mt-16 mb-12">
+        <div className="mt-32 mb-12">
             <div className="text-center mb-10">
                 <h2 className="text-4xl md:text-5xl font-black text-[#0b1120] mb-4 tracking-tight">Why Gen-Z IITian?</h2>
                 <p className="text-lg md:text-xl text-gray-500 font-bold max-w-3xl mx-auto px-4 leading-relaxed">

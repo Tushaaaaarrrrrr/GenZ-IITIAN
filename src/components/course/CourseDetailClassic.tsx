@@ -6,6 +6,7 @@ import {
   BookOpen, 
   CheckCircle2, 
   ChevronRight, 
+  ChevronDown, 
   Users, 
   Star, 
   ArrowLeft, 
@@ -33,6 +34,7 @@ export interface CourseDetailClassicProps {
 export default function CourseDetailClassic({ course }: CourseDetailClassicProps) {
   const navigate = useNavigate();
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
+  const [cohortExpanded, setCohortExpanded] = useState(false);
   const enrollRef = useRef<HTMLAnchorElement>(null);
 
   const salePrice = Number(course.discountPrice || course.price || 0);
@@ -243,9 +245,27 @@ export default function CourseDetailClassic({ course }: CourseDetailClassicProps
                 </p>
               </div>
 
-              <div className="bg-white border border-gray-200 rounded-2xl md:rounded-2xl p-4 sm:p-6 lg:p-6 font-medium text-[#0b1120] leading-relaxed shadow-sm  whitespace-pre-wrap text-sm md:text-base lg:text-base">
-                {course.cohortContent}
+              {(() => { const long = String(course.cohortContent).length > 350; return (
+              <div className="relative bg-white border border-gray-200 rounded-2xl p-4 sm:p-6 font-medium text-[#0b1120] leading-relaxed shadow-sm text-sm md:text-base">
+                <div className={`whitespace-pre-wrap overflow-hidden transition-[max-height] duration-500 ease-in-out ${cohortExpanded || !long ? 'max-h-[3000px]' : 'max-h-64'}`}>
+                  {course.cohortContent}
+                </div>
+                {long && !cohortExpanded && (
+                  <div className="pointer-events-none absolute inset-x-0 bottom-[3.75rem] h-20 bg-gradient-to-t from-white to-transparent" />
+                )}
+                {long && <div className="mt-3 flex justify-center">
+                  <button
+                    type="button"
+                    onClick={() => setCohortExpanded((v) => !v)}
+                    aria-expanded={cohortExpanded}
+                    className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full border border-gray-300 bg-white text-sm font-semibold text-[#0b1120] hover:bg-gray-50 active:scale-[0.97] transition-all cursor-pointer"
+                  >
+                    {cohortExpanded ? 'Show less' : 'Show more'}
+                    <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${cohortExpanded ? 'rotate-180' : ''}`} />
+                  </button>
+                </div>}
               </div>
+              ); })()}
             </div>
           )}
 
