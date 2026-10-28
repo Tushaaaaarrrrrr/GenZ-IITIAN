@@ -825,18 +825,58 @@ export default function CourseSelection() {
 
         {showSuccessModal && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.8, y: 50 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.8, y: 50 }}
-            className="fixed bottom-6 sm:bottom-10 left-1/2 -translate-x-1/2 z-[200] w-[calc(100vw-2rem)] max-w-sm bg-white border-[4px] border-[#0b1120] rounded-2xl p-4 shadow-[8px_8px_0px_#10b981] flex items-center gap-3 sm:gap-4"
+            key="discount-applied"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/25 backdrop-blur-[3px] pointer-events-none"
+            role="status"
           >
-            <div className="w-11 h-11 sm:w-12 sm:h-12 shrink-0 bg-green-100 rounded-full flex items-center justify-center border-2 border-[#0b1120]">
-              <span className="text-2xl">🎉</span>
-            </div>
-            <div className="text-left pr-2">
-              <h4 className="font-black text-[#0b1120] uppercase tracking-tight text-base">Discount Applied!</h4>
-              <p className="font-bold text-gray-500 text-xs uppercase">Your savings are securely locked in</p>
-            </div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.85, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 8 }}
+              transition={{ type: 'spring', bounce: 0.3, duration: 0.55 }}
+              className="relative w-full max-w-xs rounded-3xl bg-white px-8 pt-9 pb-7 text-center shadow-[0_30px_80px_rgba(0,0,0,0.3)]"
+            >
+              {/* burst particles */}
+              {[...Array(8)].map((_, i) => {
+                const angle = (i / 8) * Math.PI * 2;
+                return (
+                  <motion.span
+                    key={i}
+                    aria-hidden
+                    className="absolute left-1/2 top-[3.6rem] w-2 h-2 rounded-full"
+                    style={{ background: ['#10b981', '#f59e0b', '#3b82f6', '#ec4899'][i % 4] }}
+                    initial={{ x: -4, y: -4, opacity: 1, scale: 1 }}
+                    animate={{ x: Math.cos(angle) * 78 - 4, y: Math.sin(angle) * 78 - 4, opacity: 0, scale: 0.4 }}
+                    transition={{ duration: 0.9, delay: 0.25, ease: 'easeOut' }}
+                  />
+                );
+              })}
+              <div className="relative mx-auto mb-5 w-16 h-16">
+                <motion.span
+                  aria-hidden
+                  className="absolute inset-0 rounded-full bg-emerald-400/40"
+                  initial={{ scale: 1, opacity: 0.7 }}
+                  animate={{ scale: 1.9, opacity: 0 }}
+                  transition={{ duration: 1.1, repeat: Infinity, ease: 'easeOut' }}
+                />
+                <div className="relative w-16 h-16 rounded-full bg-emerald-500 flex items-center justify-center shadow-[0_12px_30px_-6px_rgba(16,185,129,0.6)]">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <motion.path
+                      d="M5 12.5l4.5 4.5L19 7.5"
+                      initial={{ pathLength: 0 }}
+                      animate={{ pathLength: 1 }}
+                      transition={{ duration: 0.45, delay: 0.2, ease: 'easeOut' }}
+                    />
+                  </svg>
+                </div>
+              </div>
+              <h4 className="text-xl font-bold tracking-tight text-[#0b1120]">Discount applied</h4>
+              <p className="mt-1 text-sm text-gray-500">Your savings are locked in.</p>
+            </motion.div>
           </motion.div>
         )}
 
@@ -901,8 +941,8 @@ export default function CourseSelection() {
               </motion.div>
               <h2 className="text-3xl md:text-4xl font-bold tracking-[-0.02em] text-[#1d1d1f] mb-2">Welcome back</h2>
               <p className="text-base md:text-lg text-gray-500 mb-8 leading-relaxed">
-                We found your profile: <span className="font-semibold text-[#0b1120]">{profileData.name}</span> ({profileData.phone}). <br />
-                Would you like to use these details for your enrollment?
+                Continue as <span className="font-semibold text-[#0b1120]">{profileData.name}</span>
+                <span className="block text-sm text-gray-400 mt-0.5">{profileData.phone}</span>
               </p>
 
               <div className="flex items-center justify-center gap-3">
@@ -1194,17 +1234,7 @@ export default function CourseSelection() {
                     </div>
                   )}
 
-                  {selectedPricingTier !== null ? (
-                    <button
-                      type="button"
-                      onClick={confirmPlan}
-                      className="w-full sm:w-auto mx-auto flex items-center justify-center gap-2 px-7 py-3.5 bg-emerald-500 text-white rounded-full font-semibold text-sm hover:bg-emerald-600 active:scale-[0.97] shadow-lg shadow-emerald-500/30 transition-all cursor-pointer"
-                    >
-                      Continue to Checkout
-                      <span className="font-black">₹{course.pricing_options[selectedPricingTier]?.price}</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-                  ) : (
+                  {selectedPricingTier === null && (
                     <div className="text-center py-2 text-sm text-gray-400">
                       Select a plan above to continue
                     </div>
@@ -1466,7 +1496,65 @@ export default function CourseSelection() {
         </div>
       </div>
 
-      {step === 'selection' && !showProfilePrompt && (
+      <AnimatePresence>
+        {hasPricingPlans && !planConfirmed && step === 'selection' && !showProfilePrompt && selectedPricingTier !== null && (
+          <motion.div
+            key="plan-continue-bar"
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            transition={{ type: 'spring', bounce: 0, duration: 0.45 }}
+            className="fixed inset-x-0 bottom-0 z-[120] border-t border-black/10 bg-white/90 backdrop-blur-xl px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+          >
+            <div className="mx-auto flex max-w-3xl items-center gap-3">
+              <div className="min-w-0 flex-1 leading-tight">
+                <div className="truncate text-xs text-gray-500">{getSelectedPricingOption()?.name} plan</div>
+                <div className="text-lg font-bold text-[#0b1120]">₹{getSelectedPricingOption()?.price}</div>
+              </div>
+              <button
+                type="button"
+                onClick={confirmPlan}
+                className="shrink-0 inline-flex items-center justify-center gap-2 rounded-full bg-emerald-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/30 hover:bg-emerald-600 active:scale-[0.97] transition-all cursor-pointer"
+              >
+                Continue to Checkout <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {hasPricingPlans && planConfirmed && step === 'selection' && !showProfilePrompt && (
+          <motion.div
+            key="plan-pay-bar"
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            transition={{ type: 'spring', bounce: 0, duration: 0.45 }}
+            className="fixed inset-x-0 bottom-0 z-[120] border-t border-black/10 bg-white/90 backdrop-blur-xl px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+          >
+            <div className="mx-auto flex max-w-3xl items-center gap-3">
+              <div className="min-w-0 flex-1 leading-tight">
+                <div className="truncate text-xs text-gray-500">{getSelectedPricingOption()?.name} plan · total</div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-lg font-bold text-[#0b1120]">₹{grandTotal}</span>
+                  {listTotal > grandTotal && <span className="text-xs text-gray-400 line-through">₹{listTotal}</span>}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={onBannerEnroll}
+                disabled={isProcessing}
+                className="shrink-0 inline-flex items-center justify-center gap-2 rounded-full bg-emerald-500 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/30 hover:bg-emerald-600 active:scale-[0.97] disabled:opacity-60 transition-all cursor-pointer"
+              >
+                {isProcessing ? <Loader2 className="animate-spin w-4 h-4" /> : <>{enrollLabel} <ArrowRight className="w-4 h-4" /></>}
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {step === 'selection' && !showProfilePrompt && !hasPricingPlans && (
         <StickyEnrollBanner
           courseName={course.name}
           price={grandTotal}
