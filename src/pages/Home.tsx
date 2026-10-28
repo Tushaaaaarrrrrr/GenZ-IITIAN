@@ -46,19 +46,59 @@ const COMPARISON_FEATURES: { feature: string; yt: boolean; others: boolean }[] =
   { feature: "Subject wise blueprint", yt: false, others: true },
 ];
 
+const REVIEWS = [
+              {
+                text: "The reattempt batch was a game changer. The mock tests were exactly like the real exam pattern and helped me clear comfortably!",
+                initial: "A",
+                name: "Aryan Sharma",
+                role: "Qualifier Student",
+                color: "bg-blue-100 text-blue-700"
+              },
+              {
+                text: "Maths 2 concepts were tough, but the Foundation course simplified everything. The doubt sessions helped a lot.",
+                initial: "P",
+                name: "Priya Patel",
+                role: "Maths 2 Student",
+                color: "bg-green-100 text-green-700"
+              },
+              {
+                text: "I am pursuing the Diploma now, and Gen-z IITian has been with me since day 1. Best notes and community.",
+                initial: "R",
+                name: "Rohan Das",
+                role: "Diploma Student",
+                color: "bg-purple-100 text-purple-700"
+              },
+              {
+                text: "Affordable and high quality. The structure of the Foundation course is perfect for beginners like me.",
+                initial: "S",
+                name: "Sanya Verma",
+                role: "Foundation Student",
+                color: "bg-pink-100 text-pink-700"
+              },
+              {
+                text: "The instructors explain everything so clearly. My GPA improved significantly after joining.",
+                initial: "V",
+                name: "Vikram Singh",
+                role: "Maths 2 Student",
+                color: "bg-orange-100 text-orange-700"
+              },
+              {
+                text: "Highly recommended for anyone looking for serious prep. The community is very supportive.",
+                initial: "M",
+                name: "Meera Iyer",
+                role: "Diploma Student",
+                color: "bg-teal-100 text-teal-700"
+              }
+            ];
+
 export default function Home() {
   const { isManager } = useAuth();
   const [courses, setCourses] = useState<CourseCardData[]>([]);
   const [loading, setLoading] = useState(true);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>(fallbackBlogs);
-  const reviewsRef = useRef<HTMLDivElement>(null);
   
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [videoModalUrl, setVideoModalUrl] = useState('');
-
-  const scrollReviews = (dir: number) => {
-    reviewsRef.current?.scrollBy({ left: dir * 360, behavior: 'smooth' });
-  };
 
   useEffect(() => {
     async function checkVideoModal() {
@@ -151,17 +191,15 @@ export default function Home() {
                   <div className="absolute inset-0 bg-white/20 translate-x-[-100%] skew-x-[-15deg] animate-[shine_3s_ease-out_infinite]"></div>
                 </Link>
               </motion.div>
-              <a href="https://chat.whatsapp.com/Gi4D9yAd99p7q1XeVh0J1e" target="_blank" rel="noopener noreferrer" className="px-6 py-3 sm:px-8 sm:py-4 lg:text-lg bg-white text-[#0b1120] rounded-xl font-bold text-base border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[8px_8px_0px_#10b981] transition-all flex items-center gap-2">
+              <a aria-label="WhatsApp Community" title="WhatsApp Community" href="https://chat.whatsapp.com/Gi4D9yAd99p7q1XeVh0J1e" target="_blank" rel="noopener noreferrer" className="p-3 sm:p-3.5 bg-white text-[#0b1120] rounded-xl font-bold text-base border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[8px_8px_0px_#10b981] transition-all flex items-center gap-2">
                 <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="white" className="sm:w-3 sm:h-3"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
                 </div>
-                WhatsApp Community
               </a>
-              <a href="https://youtube.com/@Gen-ZIITian/" target="_blank" rel="noopener noreferrer" className="px-6 py-3 sm:px-8 sm:py-4 lg:text-lg bg-white text-[#0b1120] rounded-xl font-bold text-base border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[8px_8px_0px_#10b981] transition-all flex items-center gap-2">
+              <a aria-label="YouTube" title="YouTube" href="https://youtube.com/@Gen-ZIITian/" target="_blank" rel="noopener noreferrer" className="p-3 sm:p-3.5 bg-white text-[#0b1120] rounded-xl font-bold text-base border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[8px_8px_0px_#10b981] transition-all flex items-center gap-2">
                 <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-red-500 flex items-center justify-center">
                    <svg width="12" height="12" viewBox="0 0 24 24" fill="white" className="sm:w-3 sm:h-3"><path d="M8 5v14l11-7z" /></svg>
                 </div>
-                YouTube
               </a>
             </div>
 
@@ -299,61 +337,54 @@ export default function Home() {
 
       {/* Comparison Section */}
       <section className="py-12 md:py-20 bg-white relative overflow-hidden">
-        {/* Decorative Shapes (desktop only — they overlap the table on mobile) */}
-        <div className="hidden md:block absolute top-20 left-[5%] w-16 h-16 bg-yellow-200 rounded-full border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] opacity-50 animate-pulse"></div>
-        <div className="hidden md:block absolute bottom-40 right-[8%] w-20 h-20 bg-blue-200 rounded-2xl border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#0b1120] opacity-50 rotate-12"></div>
-
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-10 md:mb-16">
-            <div className="inline-block px-5 py-2 bg-[#f3e8ff] text-[#7c3aed] border-[2px] border-[#7c3aed] rounded-full font-black text-sm mb-4">
+            <div className="inline-block px-4 py-1.5 bg-violet-50 text-violet-700 border border-violet-200 rounded-full font-semibold text-xs tracking-wide mb-4">
               The Clear Choice
             </div>
-            <h2 className="text-3xl md:text-4xl lg:text-6xl font-black text-[#0b1120] mb-4">Why Gen-Z IITian?</h2>
-            <p className="text-gray-500 font-bold text-lg">Compare and see the difference for yourself.</p>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-[-0.025em] text-[#0b1120] mb-3">Why Gen-Z IITian?</h2>
+            <p className="text-gray-500 font-medium text-base md:text-lg">Compare and see the difference for yourself.</p>
           </div>
 
-          <div className="hidden md:block relative overflow-x-auto pb-8">
-            <div className="min-w-[800px] border-[4px] border-[#0b1120] rounded-[2rem] bg-white shadow-[12px_12px_0px_#0b1120] overflow-hidden">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-[#0b1120] text-white">
-                    <th className="p-8 text-2xl font-black border-b-[4px] border-[#0b1120]">Features</th>
-                    <th className="p-8 text-2xl font-black text-center bg-[#dcfce7] text-[#0b1120] relative border-b-[4px] border-[#0b1120]">
-                      <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-[#10b981] text-white text-xs font-black rounded-full border-2 border-[#0b1120] uppercase tracking-wider whitespace-nowrap">
-                        Your Best Bet
-                      </div>
-                      GenZ IITian
-                    </th>
-                    <th className="p-8 text-xl font-black text-center border-b-[4px] border-[#0b1120]">YouTube Lectures</th>
-                    <th className="p-8 text-xl font-black text-center border-b-[4px] border-[#0b1120]">Other Courses</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y-[3px] divide-[#0b1120]">
-                  {COMPARISON_FEATURES.map((row, i) => (
-                    <tr key={i} className="group hover:bg-gray-50 transition-colors">
-                      <td className="p-6 font-black text-[#0b1120] text-lg flex items-center gap-3">
-                        <div className="w-2 h-2 rounded-full bg-[#0b1120]"></div>
-                        {row.feature}
-                      </td>
-                      <td className="p-6 text-center bg-[#f0fdf4] border-x-[3px] border-[#0b1120]/10">
-                        <div className="inline-flex items-center justify-center w-10 h-10 rounded-full border-[3px] border-[#10b981] bg-white shadow-[2px_2px_0px_#10b981]">
-                          <CheckCircle2 className="w-6 h-6 text-[#10b981]" />
-                        </div>
-                      </td>
-                      <td className="p-6 text-center">
-                        {row.yt
-                          ? <CheckCircle2 className="w-7 h-7 text-[#10b981] mx-auto" />
-                          : <XIcon className="w-8 h-8 text-red-400 mx-auto" />}
-                      </td>
-                      <td className="p-6 text-center">
-                        {row.others
-                          ? <CheckCircle2 className="w-7 h-7 text-[#10b981] mx-auto" />
-                          : <XIcon className="w-8 h-8 text-red-400 mx-auto" />}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <div className="hidden md:block relative max-w-5xl mx-auto pb-8">
+            <div className="grid grid-cols-[1.6fr_1.1fr_1fr_1fr] items-stretch">
+              {/* Header */}
+              <div className="px-6 py-5 flex items-end text-sm font-semibold text-gray-400 uppercase tracking-wider">Features</div>
+              <div className="relative rounded-t-3xl bg-gradient-to-b from-emerald-500 to-emerald-600 text-white px-4 pt-7 pb-5 text-center shadow-[0_20px_50px_-12px_rgba(16,185,129,0.55)]">
+                <span className="absolute top-2 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-white/20 text-[10px] font-semibold uppercase tracking-wider whitespace-nowrap">Your Best Bet</span>
+                <div className="mt-2 text-xl font-bold tracking-tight">GenZ IITian</div>
+              </div>
+              <div className="px-4 py-5 flex items-end justify-center text-center text-sm font-semibold text-gray-700">YouTube Lectures</div>
+              <div className="px-4 py-5 flex items-end justify-center text-center text-sm font-semibold text-gray-700">Other Courses</div>
+
+              {/* Rows */}
+              {COMPARISON_FEATURES.map((row, i) => {
+                const last = i === COMPARISON_FEATURES.length - 1;
+                const line = last ? '' : 'border-b border-gray-100';
+                return (
+                  <motion.div
+                    key={i}
+                    className="contents"
+                    initial={{ opacity: 0, y: 14 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: '-40px' }}
+                    transition={{ type: 'spring', bounce: 0, duration: 0.6, delay: i * 0.05 }}
+                  >
+                    <div className={`px-6 py-5 text-base font-semibold text-[#0b1120] flex items-center ${line}`}>{row.feature}</div>
+                    <div className={`flex items-center justify-center py-5 bg-emerald-50 ${last ? 'rounded-b-3xl' : 'border-b border-emerald-100'}`}>
+                      <span className="w-9 h-9 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-md shadow-emerald-500/30">
+                        <CheckCircle2 className="w-5 h-5" />
+                      </span>
+                    </div>
+                    <div className={`flex items-center justify-center py-5 ${line}`}>
+                      {row.yt ? <CheckCircle2 className="w-6 h-6 text-emerald-500" /> : <XIcon className="w-6 h-6 text-gray-300" />}
+                    </div>
+                    <div className={`flex items-center justify-center py-5 ${line}`}>
+                      {row.others ? <CheckCircle2 className="w-6 h-6 text-emerald-500" /> : <XIcon className="w-6 h-6 text-gray-300" />}
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
           </div>
 
@@ -404,64 +435,13 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
             <div className="text-center sm:text-left">
               <h2 className="text-2xl lg:text-3xl font-black text-[#0b1120] mb-2 max-w-[18rem] sm:max-w-none mx-auto sm:mx-0 leading-tight">Student Reviews &amp; Shared Experiences</h2>
-              <p className="text-gray-600 text-sm font-medium">Discover honest reviews and inspiring stories from students across India.</p>
-            </div>
-            <div className="hidden sm:flex gap-3 shrink-0">
-              <button aria-label="Previous reviews" onClick={() => scrollReviews(-1)} className="w-11 h-11 flex items-center justify-center bg-white border-[3px] border-[#0b1120] rounded-xl shadow-[3px_3px_0px_#0b1120] hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_#0b1120] transition-all">
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <button aria-label="Next reviews" onClick={() => scrollReviews(1)} className="w-11 h-11 flex items-center justify-center bg-white border-[3px] border-[#0b1120] rounded-xl shadow-[3px_3px_0px_#0b1120] hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_#0b1120] transition-all">
-                <ChevronRight className="w-5 h-5" />
-              </button>
             </div>
           </div>
 
-          <div ref={reviewsRef} className="flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory hide-scrollbar scroll-smooth">
-            {[
-              {
-                text: "The reattempt batch was a game changer. The mock tests were exactly like the real exam pattern and helped me clear comfortably!",
-                initial: "A",
-                name: "Aryan Sharma",
-                role: "Qualifier Student",
-                color: "bg-blue-100 text-blue-700"
-              },
-              {
-                text: "Maths 2 concepts were tough, but the Foundation course simplified everything. The doubt sessions helped a lot.",
-                initial: "P",
-                name: "Priya Patel",
-                role: "Maths 2 Student",
-                color: "bg-green-100 text-green-700"
-              },
-              {
-                text: "I am pursuing the Diploma now, and Gen-z IITian has been with me since day 1. Best notes and community.",
-                initial: "R",
-                name: "Rohan Das",
-                role: "Diploma Student",
-                color: "bg-purple-100 text-purple-700"
-              },
-              {
-                text: "Affordable and high quality. The structure of the Foundation course is perfect for beginners like me.",
-                initial: "S",
-                name: "Sanya Verma",
-                role: "Foundation Student",
-                color: "bg-pink-100 text-pink-700"
-              },
-              {
-                text: "The instructors explain everything so clearly. My GPA improved significantly after joining.",
-                initial: "V",
-                name: "Vikram Singh",
-                role: "Maths 2 Student",
-                color: "bg-orange-100 text-orange-700"
-              },
-              {
-                text: "Highly recommended for anyone looking for serious prep. The community is very supportive.",
-                initial: "M",
-                name: "Meera Iyer",
-                role: "Diploma Student",
-                color: "bg-teal-100 text-teal-700"
-              }
-            ].map((review, i) => (
-              <div key={i} className="snap-start shrink-0 w-[300px] md:w-[360px] bg-white border-[3px] border-[#0b1120] rounded-2xl p-6 shadow-[4px_4px_0px_#0b1120] flex flex-col hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[8px_8px_0px_#0b1120] transition-all">
+          <div className="overflow-hidden pb-4 -mx-6 px-0 reviews-marquee-wrap">
+          <div className="reviews-marquee flex gap-6 w-max">
+            {[...REVIEWS, ...REVIEWS].map((review, i) => (
+              <div key={i} className="shrink-0 w-[300px] md:w-[360px] bg-white border-[3px] border-[#0b1120] rounded-2xl p-6 shadow-[4px_4px_0px_#0b1120] flex flex-col hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[8px_8px_0px_#0b1120] transition-all">
                 <p className="text-gray-700 font-bold text-base mb-6 flex-grow">"{review.text}"</p>
 
                 <div className="flex items-center justify-between mt-auto pt-6 border-t-2 border-gray-100">
@@ -479,11 +459,12 @@ export default function Home() {
               </div>
             ))}
           </div>
+          </div>
         </div>
       </section>
 
         {/* Left Side: Stats/Callout */}
-      <section className="bg-white py-16 border-t-[3px] border-[#0b1120] relative overflow-hidden">
+      <section hidden aria-hidden="true" className="hidden bg-white py-16 border-t-[3px] border-[#0b1120] relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-8">
             <div>

@@ -1,7 +1,7 @@
 import { useAuth } from '../context/AuthContext';
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { supabase } from '../lib/supabase';
-import { LayoutDashboard, ShoppingBag, ScrollText, BookOpen, Plus, Search, Trash2, Edit, Save, X, Loader2, AlertCircle, User, Download, TrendingUp, TrendingDown, Users, ShieldCheck, CreditCard, RefreshCw, Gift, ArrowRight, Copy, Coins, Eye, Settings, ClipboardList, Boxes, ArrowLeft, Calendar, IndianRupee, UserX, ChevronDown, Briefcase, EyeOff } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, ScrollText, BookOpen, Plus, Search, Trash2, Edit, Save, X, Loader2, AlertCircle, User, Download, TrendingUp, TrendingDown, Users, ShieldCheck, CreditCard, RefreshCw, Gift, ArrowRight, Copy, Coins, Eye, Settings, ClipboardList, Boxes, ArrowLeft, Calendar, IndianRupee, UserX, ChevronDown, Briefcase, EyeOff, Palette } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate, useLocation, NavLink } from 'react-router-dom';
 import { apiService } from '../lib/api';
@@ -11,6 +11,7 @@ import OneOnOneBookingsManager from '../components/manager/OneOnOneBookingsManag
 import JobApplicationsManager from '../components/manager/JobApplicationsManager';
 import UsersManager, { RoleBadges, waNumber } from '../components/manager/UsersManager';
 import ManagerFullPageSheet from '../components/manager/ManagerFullPageSheet';
+import { ConfirmDialog, BusyModal, type ConfirmOptions } from '../components/manager/ConfirmDialog';
 import ErrorBoundary from '../components/ErrorBoundary';
 import { getYouTubeId } from '../utils/youtube';
 import { resolveBundleDiscountConfig } from '../utils/bundleDiscount';
@@ -77,6 +78,13 @@ export default function Manager() {
   const [customTo, setCustomTo] = useState('');
   const [paymentSearch, setPaymentSearch] = useState('');
   const [paymentSearchInput, setPaymentSearchInput] = useState('');
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmOptions | null>(null);
+  const [busyMessage, setBusyMessage] = useState<string | null>(null);
+  const askConfirm = (opts: ConfirmOptions) => setConfirmDialog(opts);
+  const withBusy = async (message: string, fn: () => Promise<unknown>) => {
+    setBusyMessage(message);
+    try { await fn(); } finally { setBusyMessage(null); }
+  };
   const [isFetching, setIsFetching] = useState(false);
   const [showEarned, setShowEarned] = useState(false);
   const [showPotential, setShowPotential] = useState(false);
@@ -698,7 +706,10 @@ export default function Manager() {
     link.click();
   };
 
-  const handleCourseAction = async (course: any, isDelete = false) => {
+  const handleCourseAction = (course: any, isDelete = false) =>
+    withBusy(isDelete ? 'Deleting course…' : 'Saving course…', () => handleCourseActionInner(course, isDelete));
+
+  const handleCourseActionInner = async (course: any, isDelete = false) => {
     if (isDelete) {
       const { error } = await supabase.from('courses').delete().eq('id', course.id);
       if (error) alert(error.message);
@@ -867,7 +878,10 @@ export default function Manager() {
     fetchData();
   };
 
-  const handleDiscountAction = async (discount: any, isDelete = false) => {
+  const handleDiscountAction = (discount: any, isDelete = false) =>
+    withBusy(isDelete ? 'Deleting coupon…' : 'Saving coupon…', () => handleDiscountActionInner(discount, isDelete));
+
+  const handleDiscountActionInner = async (discount: any, isDelete = false) => {
     if (isDelete) {
       const { error } = await supabase.from('discount_coupons').delete().eq('id', discount.id);
       if (error) alert(error.message);
@@ -1325,7 +1339,7 @@ export default function Manager() {
                                   <button 
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      handlePaymentDelete(order.order_id);
+                                      askConfirm({ title: 'Delete this payment record?', message: `Order ${order.order_id} will be permanently removed. This can’t be undone.`, confirmLabel: 'Delete record', onConfirm: () => withBusy('Deleting record…', async () => { await handlePaymentDelete(order.order_id); }) });
                                     }}
                                     className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                                     title="Delete Payment Record"
@@ -1415,7 +1429,7 @@ export default function Manager() {
                                   <Edit className="w-3.5 h-3.5" /> Edit
                                 </button>
                                 <button 
-                                  onClick={() => handleCourseAction(course, true)}
+                                  onClick={() => askConfirm({ title: 'Delete this course?', message: `“${course.name}” will be permanently deleted. This can’t be undone.`, confirmLabel: 'Delete course', onConfirm: () => handleCourseAction(course, true) })}
                                   className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                                   title="Delete course"
                                 >
@@ -1484,7 +1498,7 @@ export default function Manager() {
                                   <Edit className="w-3.5 h-3.5" /> Edit
                                 </button>
                                 <button 
-                                  onClick={() => handleDiscountAction(discount, true)}
+                                  onClick={() => askConfirm({ title: 'Delete this coupon?', message: `Coupon “${discount.code}” will be permanently deleted. This can’t be undone.`, confirmLabel: 'Delete coupon', onConfirm: () => handleDiscountAction(discount, true) })}
                                   className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                                   title="Delete coupon"
                                 >
@@ -1605,17 +1619,17 @@ export default function Manager() {
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-3">What You Get in the Cohort</label>
                     <p className="text-xs font-normal text-slate-500 mb-2">These lines show under “Included with enrollment” on the course page. One point per line.</p>
-                    <textarea defaultValue={editingCourse?.cohortContent || ''} id="c-cohort" placeholder="e.g.&#10;✅ Live doubt-solving sessions every week&#10;✅ Structured notes + PYQs&#10;✅ Mock tests before every quiz&#10;..." className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl font-medium focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 outline-none h-48 leading-relaxed" />
+                    <textarea defaultValue={editingCourse?.cohortContent || ''} id="c-cohort" placeholder="e.g.&#10;Live doubt-solving sessions every week&#10;Structured notes + PYQs&#10;Mock tests before every quiz&#10;..." className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl font-medium focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 outline-none h-48 leading-relaxed" />
                   </div>
                   <div className="border border-slate-300 rounded-2xl bg-slate-50 overflow-hidden shadow-sm">
                     <button
                       type="button"
-                      onClick={() => setShowCourseThemeSection(!showCourseThemeSection)}
+                      onClick={() => setShowCourseThemeSection(true)}
                       className="w-full p-4 flex items-center justify-between text-left hover:bg-slate-100 transition-colors cursor-pointer"
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-white border border-slate-300 flex items-center justify-center font-semibold text-lg shadow-sm shrink-0">
-                          🎨
+                          <Palette className="w-5 h-5 text-slate-600" />
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
@@ -1638,116 +1652,12 @@ export default function Manager() {
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5 font-semibold text-xs text-slate-900 bg-white border border-slate-300 px-3 py-1.5 rounded-xl shadow-sm shrink-0">
-                        <span>{showCourseThemeSection ? 'Collapse' : 'Customize Theme'}</span>
-                        <ChevronDown className={`w-4 h-4 transition-transform ${showCourseThemeSection ? 'rotate-180' : ''}`} />
+                        <span>View</span>
+                        <ArrowRight className="w-4 h-4" />
                       </div>
                     </button>
 
-                    {showCourseThemeSection && (
-                      <div className="p-5 border-t border-slate-200 space-y-4 bg-slate-50">
-                        <div>
-                          <label className="block text-xs font-semibold text-slate-700 mb-1">Course Page Design Theme</label>
-                          <p className="text-xs font-normal text-slate-500 mb-2">Default is Classic. Only manager can turn ON the Modern Redesign.</p>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <button
-                              type="button"
-                              onClick={() => setCoursePageTheme('old')}
-                              className={`p-3 rounded-xl border-2 font-bold text-left transition-all cursor-pointer ${
-                                coursePageTheme === 'old'
-                                  ? 'border-slate-900 bg-white shadow-sm'
-                                  : 'border-slate-200 bg-white/60 text-gray-500 hover:border-slate-300'
-                              }`}
-                            >
-                              <div className="flex items-center justify-between text-xs font-semibold text-slate-900 ">
-                                <span>Classic (Old)</span>
-                                {coursePageTheme === 'old' && <span className="bg-emerald-100 text-emerald-800 text-[9px] px-1.5 py-0.5 rounded font-semibold">Default Active</span>}
-                              </div>
-                              <p className="text-[11px] text-gray-500 font-medium mt-1 leading-snug">Brutalist layout with batch comparison cards, outcomes, and stats</p>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setCoursePageTheme('new')}
-                              className={`p-3 rounded-xl border-2 font-bold text-left transition-all cursor-pointer ${
-                                coursePageTheme === 'new'
-                                  ? 'border-slate-900 bg-white shadow-sm'
-                                  : 'border-slate-200 bg-white/60 text-gray-500 hover:border-slate-300'
-                              }`}
-                            >
-                              <div className="flex items-center justify-between text-xs font-semibold text-slate-900 ">
-                                <span>Modern Redesign (New)</span>
-                                {coursePageTheme === 'new' && <span className="bg-blue-100 text-blue-800 text-[9px] px-1.5 py-0.5 rounded font-semibold">Turned ON</span>}
-                              </div>
-                              <p className="text-[11px] text-gray-500 font-medium mt-1 leading-snug">Modern tabs layout with video spotlight, feedback reviews, and clean FAQ</p>
-                            </button>
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold text-slate-700 mb-1">Course page video</label>
-                          <p className="text-xs font-normal text-slate-500 mb-2">YouTube link for “How to use this batch”. Students can play it on the course page.</p>
-                          <input
-                            type="url"
-                            value={accessVideoUrl}
-                            onChange={(e) => setAccessVideoUrl(e.target.value)}
-                            placeholder="https://www.youtube.com/watch?v=..."
-                            className="w-full px-4 py-3 border border-slate-300 rounded-xl font-medium focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 outline-none bg-white"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold text-slate-700 mb-1">Feedback bank</label>
-                          <p className="text-xs font-normal text-slate-500 mb-3">Tick the notes that should show on this course. Add a new one if it is not in the bank yet.</p>
-                          <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
-                            {feedbackBank.map((note) => {
-                              const checked = selectedReviewIds.includes(note.id);
-                              return (
-                                <label key={note.id} className={`flex gap-3 p-3 rounded-xl border-2 cursor-pointer ${checked ? 'border-blue-500 bg-white' : 'border-slate-200 bg-white'}`}>
-                                  <input
-                                    type="checkbox"
-                                    checked={checked}
-                                    onChange={() => {
-                                      setSelectedReviewIds((current) =>
-                                        checked ? current.filter((reviewId) => reviewId !== note.id) : [...current, note.id]
-                                      );
-                                    }}
-                                    className="mt-1 w-4 h-4 accent-blue-600"
-                                  />
-                                  <span>
-                                    <span className="block text-sm font-semibold text-slate-900">{note.name} <span className="font-bold text-gray-400">· {note.role}</span></span>
-                                    <span className="block text-xs font-bold text-gray-500 mt-1">{note.text}</span>
-                                  </span>
-                                </label>
-                              );
-                            })}
-                          </div>
-                          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            <input
-                              value={draftReview.name}
-                              onChange={(e) => setDraftReview((current) => ({ ...current, name: e.target.value }))}
-                              placeholder="Student name"
-                              className="px-4 py-3 border-2 border-slate-200 rounded-xl font-bold outline-none bg-white"
-                            />
-                            <input
-                              value={draftReview.role}
-                              onChange={(e) => setDraftReview((current) => ({ ...current, role: e.target.value }))}
-                              placeholder="Batch, e.g. Maths 1"
-                              className="px-4 py-3 border-2 border-slate-200 rounded-xl font-bold outline-none bg-white"
-                            />
-                            <textarea
-                              value={draftReview.text}
-                              onChange={(e) => setDraftReview((current) => ({ ...current, text: e.target.value }))}
-                              placeholder="What they said"
-                              className="sm:col-span-2 px-4 py-3 border-2 border-slate-200 rounded-xl font-bold outline-none bg-white h-20"
-                            />
-                            <button
-                              type="button"
-                              onClick={addDraftReview}
-                              className="sm:col-span-2 py-3 rounded-xl border border-slate-300 font-semibold text-sm bg-white hover:bg-slate-100"
-                            >
-                              Add to feedback bank
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                    
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -1842,9 +1752,9 @@ export default function Manager() {
                       <label className="block text-xs font-semibold text-slate-700 mb-3">Course Marketing Tag</label>
                       <select value={courseCategory} onChange={(e) => setCourseCategory(e.target.value as 'QUALIFIER' | 'LIVE' | 'RECORDED' | 'NONE')} className="w-full px-3.5 py-2.5 border border-slate-300 rounded-2xl font-semibold focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 outline-none bg-white">
                         <option value="NONE">None</option>
-                        <option value="QUALIFIER">🎯 Qualifier</option>
-                        <option value="LIVE">📺 Live</option>
-                        <option value="RECORDED">📹 Recorded</option>
+                        <option value="QUALIFIER">Qualifier</option>
+                        <option value="LIVE">Live</option>
+                        <option value="RECORDED">Recorded</option>
                       </select>
                   </div>
 
@@ -1869,7 +1779,7 @@ export default function Manager() {
                         >
                           <option value="Term 1">TERM 1 (Math 1, Eng 1, Stats 1, CT)</option>
                           <option value="Term 2">TERM 2 (Math 2, Eng 2, Stats 2, Python)</option>
-                          <option value="BOTH">✨ Both Terms (Term 1 &amp; Term 2)</option>
+                          <option value="BOTH">Both Terms (Term 1 &amp; Term 2)</option>
                         </select>
                       </div>
                     )}
@@ -1963,7 +1873,7 @@ export default function Manager() {
                   {isBundle && (
                     <div className="p-6 bg-green-50 border border-[#10b981] rounded-2xl space-y-4 mt-6">
                       <h4 className="text-xs font-semibold text-slate-700 flex items-center gap-2">
-                        🎁 Bundle Discount Settings
+                        Bundle Discount Settings
                       </h4>
                       <p className="text-xs font-normal text-slate-500">
                         One discount mode can be active at a time. Whole bundle is selected by default.
@@ -2195,14 +2105,14 @@ export default function Manager() {
                                   type="text"
                                   value={opt.banner_text || ''}
                                   onChange={e => updatePricingOption(idx, 'banner_text', e.target.value)}
-                                  placeholder="e.g. 🌟 GET LIVE DOUBT SOLVING + EXCLUSIVE STUDY NOTES WITH THIS PLAN!"
+                                  placeholder="e.g. GET LIVE DOUBT SOLVING + EXCLUSIVE STUDY NOTES WITH THIS PLAN!"
                                   className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl font-bold outline-none focus:border-blue-400 bg-white"
                                 />
                               </div>
                               <div className="flex justify-end">
                                 <button 
                                   type="button" 
-                                  onClick={() => removePricingOption(idx)}
+                                  onClick={() => askConfirm({ title: 'Remove this pricing tier?', message: 'It will be removed from the course. You still need to save the course for this to take effect.', confirmLabel: 'Remove tier', onConfirm: () => removePricingOption(idx) })}
                                   className="p-2.5 text-red-500 hover:bg-red-50 rounded-xl border-2 border-transparent hover:border-red-100"
                                 >
                                   <Trash2 className="w-5 h-5" />
@@ -2342,7 +2252,7 @@ export default function Manager() {
                             {isBundle && (
                               <button 
                                 type="button" 
-                                onClick={() => removeBundleCourse(idx)} 
+                                onClick={() => askConfirm({ title: 'Remove this course from the bundle?', message: 'You still need to save the course for this to take effect.', confirmLabel: 'Remove course', onConfirm: () => removeBundleCourse(idx) })} 
                                 className="w-full py-4 text-red-500 bg-red-50 border-2 border-red-100 rounded-2xl font-semibold hover:bg-red-500 hover:text-white hover:border-red-500 transition-all flex items-center justify-center gap-3"
                               >
                                 <Trash2 className="w-5 h-5" /> Remove Course
@@ -2472,6 +2382,161 @@ export default function Manager() {
                   }}
                 />
               </div>
+      </ManagerFullPageSheet>
+
+      {/* Course page design & theme — dedicated full page */}
+      <ManagerFullPageSheet
+        open={showCourseThemeSection && !!(showAddCourse || editingCourse)}
+        title="Course page design & theme"
+        subtitle={`${editingCourse?.name || 'New course'} · changes apply when you save the course`}
+        onClose={() => setShowCourseThemeSection(false)}
+        onSave={() => setShowCourseThemeSection(false)}
+        saveLabel="Done"
+        maxWidthClass="max-w-7xl"
+      >
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-6 items-start">
+          <div className="space-y-6 min-w-0">
+            {/* Theme */}
+            <section className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-7 shadow-sm space-y-4">
+              <div>
+                <h3 className="text-base font-semibold text-slate-900">Page theme</h3>
+                <p className="text-sm text-slate-500 mt-1">Classic is the default. Only managers can turn the Modern redesign on.</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {([
+                  { id: 'old', title: 'Classic', badge: 'Default', blurb: 'Batch comparison cards, outcomes and stats.', points: ['Brutalist layout', 'Batch comparison cards', 'Outcome & stats blocks'] },
+                  { id: 'new', title: 'Modern redesign', badge: 'New', blurb: 'Tabs layout with a video spotlight, feedback reviews and a clean FAQ.', points: ['Tabbed sections', 'Video spotlight', 'Student feedback reviews', 'Clean FAQ'] },
+                ] as const).map(t => {
+                  const active = coursePageTheme === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setCoursePageTheme(t.id)}
+                      className={`text-left p-5 rounded-2xl border-2 transition-all cursor-pointer ${active ? 'border-slate-900 bg-slate-50 shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300'}`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold text-slate-900">{t.title}</span>
+                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${active ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>
+                          {active ? 'Selected' : t.badge}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-2 leading-relaxed">{t.blurb}</p>
+                      <ul className="mt-3 space-y-1">
+                        {t.points.map(p => (
+                          <li key={p} className="text-xs text-slate-600 flex items-center gap-2">
+                            <span className="w-1 h-1 rounded-full bg-slate-400" /> {p}
+                          </li>
+                        ))}
+                      </ul>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* Video */}
+            <section className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-7 shadow-sm space-y-4">
+              <div>
+                <h3 className="text-base font-semibold text-slate-900">Course page video</h3>
+                <p className="text-sm text-slate-500 mt-1">YouTube link for “How to use this batch”. Students can play it on the course page.</p>
+              </div>
+              <input
+                type="url"
+                value={accessVideoUrl}
+                onChange={(e) => setAccessVideoUrl(e.target.value)}
+                placeholder="https://www.youtube.com/watch?v=..."
+                className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl font-medium focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 outline-none bg-white"
+              />
+              {getYouTubeId(accessVideoUrl) ? (
+                <div className="aspect-video w-full rounded-xl overflow-hidden border border-slate-200 bg-black">
+                  <iframe
+                    title="Course video preview"
+                    src={`https://www.youtube.com/embed/${getYouTubeId(accessVideoUrl)}`}
+                    className="w-full h-full"
+                    allowFullScreen
+                  />
+                </div>
+              ) : (
+                <div className="aspect-video w-full rounded-xl border border-dashed border-slate-300 bg-slate-50 flex items-center justify-center text-sm text-slate-400">
+                  {accessVideoUrl ? 'Not a valid YouTube link' : 'Video preview appears here'}
+                </div>
+              )}
+            </section>
+          </div>
+
+          {/* Feedback */}
+          <div className="space-y-6 min-w-0">
+            <section className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-7 shadow-sm space-y-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-base font-semibold text-slate-900">Feedback bank</h3>
+                  <p className="text-sm text-slate-500 mt-1">Tick the notes that should show on this course.</p>
+                </div>
+                <div className="flex items-center gap-2 text-xs font-semibold">
+                  <span className="px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200">{selectedReviewIds.length} of {feedbackBank.length} selected</span>
+                  <button type="button" onClick={() => setSelectedReviewIds(feedbackBank.map(n => n.id))} className="text-slate-600 hover:text-slate-900 underline underline-offset-2 cursor-pointer">Select all</button>
+                  <button type="button" onClick={() => setSelectedReviewIds([])} className="text-slate-600 hover:text-slate-900 underline underline-offset-2 cursor-pointer">Clear</button>
+                </div>
+              </div>
+
+              <div className="max-h-[480px] overflow-y-auto space-y-2 pr-1">
+                {feedbackBank.map((note) => {
+                  const checked = selectedReviewIds.includes(note.id);
+                  return (
+                    <label key={note.id} className={`flex gap-3 p-3.5 rounded-xl border cursor-pointer transition-colors ${checked ? 'border-blue-400 bg-blue-50/40' : 'border-slate-200 bg-white hover:border-slate-300'}`}>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => {
+                          setSelectedReviewIds((current) =>
+                            checked ? current.filter((reviewId) => reviewId !== note.id) : [...current, note.id]
+                          );
+                        }}
+                        className="mt-1 w-4 h-4 accent-blue-600"
+                      />
+                      <span className="min-w-0">
+                        <span className="block text-sm font-semibold text-slate-900">{note.name} <span className="font-normal text-slate-400">· {note.role}</span></span>
+                        <span className="block text-xs text-slate-500 mt-1 leading-relaxed">{note.text}</span>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-7 shadow-sm space-y-3">
+              <h3 className="text-base font-semibold text-slate-900">Add a new note</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input
+                  value={draftReview.name}
+                  onChange={(e) => setDraftReview((current) => ({ ...current, name: e.target.value }))}
+                  placeholder="Student name"
+                  className="px-3.5 py-2.5 border border-slate-300 rounded-xl font-medium outline-none bg-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400"
+                />
+                <input
+                  value={draftReview.role}
+                  onChange={(e) => setDraftReview((current) => ({ ...current, role: e.target.value }))}
+                  placeholder="Batch, e.g. Maths 1"
+                  className="px-3.5 py-2.5 border border-slate-300 rounded-xl font-medium outline-none bg-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400"
+                />
+                <textarea
+                  value={draftReview.text}
+                  onChange={(e) => setDraftReview((current) => ({ ...current, text: e.target.value }))}
+                  placeholder="What they said"
+                  className="sm:col-span-2 px-3.5 py-2.5 border border-slate-300 rounded-xl font-medium outline-none bg-white h-24 focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400"
+                />
+                <button
+                  type="button"
+                  onClick={addDraftReview}
+                  className="sm:col-span-2 py-2.5 rounded-xl bg-slate-900 text-white font-semibold text-sm hover:bg-slate-800 cursor-pointer"
+                >
+                  Add to feedback bank
+                </button>
+              </div>
+            </section>
+          </div>
+        </div>
       </ManagerFullPageSheet>
 
       {/* Discount Editor — full page */}
@@ -2866,6 +2931,8 @@ export default function Manager() {
               )}
       </ManagerFullPageSheet>
 
+      <ConfirmDialog options={confirmDialog} onClose={() => setConfirmDialog(null)} />
+      <BusyModal message={busyMessage} />
     </div>
   );
 }
@@ -3068,6 +3135,9 @@ function BoxesManager({
     });
   };
 
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmOptions | null>(null);
+  const askConfirm = (opts: ConfirmOptions) => setConfirmDialog(opts);
+
   const removeBox = (boxName: string) => {
     setDraftConfig({
       ...draftConfig,
@@ -3112,6 +3182,7 @@ function BoxesManager({
 
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-5 sm:p-8 shadow-sm space-y-6">
+      <ConfirmDialog options={confirmDialog} onClose={() => setConfirmDialog(null)} />
       <div className="border-b border-slate-200 pb-4">
         <h2 className="text-lg font-semibold text-slate-900 mb-1">Boxes</h2>
         <p className="text-slate-500 text-sm">
@@ -3172,7 +3243,7 @@ function BoxesManager({
                   />
                   <button
                     type="button"
-                    onClick={() => removeBox(box)}
+                    onClick={() => askConfirm({ title: 'Remove this box?', message: `“${box}” will be removed from the list.`, confirmLabel: 'Remove box', onConfirm: () => removeBox(box) })}
                     className="p-2.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                     title="Remove box"
                   >

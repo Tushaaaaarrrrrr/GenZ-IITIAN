@@ -74,7 +74,8 @@ export default function Profile() {
       return cid.replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     }
 
-    return cid;
+    // Unknown raw id (e.g. cuid): show nothing rather than the id
+    return '';
   };
 
   const getEnrolledCourses = () => {
@@ -223,7 +224,6 @@ export default function Profile() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <h3 className="font-black text-[#0b1120] text-base sm:text-lg leading-tight mb-1 truncate">{course.name}</h3>
-                      <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest truncate">ID: {course.id}</div>
                     </div>
                   </div>
 
@@ -277,19 +277,6 @@ export default function Profile() {
                       </span>
                     </div>
 
-                    <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                      {order.course_ids.map((cid: string) => {
-                        const courseTitle = getCourseDisplayName(cid);
-                        return (
-                          <div 
-                            key={cid} 
-                            className="px-2.5 py-1 bg-gray-50 border-2 border-[#0b1120] rounded-lg text-[11px] sm:text-xs font-black uppercase text-gray-700 max-w-full break-all"
-                          >
-                            {courseTitle}
-                          </div>
-                        );
-                      })}
-                    </div>
                   </div>
 
                   <div className="w-full sm:w-auto pt-3 sm:pt-0 border-t sm:border-t-0 border-dashed border-gray-200 flex sm:flex-col justify-between sm:justify-center items-center sm:items-end shrink-0">

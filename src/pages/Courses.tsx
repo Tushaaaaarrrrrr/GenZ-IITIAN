@@ -35,7 +35,7 @@ export const TERM_OPTIONS = [
     textColor: 'text-yellow-600',
     bgColor: 'bg-yellow-50 border-yellow-300',
     iconColor: 'text-yellow-600',
-    desc: 'Crack the qualifier exam. Get comprehensive study plans, live tutorials, and mock papers to guarantee your admission.'
+    desc: 'Crack the qualifier with study plans, live classes and mock papers.'
   },
   {
     id: 'Re-attempt',
@@ -45,7 +45,7 @@ export const TERM_OPTIONS = [
     textColor: 'text-red-600',
     bgColor: 'bg-red-50 border-red-300',
     iconColor: 'text-red-600',
-    desc: 'Ready to try again? Get targeted preparation strategies, intensive practice, and guidance to ace your next attempt.'
+    desc: 'Retaking it? Get targeted prep and intensive practice to ace your next attempt.'
   },
   {
     id: 'Foundation',
@@ -55,7 +55,7 @@ export const TERM_OPTIONS = [
     textColor: 'text-blue-600',
     bgColor: 'bg-blue-50 border-blue-300',
     iconColor: 'text-blue-600',
-    desc: 'Build a rock-solid academic base. Master core fundamentals with senior IITM BS students and conceptual live sessions.'
+    desc: 'Build a strong base with live concept sessions by senior IITM BS students.'
   },
   {
     id: 'DIPLOMA',
@@ -65,7 +65,7 @@ export const TERM_OPTIONS = [
     textColor: 'text-emerald-600',
     bgColor: 'bg-emerald-50 border-emerald-300',
     iconColor: 'text-emerald-600',
-    desc: 'Deep-dive into advanced coursework. Excel in project labs, coding assignments, and specialized diploma curriculum.'
+    desc: 'Go deep into advanced subjects, project labs and coding assignments.'
   }
 ];
 

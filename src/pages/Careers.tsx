@@ -403,6 +403,7 @@ export default function Careers() {
               <li
                 key={s.title}
                 className="relative lg:px-6 lg:first:pl-0 lg:last:pr-0"
+                style={i > 0 ? { borderLeft: undefined } : undefined}
               >
                 <div className="flex items-center gap-3">
                   <span

@@ -74,7 +74,7 @@ export default function ManagerFullPageSheet({
           </header>
 
           <div className="flex-1 overflow-y-auto">
-            <div className={`mx-auto px-4 sm:px-8 py-6 sm:py-8 pb-10 ${maxWidthClass}`}>
+            <div className="mx-auto w-full px-4 sm:px-8 py-6 sm:py-8 pb-10" style={{ maxWidth: 'min(100%, 1760px)' }} data-width-hint={maxWidthClass}>
               {children}
             </div>
           </div>

@@ -92,7 +92,7 @@ export default function Navbar() {
   const megaLinks = desktopMenu === 'resources' ? RESOURCE_LINKS : CONNECT_LINKS;
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `relative font-bold text-[15px] transition-colors pb-1 ${
+    `relative font-bold text-[15px] whitespace-nowrap transition-colors pb-1 ${
       isActive
         ? 'text-[#0b1120] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2.5px] after:bg-blue-600 after:rounded-full'
         : 'text-gray-600 hover:text-[#0b1120]'
@@ -104,20 +104,24 @@ export default function Navbar() {
   return (
     <nav className="relative border-b border-gray-200 bg-white sticky top-0 z-[100]">
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-1">
+        <Link to="/" className="flex items-center gap-1 whitespace-nowrap shrink-0">
           <span className="font-black text-2xl tracking-tight text-[#0b1120]">Gen-Z</span>
           <span className="font-black text-2xl tracking-tight text-red-500">IITian</span>
         </Link>
-        <div className="hidden md:flex items-center gap-8">
+        <div className="hidden md:flex items-center gap-4 lg:gap-8 whitespace-nowrap">
           <NavLink to="/" end className={navLinkClass}>Home</NavLink>
           <NavLink to="/courses" className={navLinkClass}>Courses</NavLink>
-          <NavLink to="/one-to-one" className={navLinkClass}>
-            <span className="flex items-center gap-1.5">
-              1:1 Teaching
-              <span className="px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black border border-emerald-300">
-                1:1
-              </span>
-            </span>
+          <NavLink
+            to="/one-to-one"
+            className={({ isActive }) =>
+              `px-3 py-1.5 rounded-lg border text-sm font-bold whitespace-nowrap transition-colors ${
+                isActive
+                  ? 'bg-[#0b1120] text-white border-[#0b1120]'
+                  : 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100'
+              }`
+            }
+          >
+            1:1 Teaching
           </NavLink>
           <div
             className="relative"
@@ -159,30 +163,30 @@ export default function Navbar() {
             <div className="flex items-center gap-3">
               <Link 
                 to="/refer"
-                className="hidden sm:flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors border-2 border-transparent shadow-[4px_4px_0px_#0b1120]"
+                title="Refer & Earn" className="hidden sm:flex items-center gap-2 p-2.5 whitespace-nowrap shrink-0 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors border-2 border-transparent shadow-[4px_4px_0px_#0b1120]"
               >
-                <Gift className="w-4 h-4" />
-                <span>Refer & Earn</span>
+                <Gift className="w-5 h-5" />
               </Link>
               <button 
                 onClick={() => window.open('https://class.genziitian.in', '_blank', 'noopener,noreferrer')}
-                className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white text-blue-600 border-2 border-[#0b1120] rounded-xl font-bold hover:bg-blue-50 transition-colors shadow-[4px_4px_0px_#0b1120]"
+                title="Dashboard" className="hidden sm:flex items-center gap-2 px-3 xl:px-4 py-2 whitespace-nowrap shrink-0 bg-white text-blue-600 border-2 border-[#0b1120] rounded-xl font-bold hover:bg-blue-50 transition-colors shadow-[4px_4px_0px_#0b1120]"
               >
                 <LayoutDashboard className="w-4 h-4" />
-                <span>Dashboard</span>
+                <span className="hidden xl:inline">Dashboard</span>
               </button>
               <div className="relative" ref={userMenuRef}>
                 <button 
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center gap-2 px-4 py-2 bg-[#0b1120] text-white rounded-xl font-bold hover:bg-gray-800 transition-colors border-2 border-transparent"
+                  aria-label="Account menu"
+                  className="group flex items-center gap-1.5 pl-2 pr-2.5 py-1.5 bg-[#0b1120] text-white rounded-full font-bold hover:bg-gray-800 active:scale-95 hover:shadow-lg transition-all duration-200 border-2 border-transparent"
                 >
-                  <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-[10px] font-black uppercase border border-white/20">
+                  <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-sm font-black uppercase border border-white/20 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6">
                     {profile?.name?.charAt(0) || user.email?.charAt(0).toUpperCase()}
                   </div>
-                  <span className="hidden sm:inline">{profile?.name?.split(' ')[0]}</span>
+                  <ChevronDown className={`w-4 h-4 text-gray-300 transition-transform duration-300 ${userMenuOpen ? 'rotate-180' : 'group-hover:translate-y-0.5'}`} />
                 </button>
                 {userMenuOpen && (
-                  <div className="absolute top-full right-0 mt-3 w-56 bg-white border-[3px] border-[#0b1120] rounded-xl shadow-[6px_6px_0px_#0b1120] py-2 z-50">
+                  <div className="absolute top-full right-0 mt-3 w-56 animate-[fadeSlide_0.18s_ease-out] bg-white border-[3px] border-[#0b1120] rounded-xl shadow-[6px_6px_0px_#0b1120] py-2 z-50">
                     <Link to="/profile" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">
                       <UserIcon className="w-4 h-4" /> My Profile
                     </Link>
@@ -250,8 +254,7 @@ export default function Navbar() {
           <NavLink to="/courses" onClick={() => setMobileOpen(false)} className={mobileNavLinkClass}>Courses</NavLink>
           <NavLink to="/one-to-one" onClick={() => setMobileOpen(false)} className={mobileNavLinkClass}>
             <span className="flex items-center justify-between">
-              <span>1:1 Teaching (Personalised)</span>
-              <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-black">1:1</span>
+              <span>1:1 Teaching</span>
             </span>
           </NavLink>
           <div className="flex flex-col">

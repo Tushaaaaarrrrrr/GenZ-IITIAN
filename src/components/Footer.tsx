@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { GraduationCap, Youtube, MessageCircle, Instagram, Linkedin } from 'lucide-react';
+import { GraduationCap, Youtube, MessageCircle, Instagram, Linkedin, LayoutDashboard, BookOpenCheck, Mail } from 'lucide-react';
 
 export default function Footer() {
   const [isNewsletterPopupOpen, setIsNewsletterPopupOpen] = useState(false);
@@ -16,9 +16,14 @@ export default function Footer() {
               <h3 className="text-3xl font-black text-white leading-tight">
                 Take the First Step<br />Towards Mastery!
               </h3>
-              <Link to="/courses" className="w-fit px-6 py-3 bg-[#10b981] text-white rounded-xl font-bold text-lg border-2 border-[#0b1120] flex items-center gap-2 hover:bg-[#059669] transition-colors">
+              <div className="flex flex-wrap items-center gap-3">
+                <Link to="/courses" className="w-fit px-6 py-3 bg-[#10b981] text-white rounded-xl font-bold text-lg border-2 border-[#0b1120] flex items-center gap-2 hover:bg-[#059669] transition-colors">
                 <GraduationCap className="w-5 h-5" /> Enroll on Courses
               </Link>
+                <Link to="/contact" className="w-fit px-6 py-3 bg-transparent text-white rounded-xl font-bold text-lg border-2 border-gray-600 flex items-center gap-2 hover:bg-white hover:text-[#0b1120] hover:border-white transition-colors">
+    <Mail className="w-5 h-5" /> Contact Us
+  </Link>
+              </div>
               <div className="mt-4">
                 <div className="flex items-center gap-1 mb-4">
                   <span className="font-black text-2xl tracking-tight text-white">GEN-Z</span>
@@ -74,6 +79,22 @@ export default function Footer() {
                 <li>
                   <a href="https://www.linkedin.com/company/102554405/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-gray-400 font-bold hover:text-blue-400 transition-colors">
                     <Linkedin className="w-5 h-5 text-blue-500" /> LinkedIn
+                  </a>
+                </li>
+              </ul>
+
+              <h4 className="text-xl font-black text-white mt-10 mb-6">Our Platforms</h4>
+              <ul className="space-y-4">
+                <li>
+                  <a href="https://class.genziitian.in/dashboard" target="_blank" rel="noopener noreferrer" className="flex items-start gap-3 text-gray-400 font-bold hover:text-[#10b981] transition-colors">
+                    <LayoutDashboard className="w-5 h-5 text-[#10b981] shrink-0 mt-0.5" />
+                    <span>Student Dashboard<span className="block text-xs font-medium text-gray-500">All your courses in one place</span></span>
+                  </a>
+                </li>
+                <li>
+                  <a href="https://quiz.genziitian.in" target="_blank" rel="noopener noreferrer" className="flex items-start gap-3 text-gray-400 font-bold hover:text-amber-400 transition-colors">
+                    <BookOpenCheck className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                    <span>Revise Quiz as Exam<span className="block text-xs font-medium text-gray-500">Practice in exam mode</span></span>
                   </a>
                 </li>
               </ul>

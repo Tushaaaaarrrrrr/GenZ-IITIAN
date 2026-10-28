@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { Plus, Edit, Trash2, Save, X, Loader2, Eye, EyeOff, ExternalLink, Search } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import type { BlogPost } from '../../data/blogsData';
+import { ConfirmDialog, BusyModal, type ConfirmOptions } from './ConfirmDialog';
 import ManagerFullPageSheet, { managerFieldLabel, managerInputCls } from './ManagerFullPageSheet';
 
 type BlogRow = Partial<BlogPost> & { id?: number };
@@ -133,8 +134,23 @@ export default function BlogsManager() {
     fetchBlogs();
   };
 
-  const handleDelete = async (blog: BlogRow) => {
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmOptions | null>(null);
+  const [busyMessage, setBusyMessage] = useState<string | null>(null);
+
+  const handleDelete = (blog: BlogRow) => {
     if (!blog.id) return;
+    setConfirmDialog({
+      title: 'Delete this post?',
+      message: `“${blog.title || 'Untitled'}” will be permanently deleted. This can’t be undone.`,
+      confirmLabel: 'Delete post',
+      onConfirm: async () => {
+        setBusyMessage('Deleting post…');
+        try { await performDelete(blog); } finally { setBusyMessage(null); }
+      },
+    });
+  };
+
+  const performDelete = async (blog: BlogRow) => {
     const { error: err } = await supabase.from('blogs').delete().eq('id', blog.id);
     if (err) {
       alert('Failed to delete blog: ' + err.message);
@@ -150,6 +166,8 @@ export default function BlogsManager() {
 
   return (
     <div className="space-y-4">
+      <ConfirmDialog options={confirmDialog} onClose={() => setConfirmDialog(null)} />
+      <BusyModal message={busyMessage} />
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
         <div className="bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 flex gap-3 items-center flex-grow">

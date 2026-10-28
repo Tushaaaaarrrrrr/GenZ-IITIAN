@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../../lib/supabase';
+import { ConfirmDialog, type ConfirmOptions } from './ConfirmDialog';
 
 const getAuthHeaders = async (): Promise<Record<string, string>> => {
   const { data: { session } } = await supabase.auth.getSession();
@@ -344,8 +345,17 @@ export default function JobApplicationsManager() {
     }
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to remove the application for "${name}"?`)) return;
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmOptions | null>(null);
+
+  const handleDelete = (id: string, name: string) =>
+    setConfirmDialog({
+      title: 'Delete this application?',
+      message: `The application from “${name}” will be permanently removed. This can’t be undone.`,
+      confirmLabel: 'Delete application',
+      onConfirm: () => performDelete(id),
+    });
+
+  const performDelete = async (id: string) => {
     try {
       const authHeaders = await getAuthHeaders();
       await fetch('/api/job-applications/delete', {
@@ -506,6 +516,7 @@ export default function JobApplicationsManager() {
 
   return (
     <div className="space-y-6">
+      <ConfirmDialog options={confirmDialog} onClose={() => setConfirmDialog(null)} />
       {/* Toast Feedback */}
       <AnimatePresence>
         {actionSuccessToast && (

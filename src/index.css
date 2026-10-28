@@ -47,3 +47,29 @@
 
 .careers-ui { font-family: "Inter", ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
 .careers-serif { font-family: "Newsreader", Georgia, "Times New Roman", serif; letter-spacing: -0.015em; }
+
+/* Careers page animations */
+@keyframes careers-shimmer { to { background-position: 200% center; } }
+.careers-shimmer { animation: careers-shimmer 6s linear infinite; }
+@keyframes careers-sheen { 0% { transform: translateX(-120%) skewX(-18deg); } 60%, 100% { transform: translateX(220%) skewX(-18deg); } }
+.careers-sheen::before { content: ""; position: absolute; top: 0; bottom: 0; width: 35%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent); animation: careers-sheen 5s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .careers-shimmer, .careers-sheen::before { animation: none; } }
+
+/* Use more of the screen on large monitors (content containers were capped at 1280px) */
+@media (min-width: 1536px) {
+  .max-w-7xl { max-width: 90rem; }
+  .max-w-6xl { max-width: 80rem; }
+  .max-w-5xl { max-width: 72rem; }
+}
+@media (min-width: 1920px) {
+  .max-w-7xl { max-width: 100rem; }
+  .max-w-6xl { max-width: 88rem; }
+  .max-w-5xl { max-width: 76rem; }
+}
+
+@keyframes fadeSlide { from { opacity: 0; transform: translateY(-6px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+@keyframes reviewsRight { from { transform: translateX(calc(-50% - 0.75rem)); } to { transform: translateX(0); } }
+.reviews-marquee { animation: reviewsRight 45s linear infinite; padding-left: 1.5rem; }
+.reviews-marquee-wrap:hover .reviews-marquee { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .reviews-marquee { animation: none; } }

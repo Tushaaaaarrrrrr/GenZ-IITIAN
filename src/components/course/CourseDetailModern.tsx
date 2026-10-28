@@ -326,6 +326,12 @@ export default function CourseDetailModern({
               >
                 Continue enrollment <ChevronRight className="w-4 h-4" />
               </Link>
+              <Link
+                to="/contact"
+                className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white text-slate-900 text-sm font-medium py-2.5 hover:bg-slate-50"
+              >
+                <MessageCircle className="w-4 h-4" /> Contact Us
+              </Link>
               <p className="mt-2 text-center text-[11px] text-slate-400">
                 Coupons are applied on the next step.
               </p>

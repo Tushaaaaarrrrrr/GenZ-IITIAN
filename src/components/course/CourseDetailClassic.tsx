@@ -12,6 +12,7 @@ import {
   Calendar, 
   Layers, 
   Languages, 
+  MessageCircle, 
   X 
 } from 'lucide-react';
 import { getCheckoutPath } from '../../utils/courseRouting';
@@ -47,7 +48,7 @@ export default function CourseDetailClassic({ course }: CourseDetailClassicProps
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500 rounded-full blur-[120px] translate-x-1/2 -translate-y-1/2"></div>
         </div>
 
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center relative z-10">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-16 items-center relative z-10">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -55,52 +56,52 @@ export default function CourseDetailClassic({ course }: CourseDetailClassicProps
             <button
               type="button"
               onClick={() => navigate(-1)}
-              className="inline-flex items-center gap-2 text-sm md:text-base text-gray-400 hover:text-white font-bold mb-5 md:mb-8 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-2 text-sm md:text-base text-gray-400 hover:text-white font-medium mb-5 md:mb-8 transition-colors cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4" /> Back to Courses
             </button>
             
             <div className="flex gap-2 mb-4 md:mb-6">
               {course.subject && (
-                <span className="px-4 py-1 bg-yellow-400/20 text-yellow-400 border border-yellow-400/50 rounded-full text-xs font-black uppercase tracking-wider">
+                <span className="px-4 py-1 bg-yellow-400/20 text-yellow-400 border border-yellow-400/50 rounded-full text-xs font-semibold uppercase tracking-wider">
                   {course.subject}
                 </span>
               )}
               {course.isBundle && (
-                <span className="px-4 py-1 bg-purple-500/20 text-purple-400 border border-purple-500/50 rounded-full text-xs font-black uppercase tracking-wider flex items-center gap-2">
+                <span className="px-4 py-1 bg-purple-500/20 text-purple-400 border border-purple-500/50 rounded-full text-xs font-semibold uppercase tracking-wider flex items-center gap-2">
                   <Layers className="w-3 h-3" /> Bundle
                 </span>
               )}
             </div>
 
-            <h1 className="text-2xl sm:text-3xl md:text-5xl font-black mb-3 md:mb-4 leading-tight">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold mb-3 md:mb-4 leading-tight">
               {course.name}
             </h1>
             
-            <p className="text-sm sm:text-base md:text-lg text-gray-400 font-bold mb-5 md:mb-8 leading-relaxed">
+            <p className="text-sm md:text-base text-gray-400 font-medium mb-5 md:mb-8 leading-relaxed">
               {course.description}
             </p>
 
-            <div className="flex flex-wrap gap-4 sm:gap-8 md:gap-12">
+            <div className="flex flex-wrap gap-4 sm:gap-5 md:gap-12">
               <div className="flex items-center gap-2 md:gap-3">
                 <Users className="w-5 h-5 md:w-7 md:h-7 text-[#10b981]" />
                 <div className="leading-none">
-                  <div className="text-xl md:text-3xl font-black text-white">500+</div>
-                  <div className="text-[10px] md:text-xs text-gray-400 font-black uppercase tracking-wide mt-1 md:mt-2">Students</div>
+                  <div className="text-lg md:text-xl font-semibold text-white">500+</div>
+                  <div className="text-[10px] md:text-xs text-gray-400 font-semibold uppercase tracking-wide mt-1 md:mt-2">Students</div>
                 </div>
               </div>
               <div className="flex items-center gap-2 md:gap-3">
                 <Star className="w-5 h-5 md:w-7 md:h-7 text-yellow-400 fill-yellow-400" />
                 <div className="leading-none">
-                  <div className="text-xl md:text-3xl font-black text-white">4.9</div>
-                  <div className="text-[10px] md:text-xs text-gray-400 font-black uppercase tracking-wide mt-1 md:mt-2">Rating</div>
+                  <div className="text-lg md:text-xl font-semibold text-white">4.9</div>
+                  <div className="text-[10px] md:text-xs text-gray-400 font-semibold uppercase tracking-wide mt-1 md:mt-2">Rating</div>
                 </div>
               </div>
               <div className="flex items-center gap-2 md:gap-3">
                 <Award className="w-5 h-5 md:w-7 md:h-7 text-blue-400" />
                 <div className="leading-none">
-                  <div className="text-xl md:text-3xl font-black text-white">95%</div>
-                  <div className="text-[10px] md:text-xs text-gray-400 font-black uppercase tracking-wide mt-1 md:mt-2">Success</div>
+                  <div className="text-lg md:text-xl font-semibold text-white">95%</div>
+                  <div className="text-[10px] md:text-xs text-gray-400 font-semibold uppercase tracking-wide mt-1 md:mt-2">Success</div>
                 </div>
               </div>
             </div>
@@ -111,49 +112,42 @@ export default function CourseDetailClassic({ course }: CourseDetailClassicProps
             animate={{ opacity: 1, scale: 1 }}
             className="relative lg:block"
           >
-            <div className="bg-white border-[3px] md:border-[4px] border-[#0b1120] rounded-3xl md:rounded-[2.5rem] p-4 md:p-6 shadow-[6px_6px_0px_#10b981] md:shadow-[8px_8px_0px_#10b981] text-[#0b1120] relative">
-              <div className="absolute -top-4 right-4 bg-red-500 text-white font-black px-4 py-1.5 rounded-xl border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] text-sm tracking-widest uppercase rotate-6 animate-pulse z-10">
+            <div className="bg-white border-[3px] md:border border-gray-200 rounded-2xl md:rounded-2xl p-4 md:p-6 shadow-sm  text-[#0b1120] relative">
+              <div className="absolute -top-4 right-4 bg-red-500 text-white font-semibold px-3 py-1 rounded-lg text-xs tracking-wide uppercase z-10">
                 SALE IS LIVE!
               </div>
-              <div className="text-xs font-black uppercase tracking-widest text-red-500 mb-2 flex items-center gap-2">
+              <div className="text-xs font-semibold uppercase tracking-wide text-red-500 mb-2 flex items-center gap-2">
                 <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></div>
                 Special Offer Price
               </div>
               <div className="flex items-baseline gap-3 md:gap-4 mb-4 md:mb-6">
-                <div className="text-3xl md:text-4xl font-black">₹{course.discountPrice || course.price}</div>
+                <div className="text-2xl md:text-3xl font-semibold">₹{course.discountPrice || course.price}</div>
                 {course.discountPrice && (
-                  <div className="text-lg md:text-2xl font-black text-gray-400 line-through">₹{course.price}</div>
+                  <div className="text-base md:text-lg font-semibold text-gray-400 line-through">₹{course.price}</div>
                 )}
               </div>
               
               <div className="space-y-3 mb-8">
-                <div className="font-black text-gray-400 text-sm uppercase tracking-widest border-b-2 border-gray-100 pb-2">Includes</div>
-                <div className="flex items-center gap-3 font-bold text-gray-600 text-sm">
+                <div className="font-semibold text-gray-400 text-sm uppercase tracking-wide border-b-2 border-gray-100 pb-2">Includes</div>
+                <div className="flex items-center gap-3 font-medium text-gray-600 text-sm">
                   <CheckCircle2 className="w-5 h-5 text-green-500" /> Access till End Term
                 </div>
-                <div className="flex items-center gap-3 font-bold text-gray-600 text-sm">
+                <div className="flex items-center gap-3 font-medium text-gray-600 text-sm">
                   <Languages className="w-5 h-5 text-purple-500" /> Language: Hinglish
                 </div>
                 {course.courseCategory && course.courseCategory !== 'NONE' && (
-                  <div className="flex items-center gap-3 font-bold text-gray-600 text-sm">
-                    <span className={`text-lg ${
-                      course.courseCategory === 'QUALIFIER' ? 'text-blue-600' :
-                      course.courseCategory === 'LIVE' ? 'text-purple-600' :
-                      course.courseCategory === 'RECORDED' ? 'text-orange-600' :
-                      'text-gray-600'
-                    }`}>
-                      {course.courseCategory === 'QUALIFIER' && '🎯'} {course.courseCategory === 'LIVE' && '📺'} {course.courseCategory === 'RECORDED' && '📹'}
-                    </span>
-                    <span className="font-black">{course.courseCategory}</span>
+                  <div className="flex items-center gap-3 font-medium text-gray-600 text-sm">
+                    <Layers className="w-5 h-5 text-blue-500" />
+                    <span className="font-semibold">{course.courseCategory}</span>
                   </div>
                 )}
                 {course.startDate && (
-                  <div className="flex items-center gap-3 font-bold text-gray-600 text-sm">
+                  <div className="flex items-center gap-3 font-medium text-gray-600 text-sm">
                     <Calendar className="w-5 h-5 text-blue-500" /> Class starting from: {formatCourseDate(course.startDate)}
                   </div>
                 )}
                 {course.endDate && (
-                  <div className="flex items-center gap-3 font-bold text-gray-600 text-sm">
+                  <div className="flex items-center gap-3 font-medium text-gray-600 text-sm">
                     <Calendar className="w-5 h-5 text-red-500" /> Class ends on: {formatCourseDate(course.endDate)}
                   </div>
                 )}
@@ -163,9 +157,15 @@ export default function CourseDetailClassic({ course }: CourseDetailClassicProps
                 <Link
                   ref={enrollRef}
                   to={checkoutPath}
-                  className="w-full py-3.5 md:py-5 bg-[#0b1120] text-white rounded-2xl font-black text-base md:text-xl border-2 border-[#0b1120] hover:bg-white hover:text-[#0b1120] transition-all flex items-center justify-center gap-2 shadow-[4px_4px_0px_#0b1120] md:shadow-[6px_6px_0px_#0b1120] active:translate-y-1 active:shadow-none text-center"
+                  className="w-full py-3 md:py-3.5 bg-[#0b1120] text-white rounded-2xl font-semibold text-sm md:text-base border border-gray-200 hover:bg-white hover:text-[#0b1120] transition-all flex items-center justify-center gap-2 shadow-sm  active:translate-y-1 active:shadow-none text-center"
                 >
-                  Enroll Now <ChevronRight className="w-6 h-6" />
+                  Enroll Now <ChevronRight className="w-5 h-5" />
+                </Link>
+                <Link
+                  to="/contact"
+                  className="w-full py-2.5 bg-white text-[#0b1120] rounded-xl font-semibold text-sm border border-gray-300 hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
+                >
+                  <MessageCircle className="w-4 h-4" /> Contact Us
                 </Link>
               </div>
             </div>
@@ -174,20 +174,20 @@ export default function CourseDetailClassic({ course }: CourseDetailClassicProps
       </div>
 
       {/* Course Content */}
-      <section className="py-10 px-4 md:py-16 md:px-6 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
+      <section className="py-10 px-4 md:py-16 md:px-6 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-5 lg:gap-12">
         <div className="lg:col-span-2 space-y-8 md:space-y-12">
           {/* Bundle Content */}
           {course.isBundle && course.bundleCourses?.length > 0 && (
             <div>
-              <h2 className="text-xl md:text-3xl font-black text-[#0b1120] mb-5 md:mb-8 flex items-center gap-3 md:gap-4">
-                <div className="w-10 h-10 md:w-12 md:h-12 bg-purple-100 rounded-2xl flex items-center justify-center text-purple-600 border-2 border-[#0b1120]">
+              <h2 className="text-lg md:text-xl font-semibold text-[#0b1120] mb-5 md:mb-8 flex items-center gap-3 md:gap-4">
+                <div className="w-10 h-10 md:w-12 md:h-12 bg-purple-100 rounded-2xl flex items-center justify-center text-purple-600 border border-gray-200">
                   <Layers className="w-6 h-6" />
                 </div>
                 Included in this Bundle
               </h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {course.bundleCourses.map((bc: any, idx: number) => (
-                  <div key={idx} className="p-3 bg-white border-2 border-[#0b1120] rounded-xl font-bold flex items-center gap-2 shadow-[3px_3px_0px_#0b1120] text-sm">
+                  <div key={idx} className="p-3 bg-white border border-gray-200 rounded-xl font-medium flex items-center gap-2 shadow-sm text-sm">
                     <CheckCircle2 className="w-4 h-4 text-purple-600 shrink-0" />
                     <span className="line-clamp-2">{bc.courseName}</span>
                   </div>
@@ -199,13 +199,13 @@ export default function CourseDetailClassic({ course }: CourseDetailClassicProps
           {/* Who is this for? */}
           {course.who && (
             <div>
-              <h2 className="text-xl md:text-3xl font-black text-[#0b1120] mb-4 md:mb-6 flex items-center gap-3 md:gap-4">
-                <div className="w-10 h-10 md:w-12 md:h-12 bg-red-100 rounded-2xl flex items-center justify-center text-red-600 border-2 border-[#0b1120]">
+              <h2 className="text-lg md:text-xl font-semibold text-[#0b1120] mb-4 md:mb-6 flex items-center gap-3 md:gap-4">
+                <div className="w-10 h-10 md:w-12 md:h-12 bg-red-100 rounded-2xl flex items-center justify-center text-red-600 border border-gray-200">
                   <Users className="w-6 h-6" />
                 </div>
                 Who is this for?
               </h2>
-              <div className="bg-gray-50 border-[3px] border-[#0b1120] rounded-3xl p-5 md:p-8 text-sm md:text-base font-bold text-gray-600 leading-relaxed shadow-[6px_6px_0px_#0b1120]">
+              <div className="bg-gray-50 border border-gray-200 rounded-2xl p-5 md:p-5 text-sm md:text-base font-medium text-gray-600 leading-relaxed shadow-sm">
                 {course.who}
               </div>
             </div>
@@ -214,15 +214,15 @@ export default function CourseDetailClassic({ course }: CourseDetailClassicProps
           {/* What you'll learn */}
           {course.learn?.length > 0 && (
             <div>
-              <h2 className="text-xl md:text-3xl font-black text-[#0b1120] mb-5 md:mb-8 flex items-center gap-3 md:gap-4">
-                <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-2xl flex items-center justify-center text-blue-600 border-2 border-[#0b1120]">
+              <h2 className="text-lg md:text-xl font-semibold text-[#0b1120] mb-5 md:mb-8 flex items-center gap-3 md:gap-4">
+                <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-2xl flex items-center justify-center text-blue-600 border border-gray-200">
                   <BookOpen className="w-6 h-6" />
                 </div>
                 What you'll learn
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {course.learn.map((item: string) => (
-                  <div key={item} className="p-4 md:p-5 bg-white border-2 border-[#0b1120] rounded-2xl text-sm md:text-base font-bold flex items-start gap-3 md:gap-4 shadow-[4px_4px_0px_#0b1120]">
+                  <div key={item} className="p-4 md:p-5 bg-white border border-gray-200 rounded-2xl text-sm md:text-base font-medium flex items-start gap-3 md:gap-4 shadow-sm">
                     <CheckCircle2 className="w-6 h-6 text-blue-600 mt-0.5 shrink-0" />
                     {item}
                   </div>
@@ -234,13 +234,13 @@ export default function CourseDetailClassic({ course }: CourseDetailClassicProps
           {course.cohortContent && (
             <div>
               <div className="text-center mb-5 md:mb-8">
-                <h2 className="text-xl sm:text-2xl lg:text-4xl font-black text-[#0b1120] mb-2 md:mb-3 leading-tight">What You Get in the Cohort</h2>
-                <p className="text-sm md:text-base font-bold text-gray-500 max-w-3xl mx-auto">
+                <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold text-[#0b1120] mb-2 md:mb-3 leading-tight">What You Get in the Cohort</h2>
+                <p className="text-sm md:text-base font-medium text-gray-500 max-w-3xl mx-auto">
                   Everything you need to master {course.name} with confidence.
                 </p>
               </div>
 
-              <div className="bg-white border-[3px] border-[#0b1120] rounded-3xl md:rounded-[2rem] p-4 sm:p-6 lg:p-10 font-bold text-[#0b1120] leading-relaxed shadow-[6px_6px_0px_#10b981] md:shadow-[8px_8px_0px_#10b981] whitespace-pre-wrap text-sm md:text-base lg:text-lg">
+              <div className="bg-white border border-gray-200 rounded-2xl md:rounded-2xl p-4 sm:p-6 lg:p-6 font-medium text-[#0b1120] leading-relaxed shadow-sm  whitespace-pre-wrap text-sm md:text-base lg:text-base">
                 {course.cohortContent}
               </div>
             </div>
@@ -249,51 +249,51 @@ export default function CourseDetailClassic({ course }: CourseDetailClassicProps
           {/* Comparison Cards Section */}
           <div className="mt-12 space-y-8">
             <div className="text-center">
-              <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-[#0b1120] mb-2 md:mb-3">Compare Our Batches</h2>
-              <p className="text-sm md:text-base font-bold text-gray-500 max-w-2xl mx-auto">
+              <h2 className="text-lg sm:text-xl md:text-2xl font-semibold text-[#0b1120] mb-2 md:mb-3">Compare Our Batches</h2>
+              <p className="text-sm md:text-base font-medium text-gray-500 max-w-2xl mx-auto">
                 Choose the perfect format that fits your learning style, schedule, and goals.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Live Batch Card */}
-              <div className="bg-white border-[3px] border-[#0b1120] rounded-[2rem] p-6 shadow-[6px_6px_0px_#8b5cf6] flex flex-col justify-between relative group hover:-translate-y-1 transition-transform duration-200">
+              <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between relative group hover:-translate-y-1 transition-transform duration-200">
                 <div>
-                  <div className="inline-block px-3 py-1 bg-purple-100 text-purple-700 border-2 border-[#0b1120] rounded-full text-xs font-black uppercase tracking-wider mb-4">
-                    📺 Live Batch
+                  <div className="inline-block px-3 py-1 bg-purple-100 text-purple-700 border border-gray-200 rounded-full text-xs font-semibold uppercase tracking-wider mb-4">
+                    Live Batch
                   </div>
-                  <h3 className="text-xl font-black text-[#0b1120] mb-4">Interactive Learning</h3>
+                  <h3 className="text-base font-semibold text-[#0b1120] mb-4">Interactive Learning</h3>
                   
                   <ul className="space-y-3 mb-6">
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
+                    <li className="flex items-start gap-2 text-sm font-medium text-gray-600">
                       <CheckCircle2 className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
                       <span>Daily live classes</span>
                     </li>
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
+                    <li className="flex items-start gap-2 text-sm font-medium text-gray-600">
                       <CheckCircle2 className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
                       <span>Access to all lecture recordings</span>
                     </li>
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
+                    <li className="flex items-start gap-2 text-sm font-medium text-gray-600">
                       <CheckCircle2 className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
                       <span>PYQ & GA live-solving sessions</span>
                     </li>
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
+                    <li className="flex items-start gap-2 text-sm font-medium text-gray-600">
                       <CheckCircle2 className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
                       <span>Weekly live doubt-solving sessions</span>
                     </li>
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
+                    <li className="flex items-start gap-2 text-sm font-medium text-gray-600">
                       <CheckCircle2 className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
                       <span>Live mentorship sessions</span>
                     </li>
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
+                    <li className="flex items-start gap-2 text-sm font-medium text-gray-600">
                       <CheckCircle2 className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
                       <span>Full syllabus-focused preparation</span>
                     </li>
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
+                    <li className="flex items-start gap-2 text-sm font-medium text-gray-600">
                       <CheckCircle2 className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
                       <span>Practice test discussions</span>
                     </li>
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
+                    <li className="flex items-start gap-2 text-sm font-medium text-gray-600">
                       <CheckCircle2 className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
                       <span>Study anytime, anywhere</span>
                     </li>
@@ -302,43 +302,43 @@ export default function CourseDetailClassic({ course }: CourseDetailClassicProps
 
                 <div className="mt-auto pt-4 border-t-2 border-dashed border-gray-100">
                   <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-3 text-center">
-                    <span className="text-[11px] font-black text-purple-700 uppercase tracking-wider block">
-                      🔥 BEST FOR STANDALONE STUDENTS
+                    <span className="text-[11px] font-semibold text-purple-700 uppercase tracking-wider block">
+                      BEST FOR STANDALONE STUDENTS
                     </span>
                   </div>
                 </div>
               </div>
 
               {/* Recorded Batch Card */}
-              <div className="bg-white border-[3px] border-[#0b1120] rounded-[2rem] p-6 shadow-[6px_6px_0px_#f97316] flex flex-col justify-between relative group hover:-translate-y-1 transition-transform duration-200">
+              <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between relative group hover:-translate-y-1 transition-transform duration-200">
                 <div>
-                  <div className="inline-block px-3 py-1 bg-orange-100 text-orange-700 border-2 border-[#0b1120] rounded-full text-xs font-black uppercase tracking-wider mb-4">
-                    📹 Recorded Batch
+                  <div className="inline-block px-3 py-1 bg-orange-100 text-orange-700 border border-gray-200 rounded-full text-xs font-semibold uppercase tracking-wider mb-4">
+                    Recorded Batch
                   </div>
-                  <h3 className="text-xl font-black text-[#0b1120] mb-4">Self-Paced Study</h3>
+                  <h3 className="text-base font-semibold text-[#0b1120] mb-4">Self-Paced Study</h3>
                   
                   <ul className="space-y-3 mb-6">
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
+                    <li className="flex items-start gap-2 text-sm font-medium text-gray-600">
                       <CheckCircle2 className="w-4 h-4 text-orange-600 shrink-0 mt-0.5" />
                       <span>Access to all lecture recordings</span>
                     </li>
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
+                    <li className="flex items-start gap-2 text-sm font-medium text-gray-600">
                       <CheckCircle2 className="w-4 h-4 text-orange-600 shrink-0 mt-0.5" />
                       <span>PYQ & GA Recorded sessions</span>
                     </li>
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
+                    <li className="flex items-start gap-2 text-sm font-medium text-gray-600">
                       <CheckCircle2 className="w-4 h-4 text-orange-600 shrink-0 mt-0.5" />
                       <span>Weekly live doubt-solving sessions</span>
                     </li>
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
+                    <li className="flex items-start gap-2 text-sm font-medium text-gray-600">
                       <CheckCircle2 className="w-4 h-4 text-orange-600 shrink-0 mt-0.5" />
                       <span>Full syllabus-focused preparation</span>
                     </li>
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
+                    <li className="flex items-start gap-2 text-sm font-medium text-gray-600">
                       <CheckCircle2 className="w-4 h-4 text-orange-600 shrink-0 mt-0.5" />
                       <span>Practice test discussions</span>
                     </li>
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
+                    <li className="flex items-start gap-2 text-sm font-medium text-gray-600">
                       <CheckCircle2 className="w-4 h-4 text-orange-600 shrink-0 mt-0.5" />
                       <span>Study anytime, anywhere</span>
                     </li>
@@ -347,56 +347,56 @@ export default function CourseDetailClassic({ course }: CourseDetailClassicProps
                 
                 <div className="mt-auto pt-4 border-t-2 border-dashed border-gray-100">
                   <div className="bg-orange-50 border-2 border-orange-200 rounded-xl p-3 text-center">
-                    <span className="text-[11px] font-black text-orange-700 uppercase tracking-wider block">
-                      🔥 BEST FOR DUAL DEGREE & WORKING PROFESSIONALS
+                    <span className="text-[11px] font-semibold text-orange-700 uppercase tracking-wider block">
+                      BEST FOR DUAL DEGREE & WORKING PROFESSIONALS
                     </span>
                   </div>
                 </div>
               </div>
 
               {/* Qualifier Batch Card */}
-              <div className="bg-[#f0fdfa] border-[3px] border-[#0b1120] rounded-[2rem] p-6 shadow-[6px_6px_0px_#10b981] flex flex-col justify-between relative group hover:-translate-y-1 transition-transform duration-200">
-                <div className="absolute -top-3 right-4 bg-emerald-500 text-white font-black px-3 py-1 rounded-lg border-2 border-[#0b1120] text-[10px] tracking-wide uppercase rotate-3 shadow-[2px_2px_0px_#0b1120]">
+              <div className="bg-[#f0fdfa] border border-gray-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between relative group hover:-translate-y-1 transition-transform duration-200">
+                <div className="absolute -top-3 right-4 bg-emerald-500 text-white font-semibold px-3 py-1 rounded-lg border border-gray-200 text-[10px] tracking-wide uppercase rotate-3 shadow-sm">
                   Risk Free
                 </div>
 
                 <div>
-                  <div className="inline-block px-3 py-1 bg-emerald-100 text-emerald-700 border-2 border-[#0b1120] rounded-full text-xs font-black uppercase tracking-wider mb-4">
-                    🎯 CHAMPION Batch
+                  <div className="inline-block px-3 py-1 bg-emerald-100 text-emerald-700 border border-gray-200 rounded-full text-xs font-semibold uppercase tracking-wider mb-4">
+                    CHAMPION Batch
                   </div>
-                  <h3 className="text-xl font-black text-[#0b1120] mb-2">Only for Qualifiers</h3>
-                  <p className="text-[11px] font-black text-emerald-600 uppercase tracking-widest mb-4">Guaranteed Success</p>
+                  <h3 className="text-base font-semibold text-[#0b1120] mb-2">Only for Qualifiers</h3>
+                  <p className="text-[11px] font-semibold text-emerald-600 uppercase tracking-wide mb-4">Guaranteed Success</p>
                   
                   <ul className="space-y-3 mb-6">
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
+                    <li className="flex items-start gap-2 text-sm font-medium text-gray-600">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                       <span>Daily live classes</span>
                     </li>
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
+                    <li className="flex items-start gap-2 text-sm font-medium text-gray-600">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                       <span>Access to all lecture recordings</span>
                     </li>
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
+                    <li className="flex items-start gap-2 text-sm font-medium text-gray-600">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                       <span>PYQ & GA live-solving sessions</span>
                     </li>
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
+                    <li className="flex items-start gap-2 text-sm font-medium text-gray-600">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                       <span>Weekly live doubt-solving sessions</span>
                     </li>
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
+                    <li className="flex items-start gap-2 text-sm font-medium text-gray-600">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                       <span>Full syllabus-focused preparation</span>
                     </li>
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
+                    <li className="flex items-start gap-2 text-sm font-medium text-gray-600">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                       <span>Practice test discussions & solutions</span>
                     </li>
-                    <li className="flex items-start gap-2 text-sm font-bold text-gray-600">
+                    <li className="flex items-start gap-2 text-sm font-medium text-gray-600">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                       <span>Study anytime, anywhere</span>
                     </li>
-                    <li className="flex items-start gap-2 text-sm font-black text-blue-600">
+                    <li className="flex items-start gap-2 text-sm font-semibold text-blue-600">
                       <Star className="w-4 h-4 text-blue-500 fill-blue-500 shrink-0 mt-0.5" />
                       <span>Best Test series for free</span>
                     </li>
@@ -405,31 +405,36 @@ export default function CourseDetailClassic({ course }: CourseDetailClassicProps
                 
                 <div className="mt-auto pt-4 border-t-2 border-dashed border-emerald-200">
                   <div className="bg-emerald-50 border-2 border-emerald-200 rounded-xl p-3 text-center mb-2">
-                    <span className="text-[11px] font-black text-emerald-700 uppercase tracking-wider block">
-                      💎 FULL REFUND IF NOT QUALIFIED
+                    <span className="text-[11px] font-semibold text-emerald-700 uppercase tracking-wider block">
+                      FULL REFUND IF NOT QUALIFIED
                     </span>
                   </div>
                   <button 
                     onClick={() => setIsTermsModalOpen(true)}
-                    className="w-full text-center text-xs font-black text-blue-600 hover:text-blue-800 underline decoration-2 cursor-pointer transition-colors block"
+                    className="w-full text-center text-xs font-semibold text-blue-600 hover:text-blue-800 underline decoration-2 cursor-pointer transition-colors block"
                   >
                     *Terms and conditions apply
                   </button>
                 </div>
               </div>
             </div>
+            <div className="text-center">
+              <Link to="/contact" className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-[#0b1120] rounded-xl text-sm font-semibold border border-gray-300 hover:bg-gray-50 transition-colors">
+                <MessageCircle className="w-4 h-4" /> Need help choosing? Contact Us
+              </Link>
+            </div>
           </div>
 
           {/* Learning Outcomes */}
           {course.outcomes && (
             <div>
-              <h2 className="text-xl md:text-3xl font-black text-[#0b1120] mb-4 md:mb-6 flex items-center gap-3 md:gap-4">
-                <div className="w-10 h-10 md:w-12 md:h-12 bg-green-100 rounded-2xl flex items-center justify-center text-green-600 border-2 border-[#0b1120]">
+              <h2 className="text-lg md:text-xl font-semibold text-[#0b1120] mb-4 md:mb-6 flex items-center gap-3 md:gap-4">
+                <div className="w-10 h-10 md:w-12 md:h-12 bg-green-100 rounded-2xl flex items-center justify-center text-green-600 border border-gray-200">
                   <Award className="w-6 h-6" />
                 </div>
                 Outcomes
               </h2>
-              <div className="bg-[#0b1120] text-white rounded-3xl p-5 md:p-8 lg:p-12 text-sm md:text-base font-bold leading-relaxed shadow-[8px_8px_0px_#10b981] md:shadow-[10px_10px_0px_#10b981]">
+              <div className="bg-[#0b1120] text-white rounded-2xl p-5 md:p-5 lg:p-8 text-sm md:text-base font-medium leading-relaxed shadow-sm ">
                 {course.outcomes}
               </div>
             </div>
@@ -442,25 +447,23 @@ export default function CourseDetailClassic({ course }: CourseDetailClassicProps
             {/* Dynamic Content Cards Based on Course Category */}
             {course.courseCategory === 'QUALIFIER' && (
               <>
-                <div className="bg-white border-[3px] border-[#0b1120] rounded-3xl p-8 shadow-[8px_8px_0px_#0b1120]">
+                <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
                   <div className="flex items-center gap-3 mb-6">
-                    <span className="text-3xl">🎯</span>
-                    <h3 className="text-xl font-black text-[#0b1120]">Qualifier Prep</h3>
+                    <h3 className="text-base font-semibold text-[#0b1120]">Qualifier Prep</h3>
                   </div>
-                  <p className="text-sm font-bold text-gray-600 leading-relaxed">
+                  <p className="text-sm font-medium text-gray-600 leading-relaxed">
                     Master the fundamentals with intensive qualifier-focused Content . Comprehensive coverage of all major topics with practice tests and doubt resolution.
                   </p>
                 </div>
-                <div className="bg-white border-[3px] border-[#0b1120] rounded-3xl p-8 shadow-[8px_8px_0px_#10b981]">
+                <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
                   <div className="flex items-center gap-3 mb-6">
-                    <span className="text-3xl">✅</span>
-                    <h3 className="text-xl font-black text-[#0b1120]">What You Get</h3>
+                    <h3 className="text-base font-semibold text-[#0b1120]">What You Get</h3>
                   </div>
-                  <ul className="text-sm font-bold text-gray-600 space-y-2">
-                    <li>✓ Complete qualifier Week 1- 4 syllabus coverage</li>
-                    <li>✓ Topic-wise mock tests and test series</li>
-                    <li>✓ 1-on-1 GUIDANCE</li>
-                    <li>✓ Daily live classes</li>
+                  <ul className="text-sm font-medium text-gray-600 space-y-2">
+                    <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" /><span>Complete qualifier Week 1- 4 syllabus coverage</span></li>
+                    <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" /><span>Topic-wise mock tests and test series</span></li>
+                    <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" /><span>1-on-1 GUIDANCE</span></li>
+                    <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" /><span>Daily live classes</span></li>
                   </ul>
                 </div>
               </>
@@ -468,24 +471,22 @@ export default function CourseDetailClassic({ course }: CourseDetailClassicProps
             
             {course.courseCategory === 'LIVE' && (
               <>
-                <div className="bg-white border-[3px] border-[#0b1120] rounded-3xl p-8 shadow-[8px_8px_0px_#0b1120]">
+                <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
                   <div className="flex items-center gap-3 mb-6">
-                    <span className="text-3xl">📺</span>
-                    <h3 className="text-xl font-black text-[#0b1120]">Live Sessions</h3>
+                    <h3 className="text-base font-semibold text-[#0b1120]">Live Sessions</h3>
                   </div>
-                  <p className="text-sm font-bold text-gray-600 leading-relaxed">
+                  <p className="text-sm font-medium text-gray-600 leading-relaxed">
                     Interactive daily live classes with real-time Q&A. Connect directly with instructors and peers. Ask doubts instantly and get clarifications on the spot.
                   </p>
                 </div>
-                <div className="bg-white border-[3px] border-[#0b1120] rounded-3xl p-8 shadow-[8px_8px_0px_#10b981]">
+                <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
                   <div className="flex items-center gap-3 mb-6">
-                    <span className="text-3xl">⚡</span>
-                    <h3 className="text-xl font-black text-[#0b1120]">Live Features</h3>
+                    <h3 className="text-base font-semibold text-[#0b1120]">Live Features</h3>
                   </div>
-                  <ul className="text-sm font-bold text-gray-600 space-y-2">
-                    <li>✓ Instant doubt solving in live class</li>
-                    <li>✓ all lectures recordings available</li>
-                    <li>✓ and more..</li>
+                  <ul className="text-sm font-medium text-gray-600 space-y-2">
+                    <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" /><span>Instant doubt solving in live class</span></li>
+                    <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" /><span>all lectures recordings available</span></li>
+                    <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" /><span>and more..</span></li>
                   </ul>
                 </div>
               </>
@@ -493,41 +494,47 @@ export default function CourseDetailClassic({ course }: CourseDetailClassicProps
             
             {course.courseCategory === 'RECORDED' && (
               <>
-                <div className="bg-white border-[3px] border-[#0b1120] rounded-3xl p-8 shadow-[8px_8px_0px_#0b1120]">
+                <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
                   <div className="flex items-center gap-3 mb-6">
-                    <span className="text-3xl">📹</span>
-                    <h3 className="text-xl font-black text-[#0b1120]">Self-Paced Learning</h3>
+                    <h3 className="text-base font-semibold text-[#0b1120]">Self-Paced Learning</h3>
                   </div>
-                  <p className="text-sm font-bold text-gray-600 leading-relaxed">
+                  <p className="text-sm font-medium text-gray-600 leading-relaxed">
                     Learn at your own pace with pre recorded video lessons. Rewatch, pause, and learn every concept without time pressure.
                   </p>
                 </div>
-                <div className="bg-white border-[3px] border-[#0b1120] rounded-3xl p-8 shadow-[8px_8px_0px_#10b981]">
+                <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
                   <div className="flex items-center gap-3 mb-6">
-                    <span className="text-3xl">🎓</span>
-                    <h3 className="text-xl font-black text-[#0b1120]">Recorded Benefits</h3>
+                    <h3 className="text-base font-semibold text-[#0b1120]">Recorded Benefits</h3>
                   </div>
-                  <ul className="text-sm font-bold text-gray-600 space-y-2">
-                    <li>✓ No time bound</li>
-                    <li>✓ Watch anytime, anywhere</li>
-                    <li>✓ HD quality videos</li>
-                    <li>✓ Weekly live doubt session</li>
-                    <li>✓ Downloadable resources</li>
+                  <ul className="text-sm font-medium text-gray-600 space-y-2">
+                    <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" /><span>No time bound</span></li>
+                    <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" /><span>Watch anytime, anywhere</span></li>
+                    <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" /><span>HD quality videos</span></li>
+                    <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" /><span>Weekly live doubt session</span></li>
+                    <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" /><span>Downloadable resources</span></li>
                   </ul>
                 </div>
               </>
             )}
 
+            <div className="bg-[#0b1120] text-white rounded-2xl p-5">
+              <h3 className="text-base font-semibold mb-1">Have questions?</h3>
+              <p className="text-sm text-gray-300 leading-relaxed mb-4">Not sure which batch fits you? Talk to our team and we will help you choose.</p>
+              <Link to="/contact" className="inline-flex items-center justify-center gap-2 w-full py-2.5 bg-white text-[#0b1120] rounded-xl text-sm font-semibold hover:bg-gray-100 transition-colors">
+                <MessageCircle className="w-4 h-4" /> Contact Us
+              </Link>
+            </div>
+
             {/* GENz IITian Card - Always Visible */}
-            <div className="bg-white border-[3px] border-[#0b1120] rounded-3xl p-8 shadow-[8px_8px_0px_#0b1120]">
-              <h3 className="text-xl font-black text-[#0b1120] mb-6 border-b-2 border-gray-100 pb-4">GENz IITian</h3>
+            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+              <h3 className="text-base font-semibold text-[#0b1120] mb-4 border-b border-gray-100 pb-3">GENz IITian</h3>
               <div className="mb-6">
                 <div>
-                  <div className="font-black text-[#0b1120]">Learn from IITM BS Seniors</div>
-                  <div className="text-xs font-bold text-blue-600 uppercase">Real Guidance</div>
+                  <div className="font-semibold text-[#0b1120]">Learn from IITM BS Seniors</div>
+                  <div className="text-xs font-medium text-blue-600 uppercase">Real Guidance</div>
                 </div>
               </div>
-              <p className="text-sm font-bold text-gray-500 leading-relaxed">
+              <p className="text-sm font-medium text-gray-500 leading-relaxed">
                 No boring lectures - just real guidance from seniors who&apos;ve been through it. Understand concepts deeply, avoid common mistakes, and level up your prep the right way.
               </p>
             </div>
@@ -554,35 +561,35 @@ export default function CourseDetailClassic({ course }: CourseDetailClassicProps
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white border-[4px] border-[#0b1120] rounded-[2.5rem] w-full max-w-2xl p-6 md:p-8 relative shadow-[12px_12px_0px_#10b981] overflow-hidden max-h-[85vh] flex flex-col z-10"
+              className="bg-white border border-gray-200 rounded-2xl w-full max-w-2xl p-6 md:p-5 relative shadow-sm overflow-hidden max-h-[85vh] flex flex-col z-10"
             >
               {/* Close Button */}
               <button
                 onClick={() => setIsTermsModalOpen(false)}
-                className="absolute top-6 right-6 p-2 bg-gray-50 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all border-2 border-[#0b1120] shadow-[2px_2px_0px_#0b1120] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] z-20 cursor-pointer"
+                className="absolute top-6 right-6 p-2 bg-gray-50 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all border border-gray-200 shadow-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] z-20 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
 
               {/* Header */}
               <div className="border-b-4 border-[#0b1120] pb-4 mb-6 pr-12 text-left">
-                <span className="inline-block px-3 py-1 bg-yellow-100 text-yellow-800 border-2 border-[#0b1120] rounded-full text-xs font-black uppercase tracking-wider mb-2">
-                  📜 Official Policy
+                <span className="inline-block px-3 py-1 bg-yellow-100 text-yellow-800 border border-gray-200 rounded-full text-xs font-semibold uppercase tracking-wider mb-2">
+                  Official Policy
                 </span>
-                <h2 className="text-2xl md:text-3xl font-black leading-tight text-[#0b1120]">
+                <h2 className="text-xl md:text-2xl font-semibold leading-tight text-[#0b1120]">
                   Qualifier Champion Batch <br />
                   <span className="text-[#3b82f6]">Terms & Conditions</span>
                 </h2>
               </div>
 
               {/* Scrollable Content */}
-              <div className="overflow-y-auto space-y-4 pr-2 font-bold text-gray-700 leading-relaxed text-sm scrollbar-thin text-left">
+              <div className="overflow-y-auto space-y-4 pr-2 font-medium text-gray-700 leading-relaxed text-sm scrollbar-thin text-left">
                 <p>
                   Students who ENROLL in Qualify Champion Batch will be eligible for a full refund or free reattempt support, provided all the conditions below are fulfilled.
                 </p>
 
                 <div>
-                  <h3 className="text-base font-black text-[#0b1120] mt-4 mb-2">Eligibility Criteria</h3>
+                  <h3 className="text-base font-semibold text-[#0b1120] mt-4 mb-2">Eligibility Criteria</h3>
                   <ul className="list-disc pl-5 space-y-2">
                     <li>You must attend at least 80% of live classes.</li>
                     <li>Weekly tests will be conducted based on the topics taught in class. You must score the minimum required marks in these tests.</li>
@@ -591,7 +598,7 @@ export default function CourseDetailClassic({ course }: CourseDetailClassicProps
                 </div>
 
                 <div>
-                  <h3 className="text-base font-black text-[#0b1120] mt-4 mb-2">What We Provide</h3>
+                  <h3 className="text-base font-semibold text-[#0b1120] mt-4 mb-2">What We Provide</h3>
                   <p className="mb-2">We are committed to giving you:</p>
                   <ul className="list-disc pl-5 space-y-2">
                     <li>Complete academic support</li>
@@ -616,7 +623,7 @@ export default function CourseDetailClassic({ course }: CourseDetailClassicProps
                   <li>Active participation and seriousness toward studies</li>
                 </ul>
 
-                <p className="mt-4 font-black text-[#0b1120]">
+                <p className="mt-4 font-semibold text-[#0b1120]">
                   Thank you.
                 </p>
               </div>
@@ -625,7 +632,7 @@ export default function CourseDetailClassic({ course }: CourseDetailClassicProps
               <div className="pt-4 mt-6 border-t-2 border-gray-100 flex justify-end">
                 <button
                   onClick={() => setIsTermsModalOpen(false)}
-                  className="px-6 py-3 bg-[#0b1120] text-white rounded-xl font-black text-sm border-2 border-[#0b1120] hover:bg-[#10b981] hover:border-[#10b981] transition-all shadow-[4px_4px_0px_#3b82f6] active:shadow-none active:translate-x-[2px] active:translate-y-[2px] cursor-pointer"
+                  className="px-6 py-3 bg-[#0b1120] text-white rounded-xl font-semibold text-sm border border-gray-200 hover:bg-[#10b981] hover:border-[#10b981] transition-all shadow-sm active:shadow-none active:translate-x-[2px] active:translate-y-[2px] cursor-pointer"
                 >
                   I Understand
                 </button>

@@ -360,8 +360,8 @@ export default function UsersManager({ onSelectUser }: { onSelectUser: (u: Enric
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col lg:flex-row lg:items-center gap-2.5">
-        <div className="flex gap-1 overflow-x-auto whitespace-nowrap bg-white border border-slate-200 rounded-xl p-1 max-w-full">
+      <div className="flex flex-col gap-2.5">
+        <div className="flex flex-wrap gap-1 whitespace-nowrap bg-white border border-slate-200 rounded-xl p-1 w-full">
           {roleChips.map(c => (
             <button
               key={c.id}
@@ -374,7 +374,7 @@ export default function UsersManager({ onSelectUser }: { onSelectUser: (u: Enric
             </button>
           ))}
         </div>
-        <div className="flex flex-wrap gap-2 lg:ml-auto">
+        <div className="flex flex-wrap items-center gap-2">
           <select className={selectCls} value={phone} onChange={e => setPhone(e.target.value as PhoneFilter)} aria-label="Phone">
             <option value="all">Phone: any</option>
             <option value="has">Has number</option>
