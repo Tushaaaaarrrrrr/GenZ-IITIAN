@@ -174,16 +174,10 @@ export default function Referral() {
 
   return (
     <div className="min-h-screen bg-[#fbfbfd] pt-28 pb-16 px-6 relative overflow-hidden">
-      <motion.div
-        aria-hidden
-        className="pointer-events-none absolute left-1/2 top-10 -translate-x-1/2 w-[560px] h-[560px] rounded-full bg-gradient-to-tr from-violet-200/50 via-sky-200/40 to-amber-200/40 blur-3xl"
-        animate={reduce ? undefined : { scale: [1, 1.08, 1], rotate: [0, 10, 0] }}
-        transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut' }}
-      />
       <div className="relative max-w-4xl mx-auto space-y-10">
         <motion.div className="text-center" {...rise(0)}>
           <h1 className="text-4xl md:text-6xl font-bold text-[#1d1d1f] mb-3 tracking-[-0.03em]">
-            Refer &amp; <span className="bg-gradient-to-r from-violet-600 to-amber-500 bg-clip-text text-transparent">Earn</span>
+            Refer &amp; <span className="text-violet-600">Earn</span>
           </h1>
           <p className="text-gray-500 text-lg">Help your friends join IIT Madras Online Degree and get rewarded.</p>
         </motion.div>

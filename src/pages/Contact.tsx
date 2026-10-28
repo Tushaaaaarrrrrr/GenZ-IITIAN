@@ -115,12 +115,6 @@ export default function Contact() {
     <div className="min-h-screen bg-[#fbfbfd] text-[#1d1d1f] selection:bg-blue-100 overflow-x-hidden">
       {/* Hero */}
       <section className="relative px-6 pt-28 pb-14 md:pt-36 md:pb-20 text-center">
-        <motion.div
-          aria-hidden
-          className="pointer-events-none absolute left-1/2 top-8 -translate-x-1/2 w-[560px] h-[560px] rounded-full bg-gradient-to-tr from-emerald-200/50 via-sky-200/40 to-indigo-200/40 blur-3xl"
-          animate={reduce ? undefined : { scale: [1, 1.08, 1], rotate: [0, 10, 0] }}
-          transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut' }}
-        />
         <div className="relative max-w-2xl mx-auto">
           <Reveal>
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-black/10 text-xs font-semibold text-gray-600 mb-6">
@@ -130,7 +124,7 @@ export default function Contact() {
           <Reveal delay={0.05}>
             <h1 className="text-5xl md:text-7xl font-bold leading-[1.03] tracking-[-0.03em]">
               Let&apos;s{' '}
-              <span className="bg-gradient-to-r from-emerald-500 via-sky-500 to-indigo-500 bg-clip-text text-transparent">talk.</span>
+              <span className="text-emerald-600">talk.</span>
             </h1>
           </Reveal>
           <Reveal delay={0.12}>

@@ -45,8 +45,8 @@
   }
 }
 
-.careers-ui { font-family: "Inter", ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
-.careers-serif { font-family: "Newsreader", Georgia, "Times New Roman", serif; letter-spacing: -0.015em; }
+.careers-ui { font-family: inherit; -webkit-font-smoothing: antialiased; }
+.careers-serif { font-family: inherit; font-weight: 700; letter-spacing: -0.025em; }
 
 /* Careers page animations */
 @keyframes careers-shimmer { to { background-position: 200% center; } }

@@ -15,7 +15,7 @@ import { useAuth } from '../context/AuthContext';
 
 /* ---------------------------------------------------------------------------
  * Careers — editorial / professional layout.
- * Intentionally independent of the site's neo-brutalist theme: warm paper
+ * Uses the site font and colours: light
  * background, hairline rules, serif display type, one restrained accent.
  * Apply flow (login gate, pending-role resume, /careers/apply/:role) unchanged.
  * ------------------------------------------------------------------------- */
@@ -23,14 +23,14 @@ import { useAuth } from '../context/AuthContext';
 type RoleId = 'tutor' | 'campus-leader';
 
 const C = {
-  paper: '#faf8f4',
+  paper: '#fbfbfd',
   card: '#ffffff',
-  ink: '#14181f',
+  ink: '#0b1120',
   muted: '#5b6472',
   faint: '#8a919c',
-  rule: '#e6e2d9',
-  accent: '#1f3a8a',
-  accentSoft: '#eef1fb',
+  rule: '#e5e7eb',
+  accent: '#2563eb',
+  accentSoft: '#eff6ff',
   good: '#166534',
 };
 

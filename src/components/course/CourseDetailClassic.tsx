@@ -105,6 +105,15 @@ export default function CourseDetailClassic({ course }: CourseDetailClassicProps
                 </div>
               </div>
             </div>
+
+            <div className="mt-6 md:mt-8">
+              <Link
+                to="/contact"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-[#0b1120] rounded-xl font-semibold text-sm hover:bg-gray-100 transition-all shadow-sm"
+              >
+                <MessageCircle className="w-4 h-4" /> Contact Us
+              </Link>
+            </div>
           </motion.div>
 
           <motion.div
@@ -153,19 +162,13 @@ export default function CourseDetailClassic({ course }: CourseDetailClassicProps
                 )}
               </div>
 
-              <div className="flex flex-col gap-4">
+              <div>
                 <Link
                   ref={enrollRef}
                   to={checkoutPath}
-                  className="w-full py-3 md:py-3.5 bg-[#0b1120] text-white rounded-2xl font-semibold text-sm md:text-base border border-gray-200 hover:bg-white hover:text-[#0b1120] transition-all flex items-center justify-center gap-2 shadow-sm  active:translate-y-1 active:shadow-none text-center"
+                  className="w-full py-3 md:py-3.5 bg-[#0b1120] text-white rounded-2xl font-semibold text-sm md:text-base hover:bg-blue-600 transition-all flex items-center justify-center gap-2 shadow-sm active:translate-y-1 text-center"
                 >
                   Enroll Now <ChevronRight className="w-5 h-5" />
-                </Link>
-                <Link
-                  to="/contact"
-                  className="w-full py-2.5 bg-white text-[#0b1120] rounded-xl font-semibold text-sm border border-gray-300 hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
-                >
-                  <MessageCircle className="w-4 h-4" /> Contact Us
                 </Link>
               </div>
             </div>

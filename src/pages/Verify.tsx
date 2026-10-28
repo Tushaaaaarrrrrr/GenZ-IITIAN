@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { Printer, CheckCircle2, AlertCircle, Search, ShieldCheck, X, ChevronDown, ChevronUp, LogIn, User, FileText } from 'lucide-react';
 
 interface Employee {
@@ -65,6 +66,7 @@ export default function Verify() {
   const [searched, setSearched] = useState(false);
   const [verifyTime, setVerifyTime] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const reduce = useReducedMotion();
 
   // Guidelines Collapsible State
   const [dataIntegrityOpen, setDataIntegrityOpen] = useState(false);
@@ -231,7 +233,7 @@ export default function Verify() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50/50 py-12 px-6">
+    <div className="min-h-screen bg-[#fbfbfd] py-12 md:py-20 px-6">
       <div className="max-w-6xl mx-auto space-y-12">
 
 
@@ -239,17 +241,17 @@ export default function Verify() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start no-print">
           
           {/* Left Column: Info Text */}
-          <div className="lg:col-span-6 space-y-6 text-left">
-            <h1 className="text-4xl md:text-5xl font-black text-[#0b1120] tracking-tight leading-tight">
+          <motion.div initial={reduce ? { opacity: 0 } : { opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ type: 'spring', bounce: 0, duration: 0.7 }} className="lg:col-span-6 space-y-6 text-left">
+            <h1 className="text-4xl md:text-6xl font-bold text-[#1d1d1f] tracking-[-0.03em] leading-[1.05]">
               Employment Verification Portal
             </h1>
-            <p className="text-gray-600 font-medium text-lg leading-relaxed">
+            <p className="text-gray-500 text-lg leading-relaxed">
               The trusted source for verifying employment and internship records issued by Gen-Z IITian. Results are generated directly from official company records.
             </p>
 
             {/* Policy acceptance notice — an issued Employee ID is documented acceptance */}
-            <div className="bg-[#0b1120] text-white rounded-2xl p-6 space-y-3">
-              <div className="flex items-center gap-2 text-xs font-black tracking-widest uppercase text-emerald-300">
+            <div className="bg-[#0b1120] text-white rounded-3xl p-6 space-y-3 shadow-[0_16px_40px_-12px_rgba(11,17,32,0.45)]">
+              <div className="flex items-center gap-2 text-xs font-semibold tracking-wider uppercase text-emerald-300">
                 <FileText className="w-4 h-4" /> Employee Policy
               </div>
               <p className="text-white/80 font-medium text-sm leading-relaxed">
@@ -263,38 +265,42 @@ export default function Verify() {
                 Read the Employee Policy →
               </Link>
             </div>
-          </div>
+          </motion.div>
 
           {/* Right Column: Verification Form */}
-          <div className="lg:col-span-6 bg-white border-2 border-gray-200 rounded-3xl p-8 shadow-sm">
-            <h2 className="text-xs font-black text-gray-400 tracking-widest uppercase mb-6 text-left">
+          <motion.div initial={reduce ? { opacity: 0 } : { opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ type: 'spring', bounce: 0, duration: 0.7, delay: 0.1 }} className="lg:col-span-6 bg-white border border-black/5 rounded-3xl p-8 shadow-[0_8px_40px_rgba(0,0,0,0.07)]">
+            <h2 className="text-xs font-semibold text-gray-400 tracking-wider uppercase mb-6 text-left">
               SECURE RECORD LOOKUP
             </h2>
             <form onSubmit={handleSearch} className="space-y-6 text-left">
               <div>
-                <label className="block text-xs font-black text-gray-500 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
                   EMPLOYEE ID
                 </label>
                 <input 
                   required 
                   type="text" 
                   value={employeeId}
-                  onChange={(e) => setEmployeeId(e.target.value)}
-                  className="w-full px-4 py-3.5 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:ring-0 transition-colors font-semibold outline-none text-gray-800 placeholder-gray-400" 
+                  onChange={(e) => setEmployeeId(e.target.value.toUpperCase())}
+                  autoCapitalize="characters"
+                  spellCheck={false}
+                  className="w-full px-4 py-3.5 rounded-2xl border border-black/10 bg-slate-50 focus:bg-white focus:border-[#0b1120] focus:shadow-[0_0_0_4px_rgba(11,17,32,0.06)] transition-all font-semibold outline-none text-gray-800 placeholder-gray-400 placeholder:normal-case uppercase" 
                   placeholder="GENZ-EMP-0000"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-black text-gray-500 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
                   FULL LEGAL NAME
                 </label>
                 <input 
                   required 
                   type="text" 
                   value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="w-full px-4 py-3.5 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:ring-0 transition-colors font-semibold outline-none text-gray-800 placeholder-gray-400" 
+                  onChange={(e) => setFullName(e.target.value.toUpperCase())}
+                  autoCapitalize="characters"
+                  spellCheck={false}
+                  className="w-full px-4 py-3.5 rounded-2xl border border-black/10 bg-slate-50 focus:bg-white focus:border-[#0b1120] focus:shadow-[0_0_0_4px_rgba(11,17,32,0.06)] transition-all font-semibold outline-none text-gray-800 placeholder-gray-400 placeholder:normal-case uppercase" 
                   placeholder="As per records"
                 />
               </div>
@@ -302,19 +308,19 @@ export default function Verify() {
               <button 
                 type="submit" 
                 disabled={searching}
-                className="w-full py-4 bg-[#0b1120] text-white font-black rounded-xl hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 shadow-[4px_4px_0px_#0b1120] hover:shadow-[4px_4px_0px_#10b981]"
+                className="w-full py-4 bg-[#0b1120] text-white font-semibold rounded-full hover:bg-gray-800 active:scale-[0.98] disabled:opacity-60 transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 {searching ? 'VERIFYING...' : 'VERIFY AUTHENTICITY'}
               </button>
             </form>
-          </div>
+          </motion.div>
         </div>
 
 
         {/* Verification Result Modal */}
         {searched && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto modal-backdrop">
-            <div className="bg-white rounded-3xl border-2 border-[#0b1120] max-w-2xl w-full overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-150 relative text-left" id="print-area">
+            <div className="bg-white rounded-3xl border border-black/5 max-w-2xl w-full overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-150 relative text-left" id="print-area">
               
               {/* Close Button (Hidden when printing) */}
               <button 
@@ -423,56 +429,56 @@ export default function Verify() {
 
         {/* Verification Guidelines (Hidden when printing) */}
         <div className="max-w-4xl mx-auto pt-6 no-print text-left">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
             {/* Card 1: Data Integrity */}
-            <div className="bg-white border-2 border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+            <div className="bg-white border border-black/5 rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.04)] hover:border-black/10 transition-colors">
               <button 
                 onClick={() => setDataIntegrityOpen(!dataIntegrityOpen)}
-                className="w-full p-6 flex items-center justify-between font-bold text-gray-800 text-left hover:bg-gray-50/50 transition-colors"
+                className="w-full p-5 flex items-center justify-between font-bold text-gray-800 text-left hover:bg-gray-50/50 transition-colors"
               >
-                <span className="text-xs font-black text-[#0b1120] uppercase tracking-wider flex items-center gap-2">
+                <span className="text-xs font-semibold text-[#0b1120] uppercase tracking-wider flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-emerald-500" /> Data Integrity
                 </span>
                 {dataIntegrityOpen ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
               </button>
               {dataIntegrityOpen && (
-                <div className="px-6 pb-6 text-sm text-gray-500 font-bold leading-relaxed border-t border-gray-100 pt-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="px-5 pb-5 text-sm text-gray-500 font-medium leading-relaxed border-t border-gray-100 pt-4 animate-in fade-in slide-in-from-top-2 duration-200">
                   Employment information displayed on this portal is sourced from official company records and reflects the individual's documented association with Gen-Z IITian.
                 </div>
               )}
             </div>
 
             {/* Card 2: Support & Corrections */}
-            <div className="bg-white border-2 border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+            <div className="bg-white border border-black/5 rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.04)] hover:border-black/10 transition-colors">
               <button 
                 onClick={() => setSupportOpen(!supportOpen)}
-                className="w-full p-6 flex items-center justify-between font-bold text-gray-800 text-left hover:bg-gray-50/50 transition-colors"
+                className="w-full p-5 flex items-center justify-between font-bold text-gray-800 text-left hover:bg-gray-50/50 transition-colors"
               >
-                <span className="text-xs font-black text-[#0b1120] uppercase tracking-wider flex items-center gap-2">
+                <span className="text-xs font-semibold text-[#0b1120] uppercase tracking-wider flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 text-blue-500" /> Support & Corrections
                 </span>
                 {supportOpen ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
               </button>
               {supportOpen && (
-                <div className="px-6 pb-6 text-sm text-gray-500 font-bold leading-relaxed border-t border-gray-100 pt-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="px-5 pb-5 text-sm text-gray-500 font-medium leading-relaxed border-t border-gray-100 pt-4 animate-in fade-in slide-in-from-top-2 duration-200">
                   Found an issue with the verification result? Email <a href="mailto:help@genziitian.in" className="text-blue-600 hover:underline">help@genziitian.in</a> with the relevant Employee ID and supporting documentation. Our HR team will investigate and respond accordingly.
                 </div>
               )}
             </div>
 
             {/* Card 3: Employee Policy */}
-            <div className="bg-white border-2 border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+            <div className="bg-white border border-black/5 rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.04)] hover:border-black/10 transition-colors">
               <button
                 onClick={() => setPolicyOpen(!policyOpen)}
-                className="w-full p-6 flex items-center justify-between font-bold text-gray-800 text-left hover:bg-gray-50/50 transition-colors"
+                className="w-full p-5 flex items-center justify-between font-bold text-gray-800 text-left hover:bg-gray-50/50 transition-colors"
               >
-                <span className="text-xs font-black text-[#0b1120] uppercase tracking-wider flex items-center gap-2">
+                <span className="text-xs font-semibold text-[#0b1120] uppercase tracking-wider flex items-center gap-2">
                   <FileText className="w-4 h-4 text-[#0b1120]" /> Employee Policy
                 </span>
                 {policyOpen ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
               </button>
               {policyOpen && (
-                <div className="px-6 pb-6 text-sm text-gray-500 font-bold leading-relaxed border-t border-gray-100 pt-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="px-5 pb-5 text-sm text-gray-500 font-medium leading-relaxed border-t border-gray-100 pt-4 animate-in fade-in slide-in-from-top-2 duration-200">
                   Every Employee ID issued by Gen-Z IITian is governed by the Employee Policy. Generation of an Employee
                   ID, and acceptance of any payment from Gen-Z IITian, each constitute documented acceptance of that
                   policy.{' '}

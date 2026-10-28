@@ -43,12 +43,6 @@ export default function About() {
     <div className="min-h-screen bg-[#fbfbfd] text-[#1d1d1f] selection:bg-blue-100 overflow-x-hidden">
       {/* Hero */}
       <section className="relative px-6 pt-28 pb-20 md:pt-36 md:pb-28 text-center">
-        <motion.div
-          aria-hidden
-          className="pointer-events-none absolute left-1/2 top-10 -translate-x-1/2 w-[620px] h-[620px] rounded-full bg-gradient-to-tr from-blue-200/50 via-indigo-200/40 to-orange-200/40 blur-3xl"
-          animate={reduce ? undefined : { scale: [1, 1.08, 1], rotate: [0, 12, 0] }}
-          transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut' }}
-        />
         <div className="relative max-w-3xl mx-auto">
           <Reveal>
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-black/10 text-xs font-semibold text-gray-600 mb-6">
@@ -58,7 +52,7 @@ export default function About() {
           <Reveal delay={0.05}>
             <h1 className="text-5xl md:text-7xl font-bold leading-[1.03] tracking-[-0.03em]">
               Quality education,<br />
-              <span className="bg-gradient-to-r from-blue-600 via-indigo-500 to-orange-500 bg-clip-text text-transparent">for everyone.</span>
+              <span className="text-blue-600">for everyone.</span>
             </h1>
           </Reveal>
           <Reveal delay={0.12}>
@@ -188,7 +182,6 @@ export default function About() {
       <section className="px-6 pb-28">
         <Reveal>
           <div className="max-w-5xl mx-auto rounded-[2rem] bg-[#0b1120] text-white text-center px-6 py-16 md:py-20 relative overflow-hidden">
-            <div aria-hidden className="absolute -top-24 left-1/2 -translate-x-1/2 w-[480px] h-[480px] rounded-full bg-blue-600/30 blur-3xl" />
             <div className="relative">
               <h2 className="text-3xl md:text-5xl font-bold tracking-[-0.025em]">Join the Revolution</h2>
               <p className="mt-4 text-gray-300 max-w-2xl mx-auto leading-relaxed">

@@ -3,7 +3,7 @@ import { Check, Copy, Tag } from 'lucide-react';
 
 const CODE = 'GENZ5';
 
-/** Slim promo bar shown on the home page: 5% off with code GENZ5 (tap to copy). */
+/** Slim promo bar shown on the home and checkout pages: 5% off with code GENZ5 (tap to copy). */
 export default function SaleTicker() {
   const [copied, setCopied] = useState(false);
 

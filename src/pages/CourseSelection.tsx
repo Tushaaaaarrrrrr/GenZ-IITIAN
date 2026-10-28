@@ -836,31 +836,31 @@ export default function CourseSelection() {
       </AnimatePresence>
 
       <div className="max-w-6xl mx-auto">
-        <div className="mb-3 md:mb-4 text-center">
-            <h1 className="text-xl sm:text-3xl lg:text-4xl font-black mb-1.5 md:mb-2 tracking-tight">Complete <span className="text-blue-600">Enrollment</span></h1>
-            <p className="text-[11px] sm:text-xs lg:text-sm text-gray-500 font-bold mx-auto italic max-w-md sm:max-w-none px-2 sm:px-0 leading-snug">You're just one step away from joining {course.name}. Follow the steps below.</p>
+        <div className="mb-6 md:mb-8 text-center">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 tracking-[-0.025em] text-[#1d1d1f]">Complete <span className="text-blue-600">Enrollment</span></h1>
+            <p className="text-sm text-gray-500 mx-auto max-w-md sm:max-w-none px-2 sm:px-0 leading-snug">You&apos;re just one step away from joining {course.name}. Follow the steps below.</p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 mb-4 md:mb-6">
-            <button 
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 mb-5 md:mb-7">
+            <button
               onClick={() => { setStep('profile'); setShowProfilePrompt(false); }}
-              className={`flex flex-col items-center gap-1.5 md:gap-2 p-2.5 md:p-3 lg:p-4 rounded-xl border-[3px] md:border-[4px] transition-all w-full text-left ${step === 'profile' ? 'bg-blue-600 border-[#0b1120] text-white shadow-[3px_3px_0px_#0b1120] md:shadow-[4px_4px_0px_#0b1120]' : 'bg-green-50 border-green-200 text-green-700 cursor-pointer hover:bg-green-100'}`}
+              className={`flex items-center justify-center gap-2 px-3 py-3 rounded-2xl border text-sm font-semibold transition-all w-full active:scale-[0.98] cursor-pointer ${step === 'profile' ? 'bg-[#0b1120] border-[#0b1120] text-white shadow-lg shadow-black/10' : 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'}`}
             >
-                <User className="w-4 h-4 md:w-6 md:h-6" />
-                <span className="font-black text-[9px] md:text-sm uppercase tracking-wider">Step 1: Profile</span>
+                <User className="w-4 h-4" />
+                <span>Step 1: Profile</span>
             </button>
-            <button 
+            <button
               disabled={!profileData.name || !profileData.gender || !profileData.phone}
               onClick={() => setStep('selection')}
-              className={`flex flex-col items-center gap-1.5 md:gap-2 p-2.5 md:p-3 lg:p-4 rounded-xl border-[3px] md:border-[4px] transition-all w-full text-left ${step === 'selection' ? 'bg-blue-600 border-[#0b1120] text-white shadow-[3px_3px_0px_#0b1120] md:shadow-[4px_4px_0px_#0b1120]' : 'bg-white border-gray-200 text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed'}`}
+              className={`flex items-center justify-center gap-2 px-3 py-3 rounded-2xl border text-sm font-semibold transition-all w-full active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${step === 'selection' ? 'bg-[#0b1120] border-[#0b1120] text-white shadow-lg shadow-black/10' : 'bg-white border-black/10 text-gray-500 hover:bg-gray-50'}`}
             >
-                <BookOpen className="w-4 h-4 md:w-6 md:h-6" />
-                <span className="font-black text-[9px] md:text-sm uppercase tracking-wider">Step 2: Checkout</span>
+                <BookOpen className="w-4 h-4" />
+                <span>Step 2: Checkout</span>
             </button>
-            <div className="col-span-2 md:col-span-2 bg-white border-2 border-dashed border-gray-300 rounded-xl p-2.5 md:p-3 lg:p-4 flex items-center justify-center border-[#0b1120]/10">
-                <div className="flex items-center gap-1.5 md:gap-2 text-gray-500 font-black text-[10px] sm:text-sm lg:text-base">
-                    <ShieldCheck className="w-4 h-4 md:w-6 md:h-6" />
-                    Secure Checkout by Razorpay
+            <div className="col-span-2 md:col-span-2 bg-white border border-black/10 rounded-2xl px-3 py-3 flex items-center justify-center">
+                <div className="flex items-center gap-2 text-gray-500 font-medium text-sm">
+                    <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                    Secure checkout by Razorpay
                 </div>
             </div>
         </div>
@@ -872,29 +872,34 @@ export default function CourseSelection() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="max-w-4xl mx-auto bg-white border-[3px] md:border-[4px] border-[#0b1120] rounded-2xl p-4 sm:p-6 lg:p-10 shadow-[8px_8px_0px_#10b981] md:shadow-[12px_12px_0px_#10b981] text-center"
+              className="max-w-xl mx-auto bg-white border border-black/5 rounded-3xl p-6 sm:p-8 shadow-[0_8px_40px_rgba(0,0,0,0.06)] text-center"
             >
-              <div className="w-11 h-11 md:w-16 md:h-16 bg-green-100 rounded-xl md:rounded-2xl flex items-center justify-center border-2 border-[#0b1120] mx-auto mb-3 md:mb-6">
-                <UserCheck className="w-5 h-5 md:w-8 md:h-8 text-green-600" />
-              </div>
-              <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-[#0b1120] mb-2 md:mb-3">Welcome Back!</h2>
-              <p className="text-sm md:text-lg text-gray-500 font-bold mb-5 md:mb-8 leading-snug">
-                We found your profile: <span className="text-[#0b1120]">{profileData.name}</span> ({profileData.phone}). <br />
+              <motion.div
+                initial={{ scale: 0.6, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: 'spring', bounce: 0.35, duration: 0.6, delay: 0.1 }}
+                className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-5"
+              >
+                <UserCheck className="w-7 h-7 text-emerald-600" />
+              </motion.div>
+              <h2 className="text-2xl md:text-3xl font-bold tracking-[-0.02em] text-[#1d1d1f] mb-2">Welcome back</h2>
+              <p className="text-sm md:text-base text-gray-500 mb-7 leading-relaxed">
+                We found your profile: <span className="font-semibold text-[#0b1120]">{profileData.name}</span> ({profileData.phone}). <br />
                 Would you like to use these details for your enrollment?
               </p>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 md:gap-4">
+
+              <div className="flex items-center justify-center gap-3">
                 <button
                   onClick={() => setShowProfilePrompt(false)}
-                  className="py-2.5 md:py-4 bg-[#0b1120] text-white rounded-xl md:rounded-2xl font-black text-sm md:text-lg border-2 border-[#0b1120] shadow-[4px_4px_0px_#3b82f6] md:shadow-[5px_5px_0px_#3b82f6] hover:translate-y-1 hover:shadow-none transition-all"
+                  className="flex-1 max-w-[260px] py-3 bg-[#0b1120] text-white rounded-full font-semibold text-sm md:text-base hover:bg-gray-800 active:scale-[0.97] transition-all cursor-pointer"
                 >
                   Yes, Continue
                 </button>
                 <button
                   onClick={() => { setShowProfilePrompt(false); setStep('profile'); }}
-                  className="py-2.5 md:py-4 bg-white text-[#0b1120] rounded-xl md:rounded-2xl font-black text-sm md:text-lg border-[3px] border-[#0b1120] hover:bg-gray-50 transition-all"
+                  className="px-7 py-3 bg-white text-[#0b1120] rounded-full font-semibold text-sm md:text-base border border-black/15 hover:bg-gray-50 active:scale-[0.97] transition-all cursor-pointer"
                 >
-                  No, Update Details
+                  No
                 </button>
               </div>
             </motion.div>
@@ -1074,12 +1079,12 @@ export default function CourseSelection() {
               {hasPricingPlans && (
                 <div id="checkout-plans" className="space-y-4 mb-8 scroll-mt-24">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center border-2 border-[#0b1120] shadow-[2px_2px_0px_#0b1120]">
+                    <div className="w-9 h-9 bg-[#0b1120] rounded-xl flex items-center justify-center">
                       <CreditCard className="w-4 h-4 text-white" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-black text-[#0b1120] uppercase tracking-tight">Select Your Plan</h3>
-                      <p className="text-xs font-bold text-gray-400 mt-0.5">Pick a plan to continue to checkout</p>
+                      <h3 className="text-xl font-semibold tracking-[-0.02em] text-[#0b1120]">Select your plan</h3>
+                      <p className="text-sm text-gray-500 mt-0.5">Pick a plan to continue to checkout</p>
                     </div>
                   </div>
                   
@@ -1092,14 +1097,14 @@ export default function CourseSelection() {
                           key={idx}
                           type="button"
                           onClick={() => selectPricingPlan(idx)}
-                          className={`relative p-5 md:p-6 rounded-[2rem] border-[4px] transition-all text-left flex flex-col gap-3 ${
+                          className={`relative p-5 md:p-6 rounded-3xl border transition-all duration-300 text-left flex flex-col gap-3 hover:-translate-y-1 active:scale-[0.99] cursor-pointer ${
                             selected
-                              ? 'bg-blue-600 border-[#0b1120] text-white shadow-[8px_8px_0px_#0b1120]'
-                              : 'bg-white border-gray-100 hover:border-blue-200 text-[#0b1120]'
+                              ? 'bg-[#0b1120] border-[#0b1120] text-white shadow-[0_20px_40px_-12px_rgba(11,17,32,0.5)]'
+                              : 'bg-white border-black/10 hover:border-black/20 hover:shadow-[0_12px_30px_rgba(0,0,0,0.08)] text-[#0b1120]'
                           }`}
                         >
                           {opt.tag && (
-                            <div className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest w-fit border-2 ${
+                            <div className={`px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider w-fit border ${
                               selected ? 'bg-white/20 border-white text-white' : 'bg-blue-50 border-blue-100 text-blue-600'
                             }`}>
                               {opt.tag}
@@ -1107,8 +1112,8 @@ export default function CourseSelection() {
                           )}
 
                           <div className="flex items-baseline justify-between gap-2 pr-7">
-                            <div className="text-lg md:text-xl font-black leading-tight uppercase">{opt.name}</div>
-                            <div className={`text-xl md:text-2xl font-black shrink-0 ${selected ? 'text-white' : 'text-blue-600'}`}>₹{opt.price}</div>
+                            <div className="text-lg md:text-xl font-semibold leading-tight tracking-tight">{opt.name}</div>
+                            <div className={`text-xl md:text-2xl font-bold shrink-0 ${selected ? 'text-white' : 'text-[#0b1120]'}`}>₹{opt.price}</div>
                           </div>
 
                           {plan ? (
@@ -1139,7 +1144,7 @@ export default function CourseSelection() {
                           )}
 
                           {selected && (
-                            <div className="absolute top-4 right-4 bg-white rounded-full p-1 border-2 border-[#0b1120]">
+                            <div className="absolute top-4 right-4 bg-white rounded-full p-1">
                               <Check className="w-4 h-4 text-blue-600" />
                             </div>
                           )}
@@ -1149,7 +1154,7 @@ export default function CourseSelection() {
                   </div>
 
                   {!isQualifier && selectedPricingTier !== null && course.pricing_options[selectedPricingTier]?.description && (
-                    <div className="mt-4 p-4 bg-blue-50 border-2 border-blue-200 rounded-2xl">
+                    <div className="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-2xl">
                       <p className="text-sm font-bold text-gray-700 leading-relaxed">
                         {course.pricing_options[selectedPricingTier].description}
                       </p>
@@ -1157,8 +1162,8 @@ export default function CourseSelection() {
                   )}
 
                   {selectedPricingTier !== null && course.pricing_options?.[selectedPricingTier]?.banner_text && (
-                    <div className="mt-5 p-4 md:p-5 bg-amber-50 border-[4px] border-[#0b1120] rounded-[1.5rem] shadow-[4px_4px_0px_#0b1120] flex items-center gap-3.5">
-                      <div className="shrink-0 w-10 h-10 bg-amber-100 border-2 border-[#0b1120] rounded-xl flex items-center justify-center shadow-[2px_2px_0px_#0b1120]">
+                    <div className="mt-5 p-4 md:p-5 bg-amber-50 border border-amber-200 rounded-2xl flex items-center gap-3.5">
+                      <div className="shrink-0 w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
                         <Star className="w-5 h-5 text-amber-500 fill-amber-500" strokeWidth={2.5} />
                       </div>
                       <div>
@@ -1173,14 +1178,14 @@ export default function CourseSelection() {
                     <button
                       type="button"
                       onClick={goToSummary}
-                      className="w-full sm:w-auto mx-auto flex items-center justify-center gap-2 px-6 py-3.5 bg-[#10b981] text-[#0b1120] rounded-xl font-black text-sm border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] hover:translate-y-0.5 hover:shadow-[2px_2px_0px_#0b1120] transition-all"
+                      className="w-full sm:w-auto mx-auto flex items-center justify-center gap-2 px-7 py-3.5 bg-emerald-500 text-white rounded-full font-semibold text-sm hover:bg-emerald-600 active:scale-[0.97] shadow-lg shadow-emerald-500/30 transition-all cursor-pointer"
                     >
                       Continue to Checkout
                       <span className="font-black">₹{course.pricing_options[selectedPricingTier]?.price}</span>
                       <ArrowRight className="w-4 h-4" />
                     </button>
                   ) : (
-                    <div className="text-center py-2 text-xs font-bold text-gray-400 uppercase tracking-wide">
+                    <div className="text-center py-2 text-sm text-gray-400">
                       Select a plan above to continue
                     </div>
                   )}
@@ -1189,18 +1194,18 @@ export default function CourseSelection() {
 
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 <div ref={coursesPickerRef} className="lg:col-span-7 space-y-6 scroll-mt-24">
-                  <div className="bg-white border-[3px] border-[#0b1120] rounded-2xl p-5 shadow-[8px_8px_0px_#0b1120]">
-                      <h2 className="text-xl font-black text-[#0b1120] mb-4">{!course.isBundle || course.isFixedBundle ? 'Course Package' : 'Select Your Courses'}</h2>
+                  <div className="bg-white border border-black/5 rounded-3xl p-6 shadow-[0_8px_30px_rgba(0,0,0,0.05)]">
+                      <h2 className="text-lg font-semibold tracking-tight text-[#0b1120] mb-4">{!course.isBundle || course.isFixedBundle ? 'Course Package' : 'Select Your Courses'}</h2>
                     
                     {!course.isBundle || course.isFixedBundle ? (
-                        <div className="p-3.5 bg-blue-50 border-[2px] border-[#0b1120] rounded-xl flex items-center justify-between">
+                        <div className="p-3.5 bg-slate-50 border border-black/5 rounded-2xl flex items-center justify-between">
                             <div className="flex items-center gap-2.5">
                                 <div className="w-9 h-9 bg-[#0b1120] rounded-full flex items-center justify-center text-white">
                                     <Check className="w-4 h-4" />
                                 </div>
-                                <span className="font-black text-base text-[#0b1120]">{course.name}</span>
+                                <span className="font-semibold text-base text-[#0b1120]">{course.name}</span>
                             </div>
-                            <span className="font-black text-lg text-[#10b981]">
+                            <span className="font-bold text-lg text-emerald-600">
                               {isTierSelectionRequired() && !getSelectedPricingOption()
                                 ? '—'
                                 : `₹${calculateTotal()}`}
@@ -1212,7 +1217,7 @@ export default function CourseSelection() {
                                 <button
                                     key={bc.courseId}
                                     onClick={() => toggleCourse(bc.courseId)}
-                                    className={`w-full p-3 text-left border-[2px] rounded-xl flex items-center justify-between transition-all ${selectedCourses.includes(bc.courseId) ? 'bg-blue-50 border-[#0b1120] shadow-[2px_2px_0px_#0b1120]' : 'bg-white border-gray-100 hover:border-gray-300'}`}
+                                    className={`w-full p-3 text-left border rounded-2xl flex items-center justify-between transition-all ${selectedCourses.includes(bc.courseId) ? 'bg-slate-50 border-[#0b1120]' : 'bg-white border-black/10 hover:border-black/20'}`}
                                 >
                                     <div className="flex items-center gap-2.5">
                                         <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${selectedCourses.includes(bc.courseId) ? 'bg-[#0b1120] border-[#0b1120] text-white' : 'bg-white border-gray-300'}`}>
@@ -1233,8 +1238,8 @@ export default function CourseSelection() {
               </div>
 
               <div ref={summaryRef} className="lg:col-span-5 scroll-mt-24">
-                <div className="bg-white border-[3px] border-[#0b1120] rounded-2xl p-4 md:p-5 shadow-[8px_8px_0px_#10b981] sticky top-24">
-                    <h3 className="text-base md:text-lg font-black text-[#0b1120] mb-3 md:mb-4 border-b-2 border-gray-100 pb-2 md:pb-2.5">Enrollment Summary</h3>
+                <div className="bg-white border border-black/5 rounded-3xl p-5 md:p-6 shadow-[0_8px_40px_rgba(0,0,0,0.07)] sticky top-24">
+                    <h3 className="text-base md:text-lg font-semibold tracking-tight text-[#0b1120] mb-3 md:mb-4 border-b border-gray-100 pb-3">Enrollment summary</h3>
                     
                     <div className="space-y-3 mb-6">
                         {course.isBundle && (
@@ -1242,7 +1247,7 @@ export default function CourseSelection() {
                                 {/* Summary List */}
                                 <div className="space-y-1.5 pt-2">
                                     {course.bundleCourses.filter((bc: SubCourse) => selectedCourses.includes(bc.courseId)).map((bc: SubCourse) => (
-                                        <div key={bc.courseId} className="flex justify-between font-black text-[#0b1120] text-sm uppercase tracking-tight">
+                                        <div key={bc.courseId} className="flex justify-between font-medium text-[#0b1120] text-sm">
                                             <span>{bc.courseName}</span>
                                             {!course.isFixedBundle && <span>₹{bc.price}</span>}
                                         </div>
