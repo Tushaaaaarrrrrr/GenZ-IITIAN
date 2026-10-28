@@ -1876,6 +1876,147 @@ app.post('/api/job-applications/delete', authMiddleware, async (req, res) => {
     }
 });
 
+// ==========================================
+// APPLICANT SELF-SERVICE TRACKING (read-only + append-only)
+// ==========================================
+const APPLICANT_MAX_ADDITIONS = 25;
+const APPLICANT_LIMITS = { note: 1000, link: 500, subject: 120 };
+
+function sanitizeApplicationForApplicant(app) {
+    const meta = app.metadata || {};
+    return {
+        id: app.id,
+        role: app.role,
+        role_title: app.role_title,
+        status: app.status || 'PENDING',
+        subject: app.subject || null,
+        language: app.language || null,
+        resume_link: app.resume_link || null,
+        group_link: app.group_link || null,
+        created_at: app.created_at,
+        updated_at: app.updated_at,
+        additions: Array.isArray(meta.user_additions) ? meta.user_additions : []
+        // manager_notes and internal metadata are intentionally never exposed
+    };
+}
+
+async function getApplicantFromRequest(req) {
+    const auth = await getAuthenticatedUser(req);
+    const email = auth?.user?.email ? String(auth.user.email).trim().toLowerCase() : '';
+    return email ? { email, user: auth.user } : null;
+}
+
+async function findApplicationsForEmail(email) {
+    loadApplicationsFromFile();
+    const found = new Map();
+    for (const [id, app] of memoryJobApplications.entries()) {
+        const owner = String(app.email || '').trim().toLowerCase();
+        const authOwner = String(app.metadata?.auth_email || '').trim().toLowerCase();
+        if (owner === email || authOwner === email) found.set(id, app);
+    }
+    if (supabase) {
+        try {
+            const { data } = await supabase
+                .from('job_applications')
+                .select('*')
+                .eq('email', email)
+                .order('created_at', { ascending: false });
+            if (Array.isArray(data)) {
+                for (const row of data) {
+                    if (row?.id) found.set(row.id, { ...(found.get(row.id) || {}), ...row });
+                }
+            }
+        } catch (e) {}
+    }
+    return Array.from(found.values()).sort(
+        (a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+    );
+}
+
+// A. LIST MY APPLICATIONS (any signed-in applicant)
+app.get('/api/job-applications/mine', async (req, res) => {
+    try {
+        const me = await getApplicantFromRequest(req);
+        if (!me) return res.status(401).json({ error: 'Please sign in to track your applications.' });
+        const apps = await findApplicationsForEmail(me.email);
+        res.json({ success: true, applications: apps.map(sanitizeApplicationForApplicant) });
+    } catch (err) {
+        console.error('[Job Applications Mine] Error:', err);
+        res.status(500).json({ error: 'Failed to load your applications' });
+    }
+});
+
+// B. APPEND INFO (notes / links / subjects). Append-only: there is no edit or delete route for applicants.
+app.post('/api/job-applications/add-info', async (req, res) => {
+    try {
+        const me = await getApplicantFromRequest(req);
+        if (!me) return res.status(401).json({ error: 'Please sign in.' });
+
+        const { id, type } = req.body || {};
+        let value = String(req.body?.value ?? '').trim();
+        if (!id || !['note', 'link', 'subject'].includes(type)) {
+            return res.status(400).json({ error: 'Invalid request.' });
+        }
+        if (!value) return res.status(400).json({ error: 'Please enter something to add.' });
+        if (value.length > APPLICANT_LIMITS[type]) {
+            return res.status(400).json({ error: `Too long (max ${APPLICANT_LIMITS[type]} characters).` });
+        }
+        if (type === 'link') {
+            try {
+                const u = new URL(value);
+                if (!['http:', 'https:'].includes(u.protocol)) throw new Error('bad');
+                value = u.toString();
+            } catch (e) {
+                return res.status(400).json({ error: 'Enter a valid link starting with https://' });
+            }
+        }
+        const label = String(req.body?.label ?? '').trim().slice(0, 80);
+
+        const mine = await findApplicationsForEmail(me.email);
+        const target = mine.find(a => a.id === id);
+        if (!target) return res.status(404).json({ error: 'Application not found.' });
+
+        const existing = Array.isArray(target.metadata?.user_additions) ? target.metadata.user_additions : [];
+        if (existing.length >= APPLICANT_MAX_ADDITIONS) {
+            return res.status(400).json({ error: `You can add up to ${APPLICANT_MAX_ADDITIONS} items per application.` });
+        }
+        if (existing.some(a => a.type === type && String(a.value).toLowerCase() === value.toLowerCase())) {
+            return res.status(400).json({ error: 'You have already added this.' });
+        }
+
+        const entry = {
+            id: `add-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+            type,
+            value,
+            label: label || null,
+            added_at: new Date().toISOString()
+        };
+        const nextMeta = { ...(target.metadata || {}), user_additions: [...existing, entry] };
+        const updatedAt = new Date().toISOString();
+
+        memoryJobApplications.set(id, { ...(memoryJobApplications.get(id) || target), metadata: nextMeta, updated_at: updatedAt });
+        saveApplicationsToFile();
+
+        if (supabase) {
+            try {
+                await supabase.from('job_applications').update({ metadata: nextMeta, updated_at: updatedAt }).eq('id', id);
+            } catch (e) {}
+            try {
+                await supabase.from('activity_logs').insert({
+                    email: me.email,
+                    action: 'JOB_APPLICATION_INFO_ADDED',
+                    metadata: { id, entry }
+                });
+            } catch (e) {}
+        }
+
+        res.json({ success: true, entry, application: sanitizeApplicationForApplicant({ ...target, metadata: nextMeta, updated_at: updatedAt }) });
+    } catch (err) {
+        console.error('[Job Applications Add Info] Error:', err);
+        res.status(500).json({ error: 'Failed to save. Please try again.' });
+    }
+});
+
 // AUTO-ENROLL NEW USERS
 app.post('/api/auto-enroll', async (req, res) => {
     try {

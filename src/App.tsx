@@ -19,6 +19,7 @@ import Contact from './pages/Contact';
 import About from './pages/About';
 import Careers from './pages/Careers';
 import CareerApply from './pages/CareerApply';
+import CareerTrack from './pages/CareerTrack';
 import Verify from './pages/Verify';
 import Newsletter from './pages/Newsletter';
 import SEODirectory from './pages/SEODirectory';
@@ -115,6 +116,7 @@ function AppContent() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/careers" element={<Careers />} />
           <Route path="/careers/apply/:role" element={<CareerApply />} />
+          <Route path="/careers/track" element={<CareerTrack />} />
           <Route path="/verify" element={<Verify />} />
           <Route path="/newsletter" element={<Newsletter />} />
           <Route path="/knowledge" element={<SEODirectory />} />

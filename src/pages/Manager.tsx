@@ -1,7 +1,7 @@
 import { useAuth } from '../context/AuthContext';
-import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { supabase } from '../lib/supabase';
-import { LayoutDashboard, ShoppingBag, ScrollText, BookOpen, Plus, Search, Trash2, Edit, Save, X, Loader2, AlertCircle, User, Download, TrendingUp, TrendingDown, Users, ShieldCheck, CreditCard, RefreshCw, Gift, ArrowRight, Copy, Coins, Eye, Settings, ClipboardList, Boxes, ArrowLeft, Calendar, IndianRupee, UserX, ChevronDown, Briefcase } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, ScrollText, BookOpen, Plus, Search, Trash2, Edit, Save, X, Loader2, AlertCircle, User, Download, TrendingUp, TrendingDown, Users, ShieldCheck, CreditCard, RefreshCw, Gift, ArrowRight, Copy, Coins, Eye, Settings, ClipboardList, Boxes, ArrowLeft, Calendar, IndianRupee, UserX, ChevronDown, Briefcase, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate, useLocation, NavLink } from 'react-router-dom';
 import { apiService } from '../lib/api';
@@ -9,6 +9,7 @@ import BlogsManager from '../components/manager/BlogsManager';
 import EmployeesManager from '../components/manager/EmployeesManager';
 import OneOnOneBookingsManager from '../components/manager/OneOnOneBookingsManager';
 import JobApplicationsManager from '../components/manager/JobApplicationsManager';
+import UsersManager, { RoleBadges, waNumber } from '../components/manager/UsersManager';
 import ManagerFullPageSheet from '../components/manager/ManagerFullPageSheet';
 import ErrorBoundary from '../components/ErrorBoundary';
 import { getYouTubeId } from '../utils/youtube';
@@ -75,6 +76,12 @@ export default function Manager() {
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
   const [paymentSearch, setPaymentSearch] = useState('');
+  const [paymentSearchInput, setPaymentSearchInput] = useState('');
+  const [isFetching, setIsFetching] = useState(false);
+  const [showEarned, setShowEarned] = useState(false);
+  const [showPotential, setShowPotential] = useState(false);
+  const loadedTabRef = useRef<string | null>(null);
+  const fetchSeqRef = useRef(0);
   const [userSearch, setUserSearch] = useState('');
   const [paymentStats, setPaymentStats] = useState({
     totalEarned: 0,
@@ -380,10 +387,19 @@ export default function Manager() {
     setLoading(true);
     setFilter('all');
     setPaymentSearch('');
+    setPaymentSearchInput('');
+    loadedTabRef.current = null;
     setUserSearch('');
     setCustomFrom('');
     setCustomTo('');
   }, [effectiveTab]);
+
+  // Debounce typing so each keystroke doesn't trigger a fetch
+  useEffect(() => {
+    if (paymentSearchInput === paymentSearch) return;
+    const t = window.setTimeout(() => setPaymentSearch(paymentSearchInput), 350);
+    return () => window.clearTimeout(t);
+  }, [paymentSearchInput]);
 
   useEffect(() => {
     if (isManager) fetchData();
@@ -464,11 +480,15 @@ export default function Manager() {
   };
 
   const fetchData = async () => {
-    if (effectiveTab === 'blogs' || effectiveTab === 'settings' || effectiveTab === 'logs' || effectiveTab === 'boxes' || effectiveTab === 'employees' || effectiveTab === '1on1' || effectiveTab === 'applications') {
+    if (effectiveTab === 'blogs' || effectiveTab === 'settings' || effectiveTab === 'logs' || effectiveTab === 'boxes' || effectiveTab === 'employees' || effectiveTab === '1on1' || effectiveTab === 'applications' || effectiveTab === 'users') {
       setLoading(false);
       return;
     }
-    setLoading(true);
+    // Only block the page on the first load of a tab; later searches/filters refresh in place
+    const silent = loadedTabRef.current === effectiveTab;
+    const seq = ++fetchSeqRef.current;
+    if (!silent) setLoading(true);
+    setIsFetching(true);
     try {
       // Always fetch catalog for mapping (merge denormalized catalog + main courses)
       const [{ data: catalog }, { data: courses }] = await Promise.all([
@@ -490,6 +510,7 @@ export default function Manager() {
           apiService.managerFetch('discounts', filter),
           fetchDiscountOptions()
         ]);
+        if (seq !== fetchSeqRef.current) return;
         setData(discountsData || []);
       } else if (effectiveTab === 'payments') {
         if (filter === 'custom' && (!customFrom || !customTo)) {
@@ -505,17 +526,23 @@ export default function Manager() {
             ),
             fetchDiscountOptions()
           ]);
+          if (seq !== fetchSeqRef.current) return;
           setData(paymentsData || []);
         }
       } else {
-        const result = await apiService.managerFetch(effectiveTab, filter, effectiveTab === 'users' ? userSearch : paymentSearch);
+        const result = await apiService.managerFetch(effectiveTab, filter, paymentSearch);
+        if (seq !== fetchSeqRef.current) return;
         setData(result || []);
       }
+      loadedTabRef.current = effectiveTab;
     } catch (err: any) {
       console.error(`Manager Fetch Error [${activeTab}]:`, err.message);
-      setData([]);
+      if (seq === fetchSeqRef.current) setData([]);
     } finally {
-      setLoading(false);
+      if (seq === fetchSeqRef.current) {
+        setLoading(false);
+        setIsFetching(false);
+      }
     }
   };
 
@@ -1042,28 +1069,6 @@ export default function Manager() {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-              {effectiveTab === 'users' && (
-                <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-                  <button 
-                    onClick={() => {
-                      setFilter(filter === 'no-number' ? 'all' : 'no-number');
-                    }}
-                    className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                      filter === 'no-number'
-                        ? 'bg-slate-900 text-white border-slate-900'
-                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                    }`}
-                  >
-                    <Users className="w-4 h-4" /> No Number
-                  </button>
-                  <button 
-                    onClick={exportUsers}
-                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium bg-slate-900 text-white hover:bg-slate-800 transition-colors"
-                  >
-                    <Download className="w-4 h-4" /> Export CSV
-                  </button>
-                </div>
-              )}
               {effectiveTab === 'catalog' && (
                 <button 
                   onClick={exportCatalog}
@@ -1138,62 +1143,7 @@ export default function Manager() {
 
               {effectiveTab === 'settings' && <SettingsManager />}
 
-              {effectiveTab === 'users' && (
-                <div className="space-y-4">
-                  <div className="bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 flex gap-3 items-center">
-                    <Search className="w-4 h-4 text-slate-400 shrink-0" />
-                    <input
-                      type="text"
-                      placeholder="Search by name, email, or referral code…"
-                      value={userSearch}
-                      onChange={(e) => setUserSearch(e.target.value)}
-                      className="w-full outline-none text-sm text-slate-800 placeholder:text-slate-400"
-                    />
-                  </div>
-
-                  <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-                    <div className="overflow-x-auto w-full touch-pan-x">
-                      <table className="w-full min-w-[600px] text-left text-sm">
-                        <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          <tr>
-                            <th className="px-4 sm:px-5 py-3">Name</th>
-                            <th className="px-4 sm:px-5 py-3">Email</th>
-                            <th className="px-4 sm:px-5 py-3">Phone</th>
-                            <th className="px-4 sm:px-5 py-3">Gender</th>
-                            <th className="px-4 sm:px-5 py-3">Joined</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {data.map((user: any) => (
-                            <tr 
-                              key={user.id} 
-                              onClick={() => fetchUserDetails(user)}
-                              className="hover:bg-slate-50 transition-colors cursor-pointer group"
-                            >
-                              <td className="px-4 sm:px-5 py-3.5">
-                                <div className="flex items-center gap-2">
-                                  <div className="font-medium text-slate-900 group-hover:text-blue-600 transition-colors">{user.name || 'N/A'}</div>
-                                  <ArrowRight className="w-3.5 h-3.5 text-transparent group-hover:text-blue-600 transition-colors shrink-0" />
-                                </div>
-                              </td>
-                              <td className="px-4 sm:px-5 py-3.5 text-slate-500 break-all">{user.email}</td>
-                              <td className="px-4 sm:px-5 py-3.5 text-slate-500 font-mono text-xs">{user.phone || 'N/A'}</td>
-                              <td className="px-4 sm:px-5 py-3.5">
-                                <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md text-[11px] font-medium uppercase">
-                                  {user.gender || 'N/A'}
-                                </span>
-                              </td>
-                              <td className="px-4 sm:px-5 py-3.5 text-slate-400 text-xs">
-                                {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-              )}
+              {effectiveTab === 'users' && <UsersManager onSelectUser={fetchUserDetails} />}
 
               {effectiveTab === 'payments' && (
                 <div className="space-y-4">
@@ -1201,9 +1151,9 @@ export default function Manager() {
                     <div className="bg-white border-2 border-emerald-200 border-l-4 border-l-emerald-500 rounded-2xl p-4 shadow-sm">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-[11px] font-bold uppercase tracking-wide text-emerald-700">Total Earned</span>
-                        <IndianRupee className="w-4 h-4 text-emerald-600" />
+                        <button type="button" onClick={() => setShowEarned(v => !v)} title={showEarned ? 'Hide amount' : 'Show amount'} aria-label="Toggle total earned visibility" className="text-emerald-600 hover:text-emerald-800 cursor-pointer">{showEarned ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
                       </div>
-                      <div className="text-2xl font-bold text-slate-900">₹{paymentStats.totalEarned.toLocaleString('en-IN')}</div>
+                      <div className="text-2xl font-bold text-slate-900 tabular-nums">{showEarned ? `₹${paymentStats.totalEarned.toLocaleString('en-IN')}` : '₹ ••••••'}</div>
                       <p className="mt-1 text-xs font-medium text-slate-500">Paid orders only</p>
                     </div>
                     <div className="bg-white border-2 border-blue-200 border-l-4 border-l-blue-500 rounded-2xl p-4 shadow-sm">
@@ -1225,9 +1175,9 @@ export default function Manager() {
                     <div className="bg-white border-2 border-rose-200 border-l-4 border-l-rose-500 rounded-2xl p-4 shadow-sm">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-[11px] font-bold uppercase tracking-wide text-rose-700">Potential Money</span>
-                        <TrendingDown className="w-4 h-4 text-rose-600" />
+                        <button type="button" onClick={() => setShowPotential(v => !v)} title={showPotential ? 'Hide amount' : 'Show amount'} aria-label="Toggle potential money visibility" className="text-rose-600 hover:text-rose-800 cursor-pointer">{showPotential ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
                       </div>
-                      <div className="text-2xl font-bold text-slate-900">₹{paymentStats.potentialMoney.toLocaleString('en-IN')}</div>
+                      <div className="text-2xl font-bold text-slate-900 tabular-nums">{showPotential ? `₹${paymentStats.potentialMoney.toLocaleString('en-IN')}` : '₹ ••••••'}</div>
                       <p className="mt-1 text-xs font-medium text-slate-500">From created (unpaid)</p>
                     </div>
                   </div>
@@ -1238,10 +1188,12 @@ export default function Manager() {
                       <input
                         type="text"
                         placeholder="Search by name, email, phone, or order ID…"
-                        value={paymentSearch}
-                        onChange={(e) => setPaymentSearch(e.target.value)}
+                        value={paymentSearchInput}
+                        onChange={(e) => setPaymentSearchInput(e.target.value)}
+                        autoComplete="off"
                         className="w-full outline-none text-sm text-slate-800 placeholder:text-slate-400"
                       />
+                      {isFetching && <Loader2 className="w-4 h-4 text-slate-400 animate-spin shrink-0" />}
                     </div>
 
                     <div className="bg-white border border-slate-200 rounded-xl p-1 flex gap-1 overflow-x-auto whitespace-nowrap no-scrollbar">
@@ -1623,9 +1575,9 @@ export default function Manager() {
         maxWidthClass="max-w-6xl"
       >
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                <div className="space-y-6">
+                <div className="space-y-5 bg-white border border-slate-200 rounded-2xl p-5 sm:p-7 shadow-sm self-start">
                   <div>
-                    <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Course Name</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-3">Course Name</label>
                     <input 
                       type="text" 
                       defaultValue={editingCourse?.name} 
@@ -1643,34 +1595,34 @@ export default function Manager() {
                           }
                         }
                       }}
-                      className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none" 
+                      className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl font-medium focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 outline-none" 
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-black text-[#0b1120] uppercase mb-1">Subtitle / Brief Description</label>
-                    <textarea defaultValue={editingCourse?.description} id="c-subtitle" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none h-32" />
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Subtitle / Brief Description</label>
+                    <textarea defaultValue={editingCourse?.description} id="c-subtitle" className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl font-medium focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 outline-none h-32" />
                   </div>
                   <div>
-                    <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">What You Get in the Cohort</label>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mb-2">These lines show under “Included with enrollment” on the course page. One point per line.</p>
-                    <textarea defaultValue={editingCourse?.cohortContent || ''} id="c-cohort" placeholder="e.g.&#10;✅ Live doubt-solving sessions every week&#10;✅ Structured notes + PYQs&#10;✅ Mock tests before every quiz&#10;..." className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none h-48 leading-relaxed" />
+                    <label className="block text-xs font-semibold text-slate-700 mb-3">What You Get in the Cohort</label>
+                    <p className="text-xs font-normal text-slate-500 mb-2">These lines show under “Included with enrollment” on the course page. One point per line.</p>
+                    <textarea defaultValue={editingCourse?.cohortContent || ''} id="c-cohort" placeholder="e.g.&#10;✅ Live doubt-solving sessions every week&#10;✅ Structured notes + PYQs&#10;✅ Mock tests before every quiz&#10;..." className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl font-medium focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 outline-none h-48 leading-relaxed" />
                   </div>
-                  <div className="border-[3px] border-[#0b1120] rounded-2xl bg-slate-50 overflow-hidden shadow-[4px_4px_0px_#0b1120]">
+                  <div className="border border-slate-300 rounded-2xl bg-slate-50 overflow-hidden shadow-sm">
                     <button
                       type="button"
                       onClick={() => setShowCourseThemeSection(!showCourseThemeSection)}
                       className="w-full p-4 flex items-center justify-between text-left hover:bg-slate-100 transition-colors cursor-pointer"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-white border-2 border-[#0b1120] flex items-center justify-center font-black text-lg shadow-[2px_2px_0px_#0b1120] shrink-0">
+                        <div className="w-10 h-10 rounded-xl bg-white border border-slate-300 flex items-center justify-center font-semibold text-lg shadow-sm shrink-0">
                           🎨
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-black text-[#0b1120] uppercase tracking-tight">
+                            <span className="text-xs font-semibold text-slate-700 tracking-tight">
                               Course Page Design & Theme
                             </span>
-                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${
+                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
                               coursePageTheme === 'new'
                                 ? 'bg-blue-600 text-white border-blue-700'
                                 : 'bg-emerald-100 text-emerald-800 border-emerald-300'
@@ -1685,30 +1637,30 @@ export default function Manager() {
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1.5 font-black text-xs text-[#0b1120] bg-white border-2 border-[#0b1120] px-3 py-1.5 rounded-xl shadow-[2px_2px_0px_#0b1120] shrink-0">
+                      <div className="flex items-center gap-1.5 font-semibold text-xs text-slate-900 bg-white border border-slate-300 px-3 py-1.5 rounded-xl shadow-sm shrink-0">
                         <span>{showCourseThemeSection ? 'Collapse' : 'Customize Theme'}</span>
                         <ChevronDown className={`w-4 h-4 transition-transform ${showCourseThemeSection ? 'rotate-180' : ''}`} />
                       </div>
                     </button>
 
                     {showCourseThemeSection && (
-                      <div className="p-5 border-t-[3px] border-[#0b1120] space-y-4 bg-slate-50">
+                      <div className="p-5 border-t border-slate-200 space-y-4 bg-slate-50">
                         <div>
-                          <label className="block text-sm font-black text-[#0b1120] uppercase mb-1">Course Page Design Theme</label>
-                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mb-2">Default is Classic. Only manager can turn ON the Modern Redesign.</p>
+                          <label className="block text-xs font-semibold text-slate-700 mb-1">Course Page Design Theme</label>
+                          <p className="text-xs font-normal text-slate-500 mb-2">Default is Classic. Only manager can turn ON the Modern Redesign.</p>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <button
                               type="button"
                               onClick={() => setCoursePageTheme('old')}
                               className={`p-3 rounded-xl border-2 font-bold text-left transition-all cursor-pointer ${
                                 coursePageTheme === 'old'
-                                  ? 'border-[#0b1120] bg-white shadow-[3px_3px_0px_#0b1120]'
+                                  ? 'border-slate-900 bg-white shadow-sm'
                                   : 'border-slate-200 bg-white/60 text-gray-500 hover:border-slate-300'
                               }`}
                             >
-                              <div className="flex items-center justify-between text-xs font-black text-[#0b1120] uppercase">
+                              <div className="flex items-center justify-between text-xs font-semibold text-slate-900 ">
                                 <span>Classic (Old)</span>
-                                {coursePageTheme === 'old' && <span className="bg-emerald-100 text-emerald-800 text-[9px] px-1.5 py-0.5 rounded font-black">Default Active</span>}
+                                {coursePageTheme === 'old' && <span className="bg-emerald-100 text-emerald-800 text-[9px] px-1.5 py-0.5 rounded font-semibold">Default Active</span>}
                               </div>
                               <p className="text-[11px] text-gray-500 font-medium mt-1 leading-snug">Brutalist layout with batch comparison cards, outcomes, and stats</p>
                             </button>
@@ -1717,32 +1669,32 @@ export default function Manager() {
                               onClick={() => setCoursePageTheme('new')}
                               className={`p-3 rounded-xl border-2 font-bold text-left transition-all cursor-pointer ${
                                 coursePageTheme === 'new'
-                                  ? 'border-[#0b1120] bg-white shadow-[3px_3px_0px_#0b1120]'
+                                  ? 'border-slate-900 bg-white shadow-sm'
                                   : 'border-slate-200 bg-white/60 text-gray-500 hover:border-slate-300'
                               }`}
                             >
-                              <div className="flex items-center justify-between text-xs font-black text-[#0b1120] uppercase">
+                              <div className="flex items-center justify-between text-xs font-semibold text-slate-900 ">
                                 <span>Modern Redesign (New)</span>
-                                {coursePageTheme === 'new' && <span className="bg-blue-100 text-blue-800 text-[9px] px-1.5 py-0.5 rounded font-black">Turned ON</span>}
+                                {coursePageTheme === 'new' && <span className="bg-blue-100 text-blue-800 text-[9px] px-1.5 py-0.5 rounded font-semibold">Turned ON</span>}
                               </div>
                               <p className="text-[11px] text-gray-500 font-medium mt-1 leading-snug">Modern tabs layout with video spotlight, feedback reviews, and clean FAQ</p>
                             </button>
                           </div>
                         </div>
                         <div>
-                          <label className="block text-sm font-black text-[#0b1120] uppercase mb-1">Course page video</label>
-                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mb-2">YouTube link for “How to use this batch”. Students can play it on the course page.</p>
+                          <label className="block text-xs font-semibold text-slate-700 mb-1">Course page video</label>
+                          <p className="text-xs font-normal text-slate-500 mb-2">YouTube link for “How to use this batch”. Students can play it on the course page.</p>
                           <input
                             type="url"
                             value={accessVideoUrl}
                             onChange={(e) => setAccessVideoUrl(e.target.value)}
                             placeholder="https://www.youtube.com/watch?v=..."
-                            className="w-full px-4 py-3 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none bg-white"
+                            className="w-full px-4 py-3 border border-slate-300 rounded-xl font-medium focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 outline-none bg-white"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-black text-[#0b1120] uppercase mb-1">Feedback bank</label>
-                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mb-3">Tick the notes that should show on this course. Add a new one if it is not in the bank yet.</p>
+                          <label className="block text-xs font-semibold text-slate-700 mb-1">Feedback bank</label>
+                          <p className="text-xs font-normal text-slate-500 mb-3">Tick the notes that should show on this course. Add a new one if it is not in the bank yet.</p>
                           <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
                             {feedbackBank.map((note) => {
                               const checked = selectedReviewIds.includes(note.id);
@@ -1759,7 +1711,7 @@ export default function Manager() {
                                     className="mt-1 w-4 h-4 accent-blue-600"
                                   />
                                   <span>
-                                    <span className="block text-sm font-black text-[#0b1120]">{note.name} <span className="font-bold text-gray-400">· {note.role}</span></span>
+                                    <span className="block text-sm font-semibold text-slate-900">{note.name} <span className="font-bold text-gray-400">· {note.role}</span></span>
                                     <span className="block text-xs font-bold text-gray-500 mt-1">{note.text}</span>
                                   </span>
                                 </label>
@@ -1788,7 +1740,7 @@ export default function Manager() {
                             <button
                               type="button"
                               onClick={addDraftReview}
-                              className="sm:col-span-2 py-3 rounded-xl border-2 border-[#0b1120] font-black text-sm bg-white hover:bg-slate-100"
+                              className="sm:col-span-2 py-3 rounded-xl border border-slate-300 font-semibold text-sm bg-white hover:bg-slate-100"
                             >
                               Add to feedback bank
                             </button>
@@ -1799,7 +1751,7 @@ export default function Manager() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Display Price / Starts From (₹)</label>
+                      <label className="block text-xs font-semibold text-slate-700 mb-3">Display Price / Starts From (₹)</label>
                       <input 
                         type="text" inputMode="decimal" 
                         defaultValue={editingCourse?.price} 
@@ -1812,11 +1764,11 @@ export default function Manager() {
                             }
                           }
                         }}
-                        className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none" 
+                        className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl font-medium focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 outline-none" 
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Discount Display Price (₹)</label>
+                      <label className="block text-xs font-semibold text-slate-700 mb-3">Discount Display Price (₹)</label>
                       <input 
                         type="text" inputMode="decimal" 
                         defaultValue={editingCourse?.discountPrice} 
@@ -1833,28 +1785,28 @@ export default function Manager() {
                             }
                           }
                         }}
-                        className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none" 
+                        className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl font-medium focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 outline-none" 
                       />
                     </div>
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Category</label>
-                      <input type="text" defaultValue={editingCourse?.subject} id="c-category" placeholder="e.g. Data Science" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none" />
+                      <label className="block text-xs font-semibold text-slate-700 mb-3">Category</label>
+                      <input type="text" defaultValue={editingCourse?.subject} id="c-category" placeholder="e.g. Data Science" className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl font-medium focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 outline-none" />
                     </div>
                     <div>
-                      <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">
+                      <label className="block text-xs font-semibold text-slate-700 mb-3">
                         Class Type
                         {pricingOptions.length > 0 && (
-                          <span className="text-[10px] font-bold text-gray-400 block mt-1">(Disabled: Using Pricing Tiers)</span>
+                          <span className="text-xs font-normal text-slate-500 block mt-1">(Disabled: Using Pricing Tiers)</span>
                         )}
                       </label>
                       <select 
                         id="c-class-type" 
                         defaultValue={editingCourse?.class_type || 'recorded'} 
                         disabled={pricingOptions.length > 0}
-                        className={`w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-black focus:ring-[6px] ring-blue-100 outline-none bg-white transition-all ${pricingOptions.length > 0 ? 'opacity-50 cursor-not-allowed bg-gray-100' : 'hover:border-blue-500'}`}
+                        className={`w-full px-3.5 py-2.5 border border-slate-300 rounded-2xl font-semibold focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 outline-none bg-white transition-all ${pricingOptions.length > 0 ? 'opacity-50 cursor-not-allowed bg-gray-100' : 'hover:border-blue-500'}`}
                       >
                         <option value="recorded">Recorded</option>
                         <option value="live">Live</option>
@@ -1864,11 +1816,11 @@ export default function Manager() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Visibility</label>
+                      <label className="block text-xs font-semibold text-slate-700 mb-3">Visibility</label>
                       <select
                         id="c-active"
                         defaultValue={editingCourse?.active === false ? 'false' : 'true'}
-                        className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-black focus:ring-[6px] ring-blue-100 outline-none bg-white"
+                        className="w-full px-3.5 py-2.5 border border-slate-300 rounded-2xl font-semibold focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 outline-none bg-white"
                       >
                         <option value="true">Enabled — visible to users</option>
                         <option value="false">Disabled — hidden from users</option>
@@ -1878,8 +1830,8 @@ export default function Manager() {
                       </p>
                     </div>
                     <div>
-                      <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Pinned?</label>
-                      <select id="c-pinned" defaultValue={editingCourse?.isPinned ? 'true' : 'false'} className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-black focus:ring-[6px] ring-blue-100 outline-none bg-white">
+                      <label className="block text-xs font-semibold text-slate-700 mb-3">Pinned?</label>
+                      <select id="c-pinned" defaultValue={editingCourse?.isPinned ? 'true' : 'false'} className="w-full px-3.5 py-2.5 border border-slate-300 rounded-2xl font-semibold focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 outline-none bg-white">
                         <option value="false">Regular</option>
                         <option value="true">Pinned</option>
                       </select>
@@ -1887,8 +1839,8 @@ export default function Manager() {
                   </div>
 
                   <div>
-                      <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Course Marketing Tag</label>
-                      <select value={courseCategory} onChange={(e) => setCourseCategory(e.target.value as 'QUALIFIER' | 'LIVE' | 'RECORDED' | 'NONE')} className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-black focus:ring-[6px] ring-blue-100 outline-none bg-white">
+                      <label className="block text-xs font-semibold text-slate-700 mb-3">Course Marketing Tag</label>
+                      <select value={courseCategory} onChange={(e) => setCourseCategory(e.target.value as 'QUALIFIER' | 'LIVE' | 'RECORDED' | 'NONE')} className="w-full px-3.5 py-2.5 border border-slate-300 rounded-2xl font-semibold focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 outline-none bg-white">
                         <option value="NONE">None</option>
                         <option value="QUALIFIER">🎯 Qualifier</option>
                         <option value="LIVE">📺 Live</option>
@@ -1898,8 +1850,8 @@ export default function Manager() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Select Term</label>
-                      <select value={courseTerm} onChange={(e) => handleCourseTermChange(e.target.value as CourseTerm | 'NONE')} className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-black focus:ring-[6px] ring-blue-100 outline-none bg-white">
+                      <label className="block text-xs font-semibold text-slate-700 mb-3">Select Term</label>
+                      <select value={courseTerm} onChange={(e) => handleCourseTermChange(e.target.value as CourseTerm | 'NONE')} className="w-full px-3.5 py-2.5 border border-slate-300 rounded-2xl font-semibold focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 outline-none bg-white">
                         <option value="NONE">None</option>
                         {TERM_OPTIONS.map((term) => (
                           <option key={term} value={term}>{term}</option>
@@ -1909,11 +1861,11 @@ export default function Manager() {
 
                     {courseTerm === 'Foundation' && (
                       <div className="animate-in fade-in slide-in-from-top-2 duration-200">
-                        <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Foundation Term</label>
+                        <label className="block text-xs font-semibold text-slate-700 mb-3">Foundation Term</label>
                         <select 
                           value={courseFoundationTerm} 
                           onChange={(e) => setCourseFoundationTerm(e.target.value as 'Term 1' | 'Term 2' | 'BOTH')} 
-                          className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-black focus:ring-[6px] ring-blue-100 outline-none bg-white"
+                          className="w-full px-3.5 py-2.5 border border-slate-300 rounded-2xl font-semibold focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 outline-none bg-white"
                         >
                           <option value="Term 1">TERM 1 (Math 1, Eng 1, Stats 1, CT)</option>
                           <option value="Term 2">TERM 2 (Math 2, Eng 2, Stats 2, Python)</option>
@@ -1924,13 +1876,13 @@ export default function Manager() {
                   </div>
 
                   <div className="mt-4 border-t-2 border-dashed border-gray-200 pt-4">
-                    <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Choose Boxes</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-3">Choose Boxes</label>
                     {courseTerm === 'NONE' ? (
-                      <div className="p-4 bg-gray-50 border-[3px] border-dashed border-gray-200 rounded-2xl text-sm font-bold text-gray-400">
+                      <div className="p-4 bg-gray-50 border border-dashed border-gray-200 rounded-2xl text-sm font-bold text-gray-400">
                         Select a term first to assign this course to boxes.
                       </div>
                     ) : availableBoxesForSelectedTerm.length === 0 ? (
-                      <div className="p-4 bg-yellow-50 border-[3px] border-yellow-300 rounded-2xl text-sm font-bold text-yellow-700">
+                      <div className="p-4 bg-yellow-50 border border-yellow-300 rounded-2xl text-sm font-bold text-yellow-700">
                         No boxes have been added for {courseTerm}. Add boxes in Manager &gt; Boxes first.
                       </div>
                     ) : (
@@ -1938,7 +1890,7 @@ export default function Manager() {
                         {availableBoxesForSelectedTerm.map((stage) => {
                           const isChecked = selectedExamStages.includes(stage);
                           return (
-                            <label key={stage} className={`flex items-center gap-3 p-4 border-[3px] rounded-2xl cursor-pointer font-bold select-none transition-all ${isChecked ? 'bg-blue-50 border-blue-500 text-blue-700' : 'bg-white border-[#0b1120] text-[#0b1120]'}`}>
+                            <label key={stage} className={`flex items-center gap-3 p-4 border rounded-2xl cursor-pointer font-bold select-none transition-all ${isChecked ? 'bg-blue-50 border-blue-500 text-blue-700' : 'bg-white border-slate-900 text-slate-900'}`}>
                               <input 
                                 type="checkbox"
                                 checked={isChecked}
@@ -1961,28 +1913,28 @@ export default function Manager() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">Start Date</label>
-                      <input type="date" defaultValue={editingCourse?.startDate ? new Date(editingCourse.startDate).toISOString().slice(0, 10) : ''} id="c-start" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none bg-white" />
+                      <label className="block text-xs font-semibold text-slate-700 mb-3">Start Date</label>
+                      <input type="date" defaultValue={editingCourse?.startDate ? new Date(editingCourse.startDate).toISOString().slice(0, 10) : ''} id="c-start" className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl font-medium focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 outline-none bg-white" />
                     </div>
                     <div>
-                      <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">End Date</label>
-                      <input type="date" defaultValue={editingCourse?.endDate ? new Date(editingCourse.endDate).toISOString().slice(0, 10) : ''} id="c-end" className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none bg-white" />
+                      <label className="block text-xs font-semibold text-slate-700 mb-3">End Date</label>
+                      <input type="date" defaultValue={editingCourse?.endDate ? new Date(editingCourse.endDate).toISOString().slice(0, 10) : ''} id="c-end" className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl font-medium focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 outline-none bg-white" />
                     </div>
                   </div>
 
                   <div className="space-y-4">
-                    <label className="block text-sm font-black text-[#0b1120] uppercase mb-1">Course Tags (Max 2)</label>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mb-3">Choose up to 2 tags to display on the course card corner.</p>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Course Tags (Max 2)</label>
+                    <p className="text-xs font-normal text-slate-500 mb-3">Choose up to 2 tags to display on the course card corner.</p>
                     <div className="flex flex-wrap gap-2">
                       {['SALE', 'NEW', 'BESTSELLER', 'TRENDING', 'HOT', 'LIMITED'].map(tag => (
                         <button
                           key={tag}
                           type="button"
                           onClick={() => toggleTag(tag)}
-                          className={`px-4 py-2 rounded-xl font-black text-xs border-2 transition-all ${
+                          className={`px-4 py-2 rounded-xl font-semibold text-xs border-2 transition-all ${
                             courseTags.includes(tag)
-                              ? 'bg-[#0b1120] text-white border-[#0b1120] shadow-[3px_3px_0px_#3b82f6]'
-                              : 'bg-white text-gray-400 border-gray-200 hover:border-[#0b1120] hover:text-[#0b1120]'
+                              ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                              : 'bg-white text-gray-400 border-gray-200 hover:border-slate-400 hover:text-slate-900'
                           }`}
                         >
                           {tag}
@@ -1991,7 +1943,7 @@ export default function Manager() {
                       <button
                         type="button"
                         onClick={addCustomTag}
-                        className="px-4 py-2 rounded-xl font-black text-xs border-2 border-dashed border-gray-300 text-gray-400 hover:border-blue-500 hover:text-blue-500 transition-all flex items-center gap-2"
+                        className="px-4 py-2 rounded-xl font-semibold text-xs border-2 border-dashed border-gray-300 text-gray-400 hover:border-blue-500 hover:text-blue-500 transition-all flex items-center gap-2"
                       >
                         <Plus className="w-3 h-3" /> CUSTOM
                       </button>
@@ -1999,7 +1951,7 @@ export default function Manager() {
                     {courseTags.length > 0 && (
                       <div className="flex gap-2 pt-2">
                         {courseTags.map(tag => (
-                          <span key={tag} className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black border border-blue-200 flex items-center gap-2">
+                          <span key={tag} className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-semibold border border-blue-200 flex items-center gap-2">
                             {tag}
                             <X className="w-3 h-3 cursor-pointer" onClick={() => toggleTag(tag)} />
                           </span>
@@ -2009,11 +1961,11 @@ export default function Manager() {
                   </div>
 
                   {isBundle && (
-                    <div className="p-6 bg-green-50 border-[3px] border-[#10b981] rounded-2xl space-y-4 mt-6">
-                      <h4 className="text-sm font-black text-[#0b1120] uppercase flex items-center gap-2">
+                    <div className="p-6 bg-green-50 border border-[#10b981] rounded-2xl space-y-4 mt-6">
+                      <h4 className="text-xs font-semibold text-slate-700 flex items-center gap-2">
                         🎁 Bundle Discount Settings
                       </h4>
-                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-tighter">
+                      <p className="text-xs font-normal text-slate-500">
                         One discount mode can be active at a time. Whole bundle is selected by default.
                       </p>
 
@@ -2021,12 +1973,12 @@ export default function Manager() {
                         <button
                           type="button"
                           onClick={() => setBundleDiscountMode('all')}
-                          className={`p-4 rounded-2xl border-2 text-left transition-all ${bundleDiscountMode === 'all' ? 'border-[#10b981] bg-white shadow-[4px_4px_0px_#10b981]' : 'border-green-200 bg-white/70 hover:border-[#10b981]'}`}
+                          className={`p-4 rounded-2xl border-2 text-left transition-all ${bundleDiscountMode === 'all' ? 'border-[#10b981] bg-white shadow-sm' : 'border-green-200 bg-white/70 hover:border-[#10b981]'}`}
                         >
                           <div className="flex items-center justify-between">
                             <div>
-                              <div className="text-xs font-black text-[#0b1120] uppercase">Whole Bundle</div>
-                              <div className="text-[10px] font-bold text-gray-500 uppercase mt-1">Student must select all included courses</div>
+                              <div className="text-xs font-semibold text-slate-900 ">Whole Bundle</div>
+                              <div className="text-xs font-normal text-slate-500  mt-1">Student must select all included courses</div>
                             </div>
                             <div className={`w-5 h-5 rounded-full border-2 ${bundleDiscountMode === 'all' ? 'border-[#10b981] bg-[#10b981]' : 'border-gray-300 bg-white'}`} />
                           </div>
@@ -2040,12 +1992,12 @@ export default function Manager() {
                               setBundleDiscountMinCourses(3);
                             }
                           }}
-                          className={`p-4 rounded-2xl border-2 text-left transition-all ${bundleDiscountMode === 'any' ? 'border-[#10b981] bg-white shadow-[4px_4px_0px_#10b981]' : 'border-green-200 bg-white/70 hover:border-[#10b981]'}`}
+                          className={`p-4 rounded-2xl border-2 text-left transition-all ${bundleDiscountMode === 'any' ? 'border-[#10b981] bg-white shadow-sm' : 'border-green-200 bg-white/70 hover:border-[#10b981]'}`}
                         >
                           <div className="flex items-center justify-between">
                             <div>
-                              <div className="text-xs font-black text-[#0b1120] uppercase">Choose Any N</div>
-                              <div className="text-[10px] font-bold text-gray-500 uppercase mt-1">Student can unlock discount with minimum selected count</div>
+                              <div className="text-xs font-semibold text-slate-900 ">Choose Any N</div>
+                              <div className="text-xs font-normal text-slate-500  mt-1">Student can unlock discount with minimum selected count</div>
                             </div>
                             <div className={`w-5 h-5 rounded-full border-2 ${bundleDiscountMode === 'any' ? 'border-[#10b981] bg-[#10b981]' : 'border-gray-300 bg-white'}`} />
                           </div>
@@ -2053,7 +2005,7 @@ export default function Manager() {
                       </div>
 
                       <div className="space-y-2">
-                        <label className={`text-xs font-black uppercase tracking-widest pl-1 ${bundleDiscountMode === 'any' ? 'text-[#10b981]' : 'text-gray-400'}`}>Choose Any Count</label>
+                        <label className={`text-xs font-semiboldst pl-1 ${bundleDiscountMode === 'any' ? 'text-[#10b981]' : 'text-gray-400'}`}>Choose Any Count</label>
                         <div className="grid grid-cols-4 gap-2">
                           {[3, 2, 1, 5].map((count) => {
                             const isSelected = bundleDiscountMode === 'any' && bundleDiscountMinCourses === count;
@@ -2064,12 +2016,12 @@ export default function Manager() {
                                 type="button"
                                 disabled={isDisabled}
                                 onClick={() => setBundleDiscountMinCourses(count as 1 | 2 | 3 | 5)}
-                                className={`py-3 rounded-xl border-2 font-black text-xs uppercase transition-all ${
+                                className={`py-3 rounded-xl border-2 font-semibold text-xs  transition-all ${
                                   isSelected
-                                    ? 'bg-[#10b981] text-white border-[#10b981] shadow-[3px_3px_0px_#0b1120]'
+                                    ? 'bg-[#10b981] text-white border-[#10b981] shadow-sm'
                                     : isDisabled
                                     ? 'bg-gray-100 text-gray-300 border-gray-200 cursor-not-allowed'
-                                    : 'bg-white text-[#0b1120] border-green-200 hover:border-[#10b981]'
+                                    : 'bg-white text-slate-900 border-green-200 hover:border-[#10b981]'
                                 }`}
                               >
                                 Any {count}
@@ -2081,36 +2033,36 @@ export default function Manager() {
 
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <label className="text-xs font-black text-[#10b981] uppercase tracking-widest pl-1">
+                          <label className="text-xs font-semibold text-[#10b981]st pl-1">
                             {bundleDiscountMode === 'any' ? `Discount for Any ${bundleDiscountMinCourses}+ (₹ Off)` : 'Bundle Discount (₹ Off)'}
                           </label>
                           <div className="relative">
-                            <span className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 font-black text-xl">₹</span>
+                            <span className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 font-semibold text-xl">₹</span>
                             <input
                               type="text" inputMode="decimal"
                               value={bundleDiscountPrice}
                               onChange={e => setBundleDiscountPrice(e.target.value ? parseInt(e.target.value) : '')}
                               placeholder="e.g. 200"
-                              className="w-full pl-12 pr-6 py-4 border-2 border-green-200 rounded-2xl font-black text-xl outline-none focus:border-[#10b981] transition-all bg-white"
+                              className="w-full pl-12 pr-6 py-4 border-2 border-green-200 rounded-2xl font-semibold text-xl outline-none focus:border-[#10b981] transition-all bg-white"
                             />
                           </div>
                         </div>
                         <div className="space-y-2">
-                          <label className="text-xs font-black text-[#10b981] uppercase tracking-widest pl-1">Discount Code</label>
+                          <label className="text-xs font-semibold text-[#10b981]st pl-1">Discount Code</label>
                           <input
                             type="text"
                             value={bundleDiscountCode}
                             onChange={e => setBundleDiscountCode(e.target.value.toUpperCase())}
                             placeholder="e.g. TERM1SAVE"
-                            className="w-full px-6 py-4 border-2 border-green-200 rounded-2xl font-black text-lg outline-none focus:border-[#10b981] transition-all bg-white uppercase"
+                            className="w-full px-3.5 py-2.5 border-2 border-green-200 rounded-2xl font-semibold text-lg outline-none focus:border-[#10b981] transition-all bg-white "
                           />
                         </div>
                       </div>
                       {bundleDiscountPrice && bundleCourses.length > 0 && (
                         <div className="p-3 bg-white border-2 border-green-200 rounded-xl text-xs font-bold text-gray-600">
                           {bundleDiscountMode === 'all'
-                            ? <>Whole bundle mode: Student gets <span className="text-[#10b981] font-black">₹{bundleDiscountPrice} OFF</span> when all courses are selected.</>
-                            : <>Any {bundleDiscountMinCourses}+ mode: Student gets <span className="text-[#10b981] font-black">₹{bundleDiscountPrice} OFF</span> when selecting {bundleDiscountMinCourses} or more courses.</>
+                            ? <>Whole bundle mode: Student gets <span className="text-[#10b981] font-semibold">₹{bundleDiscountPrice} OFF</span> when all courses are selected.</>
+                            : <>Any {bundleDiscountMinCourses}+ mode: Student gets <span className="text-[#10b981] font-semibold">₹{bundleDiscountPrice} OFF</span> when selecting {bundleDiscountMinCourses} or more courses.</>
                           }
                         </div>
                       )}
@@ -2118,53 +2070,53 @@ export default function Manager() {
                   )}
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-5 bg-white border border-slate-200 rounded-2xl p-5 sm:p-7 shadow-sm self-start">
                   <div>
-                    <label className="block text-sm font-black text-[#0b1120] uppercase mb-3">URL ID (Unique Text)</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-3">URL ID (Unique Text)</label>
                     <input
                       type="text"
                       defaultValue={editingCourse?.id}
                       placeholder="python-basics"
                       id="c-id"
-                      className="w-full px-6 py-4 border-[3px] border-[#0b1120] rounded-2xl font-bold focus:ring-[6px] ring-blue-100 outline-none bg-blue-50"
+                      className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl font-medium focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 outline-none bg-blue-50"
                     />
                   </div>
 
-                  <div className="p-6 bg-blue-50/50 border-[3px] border-[#0b1120] rounded-2xl space-y-4">
+                  <div className="p-6 bg-blue-50/50 border border-slate-300 rounded-2xl space-y-4">
                     <div className="flex items-center justify-between">
                       <div className="flex flex-col">
-                        <label className="block text-sm font-black text-[#0b1120] uppercase">Enable Bundle System</label>
-                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-tighter">Toggle to add multiple sub-courses</span>
+                        <label className="block text-xs font-semibold text-slate-700">Enable Bundle System</label>
+                        <span className="text-xs font-normal text-slate-500">Toggle to add multiple sub-courses</span>
                       </div>
-                      <button type="button" onClick={() => setIsBundle(!isBundle)} className={`w-14 h-8 rounded-full border-2 border-[#0b1120] flex items-center p-1 transition-colors ${isBundle ? 'bg-[#10b981]' : 'bg-gray-300'}`}>
-                        <div className={`w-5 h-5 bg-white rounded-full border-2 border-[#0b1120] transition-transform ${isBundle ? 'translate-x-6' : ''}`} />
+                      <button type="button" onClick={() => setIsBundle(!isBundle)} className={`w-14 h-8 rounded-full border border-slate-300 flex items-center p-1 transition-colors ${isBundle ? 'bg-[#10b981]' : 'bg-gray-300'}`}>
+                        <div className={`w-5 h-5 bg-white rounded-full border border-slate-300 transition-transform ${isBundle ? 'translate-x-6' : ''}`} />
                       </button>
                     </div>
 
                     {isBundle && (
                       <div className="flex items-center justify-between pt-2">
                         <div className="flex flex-col">
-                          <label className="block text-sm font-black text-[#0b1120] uppercase">Fixed Bundle?</label>
-                          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-tighter">Students cannot unselect courses</span>
+                          <label className="block text-xs font-semibold text-slate-700">Fixed Bundle?</label>
+                          <span className="text-xs font-normal text-slate-500">Students cannot unselect courses</span>
                         </div>
-                        <button type="button" onClick={() => setIsFixedBundle(!isFixedBundle)} className={`w-14 h-8 rounded-full border-2 border-[#0b1120] flex items-center p-1 transition-colors ${isFixedBundle ? 'bg-[#3b82f6]' : 'bg-gray-300'}`}>
-                          <div className={`w-5 h-5 bg-white rounded-full border-2 border-[#0b1120] transition-transform ${isFixedBundle ? 'translate-x-6' : ''}`} />
+                        <button type="button" onClick={() => setIsFixedBundle(!isFixedBundle)} className={`w-14 h-8 rounded-full border border-slate-300 flex items-center p-1 transition-colors ${isFixedBundle ? 'bg-[#3b82f6]' : 'bg-gray-300'}`}>
+                          <div className={`w-5 h-5 bg-white rounded-full border border-slate-300 transition-transform ${isFixedBundle ? 'translate-x-6' : ''}`} />
                         </button>
                       </div>
                     )}
 
                     {isBundle && isFixedBundle && (
-                      <div className="pt-6 border-t-2 border-[#0b1120]/10 space-y-4">
+                      <div className="pt-6 border-t-2 border-slate-200 space-y-4">
                         <div className="flex justify-between items-center">
                           <div className="flex flex-col">
-                            <label className="block text-sm font-black text-blue-600 uppercase">Multi-Pricing Tiers</label>
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Add 2 or 3 pricing options for this fixed bundle</span>
+                            <label className="block text-sm font-semibold text-blue-600 ">Multi-Pricing Tiers</label>
+                            <span className="text-xs font-normal text-slate-500">Add 2 or 3 pricing options for this fixed bundle</span>
                           </div>
                           {pricingOptions.length < 3 && (
                             <button 
                               type="button" 
                               onClick={addPricingOption}
-                              className="text-xs font-black bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 shadow-[4px_4px_0px_#0b1120]"
+                              className="text-xs font-semibold bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 shadow-sm"
                             >
                               + ADD TIER
                             </button>
@@ -2174,16 +2126,16 @@ export default function Manager() {
                         {pricingOptions.length === 1 && (
                           <div className="p-3 bg-amber-50 border-2 border-amber-200 rounded-xl flex items-center gap-2">
                             <AlertCircle className="w-4 h-4 text-amber-600" />
-                            <p className="text-[10px] font-black text-amber-800 uppercase">Multi-pricing requires at least 2 options. Add another or remove this one to use default pricing.</p>
+                            <p className="text-[10px] font-semibold text-amber-800 ">Multi-pricing requires at least 2 options. Add another or remove this one to use default pricing.</p>
                           </div>
                         )}
 
                         <div className="space-y-4">
                           {pricingOptions.map((opt, idx) => (
-                            <div key={idx} className="p-5 bg-white border-[3px] border-[#0b1120] rounded-2xl shadow-[4px_4px_0px_#0b1120] space-y-4">
+                            <div key={idx} className="p-5 bg-white border border-slate-300 rounded-2xl shadow-sm space-y-4">
                               <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1">
-                                  <label className="text-[10px] font-black text-gray-400 uppercase">Tier Name</label>
+                                  <label className="text-[10px] font-semibold text-gray-400 ">Tier Name</label>
                                   <input 
                                     value={opt.name} 
                                     onChange={e => updatePricingOption(idx, 'name', e.target.value)}
@@ -2192,7 +2144,7 @@ export default function Manager() {
                                   />
                                 </div>
                                 <div className="space-y-1">
-                                  <label className="text-[10px] font-black text-gray-400 uppercase">Price (₹)</label>
+                                  <label className="text-[10px] font-semibold text-gray-400 ">Price (₹)</label>
                                   <input 
                                     type="text" inputMode="decimal"
                                     value={opt.price} 
@@ -2203,7 +2155,7 @@ export default function Manager() {
                               </div>
                               <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                  <label className="text-[10px] font-black text-gray-400 uppercase block mb-1">Class Type</label>
+                                  <label className="text-[10px] font-semibold text-gray-400  block mb-1">Class Type</label>
                                   <select 
                                     value={opt.type}
                                     onChange={e => updatePricingOption(idx, 'type', e.target.value)}
@@ -2214,7 +2166,7 @@ export default function Manager() {
                                   </select>
                                 </div>
                                 <div>
-                                  <label className="text-[10px] font-black text-gray-400 uppercase block mb-1">Tag (Optional)</label>
+                                  <label className="text-[10px] font-semibold text-gray-400  block mb-1">Tag (Optional)</label>
                                   <select 
                                     value={opt.tag || ''}
                                     onChange={e => updatePricingOption(idx, 'tag', e.target.value || undefined)}
@@ -2229,7 +2181,7 @@ export default function Manager() {
                                 </div>
                               </div>
                               <div className="space-y-1">
-                                <label className="text-[10px] font-black text-gray-400 uppercase">Description (Optional)</label>
+                                <label className="text-[10px] font-semibold text-gray-400 ">Description (Optional)</label>
                                 <textarea 
                                   value={opt.description || ''}
                                   onChange={e => updatePricingOption(idx, 'description', e.target.value)}
@@ -2238,7 +2190,7 @@ export default function Manager() {
                                 />
                               </div>
                               <div className="space-y-1">
-                                <label className="text-[10px] font-black text-blue-600 uppercase">Custom Banner Context (Optional)</label>
+                                <label className="text-[10px] font-semibold text-blue-600 ">Custom Banner Context (Optional)</label>
                                 <input 
                                   type="text"
                                   value={opt.banner_text || ''}
@@ -2267,22 +2219,22 @@ export default function Manager() {
                       </div>
                     )}
 
-                    <div className="pt-4 border-t-2 border-[#0b1120]/10 space-y-4">
+                    <div className="pt-4 border-t-2 border-slate-200 space-y-4">
                       <div className="flex justify-between items-center mb-2">
-                        <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+                        <span className="text-xs font-bold text-gray-500st">
                           {isBundle ? `Included Courses (${bundleCourses.length}/10)` : 'Main Enrollment ID'}
                         </span>
                         {isBundle && bundleCourses.length < 10 && (
-                          <button type="button" onClick={addBundleCourse} className="text-xs font-black bg-[#0b1120] text-white px-3 py-1 rounded-lg hover:bg-gray-800">
+                          <button type="button" onClick={addBundleCourse} className="text-xs font-semibold bg-slate-900 text-white px-3 py-1 rounded-lg hover:bg-gray-800">
                             + ADD COURSE
                           </button>
                         )}
                       </div>
                       {bundleCourses.map((bc, idx) => (
-                        <div key={idx} className="p-8 bg-white border-[3px] border-[#0b1120] rounded-[2.5rem] shadow-[8px_8px_0px_#0b1120] space-y-6 mb-6">
+                        <div key={idx} className="p-8 bg-white border border-slate-300 rounded-[2.5rem] shadow-sm space-y-6 mb-6">
                           <div className="space-y-4">
                             <div className="flex items-center justify-between">
-                              <label className="text-xs font-black text-blue-600 uppercase tracking-widest pl-1">Course ID</label>
+                              <label className="text-xs font-semibold text-blue-600st pl-1">Course ID</label>
                               {bc.courseId3 === undefined && (
                                 <button 
                                   type="button" 
@@ -2290,7 +2242,7 @@ export default function Manager() {
                                     if (bc.courseId2 === undefined) updateBundleCourse(idx, 'courseId2', '');
                                     else if (bc.courseId3 === undefined) updateBundleCourse(idx, 'courseId3', '');
                                   }}
-                                  className="text-[10px] font-black bg-blue-50 text-blue-600 px-3 py-1 rounded-lg border border-blue-100 hover:bg-blue-600 hover:text-white transition-all flex items-center gap-1.5 shadow-[2px_2px_0px_#3b82f6] hover:shadow-none translate-y-[-2px] hover:translate-y-0"
+                                  className="text-[10px] font-semibold bg-blue-50 text-blue-600 px-3 py-1 rounded-lg border border-blue-100 hover:bg-blue-600 hover:text-white transition-all flex items-center gap-1.5 shadow-sm hover:shadow-none translate-y-[-2px] hover:translate-y-0"
                                 >
                                   <Plus className="w-3 h-3" /> ADD ID
                                 </button>
@@ -2302,7 +2254,7 @@ export default function Manager() {
                                 value={bc.courseId} 
                                 onChange={e => updateBundleCourse(idx, 'courseId', e.target.value)} 
                                 placeholder="Primary Course ID" 
-                                className="w-full px-6 py-4 bg-blue-50/50 border-2 border-blue-200 rounded-2xl font-bold text-base outline-none focus:border-blue-400 focus:bg-white transition-all uppercase" 
+                                className="w-full px-6 py-4 bg-blue-50/50 border-2 border-blue-200 rounded-xl font-medium text-base outline-none focus:border-blue-400 focus:bg-white transition-all " 
                               />
 
                               {bc.courseId2 !== undefined && (
@@ -2311,7 +2263,7 @@ export default function Manager() {
                                     value={bc.courseId2} 
                                     onChange={e => updateBundleCourse(idx, 'courseId2', e.target.value)} 
                                     placeholder="Extra ID 2 (Optional)" 
-                                    className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-200 rounded-2xl font-bold text-base outline-none focus:border-blue-400 focus:bg-white transition-all uppercase" 
+                                    className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-200 rounded-xl font-medium text-base outline-none focus:border-blue-400 focus:bg-white transition-all " 
                                   />
                                   <button 
                                     onClick={() => {
@@ -2333,7 +2285,7 @@ export default function Manager() {
                                     value={bc.courseId3} 
                                     onChange={e => updateBundleCourse(idx, 'courseId3', e.target.value)} 
                                     placeholder="Extra ID 3 (Optional)" 
-                                    className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-200 rounded-2xl font-bold text-base outline-none focus:border-blue-400 focus:bg-white transition-all uppercase" 
+                                    className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-200 rounded-xl font-medium text-base outline-none focus:border-blue-400 focus:bg-white transition-all " 
                                   />
                                   <button 
                                     onClick={() => {
@@ -2352,20 +2304,20 @@ export default function Manager() {
                           </div>
                           
                           <div className="space-y-2">
-                            <label className="text-xs font-black text-gray-400 uppercase tracking-widest pl-1">Course Title</label>
+                            <label className="text-xs font-semibold text-gray-400st pl-1">Course Title</label>
                             <input 
                               value={bc.courseName} 
                               onChange={e => updateBundleCourse(idx, 'courseName', e.target.value)} 
                               placeholder="Enter the full display name..." 
-                              className="w-full px-6 py-4 border-2 border-gray-200 rounded-2xl font-bold text-base outline-none focus:border-[#0b1120] transition-all" 
+                              className="w-full px-3.5 py-2.5 border-2 border-gray-200 rounded-xl font-medium text-base outline-none focus:border-slate-400 transition-all" 
                             />
                           </div>
 
                           <div className="space-y-6 pt-2">
                             <div className="space-y-2">
-                              <label className="text-xs font-black text-[#10b981] uppercase tracking-widest pl-1">Price (₹)</label>
+                              <label className="text-xs font-semibold text-[#10b981]st pl-1">Price (₹)</label>
                               <div className="relative">
-                                <span className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 font-black text-xl">₹</span>
+                                <span className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 font-semibold text-xl">₹</span>
                                 <input 
                                   type="text" inputMode="decimal" 
                                   value={bc.price} 
@@ -2382,7 +2334,7 @@ export default function Manager() {
                                        }
                                      }
                                    }} 
-                                  className="w-full pl-12 pr-6 py-4 border-2 border-gray-200 rounded-2xl font-black text-lg outline-none focus:border-[#10b981] transition-all" 
+                                  className="w-full pl-12 pr-6 py-4 border-2 border-gray-200 rounded-2xl font-semibold text-lg outline-none focus:border-[#10b981] transition-all" 
                                 />
                               </div>
                             </div>
@@ -2391,7 +2343,7 @@ export default function Manager() {
                               <button 
                                 type="button" 
                                 onClick={() => removeBundleCourse(idx)} 
-                                className="w-full py-4 text-red-500 bg-red-50 border-2 border-red-100 rounded-2xl font-black hover:bg-red-500 hover:text-white hover:border-red-500 transition-all flex items-center justify-center gap-3"
+                                className="w-full py-4 text-red-500 bg-red-50 border-2 border-red-100 rounded-2xl font-semibold hover:bg-red-500 hover:text-white hover:border-red-500 transition-all flex items-center justify-center gap-3"
                               >
                                 <Trash2 className="w-5 h-5" /> Remove Course
                               </button>
@@ -2725,111 +2677,190 @@ export default function Manager() {
                   <span className="text-sm font-medium">Loading user data…</span>
                 </div>
               ) : (
-                <div className="space-y-6">
-                  {/* Stats */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="p-5 bg-white rounded-2xl border-2 border-blue-200 shadow-sm border-l-4 border-l-blue-500">
-                      <div className="text-[11px] font-bold text-blue-600 uppercase tracking-wide mb-1">Total Orders</div>
-                      <div className="text-3xl font-bold text-slate-900">{selectedUserOrders.length}</div>
-                      <div className="mt-2 text-sm font-semibold text-slate-700">
-                        Total Spent: <span className="text-blue-700">₹{selectedUserTotalSpent}</span>
-                      </div>
-                    </div>
-
-                    <div className="p-5 bg-white rounded-2xl border-2 border-violet-200 shadow-sm border-l-4 border-l-violet-500">
-                      <div className="text-[11px] font-bold text-violet-600 uppercase tracking-wide mb-1">Referrals Made</div>
-                      <div className="text-3xl font-bold text-slate-900">{selectedUserReferrals.length}</div>
-                      {selectedUserWallet && (
-                        <div className="mt-2 text-sm font-semibold text-slate-700 font-mono">
-                          Code: <span className="text-violet-700">{selectedUserWallet.referral_code}</span>
+                <div className="grid grid-cols-1 lg:grid-cols-[340px_minmax(0,1fr)] gap-6 items-start">
+                  {/* LEFT: profile + stats */}
+                  <aside className="space-y-5 lg:sticky lg:top-0">
+                    <section className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-full bg-slate-900 text-white flex items-center justify-center text-lg font-semibold shrink-0">
+                          {(selectedUser?.name || selectedUser?.email || '?').charAt(0).toUpperCase()}
                         </div>
-                      )}
-                    </div>
-
-                    <div className="p-5 bg-white rounded-2xl border-2 border-amber-200 shadow-sm border-l-4 border-l-amber-500">
-                      <div className="text-[11px] font-bold text-amber-700 uppercase tracking-wide mb-1">Coin Wallet</div>
-                      <div className="text-3xl font-bold text-slate-900 flex items-center gap-1.5">
-                        {selectedUserWallet?.wallet_balance || 0} <Coins className="w-5 h-5 text-amber-500" />
+                        <div className="min-w-0">
+                          <div className="text-base font-semibold text-slate-900 truncate">{selectedUser?.name || 'Anonymous user'}</div>
+                          <div className="text-xs text-slate-500">
+                            {selectedUser?.created_at ? `Joined ${new Date(selectedUser.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}` : 'Join date unknown'}
+                          </div>
+                        </div>
                       </div>
-                      <div className="mt-2 text-sm font-semibold text-slate-700">
-                        Total Earned: <span className="text-amber-700">{selectedUserReferrals.reduce((sum, r) => sum + (r.referrer_reward || 0), 0)}</span>
+
+                      <dl className="mt-5 space-y-3 text-sm">
+                        <div>
+                          <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Email</dt>
+                          <dd className="mt-0.5 flex items-center justify-between gap-2">
+                            <span className="text-slate-800 break-all">{selectedUser?.email || '—'}</span>
+                            {selectedUser?.email && (
+                              <button type="button" onClick={() => navigator.clipboard?.writeText(selectedUser.email)} title="Copy email" className="text-slate-400 hover:text-slate-700 shrink-0 cursor-pointer">
+                                <Copy className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Phone</dt>
+                          <dd className="mt-0.5 flex items-center justify-between gap-2">
+                            <span className="text-slate-800 font-mono text-[13px]">{selectedUser?.phone || '—'}</span>
+                            {selectedUser?.phone && (
+                              <button type="button" onClick={() => navigator.clipboard?.writeText(selectedUser.phone)} title="Copy phone" className="text-slate-400 hover:text-slate-700 shrink-0 cursor-pointer">
+                                <Copy className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Roles</dt>
+                          <dd className="mt-1">
+                            {selectedUser?._roles ? (
+                              <div className="space-y-1.5">
+                                <RoleBadges roles={selectedUser._roles} max={12} />
+                                {selectedUser._roles.employee && (
+                                  <div className="text-xs text-slate-500">
+                                    Employee ID {selectedUser._roles.employee.employee_id} · {selectedUser._roles.employee.department} · {selectedUser._roles.employee.status}
+                                  </div>
+                                )}
+                                {selectedUser._roles.applications.map((a: any, i: number) => (
+                                  <div key={i} className="text-xs text-slate-500">Application: {a.role_title} — {a.status}</div>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-xs text-slate-400">Open from the Users tab to see roles.</span>
+                            )}
+                          </dd>
+                        </div>
+                      </dl>
+
+                      <div className="mt-5 grid grid-cols-2 gap-2">
+                        {waNumber(selectedUser?.phone) ? (
+                          <a href={`https://wa.me/${waNumber(selectedUser?.phone)}`} target="_blank" rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors">
+                            WhatsApp
+                          </a>
+                        ) : (
+                          <span className="inline-flex items-center justify-center px-3 py-2.5 rounded-xl bg-slate-100 text-slate-400 text-sm font-semibold">No number</span>
+                        )}
+                        {selectedUser?.email ? (
+                          <a href={`mailto:${selectedUser.email}`}
+                            className="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition-colors">
+                            Email
+                          </a>
+                        ) : (
+                          <span className="inline-flex items-center justify-center px-3 py-2.5 rounded-xl bg-slate-100 text-slate-400 text-sm font-semibold">No email</span>
+                        )}
                       </div>
-                    </div>
-                  </div>
+                    </section>
 
-                  {/* Order history */}
-                  <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div className="px-5 py-4 border-b border-slate-200 bg-slate-50">
-                      <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                        <ShoppingBag className="w-4 h-4 text-slate-600" /> Order History
-                      </h4>
-                    </div>
+                    <section className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                      <div className="grid grid-cols-2 divide-x divide-y divide-slate-100">
+                        <div className="p-4">
+                          <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Orders</div>
+                          <div className="mt-1 text-2xl font-bold text-slate-900 tabular-nums">{selectedUserOrders.length}</div>
+                          <div className="text-xs text-slate-500">{paidSelectedUserOrders.length} paid</div>
+                        </div>
+                        <div className="p-4">
+                          <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Total spent</div>
+                          <div className="mt-1 text-2xl font-bold text-slate-900 tabular-nums">₹{selectedUserTotalSpent.toLocaleString('en-IN')}</div>
+                          <div className="text-xs text-slate-500">Paid orders</div>
+                        </div>
+                        <div className="p-4">
+                          <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Referrals</div>
+                          <div className="mt-1 text-2xl font-bold text-slate-900 tabular-nums">{selectedUserReferrals.length}</div>
+                          <div className="text-xs text-slate-500">
+                            {selectedUserWallet?.referral_code ? (
+                              <>Code <span className="font-mono font-semibold text-violet-700">{selectedUserWallet.referral_code}</span></>
+                            ) : 'No code'}
+                          </div>
+                        </div>
+                        <div className="p-4">
+                          <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Coin wallet</div>
+                          <div className="mt-1 text-2xl font-bold text-slate-900 tabular-nums flex items-center gap-1.5">
+                            {selectedUserWallet?.wallet_balance || 0} <Coins className="w-4 h-4 text-amber-500" />
+                          </div>
+                          <div className="text-xs text-slate-500">
+                            Earned {selectedUserReferrals.reduce((sum, r) => sum + (r.referrer_reward || 0), 0)}
+                          </div>
+                        </div>
+                      </div>
+                    </section>
+                  </aside>
 
-                    {selectedUserOrders.length === 0 ? (
-                      <p className="text-sm text-slate-500 px-5 py-8">No orders found.</p>
-                    ) : (
-                      <div className="divide-y divide-slate-200">
-                        {selectedUserOrders.map((order, idx) => (
-                          <div
-                            key={order.order_id}
-                            className={`px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 ${idx % 2 === 1 ? 'bg-slate-50/80' : 'bg-white'}`}
-                          >
-                            <div className="sm:w-28 shrink-0 text-xs font-semibold text-slate-600 whitespace-nowrap">
-                              {order.created_at ? new Date(order.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
-                            </div>
-                            <div className="flex-1 min-w-0 flex flex-wrap gap-1.5">
-                              {Array.isArray(order.course_ids) && order.course_ids.length > 0 ? order.course_ids.map((cid: string) => (
-                                <span key={cid} className="px-2.5 py-1 bg-white text-[11px] font-semibold text-slate-800 rounded-lg border border-slate-300 shadow-sm">
-                                  {resolveCourseTitle(cid)}
+                  {/* RIGHT: activity */}
+                  <div className="space-y-5 min-w-0">
+                    <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                      <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                        <h4 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                          <ShoppingBag className="w-4 h-4 text-slate-500" /> Order history
+                        </h4>
+                        <span className="text-xs text-slate-500">{selectedUserOrders.length} total</span>
+                      </div>
+
+                      {selectedUserOrders.length === 0 ? (
+                        <p className="text-sm text-slate-500 px-5 py-10 text-center">No orders found.</p>
+                      ) : (
+                        <ul className="divide-y divide-slate-100">
+                          {selectedUserOrders.map((order) => (
+                            <li key={order.order_id} className="px-5 py-4 flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-6">
+                              <div className="sm:w-32 shrink-0">
+                                <div className="text-sm font-medium text-slate-800">
+                                  {order.created_at ? new Date(order.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                                </div>
+                                <div className="text-[11px] font-mono text-slate-400 truncate" title={order.order_id}>{order.order_id}</div>
+                              </div>
+                              <div className="flex-1 min-w-0 flex flex-wrap gap-1.5">
+                                {Array.isArray(order.course_ids) && order.course_ids.length > 0 ? order.course_ids.map((cid: string) => (
+                                  <span key={cid} className="px-2.5 py-1 bg-slate-50 text-xs font-medium text-slate-700 rounded-md border border-slate-200">
+                                    {resolveCourseTitle(cid)}
+                                  </span>
+                                )) : <span className="text-xs text-slate-400">—</span>}
+                              </div>
+                              <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 sm:w-24 shrink-0">
+                                <div className="text-sm font-semibold text-slate-900 tabular-nums">₹{order.total_amount}</div>
+                                <span className={`inline-block px-2 py-0.5 rounded-md text-[11px] font-semibold uppercase border ${
+                                  order.status === 'PAID'
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                    : 'bg-amber-50 text-amber-700 border-amber-200'
+                                }`}>
+                                  {order.status}
                                 </span>
-                              )) : <span className="text-xs font-medium text-slate-500">—</span>}
-                            </div>
-                            <div className="sm:w-24 shrink-0 text-sm font-bold text-slate-900 sm:text-right">
-                              ₹{order.total_amount}
-                            </div>
-                            <div className="sm:w-24 shrink-0 sm:text-right">
-                              <span className={`inline-block px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase border ${
-                                order.status === 'PAID'
-                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                                  : 'bg-red-50 text-red-700 border-red-200'
-                              }`}>
-                                {order.status}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </section>
 
-                  {/* Referrals */}
-                  <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div className="px-5 py-4 border-b border-slate-200 bg-slate-50">
-                      <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                        <Gift className="w-4 h-4 text-violet-600" /> Referral Activity
-                      </h4>
-                    </div>
-
-                    {selectedUserReferrals.length === 0 ? (
-                      <p className="text-sm text-slate-500 px-5 py-8">No referrals yet.</p>
-                    ) : (
-                      <div className="divide-y divide-slate-200">
-                        {selectedUserReferrals.map((ref, idx) => (
-                          <div
-                            key={ref.id}
-                            className={`px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 ${idx % 2 === 1 ? 'bg-slate-50/80' : 'bg-white'}`}
-                          >
-                            <div className="flex-1 min-w-0 text-sm font-semibold text-slate-800 break-all">{ref.buyer_email}</div>
-                            <div className="sm:w-28 shrink-0 text-xs font-semibold text-slate-600 whitespace-nowrap">
-                              {ref.created_at ? new Date(ref.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
-                            </div>
-                            <div className="sm:w-24 shrink-0 text-sm font-bold text-amber-700 sm:text-right">
-                              +{ref.referrer_reward}
-                            </div>
-                          </div>
-                        ))}
+                    <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                      <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                        <h4 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                          <Gift className="w-4 h-4 text-violet-500" /> Referral activity
+                        </h4>
+                        <span className="text-xs text-slate-500">{selectedUserReferrals.length} total</span>
                       </div>
-                    )}
+
+                      {selectedUserReferrals.length === 0 ? (
+                        <p className="text-sm text-slate-500 px-5 py-10 text-center">No referrals yet.</p>
+                      ) : (
+                        <ul className="divide-y divide-slate-100">
+                          {selectedUserReferrals.map((ref) => (
+                            <li key={ref.id} className="px-5 py-3.5 flex items-center gap-4">
+                              <div className="flex-1 min-w-0 text-sm font-medium text-slate-800 break-all">{ref.buyer_email}</div>
+                              <div className="text-xs text-slate-500 whitespace-nowrap">
+                                {ref.created_at ? new Date(ref.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                              </div>
+                              <div className="w-16 text-right text-sm font-semibold text-amber-700 tabular-nums">+{ref.referrer_reward}</div>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </section>
                   </div>
                 </div>
               )}

@@ -28,6 +28,12 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../../lib/supabase';
+import ManagerFullPageSheet from './ManagerFullPageSheet';
+
+const splitSubjects = (v?: string) => (v || '').split(',').map(x => x.trim()).filter(Boolean);
+const phoneDigits = (v?: string) => String(v || '').replace(/\D/g, '').slice(-10);
+const waLink = (phone?: string, name?: string) =>
+  `https://wa.me/91${phoneDigits(phone)}?text=${encodeURIComponent(`Hi ${name || ''}, this is GenZ IITian regarding your 1:1 session.`)}`;
 
 const getAuthHeaders = async (): Promise<Record<string, string>> => {
   const { data: { session } } = await supabase.auth.getSession();
@@ -536,7 +542,7 @@ export default function OneOnOneBookingsManager() {
               <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-black uppercase tracking-wider">
                 <tr>
                   <th className="py-3.5 px-4">Student</th>
-                  <th className="py-3.5 px-4">WhatsApp Contact</th>
+                  <th className="py-3.5 px-4">Contact</th>
                   <th className="py-3.5 px-4">Subject(s) & Level</th>
                   <th className="py-3.5 px-4">Date & 15-Min Slot</th>
                   <th className="py-3.5 px-4">Status</th>
@@ -555,38 +561,55 @@ export default function OneOnOneBookingsManager() {
                       {/* Student Info */}
                       <td className="py-4 px-4 font-bold">
                         <div className="text-sm font-black text-slate-900">{booking.name}</div>
-                        <div className="text-xs text-slate-500 font-medium flex items-center gap-1 mt-0.5">
-                          <Mail className="w-3 h-3 text-slate-400 shrink-0" />
-                          <span className="truncate max-w-[200px]">{booking.email}</span>
-                        </div>
-                        <div className="text-[10px] text-slate-400 mt-1">
-                          Booked on {new Date(booking.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                        <div className="text-[11px] text-slate-400 mt-1 font-medium">
+                          Booked {new Date(booking.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                         </div>
                       </td>
 
-                      {/* Phone / WhatsApp */}
-                      <td className="py-4 px-4 font-bold">
-                        <div className="flex items-center gap-2">
-                          <span>+91 {booking.phone}</span>
-                          {booking.phone && (
+                      {/* Contact buttons (details live in the View page) */}
+                      <td className="py-4 px-4">
+                        <div className="flex items-center gap-1.5">
+                          {booking.phone ? (
                             <a
-                              href={`https://wa.me/91${booking.phone.replace(/\D/g, '')}`}
+                              href={waLink(booking.phone, booking.name)}
                               target="_blank"
                               rel="noreferrer"
                               title="Chat on WhatsApp"
-                              className="p-1 rounded bg-green-100 text-green-700 hover:bg-green-200 transition-colors cursor-pointer"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 font-bold text-[11px] transition-colors"
                             >
-                              <MessageCircle className="w-3.5 h-3.5" />
+                              <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+                            </a>
+                          ) : (
+                            <span className="px-2.5 py-1.5 rounded-lg bg-slate-50 text-slate-300 border border-slate-100 text-[11px] font-bold">No phone</span>
+                          )}
+                          {booking.email && (
+                            <a
+                              href={`mailto:${booking.email}?subject=${encodeURIComponent('Your GenZ IITian 1:1 session')}`}
+                              title="Send email"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 font-bold text-[11px] transition-colors"
+                            >
+                              <Mail className="w-3.5 h-3.5" /> Mail
                             </a>
                           )}
                         </div>
                       </td>
 
-                      {/* Subjects & Level - Clean, without confusing merged notes */}
+                      {/* Subjects & Level — first subject + count */}
                       <td className="py-4 px-4 max-w-xs">
-                        <div className="font-extrabold text-slate-800 line-clamp-2">{booking.subjects}</div>
+                        {(() => {
+                          const subs = splitSubjects(booking.subjects);
+                          return (
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="font-extrabold text-slate-800">{subs[0] || 'General'}</span>
+                              {subs.length > 1 && (
+                                <span className="px-1.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[10px] font-black text-slate-600" title={subs.join(', ')}>
+                                  +{subs.length - 1} more
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
                         <div className="text-[11px] text-slate-500 font-medium mt-0.5">{booking.level}</div>
-                        {/* Indicators that notes exist to view in modal */}
                         <div className="flex items-center gap-1.5 mt-1">
                           {studentNote && (
                             <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded">
@@ -640,171 +663,115 @@ export default function OneOnOneBookingsManager() {
         )}
       </div>
 
-      {/* FULL BOOKING INFO MODAL */}
-      <AnimatePresence>
-        {viewBooking && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.96, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.96, y: 10 }}
-              className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-2xl w-full my-auto overflow-hidden flex flex-col max-h-[90vh]"
-            >
-              {/* Modal Top Header */}
-              <div className="p-5 sm:p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-black text-sm shadow-xs">
-                    {viewBooking.name ? viewBooking.name.charAt(0).toUpperCase() : 'B'}
-                  </div>
-                  <div>
-                    <h3 className="text-base sm:text-lg font-black text-slate-900 leading-tight">
-                      Booking Details & Actions
-                    </h3>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[11px] text-slate-400 font-mono">ID: #{viewBooking.id.slice(0, 14)}...</span>
-                      <button
-                        onClick={() => handleCopy(viewBooking.id, 'id')}
-                        className="text-[10px] text-slate-500 hover:text-slate-800 font-bold underline cursor-pointer"
-                      >
-                        {copiedField === 'id' ? 'Copied ID!' : 'Copy'}
-                      </button>
+      {/* FULL BOOKING DETAILS — full page */}
+      <ManagerFullPageSheet
+        open={!!viewBooking}
+        title={viewBooking?.name || 'Booking'}
+        subtitle={viewBooking ? `1:1 booking · ${viewBooking.slot_date} · ${viewBooking.slot_time}` : ''}
+        onClose={() => setViewBooking(null)}
+        maxWidthClass="max-w-7xl"
+      >
+        {viewBooking && (() => {
+          const conf = getStatusConfig(viewBooking.status);
+          const StatusIcon = conf.icon;
+          const subs = splitSubjects(viewBooking.subjects);
+          const history = bookings.filter(b =>
+            b.id !== viewBooking.id &&
+            ((b.email || '').toLowerCase() === (viewBooking.email || '').toLowerCase() ||
+              (phoneDigits(b.phone) && phoneDigits(b.phone) === phoneDigits(viewBooking.phone)))
+          );
+          const fmt = (iso?: string) => iso ? new Date(iso).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+          return (
+            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_420px] gap-6 items-start">
+              {/* LEFT: information */}
+              <div className="space-y-5 min-w-0">
+                {/* Student profile */}
+                <section className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm">
+                  <div className="flex items-start justify-between gap-4 flex-wrap">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-black text-lg">
+                        {viewBooking.name ? viewBooking.name.charAt(0).toUpperCase() : 'B'}
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-black text-slate-900 leading-tight">{viewBooking.name}</h3>
+                        <div className="text-xs text-slate-500 mt-0.5">Booked {fmt(viewBooking.created_at)}</div>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {viewBooking.phone && (
+                        <a href={waLink(viewBooking.phone, viewBooking.name)} target="_blank" rel="noreferrer"
+                          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm font-bold transition-colors">
+                          <MessageCircle className="w-4 h-4" /> WhatsApp
+                        </a>
+                      )}
+                      {viewBooking.email && (
+                        <a href={`mailto:${viewBooking.email}?subject=${encodeURIComponent('Your GenZ IITian 1:1 session')}`}
+                          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold transition-colors">
+                          <Mail className="w-4 h-4" /> Email
+                        </a>
+                      )}
                     </div>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-2.5">
-                  {/* Status Badge */}
-                  {(() => {
-                    const conf = getStatusConfig(viewBooking.status);
-                    const Icon = conf.icon;
-                    return (
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider border ${conf.bg} ${conf.text} ${conf.border}`}>
-                        <Icon className="w-3.5 h-3.5" />
-                        <span>{conf.label}</span>
-                      </span>
-                    );
-                  })()}
-
-                  <button
-                    onClick={() => setViewBooking(null)}
-                    className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Toast Feedback Banner */}
-              {actionSuccessToast && (
-                <div className="bg-emerald-50 border-b border-emerald-200 px-5 py-2.5 text-xs font-bold text-emerald-800 flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    {actionSuccessToast}
-                  </span>
-                </div>
-              )}
-
-              {/* Modal Body - Scrollable */}
-              <div className="p-5 sm:p-6 overflow-y-auto space-y-5">
-                {/* 1. USER DETAILS CARD */}
-                <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-black uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                      <User className="w-3.5 h-3.5 text-slate-600" /> Student Profile
-                    </h4>
-                    <span className="text-[10px] text-slate-400 font-medium">
-                      Booked {new Date(viewBooking.created_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                    {/* Name */}
-                    <div>
-                      <div className="text-[10px] text-slate-400 uppercase font-bold">Full Name</div>
-                      <div className="text-sm font-black text-slate-900 mt-0.5">{viewBooking.name}</div>
-                    </div>
-
-                    {/* Email */}
-                    <div>
-                      <div className="text-[10px] text-slate-400 uppercase font-bold">Email Address</div>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className="font-semibold text-slate-800 truncate" title={viewBooking.email}>
-                          {viewBooking.email}
-                        </span>
-                        <button
-                          onClick={() => handleCopy(viewBooking.email, 'email')}
-                          title="Copy Email"
-                          className="p-1 text-slate-400 hover:text-slate-700 cursor-pointer"
-                        >
-                          {copiedField === 'email' ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                  <dl className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                    <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                      <dt className="text-[10px] text-slate-400 uppercase font-bold">Email address</dt>
+                      <dd className="mt-1 flex items-center justify-between gap-2">
+                        <span className="font-semibold text-slate-800 break-all">{viewBooking.email}</span>
+                        <button onClick={() => handleCopy(viewBooking.email, 'email')} title="Copy email" className="text-slate-400 hover:text-slate-700 shrink-0">
+                          {copiedField === 'email' ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
                         </button>
-                      </div>
+                      </dd>
                     </div>
-
-                    {/* Phone & WhatsApp */}
-                    <div>
-                      <div className="text-[10px] text-slate-400 uppercase font-bold">WhatsApp / Phone</div>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="font-black text-slate-900">+91 {viewBooking.phone}</span>
+                    <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                      <dt className="text-[10px] text-slate-400 uppercase font-bold">WhatsApp / phone</dt>
+                      <dd className="mt-1 flex items-center justify-between gap-2">
+                        <span className="font-black text-slate-900">+91 {viewBooking.phone || '—'}</span>
                         {viewBooking.phone && (
-                          <a
-                            href={`https://wa.me/91${viewBooking.phone.replace(/\D/g, '')}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-green-100 text-green-800 font-bold text-[10px] hover:bg-green-200 transition-colors cursor-pointer"
-                          >
-                            <MessageCircle className="w-3 h-3 text-green-700" />
-                            <span>WhatsApp</span>
-                          </a>
+                          <button onClick={() => handleCopy(viewBooking.phone, 'phone')} title="Copy number" className="text-slate-400 hover:text-slate-700 shrink-0">
+                            {copiedField === 'phone' ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                          </button>
                         )}
-                      </div>
+                      </dd>
                     </div>
-                  </div>
-                </div>
+                  </dl>
+                </section>
 
-                {/* 2. BOOKING INFO CARD */}
-                <div className="bg-white rounded-2xl p-4 border border-slate-200 space-y-3 shadow-xs">
+                {/* Consultation */}
+                <section className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm space-y-4">
                   <h4 className="text-xs font-black uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5 text-blue-600" /> Consultation Information
+                    <Calendar className="w-3.5 h-3.5 text-blue-600" /> Consultation information
                   </h4>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                    {/* Date & Slot */}
-                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
-                      <div className="text-[10px] text-slate-400 uppercase font-bold">Scheduled Slot</div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Calendar className="w-4 h-4 text-blue-600 shrink-0" />
-                        <span className="font-black text-slate-900 text-sm">{viewBooking.slot_date}</span>
-                      </div>
-                      <div className="flex items-center gap-2 mt-1 text-slate-700 font-bold">
-                        <Clock className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <span>{viewBooking.slot_time}</span>
-                      </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                      <div className="text-[10px] text-slate-400 uppercase font-bold">Date</div>
+                      <div className="mt-1 flex items-center gap-2 font-black text-slate-900"><Calendar className="w-4 h-4 text-blue-600" />{viewBooking.slot_date}</div>
                     </div>
-
-                    {/* Level & Plan */}
-                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
-                      <div className="text-[10px] text-slate-400 uppercase font-bold">Academic Level & Plan</div>
-                      <div className="font-black text-slate-900 mt-1">{viewBooking.level || 'Foundation Level'}</div>
-                      <div className="text-slate-500 text-[11px] font-medium mt-0.5">{viewBooking.plan || '1:1 Personalised Teaching'}</div>
+                    <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                      <div className="text-[10px] text-slate-400 uppercase font-bold">15-min slot</div>
+                      <div className="mt-1 flex items-center gap-2 font-black text-slate-900"><Clock className="w-4 h-4 text-emerald-600" />{viewBooking.slot_time}</div>
+                    </div>
+                    <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                      <div className="text-[10px] text-slate-400 uppercase font-bold">Level &amp; plan</div>
+                      <div className="mt-1 font-black text-slate-900">{viewBooking.level || 'Foundation Level'}</div>
+                      <div className="text-[11px] text-slate-500">{viewBooking.plan || '1:1 Personalised Teaching'}</div>
                     </div>
                   </div>
-
-                  {/* Subjects */}
                   <div>
-                    <div className="text-[10px] text-slate-400 uppercase font-bold mb-1">Subject(s) Requested</div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {(viewBooking.subjects || 'General').split(',').map((sub, idx) => (
-                        <span
-                          key={idx}
-                          className="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-800 text-xs font-bold"
-                        >
-                          {sub.trim()}
-                        </span>
+                    <div className="text-[10px] text-slate-400 uppercase font-bold mb-2">Subjects requested ({subs.length})</div>
+                    <div className="flex flex-wrap gap-2">
+                      {(subs.length ? subs : ['General']).map((sub, idx) => (
+                        <span key={idx} className="px-3 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-slate-800 text-xs font-bold">{sub}</span>
                       ))}
                     </div>
                   </div>
-                </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-slate-500 pt-2 border-t border-slate-100">
+                    <div>Booking ID <span className="font-mono text-slate-700">{viewBooking.id}</span>{' '}
+                      <button onClick={() => handleCopy(viewBooking.id, 'id')} className="font-bold underline hover:text-slate-800">{copiedField === 'id' ? 'Copied' : 'Copy'}</button>
+                    </div>
+                    <div>Last updated <span className="text-slate-700 font-medium">{fmt(viewBooking.updated_at || viewBooking.created_at)}</span></div>
+                  </div>
+                </section>
 
                 {/* 3. NOTES FROM USER (STUDENT BLOCKER) */}
                 <div className="bg-blue-50/50 rounded-2xl p-4 border border-blue-200 space-y-2">
@@ -869,7 +836,57 @@ export default function OneOnOneBookingsManager() {
                   </div>
                 </div>
 
-                {/* 5. RESCHEDULE SUB-PANEL (If toggled) */}
+                
+
+                {/* Other bookings by this student */}
+                {history.length > 0 && (
+                  <section className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm">
+                    <h4 className="text-xs font-black uppercase tracking-wider text-slate-500">Other bookings by this student ({history.length})</h4>
+                    <ul className="mt-3 divide-y divide-slate-100">
+                      {history.map(h => {
+                        const hc = getStatusConfig(h.status);
+                        return (
+                          <li key={h.id} className="py-2.5 flex items-center justify-between gap-3 text-xs">
+                            <div className="min-w-0">
+                              <div className="font-bold text-slate-800">{h.slot_date} · {h.slot_time}</div>
+                              <div className="text-slate-500 truncate">{splitSubjects(h.subjects).slice(0, 2).join(', ')}{splitSubjects(h.subjects).length > 2 ? ` +${splitSubjects(h.subjects).length - 2} more` : ''}</div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className={`px-2 py-0.5 rounded-full border text-[10px] font-black uppercase ${hc.bg} ${hc.text} ${hc.border}`}>{hc.label}</span>
+                              <button onClick={() => handleOpenView(h)} className="font-bold text-blue-600 hover:underline">Open</button>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </section>
+                )}
+              </div>
+
+              {/* RIGHT: status + actions */}
+              <aside className="space-y-5 lg:sticky lg:top-0 min-w-0">
+                <section className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                  <div className="text-[10px] text-slate-400 uppercase font-bold">Current status</div>
+                  <div className="mt-2">
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wider border ${conf.bg} ${conf.text} ${conf.border}`}>
+                      <StatusIcon className="w-3.5 h-3.5" /> {conf.label}
+                    </span>
+                  </div>
+                  {/* Toast Feedback Banner */}
+              {actionSuccessToast && (
+                <div className="bg-emerald-50 rounded-lg border mt-3 border-emerald-200 px-5 py-2.5 text-xs font-bold text-emerald-800 flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    {actionSuccessToast}
+                  </span>
+                </div>
+              )}
+
+              
+                </section>
+
+                <section className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+                  {/* 5. RESCHEDULE SUB-PANEL (If toggled) */}
                 {isRescheduling && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
@@ -1019,7 +1036,7 @@ export default function OneOnOneBookingsManager() {
                     <span className="text-[11px] text-slate-400 font-normal">Click any action to update status immediately</span>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     {/* Mark as Completed */}
                     <button
                       type="button"
@@ -1139,25 +1156,13 @@ export default function OneOnOneBookingsManager() {
                     </button>
                   </div>
                 </div>
-              </div>
 
-              {/* Modal Footer */}
-              <div className="p-4 sm:p-5 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
-                <div className="text-xs text-slate-500 font-medium">
-                  Status: <strong>{getStatusConfig(viewBooking.status).label}</strong>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setViewBooking(null)}
-                  className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all cursor-pointer"
-                >
-                  Done
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+                </section>
+              </aside>
+            </div>
+          );
+        })()}
+      </ManagerFullPageSheet>
     </div>
   );
 }

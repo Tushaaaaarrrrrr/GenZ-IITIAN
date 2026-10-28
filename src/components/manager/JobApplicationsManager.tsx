@@ -1227,6 +1227,28 @@ export default function JobApplicationsManager() {
                 )}
               </div>
 
+              {/* Applicant-added information (read only) */}
+              {Array.isArray(selectedApp.metadata?.user_additions) && selectedApp.metadata.user_additions.length > 0 && (
+                <div className="p-3.5 bg-indigo-50/60 rounded-xl border border-indigo-100 space-y-2.5">
+                  <div className="text-[11px] font-black uppercase tracking-wider text-indigo-800">
+                    Added by applicant ({selectedApp.metadata.user_additions.length})
+                  </div>
+                  <ul className="space-y-2">
+                    {selectedApp.metadata.user_additions.map((a: any) => (
+                      <li key={a.id} className="text-xs text-slate-700">
+                        <span className="inline-block mr-2 px-1.5 py-0.5 rounded bg-white border border-indigo-100 text-[10px] font-bold uppercase text-indigo-700">{a.type}</span>
+                        {a.type === 'link' ? (
+                          <a href={a.value} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline break-all">{a.label || a.value}</a>
+                        ) : (
+                          <span className="whitespace-pre-wrap break-words">{a.value}</span>
+                        )}
+                        <span className="ml-2 text-[10px] text-slate-400">{new Date(a.added_at).toLocaleString('en-IN')}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               {/* Manager Notes */}
               <div>
                 <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
