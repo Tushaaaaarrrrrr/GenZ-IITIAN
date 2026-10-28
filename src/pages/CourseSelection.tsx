@@ -85,6 +85,7 @@ export default function CourseSelection() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("Processing Enrollment...");
   const [step, setStep] = useState<'profile' | 'selection'>('selection');
+  const [planConfirmed, setPlanConfirmed] = useState(false);
   const [showProfilePrompt, setShowProfilePrompt] = useState(false);
 
   // Discount Logic
@@ -777,6 +778,10 @@ export default function CourseSelection() {
       coursesPickerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
+    if (hasPricingPlans && !planConfirmed && !needsPlanPick) {
+      confirmPlan();
+      return;
+    }
     if (needsPlanPick) {
       document.getElementById('checkout-plans')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       return;
@@ -785,8 +790,10 @@ export default function CourseSelection() {
   };
   const selectPricingPlan = (idx: number) => {
     setSelectedPricingTier(idx);
-    // Let the continue button render, then scroll user down to checkout summary
-    window.setTimeout(() => goToSummary(), 80);
+  };
+  const confirmPlan = () => {
+    setPlanConfirmed(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -841,10 +848,10 @@ export default function CourseSelection() {
             <p className="text-sm text-gray-500 mx-auto max-w-md sm:max-w-none px-2 sm:px-0 leading-snug">You&apos;re just one step away from joining {course.name}. Follow the steps below.</p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 mb-5 md:mb-7">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 mb-4 md:mb-7">
             <button
               onClick={() => { setStep('profile'); setShowProfilePrompt(false); }}
-              className={`flex items-center justify-center gap-2 px-3 py-3 rounded-2xl border text-sm font-semibold transition-all w-full active:scale-[0.98] cursor-pointer ${step === 'profile' ? 'bg-[#0b1120] border-[#0b1120] text-white shadow-lg shadow-black/10' : 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'}`}
+              className={`flex items-center justify-center gap-1.5 md:gap-2 px-2 md:px-3 py-2.5 md:py-3 rounded-xl md:rounded-2xl border text-xs md:text-sm font-semibold whitespace-nowrap transition-all w-full active:scale-[0.98] cursor-pointer ${step === 'profile' ? 'bg-[#0b1120] border-[#0b1120] text-white shadow-lg shadow-black/10' : 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'}`}
             >
                 <User className="w-4 h-4" />
                 <span>Step 1: Profile</span>
@@ -852,13 +859,13 @@ export default function CourseSelection() {
             <button
               disabled={!profileData.name || !profileData.gender || !profileData.phone}
               onClick={() => setStep('selection')}
-              className={`flex items-center justify-center gap-2 px-3 py-3 rounded-2xl border text-sm font-semibold transition-all w-full active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${step === 'selection' ? 'bg-[#0b1120] border-[#0b1120] text-white shadow-lg shadow-black/10' : 'bg-white border-black/10 text-gray-500 hover:bg-gray-50'}`}
+              className={`flex items-center justify-center gap-1.5 md:gap-2 px-2 md:px-3 py-2.5 md:py-3 rounded-xl md:rounded-2xl border text-xs md:text-sm font-semibold whitespace-nowrap transition-all w-full active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${step === 'selection' ? 'bg-[#0b1120] border-[#0b1120] text-white shadow-lg shadow-black/10' : 'bg-white border-black/10 text-gray-500 hover:bg-gray-50'}`}
             >
                 <BookOpen className="w-4 h-4" />
                 <span>Step 2: Checkout</span>
             </button>
-            <div className="col-span-2 md:col-span-2 bg-white border border-black/10 rounded-2xl px-3 py-3 flex items-center justify-center">
-                <div className="flex items-center gap-2 text-gray-500 font-medium text-sm">
+            <div className="col-span-2 md:col-span-2 md:bg-white md:border md:border-black/10 md:rounded-2xl px-3 py-0.5 md:py-3 flex items-center justify-center">
+                <div className="flex items-center gap-1.5 md:gap-2 text-gray-400 md:text-gray-500 font-medium text-xs md:text-sm">
                     <ShieldCheck className="w-4 h-4 text-emerald-500" />
                     Secure checkout by Razorpay
                 </div>
@@ -1089,7 +1096,7 @@ export default function CourseSelection() {
                   </div>
               )}
 
-              {hasPricingPlans && (
+              {hasPricingPlans && !planConfirmed && (
                 <div id="checkout-plans" className="space-y-4 mb-8 scroll-mt-24">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 bg-[#0b1120] rounded-xl flex items-center justify-center">
@@ -1190,7 +1197,7 @@ export default function CourseSelection() {
                   {selectedPricingTier !== null ? (
                     <button
                       type="button"
-                      onClick={goToSummary}
+                      onClick={confirmPlan}
                       className="w-full sm:w-auto mx-auto flex items-center justify-center gap-2 px-7 py-3.5 bg-emerald-500 text-white rounded-full font-semibold text-sm hover:bg-emerald-600 active:scale-[0.97] shadow-lg shadow-emerald-500/30 transition-all cursor-pointer"
                     >
                       Continue to Checkout
@@ -1205,6 +1212,24 @@ export default function CourseSelection() {
                 </div>
               )}
 
+              {hasPricingPlans && planConfirmed && (
+                <div className="mb-5 flex items-center justify-between gap-3 rounded-2xl bg-white border border-black/5 px-4 py-3 shadow-sm">
+                  <div className="min-w-0 text-sm">
+                    <span className="text-gray-500">Selected plan: </span>
+                    <span className="font-semibold text-[#0b1120]">{getSelectedPricingOption()?.name}</span>
+                    <span className="text-gray-500"> · ₹{getSelectedPricingOption()?.price}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setPlanConfirmed(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                    className="shrink-0 text-sm font-semibold text-blue-600 hover:text-blue-800 cursor-pointer"
+                  >
+                    Change plan
+                  </button>
+                </div>
+              )}
+
+              {(!hasPricingPlans || planConfirmed) && (
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 <div ref={coursesPickerRef} className="lg:col-span-7 space-y-6 scroll-mt-24">
                   <div className="bg-white border border-black/5 rounded-3xl p-6 shadow-[0_8px_30px_rgba(0,0,0,0.05)]">
@@ -1386,6 +1411,7 @@ export default function CourseSelection() {
                 </div>
               </div>
             </div>
+              )}
 
             </motion.div>
           )}

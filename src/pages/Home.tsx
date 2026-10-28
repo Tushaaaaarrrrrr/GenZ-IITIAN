@@ -634,30 +634,30 @@ export default function Home() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={dismissVideoModal}
-              className="absolute inset-0 bg-[#0b1120]/75 backdrop-blur-sm"
+              className="absolute inset-0 bg-[#0b1120]/70 backdrop-blur-md"
             />
 
             {/* Modal Card */}
             <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              initial={{ scale: 0.94, opacity: 0, y: 24 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+              exit={{ scale: 0.96, opacity: 0, y: 12 }}
+              transition={{ type: 'spring', bounce: 0.12, duration: 0.5 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white border-[4px] border-[#0b1120] rounded-[2rem] w-full max-w-3xl p-6 md:p-8 relative shadow-[12px_12px_0px_#0b1120] overflow-visible z-10"
+              className="bg-white rounded-3xl w-full max-w-3xl p-3 sm:p-4 relative shadow-[0_30px_80px_rgba(0,0,0,0.45)] z-10 max-h-[92vh] overflow-y-auto"
             >
-              {/* Close Button overlapping the top right */}
+              {/* Close button, inside the card so it never clips off small screens */}
               <button
                 onClick={dismissVideoModal}
-                className="absolute -top-4 -right-4 p-2 bg-[#0b1120] text-white hover:bg-red-500 hover:text-white rounded-full transition-all border-4 border-white shadow-[2px_2px_0px_#0b1120] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] z-20 cursor-pointer"
+                className="absolute top-5 right-5 sm:top-6 sm:right-6 w-9 h-9 flex items-center justify-center bg-black/55 hover:bg-black/80 text-white rounded-full backdrop-blur transition-all active:scale-90 z-20 cursor-pointer"
                 title="Close"
+                aria-label="Close video"
               >
-                <XIcon className="w-5 h-5 stroke-[3px]" />
+                <XIcon className="w-4 h-4" />
               </button>
 
-              {/* YouTube Video Player Embed */}
               {getYouTubeId(videoModalUrl) ? (
-                <div className="w-full aspect-video rounded-2xl border-4 border-[#0b1120] shadow-[6px_6px_0px_#0b1120] overflow-hidden bg-black relative">
+                <div className="w-full aspect-video rounded-2xl overflow-hidden bg-black relative">
                   <iframe
                     src={`https://www.youtube.com/embed/${getYouTubeId(videoModalUrl)}?autoplay=1&mute=1&playsinline=1&rel=0`}
                     title="YouTube Video Player"
@@ -668,21 +668,22 @@ export default function Home() {
                   ></iframe>
                 </div>
               ) : (
-                <div className="w-full aspect-video rounded-2xl border-4 border-[#0b1120] flex items-center justify-center bg-gray-100 font-black text-center p-4">
+                <div className="w-full aspect-video rounded-2xl bg-gray-100 flex items-center justify-center text-gray-500 font-medium text-center p-4">
                   Failed to load video player. Invalid YouTube link.
                 </div>
               )}
 
-              {/* Action Button */}
               {getYouTubeId(videoModalUrl) && (
-                <div className="flex justify-center mt-6">
+                <div className="flex items-center justify-between gap-3 px-1 pt-3 pb-1">
+                  <p className="hidden sm:block text-sm text-gray-500">Prefer the full player? Open it on YouTube.</p>
                   <a
                     href={`https://www.youtube.com/watch?v=${getYouTubeId(videoModalUrl)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={dismissVideoModal}
-                    className="px-8 py-4 bg-blue-600 text-white rounded-xl font-black text-lg border-[3px] border-[#0b1120] shadow-[4px_4px_0px_#0b1120] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[6px_6px_0px_#0b1120] transition-all flex items-center gap-2 hover:bg-blue-700 active:translate-x-0 active:translate-y-0 active:shadow-none cursor-pointer"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#0b1120] text-white rounded-full font-semibold text-sm hover:bg-gray-800 active:scale-[0.97] transition-all"
                   >
+                    <svg width="22" height="16" viewBox="0 0 30 22" aria-hidden="true"><rect width="30" height="22" rx="6" fill="#FF0000" /><path d="M12 6.5v9l8-4.5z" fill="#fff" /></svg>
                     Watch Now
                   </a>
                 </div>

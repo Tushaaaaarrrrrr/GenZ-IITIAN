@@ -201,7 +201,7 @@ export default function Careers() {
   return (
     <div className="careers-ui" style={{ background: C.paper, color: C.ink }}>
       {/* ───────────── Hero ───────────── */}
-      <section style={{ borderBottom: `1px solid ${C.rule}` }}>
+      <section style={{ borderBottom: `1px solid #d6e4ff`, background: '#e8f0ff' }}>
         <div className="mx-auto grid max-w-6xl gap-12 px-5 pb-16 pt-14 sm:px-8 sm:pb-24 sm:pt-20 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
           <div>
             <Eyebrow>Careers at GenZ IITian</Eyebrow>
@@ -271,7 +271,7 @@ export default function Careers() {
       </section>
 
       {/* ───────────── Open roles ───────────── */}
-      <section id="openings" className="scroll-mt-24">
+      <section id="openings" className="scroll-mt-24" style={{ background: '#ffffff' }}>
         <div className="mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-24">
           <SectionTitle
             eyebrow="Open roles"
@@ -317,7 +317,7 @@ export default function Careers() {
                   </button>
 
                   {isOpen && (
-                    <div style={{ borderTop: `1px solid ${C.rule}`, background: '#fcfbf8' }}>
+                    <div style={{ borderTop: `1px solid ${C.rule}`, background: '#f5f8ff' }}>
                       <div className="grid gap-10 px-5 py-8 sm:px-8 sm:py-10 lg:grid-cols-[1fr_300px]">
                         <div className="max-w-2xl">
                           {r.id === 'tutor' ? <TutorBrief /> : <LeaderBrief />}
@@ -370,12 +370,12 @@ export default function Careers() {
       </section>
 
       {/* ───────────── Why us ───────────── */}
-      <section style={{ borderTop: `1px solid ${C.rule}`, borderBottom: `1px solid ${C.rule}`, background: C.card }}>
+      <section style={{ borderTop: `1px solid #fde4c8`, borderBottom: `1px solid #fde4c8`, background: '#fff4e6' }}>
         <div className="mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-24">
           <SectionTitle eyebrow="Why GenZ IITian" title="Work that compounds for your career" />
           <div className="mt-12 grid gap-10 md:grid-cols-2 md:gap-0">
             <div className="md:pr-12">
-              <div className="careers-serif text-5xl font-medium" style={{ color: C.rule }}>01</div>
+              <div className="careers-serif text-5xl font-medium" style={{ color: '#fdba74' }}>01</div>
               <h3 className="mt-4 text-lg font-semibold" style={{ color: C.ink }}>A culture where ideas matter</h3>
               <p className="mt-3 text-[15px] leading-relaxed" style={{ color: C.muted }}>
                 Flexible working hours, creative freedom in how you teach, and a peer-driven environment that pushes
@@ -383,7 +383,7 @@ export default function Careers() {
               </p>
             </div>
             <div className="md:pl-12 md:border-l" style={{ borderColor: C.rule }}>
-              <div className="careers-serif text-5xl font-medium" style={{ color: C.rule }}>02</div>
+              <div className="careers-serif text-5xl font-medium" style={{ color: '#fdba74' }}>02</div>
               <h3 className="mt-4 text-lg font-semibold" style={{ color: C.ink }}>Internships that bridge theory and practice</h3>
               <p className="mt-3 text-[15px] leading-relaxed" style={{ color: C.muted }}>
                 Teaching solidifies your own foundations while building a professional network and adding real weight
@@ -395,7 +395,7 @@ export default function Careers() {
       </section>
 
       {/* ───────────── Process ───────────── */}
-      <section>
+      <section style={{ background: '#e9f9ef' }}>
         <div className="mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-24">
           <SectionTitle eyebrow="How it works" title="A clear, trackable hiring process" />
           <ol className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-4 lg:gap-0">
@@ -425,12 +425,12 @@ export default function Careers() {
       </section>
 
       {/* ───────────── Voices ───────────── */}
-      <section style={{ borderTop: `1px solid ${C.rule}`, background: C.card }}>
+      <section style={{ borderTop: `1px solid #ead9ff`, background: '#f4ecff' }}>
         <div className="mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-24">
           <SectionTitle eyebrow="Tutor voices" title="What our tutors say" />
           <div className="mt-12 grid gap-6 md:grid-cols-3">
             {testimonials.map(t => (
-              <figure key={t.name} className="flex flex-col justify-between rounded-lg p-6" style={{ border: `1px solid ${C.rule}`, background: C.paper }}>
+              <figure key={t.name} className="flex flex-col justify-between rounded-lg p-6" style={{ border: `1px solid #ead9ff`, background: '#ffffff' }}>
                 <blockquote className="careers-serif text-[1.15rem] leading-[1.55]" style={{ color: C.ink }}>
                   “{t.quote}”
                 </blockquote>
@@ -453,7 +453,7 @@ export default function Careers() {
       </section>
 
       {/* ───────────── Track + Recruiters ───────────── */}
-      <section style={{ borderTop: `1px solid ${C.rule}` }}>
+      <section style={{ borderTop: `1px solid #d6e4ff`, background: '#e8f0ff' }}>
         <div className="mx-auto grid max-w-6xl gap-6 px-5 py-16 sm:px-8 sm:py-20 md:grid-cols-2">
           <div className="flex flex-col justify-between rounded-lg p-8" style={{ background: C.ink, color: '#fff' }}>
             <div>

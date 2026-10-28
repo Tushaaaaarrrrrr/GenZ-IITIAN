@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { motion } from 'motion/react';
-import { XCircle, RefreshCcw, BookOpen, AlertCircle, MessageCircle, Clock, CreditCard, HelpCircle } from 'lucide-react';
+import { motion, useReducedMotion } from 'motion/react';
+import { X, RefreshCcw, BookOpen, MessageCircle, Clock, CreditCard, Info } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiService } from '../lib/api';
 import { supabase } from '../lib/supabase';
@@ -10,6 +10,7 @@ export default function PaymentFailed() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const reduce = useReducedMotion();
   const [orderDetails, setOrderDetails] = useState<any>(location.state?.orderDetails || null);
   const [courseTitles, setCourseTitles] = useState<string>(location.state?.courseTitle || 'your selected course(s)');
   
@@ -45,114 +46,75 @@ export default function PaymentFailed() {
     fetchOrder();
   }, [user?.email, orderDetails]);
 
+  const rise = (d: number) => ({
+    initial: reduce ? { opacity: 0 } : { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0 },
+    transition: { type: 'spring' as const, bounce: 0, duration: 0.6, delay: d },
+  });
+
+  const rows = [
+    { Icon: BookOpen, label: 'Attempted', value: courseTitles, wrap: true },
+    { Icon: CreditCard, label: 'Amount', value: orderDetails ? `₹${orderDetails.total_amount}` : '...', strong: true },
+    { Icon: Clock, label: 'Time', value: orderDetails?.created_at ? new Date(orderDetails.created_at).toLocaleTimeString() : new Date().toLocaleTimeString() },
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 pt-24 pb-12 relative overflow-hidden">
-      
-      {/* 📞 Contact Us Floating Button */}
-      <Link 
-        to="/contact"
-        className="fixed bottom-8 right-8 z-[100] flex items-center gap-3 px-6 py-4 bg-[#ef4444] text-white rounded-2xl font-black border-[3px] border-white shadow-[6px_6px_0px_#0b1120] hover:translate-y-[-4px] hover:shadow-[6px_10px_0px_#0b1120] transition-all group"
-      >
-        <MessageCircle className="w-6 h-6 text-white group-hover:rotate-12 transition-transform" />
-        <span className="hidden md:inline">Need Help? Contact Us</span>
-      </Link>
+    <div className="min-h-screen bg-[#fbfbfd] flex items-center justify-center px-4 py-24 sm:py-28 relative overflow-hidden">
+      <div className="w-full max-w-lg text-center">
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={reduce ? { scale: 1 } : { scale: 1, x: [0, -8, 8, -5, 5, 0] }}
+          transition={{ scale: { type: 'spring', bounce: 0.4, duration: 0.6 }, x: { delay: 0.5, duration: 0.5 } }}
+          className="mx-auto mb-7 w-20 h-20 rounded-full bg-red-500 text-white flex items-center justify-center shadow-[0_16px_40px_-8px_rgba(239,68,68,0.55)]"
+        >
+          <X className="w-10 h-10" strokeWidth={3} />
+        </motion.div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        className="max-w-xl w-full bg-white border-[4px] border-[#0b1120] rounded-3xl p-6 lg:p-10 shadow-[12px_12px_0px_#ef4444] text-center relative"
-      >
-        {/* Failed Header */}
-        <div className="mb-8">
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring", damping: 12, stiffness: 200, delay: 0.2 }}
-            className="w-16 h-16 bg-red-100 rounded-2xl border-[3px] border-[#0b1120] flex items-center justify-center mx-auto mb-6 shadow-[4px_4px_0px_#ef4444]"
-          >
-            <XCircle className="w-8 h-8 text-[#ef4444]" />
-          </motion.div>
+        <motion.div {...rise(0.15)}>
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-[-0.025em] text-[#1d1d1f]">Payment failed</h1>
+          <p className="mt-2 text-gray-500">Unfortunately, your transaction could not be processed.</p>
+        </motion.div>
 
-          <h1 className="text-3xl lg:text-4xl font-black text-[#0b1120] mb-2 tracking-tight">
-            Payment Failed
-          </h1>
-          <p className="text-gray-500 font-bold">Unfortunately, your transaction could not be processed.</p>
-        </div>
-
-        {/* 🧾 Failed Transaction Card */}
-        <div className="bg-red-50/50 border-[3px] border-dashed border-red-200 rounded-[2rem] p-6 mb-8 text-left space-y-5 relative">
-           <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white px-4 border-2 border-red-100 rounded-full text-[10px] font-black text-red-500 uppercase tracking-widest">
-              Attempt Details
-           </div>
-
-           <div className="space-y-4">
-              <div>
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1.5"><BookOpen className="w-3 h-3" /> Attempted Purchase</p>
-                <p className="text-base font-black text-[#0b1120] line-clamp-2">{courseTitles}</p>
+        <motion.div {...rise(0.25)} className="mt-8 rounded-3xl bg-white border border-black/5 shadow-[0_8px_40px_rgba(0,0,0,0.07)] text-left overflow-hidden">
+          <div className="px-5 py-3 bg-red-50/70 border-b border-black/5 text-xs font-semibold uppercase tracking-wider text-red-500">Attempt details</div>
+          <dl className="divide-y divide-black/5">
+            {rows.map((r) => (
+              <div key={r.label} className="flex items-start justify-between gap-4 px-5 py-3.5">
+                <dt className="flex items-center gap-2 text-sm text-gray-500 shrink-0"><r.Icon className="w-4 h-4" />{r.label}</dt>
+                <dd className={`text-sm text-right min-w-0 ${r.strong ? 'font-bold text-red-500 text-base' : 'font-semibold text-[#0b1120]'} ${r.wrap ? 'line-clamp-2' : ''}`}>{r.value}</dd>
               </div>
+            ))}
+          </dl>
+        </motion.div>
 
-              <div className="grid grid-cols-2 gap-4 border-t-2 border-red-100/50 pt-4">
-                 <div>
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1.5"><CreditCard className="w-3 h-3" /> Amount</p>
-                    <p className="text-xl font-black text-[#ef4444]">
-                      {orderDetails ? `₹${orderDetails.total_amount}` : '...'}
-                    </p>
-                 </div>
-                 <div>
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1.5"><Clock className="w-3 h-3" /> Time</p>
-                    <p className="text-sm font-black text-[#0b1120]">
-                      {orderDetails?.created_at ? new Date(orderDetails.created_at).toLocaleTimeString() : new Date().toLocaleTimeString()}
-                    </p>
-                 </div>
-              </div>
+        <motion.div {...rise(0.32)} className="mt-4 flex gap-3 rounded-2xl bg-amber-50 border border-amber-100 p-4 text-left">
+          <Info className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <p className="text-sm text-amber-900/80 leading-relaxed">
+            If money was deducted from your account, your bank will refund it automatically within 5-7 business days.
+          </p>
+        </motion.div>
 
-              <div className="bg-white/80 border-2 border-red-100 rounded-xl p-3">
-                 <div className="flex justify-between items-start">
-                    <div>
-                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Status Code</p>
-                        <p className="text-xs font-mono font-bold text-red-600 uppercase tracking-tighter">Transaction_Failed</p>
-                    </div>
-                    <AlertCircle className="w-4 h-4 text-red-400" />
-                 </div>
-              </div>
-           </div>
-        </div>
-
-        {/* Troubleshooting Info */}
-        <div className="p-4 bg-amber-50 border-2 border-amber-200 rounded-2xl mb-8 flex gap-4 text-left">
-           <HelpCircle className="w-6 h-6 text-amber-600 shrink-0" />
-           <div>
-              <p className="text-sm font-black text-amber-900 mb-1">What happened?</p>
-              <p className="text-xs font-bold text-amber-800/80 leading-relaxed">
-                If money was deducted from your account, it will be refunded automatically by your bank within 5-7 business days. 
-              </p>
-           </div>
-        </div>
-
-        {/* Action Section */}
-        <div className="flex flex-col gap-3">
+        <motion.div {...rise(0.4)} className="mt-6 flex flex-col sm:flex-row gap-3">
           <button
             onClick={() => navigate(-1)}
-            className="w-full py-4 bg-[#0b1120] text-white rounded-2xl font-black text-lg border-[3px] border-[#0b1120] shadow-[6px_6px_0px_#3b82f6] hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center gap-3 group"
+            className="flex-1 inline-flex items-center justify-center gap-2 py-3.5 rounded-full bg-[#0b1120] text-white font-semibold hover:bg-gray-800 active:scale-[0.98] transition-all cursor-pointer"
           >
-            Try Again <RefreshCcw className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />
+            <RefreshCcw className="w-4 h-4" /> Try again
           </button>
-
           <Link
             to="/courses"
-            className="w-full py-4 bg-white text-[#0b1120] rounded-2xl font-black text-lg border-[3px] border-[#0b1120] hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
+            className="inline-flex items-center justify-center py-3.5 px-7 rounded-full bg-white border border-black/15 text-[#0b1120] font-semibold hover:bg-gray-50 active:scale-[0.98] transition-all"
           >
-            Browse Other Courses
+            Browse courses
           </Link>
-        </div>
+        </motion.div>
 
-        <div className="mt-8 pt-6 border-t border-gray-100">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-relaxed">
-                If the issue persists, please <Link to="/contact" className="text-[#0b1120] underline">Contact our support team</Link>
-            </p>
-        </div>
-      </motion.div>
+        <motion.div {...rise(0.47)} className="mt-8">
+          <Link to="/contact" className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-[#0b1120] transition-colors">
+            <MessageCircle className="w-4 h-4" /> Still stuck? Contact our support team
+          </Link>
+        </motion.div>
+      </div>
     </div>
   );
 }
-
