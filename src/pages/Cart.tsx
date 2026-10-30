@@ -7,7 +7,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { apiService } from '../lib/api';
 import { getStoredReferralCode, clearReferralCookie, validateReferralCode, getReferralProfile } from '../lib/referral';
-import { validateCouponForCheckout } from '../utils/coupons';
 
 const RAZORPAY_SCRIPT_URL = "https://checkout.razorpay.com/v1/checkout.js";
 
@@ -116,23 +115,15 @@ export default function Cart() {
 
     try {
       // 1. Try as Discount Coupon first
-      const { data: coupon, error } = await supabase
-        .from('discount_coupons')
-        .select('*')
-        .eq('code', code)
-        .maybeSingle();
+      const couponResult = await apiService.validateCoupon({
+        code,
+        total,
+        courseIds: cart.map(item => String(item.id)),
+      });
 
-      if (coupon) {
-        const calculatedDiscount = await validateCouponForCheckout({
-          supabase,
-          coupon,
-          userEmail: user.email!,
-          total,
-          courseIds: cart.map(item => String(item.id)),
-        });
-
-        setDiscountAmount(calculatedDiscount);
-        setAppliedDiscountCode(coupon.code);
+      if (couponResult.found) {
+        setDiscountAmount(couponResult.discount || 0);
+        setAppliedDiscountCode(couponResult.code || code);
         setPromoCodeInput('');
         return;
       }

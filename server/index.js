@@ -510,6 +510,33 @@ async function insertWebsiteOrder(orderPayload) {
     return error;
 }
 
+app.post('/api/validate-coupon', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Server configuration error' });
+    const auth = await getAuthenticatedUser(req);
+    const email = auth?.user?.email;
+    if (!email) return res.status(401).json({ error: 'Please log in to apply a code.' });
+
+    const code = String(req.body?.code || '').trim().toUpperCase();
+    const courseIds = Array.isArray(req.body?.courseIds) ? req.body.courseIds.map(String) : [];
+    const bundleId = req.body?.bundleId ? String(req.body.bundleId) : null;
+    const total = Number(req.body?.total || 0);
+    if (!code || code.length > 64) return res.status(400).json({ error: 'Enter a discount code.' });
+
+    try {
+        const { data: coupon } = await supabase.from('discount_coupons').select('*').eq('code', code).maybeSingle();
+        if (!coupon) return res.json({ found: false });
+        try {
+            const discount = await validateCouponForOrder({ coupon, email, totalAmount: total, courseIds, bundleId });
+            return res.json({ found: true, code: coupon.code, discount });
+        } catch (e) {
+            return res.status(400).json({ found: true, error: e.message });
+        }
+    } catch (err) {
+        console.error('[validate-coupon] error:', err?.message || err);
+        return res.status(500).json({ error: 'Could not check this code. Please try again.' });
+    }
+});
+
 app.post('/api/create-order', async (req, res) => {
     if (!razorpay || !supabase) {
         return res.status(500).json({ error: 'Server configuration error (missing Razorpay/Supabase keys)' });
@@ -528,6 +555,15 @@ app.post('/api/create-order', async (req, res) => {
         selectedPricingTierName,
         selectedPricingTierPrice,
     } = req.body;
+
+    // Coupons are tied to a student's email, so the caller must prove they own that email.
+    if (discountCode) {
+        const auth = await getAuthenticatedUser(req);
+        const authEmail = auth?.user?.email;
+        if (!authEmail || !email || authEmail.toLowerCase() !== String(email).toLowerCase()) {
+            return res.status(401).json({ error: 'Please log in with the same email to use a discount code.' });
+        }
+    }
     if (!courseIds || !Array.isArray(courseIds) || courseIds.length === 0 || !email) {
         return res.status(400).json({ error: 'Email and at least one course ID are required' });
     }

@@ -298,7 +298,7 @@ export const apiService = {
     if (!isProduction) {
       const res = await fetch('/api/create-order', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(await getAuthHeaders()) },
         body: JSON.stringify(payload),
       });
       const data = await readJsonResponse(res);
@@ -312,13 +312,29 @@ export const apiService = {
       
       const res = await fetch(PROD_API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(await getAuthHeaders()) },
         body: JSON.stringify(payload),
       });
       const data = await readJsonResponse(res);
       if (!res.ok) throw new Error(data.error || 'Order creation failed (Production)');
       return data;
     }
+  },
+
+  // 4b. Server-side coupon check (the browser can't read discount_coupons anymore)
+  // Resolves { found:false } when the code isn't a coupon; throws with a user-facing message when it is but isn't usable.
+  validateCoupon: async (payload: { code: string, courseIds: string[], bundleId?: string | null, total: number }): Promise<{ found: boolean, code?: string, discount?: number }> => {
+    const url = isProduction
+      ? (import.meta.env.VITE_PROD_API_URL || '/api/create-order').replace('create-order', 'validate-coupon')
+      : '/api/validate-coupon';
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(await getAuthHeaders()) },
+      body: JSON.stringify(payload),
+    });
+    const data = await readJsonResponse(res);
+    if (!res.ok) throw new Error(data.error || 'Could not check this code.');
+    return data;
   },
 
   // 5. Verify Payment

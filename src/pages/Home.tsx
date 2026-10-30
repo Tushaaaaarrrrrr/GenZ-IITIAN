@@ -7,6 +7,7 @@ import HeroAnimation from '../components/HeroAnimation';
 import HiringSection from '../components/HiringSection';
 import MobileHome from '../components/mobile/MobileHome';
 import OneOnOnePromoBanner from '../components/OneOnOnePromoBanner';
+import QuizLabLaunch from '../components/QuizLabLaunch';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { BlogPost, fallbackBlogs } from '../data/blogsData';
@@ -160,6 +161,8 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-white text-[#0b1120] font-sans selection:bg-blue-100 overflow-hidden">
+      {/* Quiz Lab launch: full-screen surprise on first visit, corner box after */}
+      <QuizLabLaunch />
 
 
       {/* Mobile hero/stats/ecosystem (md:hidden) — matches the Gen-Z IITian mobile design */}

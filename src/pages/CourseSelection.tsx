@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
+import { rememberCheckout } from '../lib/abandonedCart';
 import { supabase } from '../lib/supabase';
 import { apiService } from '../lib/api';
 import { validateReferralCode, getReferralProfile } from '../lib/referral';
 import { useAuth } from '../context/AuthContext';
 import { Check, Loader2, ShieldCheck, AlertCircle, User, UserCheck, CreditCard, ArrowRight, BookOpen, Copy, CheckCheck } from 'lucide-react';
-import { validateCouponForCheckout } from '../utils/coupons';
 import { resolveBundleDiscountConfig } from '../utils/bundleDiscount';
 
 const RAZORPAY_SCRIPT_URL = "https://checkout.razorpay.com/v1/checkout.js";
@@ -395,6 +395,17 @@ export default function CourseSelection() {
     }
   }, [autoApplyOffer, discountCodeInput]);
 
+  // Arriving from the cart reminder (?offer=GENZ5): apply the code once the order total qualifies
+  const offerFromLink = (searchParams.get('offer') || '').toUpperCase() === 'GENZ5';
+  const offerAppliedRef = useRef(false);
+  useEffect(() => {
+    if (!offerFromLink || offerAppliedRef.current || !user || !course || showProfilePrompt || step !== 'selection') return;
+    if (appliedDiscountCode || calculateTotal() <= MIN_PROMO_ORDER_AMOUNT) return;
+    offerAppliedRef.current = true;
+    setDiscountCodeInput('GENZ5');
+    setAutoApplyOffer(true);
+  }, [offerFromLink, user, course, showProfilePrompt, step, selectedCourses, selectedPricingTier, appliedDiscountCode]);
+
   const acceptExitOffer = () => {
     pendingNavRef.current = null;
     setShowExitOffer(false);
@@ -499,24 +510,16 @@ export default function CourseSelection() {
       }
 
       // 1. Check if it exists in the global coupons table
-      const { data: coupon, error } = await supabase
-        .from('discount_coupons')
-        .select('*')
-        .eq('code', codeToApply)
-        .maybeSingle();
-      
-      if (coupon) {
-          const calculatedDiscount = await validateCouponForCheckout({
-            supabase,
-            coupon,
-            userEmail: user.email!,
-            total,
-            courseIds: selectedCourses,
-            bundleId: course?.isBundle ? course.id : null,
-          });
+      const couponResult = await apiService.validateCoupon({
+        code: codeToApply,
+        total,
+        courseIds: selectedCourses,
+        bundleId: course?.isBundle ? course.id : null,
+      });
 
-          setDiscountAmount(calculatedDiscount);
-          setAppliedDiscountCode(coupon.code);
+      if (couponResult.found) {
+          setDiscountAmount(couponResult.discount || 0);
+          setAppliedDiscountCode(couponResult.code || codeToApply);
 
           // SINGLE DISCOUNT ENFORCEMENT: Clear referral if a manual coupon is applied
           setReferralDiscount(0);
@@ -729,6 +732,7 @@ export default function CourseSelection() {
         selectedPricingTierPrice: selectedTier ? Number(selectedTier.price) : undefined
       });
       if (!orderData.id) throw new Error("Order creation failed");
+      rememberCheckout(orderData.id, courseLookupId || String(course?.id || ''), String(course?.name || ''));
 
       const scriptLoaded = await loadScript(RAZORPAY_SCRIPT_URL);
       if (!scriptLoaded || !(window as any).Razorpay) {
@@ -825,9 +829,15 @@ export default function CourseSelection() {
   if (loading || authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white p-6">
-        <div className="flex flex-col items-center gap-6">
-           <Loader2 className="w-16 h-16 text-blue-600 animate-spin" />
-           <p className="font-black text-2xl text-[#0b1120] uppercase tracking-widest">Preparing Checkout...</p>
+        <div className="flex flex-col items-center gap-4 text-center">
+          <div className="relative h-10 w-10">
+            <div className="absolute inset-0 rounded-full border-[3px] border-gray-200" />
+            <div className="absolute inset-0 rounded-full border-[3px] border-[#0b1120] border-t-transparent animate-spin" />
+          </div>
+          <div>
+            <p className="text-base font-semibold text-[#0b1120]">Preparing your checkout</p>
+            <p className="mt-1 text-sm text-gray-500">This will only take a moment</p>
+          </div>
         </div>
       </div>
     );
@@ -894,7 +904,7 @@ export default function CourseSelection() {
           </motion.div>
         )}
 
-        {showSuccessModal && (
+        {showSuccessModal && !showProfilePrompt && (
           <motion.div
             key="discount-applied"
             initial={{ opacity: 0 }}

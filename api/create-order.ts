@@ -201,6 +201,17 @@ export default async function handler(req: any, res: any) {
       return res.status(400).json({ error: 'Email and at least one course ID are required' });
     }
 
+    // Coupons are tied to a student's email, so when one is used the caller must prove they own that email.
+    if (discountCode) {
+      const authHeader = req.headers.authorization;
+      const token = authHeader && String(authHeader).startsWith('Bearer ') ? String(authHeader).slice(7) : '';
+      const supabaseAuth = createClient(process.env.VITE_SUPABASE_URL || '', process.env.VITE_SUPABASE_ANON_KEY || '');
+      const { data: { user: authUser } } = token ? await supabaseAuth.auth.getUser(token) : { data: { user: null } } as any;
+      if (!authUser?.email || authUser.email.toLowerCase() !== String(email).toLowerCase()) {
+        return res.status(401).json({ error: 'Please log in with the same email to use a discount code.' });
+      }
+    }
+
     let totalAmount = 0;
     let totalOriginalPrice = 0;
     let discountApplied = false;

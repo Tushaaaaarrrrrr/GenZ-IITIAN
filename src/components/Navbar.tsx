@@ -4,6 +4,7 @@ import { User as UserIcon, LogOut, LayoutDashboard, Gift, ChevronDown } from 'lu
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { supabase } from '../lib/supabase';
+import QuizLabNavPill from './QuizLabNavPill';
 
 const RESOURCE_LINKS = [
   { to: '/resources', label: 'PYQs & Notes' },
@@ -111,6 +112,7 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-4 lg:gap-8 whitespace-nowrap">
           <NavLink to="/" end className={navLinkClass}>Home</NavLink>
           <NavLink to="/courses" className={navLinkClass}>Courses</NavLink>
+          <QuizLabNavPill />
           <NavLink
             to="/one-to-one"
             className={({ isActive }) =>
@@ -252,6 +254,7 @@ export default function Navbar() {
         <div className="md:hidden bg-white border-t border-gray-200 px-6 py-6 flex flex-col gap-4">
           <NavLink to="/" end onClick={() => setMobileOpen(false)} className={mobileNavLinkClass}>Home</NavLink>
           <NavLink to="/courses" onClick={() => setMobileOpen(false)} className={mobileNavLinkClass}>Courses</NavLink>
+          <QuizLabNavPill className="self-start" onClick={() => setMobileOpen(false)} />
           <NavLink to="/one-to-one" onClick={() => setMobileOpen(false)} className={mobileNavLinkClass}>
             <span className="flex items-center justify-between">
               <span>1:1 Teaching</span>

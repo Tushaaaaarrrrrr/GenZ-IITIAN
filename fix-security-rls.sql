@@ -258,8 +258,9 @@ BEGIN
     DROP POLICY IF EXISTS "discounts_manager" ON public.discount_coupons;
     DROP POLICY IF EXISTS "coupons_all_service" ON public.discount_coupons;
 
+    -- Coupons are validated server-side (/api/validate-coupon, /api/create-order). Browsers must not list them.
     CREATE POLICY "coupons_select" ON public.discount_coupons FOR SELECT
-      USING (active = true OR public.is_manager() OR (auth.jwt() ->> 'role') = 'service_role');
+      USING (public.is_manager() OR (auth.jwt() ->> 'role') = 'service_role');
 
     CREATE POLICY "coupons_write_manager" ON public.discount_coupons FOR ALL
       USING (public.is_manager() OR (auth.jwt() ->> 'role') = 'service_role')
